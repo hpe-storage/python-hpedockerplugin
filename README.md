@@ -1,2 +1,2 @@
 # python-hpedockerplugin
-HPE Native Docker Plugin
+HPE Native Docker Volume Plugin
