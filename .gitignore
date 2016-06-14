@@ -1,0 +1,6 @@
+*.pyc
+*.egg-info
+*twistd.log*
+*_trial_temp*
+*twistd.pid
+.tox

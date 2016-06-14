@@ -1,0 +1,39 @@
+[DEFAULT]
+# ssh key file required for driver ssh
+# communication with array
+#ssh_hosts_key_file = /home/stack/.ssh/known_hosts
+ssh_hosts_key_file = <path to known_hosts>
+
+# IP Address and port # of the etcd instance 
+# to use for storing volume meta data
+host_etcd_ip_address = <ip-address>
+host_etcd_port_number = <port-number>
+
+# Client certificate and key details for secured
+# etcd cluster
+host_etcd_client_cert = <path to client certificate>
+host_etcd_client_key = <path to client certificate key>
+
+# OSLO based Logging level for the plugin.
+logging = INFO
+
+# Suppress Requests Library SSL warnings
+suppress_requests_ssl_warnings = <True or False>
+
+# Plugin Driver Details. All drivers must
+# specify an hpedockerplugin_driver location.
+# All other attributes are driver specific,
+# but are based directly on the OpenStack
+# Cinder configuration details.
+#hpedockerplugin_driver = hpe.hpe_3par_iscsi.HPE3PARISCSIDriver
+hpedockerplugin_driver = <path to driver class definition>
+hpe3par_api_url = <3par WSAPI URL>
+hpe3par_username = <3par WSAPI username>
+hpe3par_password = <3par WSAPI password>
+#hpe3par_debug = False
+san_ip = <SAN IP>
+san_login = <SAN username>
+san_password = <SAN password>
+hpe3par_cpg = <CPG used for volume creation>
+iscsi_ip_address = <iSCSI IP address>
+hpe3par_iscsi_chap_enabled = <True or False>
