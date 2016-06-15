@@ -127,7 +127,7 @@ sudo pip uninstall python-hpedockerplugin
 
 #### Install os-brick
 
-Currently master os-brick is required for proper functioning of the plugin.
+Install the latest os-brick from PyPi by using the following command:
 
 ```
 sudo pip install os-brick
