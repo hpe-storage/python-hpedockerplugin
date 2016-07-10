@@ -32,6 +32,8 @@ from i18n import _, _LI
 
 import exception
 import six
+import argparse
+import pdb
 
 from oslo_log import log as logging
 
@@ -45,8 +47,9 @@ CONFIG = ['--config-file', CONFIG_FILE]
 
 class HPEDockerPluginService(object):
 
-    def __init__(self):
+    def __init__(self, cfg):
         self._reactor = reactor
+	self._config_file = cfg
 
     """
     Start the Docker plugin.
@@ -77,6 +80,8 @@ class HPEDockerPluginService(object):
         UNIXAddress.port = 0
         UNIXAddress.host = b"127.0.0.1"
 
+	CONFIG = ['--config-file', self._config_file]
+
         # Setup the default, hpe3parconfig, and hpelefthandconfig
         # configuration objects.
         try:
@@ -98,18 +103,30 @@ class HPEDockerPluginService(object):
             VolumePlugin(self._reactor, hpedefaultconfig).app.resource()))
         return servicename
 
-hpedockerplugin = HPEDockerPluginService()
+	
+class HpeFactory(object):
 
-# this will hold the services that combine to form the poetry server
-top_service = service.MultiService()
+    def __init__(self, cfg):
+	self._cfg = cfg
+	print cfg
 
-hpepluginservice = hpedockerplugin.setupservice()
-hpepluginservice.setServiceParent(top_service)
+    def start_service(self):
 
-# this variable has to be named 'application'
-application = service.Application("hpedockerplugin")
 
-# this hooks the collection we made to the application
-top_service.setServiceParent(application)
+	hpedockerplugin = HPEDockerPluginService(self._cfg)
 
-LOG.info(_LI('HPE Docker Volume Plugin Successfully Started'))
+	# this will hold the services that combine to form the poetry server
+	top_service = service.MultiService()
+	#pdb.set_trace()
+
+	hpepluginservice = hpedockerplugin.setupservice()
+	hpepluginservice.setServiceParent(top_service)
+
+	# this variable has to be named 'application'
+	application = service.Application("hpedockerplugin")
+
+	# this hooks the collection we made to the application
+	hpeplugin_service = top_service.setServiceParent(application)
+
+	LOG.info(_LI('HPE Docker Volume Plugin Successfully Started'))
+	return top_service
