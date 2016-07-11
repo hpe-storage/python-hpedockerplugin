@@ -1,3 +1,5 @@
+Running the hpedockerplugin with Docker Compose:
+
 You can now start the hpedockerplugin using docker compose. Just do the following:
 
 1. git clone git@github.com:hpe-storage/python-hpedockerplugin.git
