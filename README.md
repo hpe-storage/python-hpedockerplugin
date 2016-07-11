@@ -1,3 +1,7 @@
+##Quick Start
+
+The hpedockerplugin can be started using docker-compose. See quick-start for details.
+
 ## System Requirements
 
 The plugin is supported on Ubuntu 14.04 and 16.04.
@@ -37,7 +41,7 @@ Support for Application Mobility across docker engine nodes
 
 Support for Docker Compose and Docker Swarm
 
-## Setup
+## Manual Setup
 
 #### Install and upgrade needed packages
 
