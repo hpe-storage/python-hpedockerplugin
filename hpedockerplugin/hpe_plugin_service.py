@@ -40,7 +40,7 @@ from oslo_log import log as logging
 LOG = logging.getLogger(__name__)
 
 PLUGIN_PATH = FilePath("/run/docker/plugins/hpe/hpe.sock")
-CONFIG_FILE = '../config/hpe.conf'
+CONFIG_FILE = '/etc/hpedockerplugin/hpe.conf'
 
 CONFIG = ['--config-file', CONFIG_FILE]
 
@@ -80,7 +80,10 @@ class HPEDockerPluginService(object):
         UNIXAddress.port = 0
         UNIXAddress.host = b"127.0.0.1"
 
-	CONFIG = ['--config-file', self._config_file]
+	#Turnoff use of parameterized hpe.conf and use bind mounted
+	#configuration file
+	#CONFIG = ['--config-file', self._config_file]
+	CONFIG = ['--config-file', CONFIG_FILE]
 
         # Setup the default, hpe3parconfig, and hpelefthandconfig
         # configuration objects.
