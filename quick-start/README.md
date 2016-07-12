@@ -9,3 +9,6 @@ You can now start the hpedockerplugin using docker compose. Just do the followin
 5. docker-compose up -d
 
 You should now have a containerized version of the hpedockerplugin running.
+
+IMPORTANT NOTE: when running this image on CentOS/RHEL you should not bind mount /etc/iscsi in the docker compose file. This results in "Failed to get D-Bus connection: Operation not permitted". 
+
