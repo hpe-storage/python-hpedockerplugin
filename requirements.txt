@@ -1,5 +1,5 @@
 klein>=15.1.0
-#os-brick>=0.4.0 needs to be updated once next os-brick is released.
+os-brick>=1.4.0
 python-3parclient>=4.0.0
 python-lefthandclient>=2.0.1
 sh>=1.11

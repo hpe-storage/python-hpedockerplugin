@@ -125,14 +125,6 @@ Use the following to remove the plugin:
 sudo pip uninstall python-hpedockerplugin
 ```
 
-#### Install os-brick
-
-Install the latest os-brick from PyPi by using the following command:
-
-```
-sudo pip install os-brick
-```
-
 #### Configure the plugin
 
 Sample configration files for 3PAR and StoreVirtual Lefthand are located in
