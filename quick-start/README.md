@@ -1,4 +1,4 @@
-Running the hpedockerplugin with Docker Compose:
+##Running the hpedockerplugin with Docker Compose:
 
 You can now start the hpedockerplugin using docker compose. Just do the following:
 
@@ -10,9 +10,9 @@ You can now start the hpedockerplugin using docker compose. Just do the followin
 
 You should now have a containerized version of the hpedockerplugin running.
 
-Running the hpedockerplugin on different linux distros:
+##Running the hpedockerplugin on different linux distros:
 
-Make sure to set MountFlags=shared in the docker.service. This is required to ensure the hpedockerplugin can write to /hpeplugin
+Make sure to set **MountFlags=shared** in the docker.service. This is required to ensure the hpedockerplugin can write to /hpeplugin
 
 1. CentOS/RHEL: should not bind mount /etc/iscsi in the docker compose file. This results in "Failed to get D-Bus connection: Operation not permitted". 
 
