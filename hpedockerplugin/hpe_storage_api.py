@@ -216,7 +216,10 @@ class VolumePlugin(object):
             msg = (_LE('connection info termination failed %s'),
                    six.text_type(ex))
             LOG.error(msg)
-            raise exception.HPEPluginUMountException(reason=msg)
+            # Not much we can do here, so just continue on with unmount
+            # We need to ensure we update etcd path_info so the stale
+            # path does not stay around
+            # raise exception.HPEPluginUMountException(reason=msg)
 
         # We're deferring the execution of the disconnect_volume as it can take
         # substantial

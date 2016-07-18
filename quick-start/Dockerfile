@@ -1,13 +1,10 @@
 FROM ubuntu:14.04.4
-#FROM ubuntu:latest
+
+ARG http_proxy
+ARG https_proxy
+ARG no_proxy
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV FTP_PROXY=http://proxy.houston.hpecorp.net:8080/
-ENV HTTPS_PROXY=http://proxy.houston.hpecorp.net:8080/
-ENV https_proxy=http://proxy.houston.hpecorp.net:8080/
-ENV no_proxy=localhost,127.0.0.1,10.0.0.0/16,169.254.169.254,10.50.0.0/16
-ENV HTTP_PROXY=http://proxy.houston.hpecorp.net:8080/
-ENV ftp_PROXY=http://proxy.houston.hpecorp.net:8080/
 ENV PYTHONPATH=${HOME}/python-hpedockerplugin:/root/python-hpedockerplugin
 
 ADD id_rsa /root/.ssh/id_rsa
