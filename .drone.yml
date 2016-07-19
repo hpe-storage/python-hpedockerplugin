@@ -1,0 +1,7 @@
+build:
+  create-container:
+    image: docker:1.10.3-git
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    commands:
+      - ./containerize.sh
