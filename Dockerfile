@@ -1,14 +1,7 @@
 FROM ubuntu:14.04.4
 
-ARG http_proxy
-ARG https_proxy
-ARG no_proxy
-
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONPATH=${HOME}/python-hpedockerplugin:/root/python-hpedockerplugin
-
-ADD id_rsa /root/.ssh/id_rsa
-ADD apt.conf /etc/apt/apt.conf
 
 RUN apt-get update && apt-get upgrade -y
 #ADD pre-requisites
@@ -20,7 +13,7 @@ RUN pip install pycrypto
 
 #TODO: Enable git clone instead of manual copy of hpedockerplugin repo
 #RUN git clone git@github.com:hpe-storage/python-hpedockerplugin.git 
-COPY python-hpedockerplugin /python-hpedockerplugin
+COPY . /python-hpedockerplugin
 
 WORKDIR /python-hpedockerplugin
 RUN pip install --upgrade .
