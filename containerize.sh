@@ -1,6 +1,6 @@
 #!/bin/sh -e
 
-VERSION=0.7
+VERSION=0.8
 REPO=github.com:hpe-storage/python-hpedockerplugin.git
 IMAGE_NAME=hpe/hpedockerplugin
 TAG=$IMAGE_NAME:$VERSION
