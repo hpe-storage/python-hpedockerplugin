@@ -6,7 +6,7 @@ hpedockerplugin:
   privileged: true
   volumes:
      - /dev:/dev
-     - /home/vagrant/.ssh:/root/.ssh:ro
+     - /home/vagrant/.ssh:/root/.ssh
      - /var/run/docker/plugins:/var/run/docker/plugins
      - /var/lib/docker/:/var/lib/docker
      - /hpeplugin:/hpeplugin:shared
