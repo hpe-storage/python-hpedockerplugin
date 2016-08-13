@@ -6,6 +6,8 @@ Docker 1.11 and newer is supported.
 
 Python 2.7 is supported.
 
+etcd 2.x is supported.
+
 Supported HPE 3PAR and StoreVirtual iSCSI storage arrays:
 
 - OS version support for 3PAR (3.2.1 MU2 and beyond)
