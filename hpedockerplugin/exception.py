@@ -143,6 +143,10 @@ class Invalid3PARDomain(PluginException):
     message = _("Invalid 3PAR Domain: %(err)s")
 
 
+class ConnectionError(PluginException):
+    message = _("Unable to connect to storage array/appliance: %(err)s")
+
+
 class InvalidInput(PluginException):
     message = _("Invalid input received: %(reason)s")
 
