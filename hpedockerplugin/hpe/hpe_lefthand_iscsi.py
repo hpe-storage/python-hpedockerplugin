@@ -40,8 +40,8 @@ from oslo_utils import units
 from hpedockerplugin import exception
 from hpedockerplugin.i18n import _, _LE, _LI, _LW
 
-from hpe import san_driver
-from hpe import utils as volume_utils
+from hpedockerplugin.hpe import san_driver
+from hpedockerplugin.hpe import utils as volume_utils
 
 LOG = logging.getLogger(__name__)
 
