@@ -1,12 +1,13 @@
 [DEFAULT]
 # ssh key file required for driver ssh
 # communication with array
-ssh_hosts_key_file = /home/stack/.ssh/known_hosts
+#ssh_hosts_key_file = /home/stack/.ssh/known_hosts
+ssh_hosts_key_file = <path to known_hosts>
 
 # IP Address and port # of the etcd instance 
 # to use for storing volume meta data
-host_etcd_ip_address = 10.50.177.1
-host_etcd_port_number = 2379
+host_etcd_ip_address = <ip-address>
+host_etcd_port_number = <port-number>
 
 # Client certificate and key details for secured
 # # etcd cluster
@@ -15,6 +16,9 @@ host_etcd_client_key = <path to client certificate key>
 
 # OSLO based Logging level for the plugin.
 logging = INFO
+
+# Enable lefthand client debug messages
+#hpelefthand_debug = False
 
 # Suppress Requests Library SSL warnings
 suppress_requests_ssl_warnings = <True or False>
@@ -26,9 +30,9 @@ suppress_requests_ssl_warnings = <True or False>
 # Cinder configuration details.
 #hpedockerplugin_driver = hpedockerplugin.hpe.hpe_lefthand_iscsi.HPELeftHandISCSIDriver
 hpedockerplugin_driver = <path to driver class definition>
-hpelefthand_api_url = <lefthand cluster URL>
+hpelefthand_api_url = https://<lefthand cluster VIP IP address>:8081/lhos 
 hpelefthand_clustername = <lefthand cluster name>
 hpelefthand_username = <lefthand cluster username>
 hpelefthand_password = <lefthand cluster password>
-iscsi_ip_address = <lefthand iSCSI IP address>
+iscsi_ip_address = <lefthand iSCSI VIP IP address>
 hpelefthand_iscsi_chap_enabled = <True or False>
