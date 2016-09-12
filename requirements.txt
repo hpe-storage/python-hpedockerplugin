@@ -11,3 +11,4 @@ oslo.config>=3.4.0
 twisted
 pycrypto
 service_identity
+kombu==3.0.35
