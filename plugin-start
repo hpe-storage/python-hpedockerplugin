@@ -1,0 +1,7 @@
+#!/bin/sh
+
+# Start iscsid
+/usr/sbin/iscsid start
+
+/usr/bin/twistd --nodaemon hpe_plugin_service
+

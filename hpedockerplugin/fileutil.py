@@ -28,12 +28,13 @@ from twisted.python.filepath import FilePath
 
 LOG = logging.getLogger(__name__)
 
-prefix = "/hpeplugin/hpedocker-"
+prefix = "/etc/hpedockerplugin/data/hpedocker-"
 
 
 def has_filesystem(path):
     try:
-        blkid("-p", "-u", "filesystem", path)
+        if blkid("-p", "-u", "filesystem", path) == '':
+            return False
     except Exception as ex:
         msg = (_LI('exception is : %s'), six.text_type(ex))
         LOG.info(msg)
@@ -46,7 +47,12 @@ def create_filesystem(path):
     try:
         # Create filesystem without user intervention, -F
         # NEED to be extra careful here!!!!
-        mkfs("-t", "ext4", "-F", path)
+        # mkfs("-t", "ext4", "-F", path)
+        # The containerized version of the plugin runs on Alpine
+        # and there is no default mkfs. Therefore, we link
+        # mkfs to mkfs.ext4 in our Dockerfile, so no need to
+        # specify -t ext4.
+        mkfs("-F", path)
     except Exception as ex:
         msg = (_('create file system failed exception is : %s'),
                six.text_type(ex))
@@ -106,6 +112,18 @@ def remove_dir(tgt):
     if path.exists:
         try:
             rm("-rf", tgt)
+        except Exception as ex:
+            msg = (_('exception is : %s'), six.text_type(ex))
+            LOG.error(msg)
+            raise exception.HPEPluginRemoveDirException(reason=msg)
+    return True
+
+
+def remove_file(tgt):
+    path = FilePath(tgt)
+    if path.exists:
+        try:
+            rm(tgt)
         except Exception as ex:
             msg = (_('exception is : %s'), six.text_type(ex))
             LOG.error(msg)

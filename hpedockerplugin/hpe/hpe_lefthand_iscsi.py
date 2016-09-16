@@ -40,8 +40,8 @@ from oslo_utils import units
 from hpedockerplugin import exception
 from hpedockerplugin.i18n import _, _LE, _LI, _LW
 
-from hpe import san_driver
-from hpe import utils as volume_utils
+from hpedockerplugin.hpe import san_driver
+from hpedockerplugin.hpe import utils as volume_utils
 
 LOG = logging.getLogger(__name__)
 
@@ -134,8 +134,14 @@ class HPELeftHandISCSIDriver(object):
             cluster_info = client.getClusterByName(
                 self.configuration.hpelefthand_clustername)
             self.cluster_id = cluster_info['id']
-            virtual_ips = cluster_info['virtualIPAddresses']
-            self.cluster_vip = virtual_ips[0]['ipV4Address']
+            if len(cluster_info['virtualIPAddresses']) > 0:
+                virtual_ips = cluster_info['virtualIPAddresses']
+                self.cluster_vip = virtual_ips[0]['ipV4Address']
+            else:
+                # No VIP configured, so just use first storage node IP
+                LOG.warning(_LW('VIP is not configured using node IP '))
+                ipAddrs = cluster_info['storageModuleIPAddresses']
+                self.cluster_vip = ipAddrs[0]
 
             return client
         except hpeexceptions.HTTPNotFound:
