@@ -5,7 +5,6 @@ hpedockerplugin:
   privileged: true
   volumes:
      - /dev:/dev
-     - <path-to-your-.ssh-dir>:/root/.ssh
      - /run/docker/plugins:/run/docker/plugins
      - /lib/modules:/lib/modules
      - /var/lib/docker/:/var/lib/docker
