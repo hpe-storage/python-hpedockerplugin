@@ -1,4 +1,4 @@
-FROM alpine:3.3
+FROM alpine:3.4-stable
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONPATH=${HOME}/python-hpedockerplugin:/root/python-hpedockerplugin
@@ -21,9 +21,6 @@ RUN apk add --no-cache --update \
  && rm -rf /var/cache/apk/*
 
 COPY . /python-hpedockerplugin
-
-RUN apk add --allow-untrusted --update-cache --repository http://picasso-dl360-04.vse.rdlabs.hpecorp.net:8010/alpine/packages/main open-iscsi=2.0.873-r5 \
- && rm -rf /var/cache/apk/*
 
 RUN apk add --virtual /tmp/.temp --no-cache --update \
     build-base \
