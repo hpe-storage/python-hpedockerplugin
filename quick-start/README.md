@@ -11,13 +11,6 @@ You can now start the hpedockerplugin using docker compose. Just do one of the f
 5. copy and edit the docker-compose.yml.example as appropriate to your env
 5. docker-compose up -d
 
-##Pull hpedockerplugin image from HPE Internal Docker Trusted Registry
-1. docker login hub.docker.hpecorp.net (use your NT credentials)
-2. docker pull hub.docker.hpecorp.net/hpe-storage/hpedockerplugin:0.5.4.4-1
-3. Create an hpe.conf file and place it in the directory /etc/hpedockerplugin
-4. copy and edit the docker-compose.yml.example as appropriate to your env
-5. docker-compose up -d
-
 You should now have a containerized version of the hpedockerplugin running.
 
 ##Restarting the plugin
