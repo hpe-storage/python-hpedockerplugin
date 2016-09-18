@@ -199,7 +199,7 @@ class VolumePlugin(object):
         root_helper = 'sudo'
         use_multipath = False
 
-        connector_info = self.connector.get_connector_properties(
+        connector_info = connector.get_connector_properties(
             root_helper, self._my_ip, use_multipath, enforce_multipath=False)
         # unmount directory
         fileutil.umount_dir(mount_dir)
@@ -391,7 +391,7 @@ class VolumePlugin(object):
         root_helper = 'sudo'
         use_multipath = False
 
-        connector_info = self.connector.get_connector_properties(
+        connector_info = connector.get_connector_properties(
             root_helper, self._my_ip, use_multipath, enforce_multipath=False)
 
         try:
