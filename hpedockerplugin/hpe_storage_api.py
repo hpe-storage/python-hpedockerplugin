@@ -199,6 +199,8 @@ class VolumePlugin(object):
         root_helper = 'sudo'
         use_multipath = False
 
+        #TODO: Review the use of self.connector. When just using connector
+        #umounts don't always cleanup device files. In particular, on CoreOS.
         connector_info = self.connector.get_connector_properties(
             root_helper, self._my_ip, use_multipath, enforce_multipath=False)
         # unmount directory
@@ -394,7 +396,10 @@ class VolumePlugin(object):
         root_helper = 'sudo'
         use_multipath = False
 
-        connector_info = self.connector.get_connector_properties(
+        #TODO: Need to understand why self.connector does not return 
+        #all the correct properties. In particular, host property.
+        #This causes the driver to fail to get connection properties.
+        connector_info = connector.get_connector_properties(
             root_helper, self._my_ip, use_multipath, enforce_multipath=False)
 
         try:
