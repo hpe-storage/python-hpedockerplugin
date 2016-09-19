@@ -206,6 +206,16 @@ class VolumePlugin(object):
         # remove directory
         fileutil.remove_dir(mount_dir)
 
+        # We're deferring the execution of the disconnect_volume as it can take
+        # substantial
+        # time (over 2 minutes) to cleanup the iscsi files
+        if connection_info:
+            LOG.info(_LI('call os brick to disconnect volume'))
+            d = threads.deferToThread(self.connector.disconnect_volume,
+                                      connection_info['data'], None)
+            d.addCallbacks(self.disconnect_volume_callback,
+                           self.disconnect_volume_error_callback)
+
         try:
             # Call driver to terminate the connection
             self.hpeplugin_driver.terminate_connection(vol, connector_info)
@@ -220,21 +230,6 @@ class VolumePlugin(object):
             # We need to ensure we update etcd path_info so the stale
             # path does not stay around
             # raise exception.HPEPluginUMountException(reason=msg)
-
-        # We're deferring the execution of the disconnect_volume as it can take
-        # substantial
-        # time (over 2 minutes) to cleanup the iscsi files
-        if connection_info:
-            LOG.info(_LI('call os brick to disconnect volume'))
-            d = threads.deferToThread(self.connector.disconnect_volume,
-                                      connection_info['data'], None)
-            d.addCallbacks(self.disconnect_volume_callback,
-                           self.disconnect_volume_error_callback)
-
-        # TODO(leeantho) Without this sleep the volume is sometimes not
-        # removed after the unmount. There must be a different way to fix
-        # the issue?
-        time.sleep(1)
 
         # TODO: Create path_info list as we can mount the volume to multiple
         # hosts at the same time.
