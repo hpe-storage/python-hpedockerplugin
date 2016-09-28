@@ -7,9 +7,14 @@ You can now start the hpedockerplugin using docker compose. Just do one of the f
 2. cd python-hpedockerplugin/quick-start
 3. run ./containerize.sh
 4. tag the image (e.g. docker tag <image-id> myhpedockerplugin:latest
-4. Create an hpe.conf file and place it in the directory /etc/hpedockerplugin
-5. copy and edit the docker-compose.yml.example as appropriate to your env
-5. docker-compose up -d
+5. Create an hpe.conf file and place it in the directory /etc/hpedockerplugin
+6. copy and edit the docker-compose.yml.example as appropriate to your env
+7. docker-compose up -d
+
+##Run the container using a already created image
+1. Create an hpe.conf file and place it in the directory /etc/hpedockerplugin
+2. copy and edit the docker-compose.yml.example as appropriate to your env (with appropriate image name)
+3. docker-compose up -d
 
 You should now have a containerized version of the hpedockerplugin running.
 
