@@ -11,7 +11,7 @@ You can now start the hpedockerplugin using docker compose. Just do one of the f
 6. copy and edit the docker-compose.yml.example as appropriate to your env
 7. docker-compose up -d
 
-##Run the container using a already created image
+##Run the container using an existing hpedockerplugin container image
 1. Create an hpe.conf file and place it in the directory /etc/hpedockerplugin
 2. copy and edit the docker-compose.yml.example as appropriate to your env (with appropriate image name)
 3. docker-compose up -d
