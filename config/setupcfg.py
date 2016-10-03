@@ -38,6 +38,12 @@ host_opts = [
     cfg.StrOpt('logging',
                default='WARNING',
                help='Debug level for hpe docker volume plugin'),
+    cfg.StrOpt('use_multipath',
+               default=False,
+               help='Toggle use of multipath for volume attachments.'),
+    cfg.StrOpt('enforce_multipath',
+               default=False,
+               help='Toggle enforcing of multipath for volume attachments.'),
 ]
 
 CONF = cfg.CONF

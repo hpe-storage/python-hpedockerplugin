@@ -37,3 +37,5 @@ san_password = <SAN password>
 hpe3par_cpg = <CPG used for volume creation>
 iscsi_ip_address = <iSCSI IP address>
 hpe3par_iscsi_chap_enabled = <True or False>
+use_multipath = <True or False>
+enforce_multipath = <True or False>

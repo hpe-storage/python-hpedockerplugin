@@ -92,12 +92,14 @@ class VolumePlugin(object):
             self._hpepluginconfig.host_etcd_client_cert,
             self._hpepluginconfig.host_etcd_client_key)
 
-        # TODO: make use_multipath and device_scan_attempts configurable
+        # TODO: make device_scan_attempts configurable
         # see nova/virt/libvirt/volume/iscsi.py
         root_helper = 'sudo'
+        self.use_multipath = self._hpepluginconfig.use_multipath
+        self.enforce_multipath = self._hpepluginconfig.enforce_multipath
         self.connector = connector.InitiatorConnector.factory(
-            'ISCSI', root_helper, use_multipath=False, device_scan_attempts=5,
-            transport='default')
+            'ISCSI', root_helper, use_multipath=self.use_multipath,
+            device_scan_attempts=5, transport='default')
 
     def disconnect_volume_callback(self, connector_info):
         LOG.info(_LI('In disconnect_volume_callback: connector info is %s'),
@@ -197,10 +199,10 @@ class VolumePlugin(object):
         # Get connector info from OS Brick
         # TODO: retrieve use_multipath and enforce_multipath from config file
         root_helper = 'sudo'
-        use_multipath = False
 
         connector_info = connector.get_connector_properties(
-            root_helper, self._my_ip, use_multipath, enforce_multipath=False)
+            root_helper, self._my_ip, self.use_multipath,
+            enforce_multipath=self.enforce_multipath)
         # unmount directory
         fileutil.umount_dir(mount_dir)
         # remove directory
@@ -387,10 +389,10 @@ class VolumePlugin(object):
         # Get connector info from OS Brick
         # TODO: retrieve use_multipath and enforce_multipath from config file
         root_helper = 'sudo'
-        use_multipath = False
 
         connector_info = connector.get_connector_properties(
-            root_helper, self._my_ip, use_multipath, enforce_multipath=False)
+            root_helper, self._my_ip, self.use_multipath,
+            enforce_multipath=self.enforce_multipath)
 
         try:
             # Call driver to initialize the connection
