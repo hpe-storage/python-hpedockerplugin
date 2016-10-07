@@ -1,7 +1,7 @@
 [DEFAULT]
 # ssh key file required for driver ssh
 # communication with array
-#ssh_hosts_key_file = /root/.ssh/known_hosts
+#ssh_hosts_key_file = /home/stack/.ssh/known_hosts
 ssh_hosts_key_file = <path to known_hosts>
 
 # IP Address and port # of the etcd instance 
