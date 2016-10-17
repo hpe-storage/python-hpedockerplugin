@@ -43,7 +43,13 @@ Support for Docker Compose and Docker Swarm
 
 - Multiple attachments to the same volume is currently unsupported.
 
-## Setup
+## Container-based Deployment steps
+
+[See quickstart instructions](https://github.com/hpe-storage/python-hpedockerplugin/tree/alpine/quick-start)
+
+## Manual Deployment Steps
+
+NOTE: If you run the Container based deployment steps you do NOT need to run through the manual deployment steps below.
 
 #### Install and upgrade needed packages
 
