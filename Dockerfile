@@ -12,6 +12,8 @@ RUN apk add --no-cache --update \
     py-setuptools \
     python \
     sysfsutils \
+    util-linux \
+    eudev \
 	sudo \
  && apk update \
  && apk upgrade \
@@ -54,7 +56,7 @@ RUN apk add --virtual /tmp/.temp --no-cache --update \
 # We need to have a link to mkfs so that our fileutil module does not error when 
 # importing mkfs from the sh module. e2fsprogs does not this by default.
 # TODO: Should be a way to fix in our python module
-RUN ln -s /sbin/mkfs.ext4 /sbin/mkfs
+#RUN ln -s /sbin/mkfs.ext4 /sbin/mkfs
 
 # create known_hosts file for ssh
 RUN mkdir -p /root/.ssh
