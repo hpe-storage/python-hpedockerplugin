@@ -40,10 +40,10 @@ import six
 from hpedockerplugin import exception
 from hpedockerplugin.i18n import _, _LW
 
-from hpe import hpe_3par_common as hpecommon
+from hpedockerplugin.hpe import hpe_3par_common as hpecommon
 
-from hpe import san_driver
-from hpe import utils as volume_utils
+from hpedockerplugin.hpe import san_driver
+from hpedockerplugin.hpe import utils as volume_utils
 
 LOG = logging.getLogger(__name__)
 DEFAULT_ISCSI_PORT = 3260

@@ -1,0 +1,18 @@
+#!/bin/sh
+
+multipath=`grep use_multipath /etc/hpedockerplugin/hpe.conf`
+turnonmultipath=`echo $multipath | cut -d \= -f 2`
+
+# Start iscsid and multipathd
+/usr/sbin/iscsid start
+
+if [[ "$turnonmultipath" == "True" ]]
+then
+        echo "Multipath configured: Turn on multipath services"
+        /sbin/multipathd
+        /sbin/udevd &
+else
+        echo "Multipath NOT configured: DO NO turn on multipath services"
+fi
+
+/usr/bin/twistd --nodaemon hpe_plugin_service

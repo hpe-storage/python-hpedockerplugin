@@ -92,12 +92,14 @@ class VolumePlugin(object):
             self._hpepluginconfig.host_etcd_client_cert,
             self._hpepluginconfig.host_etcd_client_key)
 
-        # TODO: make use_multipath and device_scan_attempts configurable
+        # TODO: make device_scan_attempts configurable
         # see nova/virt/libvirt/volume/iscsi.py
         root_helper = 'sudo'
+        self.use_multipath = self._hpepluginconfig.use_multipath
+        self.enforce_multipath = self._hpepluginconfig.enforce_multipath
         self.connector = connector.InitiatorConnector.factory(
-            'ISCSI', root_helper, use_multipath=False, device_scan_attempts=5,
-            transport='default')
+            'ISCSI', root_helper, use_multipath=self.use_multipath,
+            device_scan_attempts=5, transport='default')
 
     def disconnect_volume_callback(self, connector_info):
         LOG.info(_LI('In disconnect_volume_callback: connector info is %s'),
@@ -197,26 +199,14 @@ class VolumePlugin(object):
         # Get connector info from OS Brick
         # TODO: retrieve use_multipath and enforce_multipath from config file
         root_helper = 'sudo'
-        use_multipath = False
 
         connector_info = connector.get_connector_properties(
-            root_helper, self._my_ip, use_multipath, enforce_multipath=False)
+            root_helper, self._my_ip, multipath=self.use_multipath,
+            enforce_multipath=self.enforce_multipath)
         # unmount directory
         fileutil.umount_dir(mount_dir)
         # remove directory
         fileutil.remove_dir(mount_dir)
-
-        try:
-            # Call driver to terminate the connection
-            self.hpeplugin_driver.terminate_connection(vol, connector_info)
-            LOG.info(_LI('connection_info: %(connection_info)s, '
-                         'was successfully terminated'),
-                     {'connection_info': json.dumps(connection_info)})
-        except Exception as ex:
-            msg = (_LE('connection info termination failed %s'),
-                   six.text_type(ex))
-            LOG.error(msg)
-            raise exception.HPEPluginUMountException(reason=msg)
 
         # We're deferring the execution of the disconnect_volume as it can take
         # substantial
@@ -228,10 +218,20 @@ class VolumePlugin(object):
             d.addCallbacks(self.disconnect_volume_callback,
                            self.disconnect_volume_error_callback)
 
-        # TODO(leeantho) Without this sleep the volume is sometimes not
-        # removed after the unmount. There must be a different way to fix
-        # the issue?
-        time.sleep(1)
+        try:
+            # Call driver to terminate the connection
+            self.hpeplugin_driver.terminate_connection(vol, connector_info)
+            LOG.info(_LI('connection_info: %(connection_info)s, '
+                         'was successfully terminated'),
+                     {'connection_info': json.dumps(connection_info)})
+        except Exception as ex:
+            msg = (_LE('connection info termination failed %s'),
+                   six.text_type(ex))
+            LOG.error(msg)
+            # Not much we can do here, so just continue on with unmount
+            # We need to ensure we update etcd path_info so the stale
+            # path does not stay around
+            # raise exception.HPEPluginUMountException(reason=msg)
 
         # TODO: Create path_info list as we can mount the volume to multiple
         # hosts at the same time.
@@ -389,10 +389,10 @@ class VolumePlugin(object):
         # Get connector info from OS Brick
         # TODO: retrieve use_multipath and enforce_multipath from config file
         root_helper = 'sudo'
-        use_multipath = False
 
         connector_info = connector.get_connector_properties(
-            root_helper, self._my_ip, use_multipath, enforce_multipath=False)
+            root_helper, self._my_ip, multipath=self.use_multipath,
+            enforce_multipath=self.enforce_multipath)
 
         try:
             # Call driver to initialize the connection
