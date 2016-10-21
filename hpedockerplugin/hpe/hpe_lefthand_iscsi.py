@@ -40,8 +40,8 @@ from oslo_utils import units
 from hpedockerplugin import exception
 from hpedockerplugin.i18n import _, _LE, _LI, _LW
 
-from hpe import san_driver
-from hpe import utils as volume_utils
+from hpedockerplugin.hpe import san_driver
+from hpedockerplugin.hpe import utils as volume_utils
 
 LOG = logging.getLogger(__name__)
 
@@ -139,10 +139,10 @@ class HPELeftHandISCSIDriver(object):
 
             return client
         except hpeexceptions.HTTPNotFound:
-            raise exception.DriverNotInitialized(
+            raise exception.ConnectionError(
                 _('LeftHand cluster not found'))
         except Exception as ex:
-            raise exception.DriverNotInitialized(ex)
+            raise exception.ConnectionError(ex)
 
     def _logout(self, client):
         client.logout()
