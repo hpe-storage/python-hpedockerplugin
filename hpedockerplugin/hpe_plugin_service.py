@@ -18,7 +18,7 @@ Command to start up the Docker plugin.
 from config.setupcfg import getdefaultconfig, setup_logging
 from hpe_storage_api import VolumePlugin
 
-from os import umask
+from os import umask, remove
 from stat import S_IRUSR, S_IWUSR, S_IXUSR
 
 from twisted.internet import reactor
@@ -32,21 +32,32 @@ from i18n import _, _LI
 
 import exception
 import six
+import argparse
+import pdb
 
 from oslo_log import log as logging
 
 LOG = logging.getLogger(__name__)
 
 PLUGIN_PATH = FilePath("/run/docker/plugins/hpe/hpe.sock")
-CONFIG_FILE = '../config/hpe.conf'
+CONFIG_FILE = '/etc/hpedockerplugin/hpe.conf'
 
 CONFIG = ['--config-file', CONFIG_FILE]
 
 
 class HPEDockerPluginService(object):
 
-    def __init__(self):
+    def __init__(self, cfg):
         self._reactor = reactor
+        self._config_file = cfg
+
+        # Set a cleanup function when reactor stops
+        reactor.addSystemEventTrigger("before", "shutdown", self._cleanup)
+
+    def _cleanup(self):
+        LOG.info(_LI('HPE Docker Volume Plugin Shutdown'))
+        remove(PLUGIN_PATH.path)
+        remove(PLUGIN_PATH.path + ".lock")
 
     """
     Start the Docker plugin.
@@ -77,6 +88,11 @@ class HPEDockerPluginService(object):
         UNIXAddress.port = 0
         UNIXAddress.host = b"127.0.0.1"
 
+        # Turnoff use of parameterized hpe.conf and use bind mounted
+        # configuration file
+        # CONFIG = ['--config-file', self._config_file]
+        CONFIG = ['--config-file', CONFIG_FILE]
+
         # Setup the default, hpe3parconfig, and hpelefthandconfig
         # configuration objects.
         try:
@@ -98,18 +114,26 @@ class HPEDockerPluginService(object):
             VolumePlugin(self._reactor, hpedefaultconfig).app.resource()))
         return servicename
 
-hpedockerplugin = HPEDockerPluginService()
 
-# this will hold the services that combine to form the poetry server
-top_service = service.MultiService()
+class HpeFactory(object):
 
-hpepluginservice = hpedockerplugin.setupservice()
-hpepluginservice.setServiceParent(top_service)
+    def __init__(self, cfg):
+        self._cfg = cfg
+        print cfg
 
-# this variable has to be named 'application'
-application = service.Application("hpedockerplugin")
+    def start_service(self):
+        hpedockerplugin = HPEDockerPluginService(self._cfg)
 
-# this hooks the collection we made to the application
-top_service.setServiceParent(application)
+        # this will hold the services that combine to form the poetry server
+        top_service = service.MultiService()
 
-LOG.info(_LI('HPE Docker Volume Plugin Successfully Started'))
+        hpepluginservice = hpedockerplugin.setupservice()
+        hpepluginservice.setServiceParent(top_service)
+
+        # this variable has to be named 'application'
+        application = service.Application("hpedockerplugin")
+
+        # this hooks the collection we made to the application
+        hpeplugin_service = top_service.setServiceParent(application)
+
+        return top_service

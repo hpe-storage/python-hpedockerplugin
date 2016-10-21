@@ -1,7 +1,7 @@
 [DEFAULT]
 # ssh key file required for driver ssh
 # communication with array
-#ssh_hosts_key_file = /home/stack/.ssh/known_hosts
+#ssh_hosts_key_file = /root/.ssh/known_hosts
 ssh_hosts_key_file = <path to known_hosts>
 
 # IP Address and port # of the etcd instance 
@@ -39,3 +39,5 @@ san_password = <SAN password>
 hpe3par_cpg = <CPG name used for volume creation>
 iscsi_ip_address = <iSCSI IP address>
 hpe3par_iscsi_chap_enabled = <True or False>
+use_multipath = <True or False>
+enforce_multipath = <True or False>
