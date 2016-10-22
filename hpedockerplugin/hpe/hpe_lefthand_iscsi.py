@@ -145,10 +145,10 @@ class HPELeftHandISCSIDriver(object):
 
             return client
         except hpeexceptions.HTTPNotFound:
-            raise exception.DriverNotInitialized(
+            raise exception.ConnectionError(
                 _('LeftHand cluster not found'))
         except Exception as ex:
-            raise exception.DriverNotInitialized(ex)
+            raise exception.ConnectionError(ex)
 
     def _logout(self, client):
         client.logout()
