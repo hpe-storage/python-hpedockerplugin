@@ -6,7 +6,7 @@ The HPE Docker Volume Plugin is open source software that provides persistent bl
 The following diagram illustrates the 
 
 
-![HPE Docker Volume Plugin](/docs/pics/HPE-DockerVolumePluginOverview.png "Storage Overview")
+![HPE Docker Volume Plugin](docs/pics/HPE-DockerVolumePluginOverview.png "Storage Overview")
 
 ## System Requirements
 
