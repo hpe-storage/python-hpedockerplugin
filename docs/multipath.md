@@ -27,3 +27,7 @@ hpedockerplugin:
       - /etc/multipath.conf:/etc/multipath.conf
       - /etc/iscsi/iscsid.conf:/etc/iscsi/iscsid.conf
 ```
+
+IMPORTANT NOTE:
+
+Multipath support with the HPE Docker Volume Plugin requires that the open-iscsi and multipath-tools packages are NOT installed on the host running the containerized verison of the plugin. This will cause unexpected behavior with both volume mount and unmount operations performed by the containerized plugin.

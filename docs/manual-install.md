@@ -1,5 +1,7 @@
 ## Manual Deployment Steps
 
+Manual deployment is currently only supported with the v1.0.0 version of the plugin. Using these steps with versions starting at v1.1.0 is NOT supported.
+
 NOTE: If you run the Container based deployment steps you do NOT need to run through the manual deployment steps below.
 
 #### Install and upgrade needed packages
@@ -63,7 +65,7 @@ sudo docker run -d -v /usr/share/ca-certificates/:/etc/ssl/certs -p 4001:4001 \
 -initial-cluster-state new
 ```
 
-For more information on etcd:
+For more information on setting up an etcd cluster see:
 
 https://github.com/coreos/etcd/releases/
 
