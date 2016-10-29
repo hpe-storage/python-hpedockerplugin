@@ -1,6 +1,6 @@
 ## HPE Docker Volume Plugin
 
-The HPE Docker Volume Plugin is open source software that provides persistent block storage for containerized applications. 
+The HPE Docker Volume Plugin is open source software that provides persistent block storage for containerized applications using HPE 3PAR StoreServ or HPE StoreVirtual Storage. 
 
 ## HPE Docker Volume Plugin Overview
 The following diagram illustrates the HPE Docker Volume Plugin configured on multiple hosts in a Docker cluster. The plugin is now deployed as a Docker container making it much easier to manage alongside containerized applications. See the [quick start instructions] (/quick-start/README.md) for details on how to deploy the plugin container.
@@ -15,10 +15,10 @@ The following diagram illustrates the HPE Docker Volume Plugin configured on mul
   * Manually installing the plugin [manual deployment instructions] (docs/manual-install.md)
 
 
-## Releases
+## Supported Features by Release
 
   * [Release v1.0.0] (/docs/releases/release-v1.0.0.md)
-  * [Release v1.1.0] (/docs/releases/release-v1.0.0.md)
+  * [Release v1.1.0] (/docs/releases/release-v1.1.0.md)
 
 ## Usage
 

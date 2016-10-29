@@ -18,3 +18,4 @@ Supported HPE 3PAR and StoreVirtual clients:
 - python-3parclient version 4.0.0 or newer
 - python-lefthandclient version 2.0.0 or newer
 
+NOTE: Client support only applies when using the manual install instructions.
