@@ -27,6 +27,11 @@ sudo docker run -d -v /usr/share/ca-certificates/:/etc/ssl/certs -p 4001:4001 \
 -initial-cluster etcd0=http://${HostIP}:2380 \
 -initial-cluster-state new
 ```
+For more information on setting up an etcd cluster see:
+
+https://github.com/coreos/etcd/releases/
+
+Note: The etcd version used here is v2.2.0. Versions of etcd beyond v2.x require changes the the above command.
 
 ## Setup the plugin Configuration file
 
@@ -66,13 +71,6 @@ You can now start the hpedockerplugin using docker compose. Just do one of the f
 3. docker-compose up -d
 
 You should now have a containerized version of the hpedockerplugin running.
-
-For more information on setting up an etcd cluster see:
-
-https://github.com/coreos/etcd/releases/
-
-Note: The etcd version used here is v2.2.0. Versions of etcd beyond v2.x require changes the the above command.
-
 
 ##Restarting the plugin
 IMPORTANT NOTE: The /run/docker/plugins/hpe/hpe.sock and /run/docker/plugins/hpe/hpe.sock.lock files are not automatically removed when you stop the container. Therefore, these files will need to be removed between each run of the plugin.
