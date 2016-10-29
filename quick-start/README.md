@@ -37,15 +37,14 @@ the **config/hpe.conf.sample.xxx** files.
 
 StoreVirtual Lefthand: **config/hpe.conf.sample.lefthand**
 
-Copy one of the sample configs into **/etc/hpedockerplugin/hpe.conf** and modify the
-template with desired settings:
-
 ```
 <starting from plugin folder>
 cd config
 cp <sample_file> hpe.conf
 <edit hpe.conf>
 ```
+
+Copy the edited configs into **/etc/hpedockerplugin/hpe.conf**.
 
 
 #Running the hpedockerplugin with Docker Compose:
