@@ -28,6 +28,25 @@ sudo docker run -d -v /usr/share/ca-certificates/:/etc/ssl/certs -p 4001:4001 \
 -initial-cluster-state new
 ```
 
+## Setup the plugin Configuration file
+
+Sample configration files for 3PAR and StoreVirtual Lefthand are located in
+the **config/hpe.conf.sample.xxx** files.
+
+3PAR iSCSI: **config/hpe.conf.sample.3par**
+
+StoreVirtual Lefthand: **config/hpe.conf.sample.lefthand**
+
+Copy one of the sample configs into **/etc/hpedockerplugin/hpe.conf** and modify the
+template with desired settings:
+
+```
+<starting from plugin folder>
+cd config
+cp <sample_file> hpe.conf
+<edit hpe.conf>
+```
+
 
 #Running the hpedockerplugin with Docker Compose:
 
