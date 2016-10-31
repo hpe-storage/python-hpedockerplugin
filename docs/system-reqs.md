@@ -8,7 +8,7 @@ Versions starting at v1.1.0 have been tested and are supported on the following 
 - CoreOS 1122.3.0 and beyond
 - CentOS 7 and beyond
 
-Although the plugin software is supported on these linux distributions, you will need to consult the Hewlett Packard Enterprise Single Point of Connectivity Knowledge for HPE Storage Products for specific details about which operating systems are supported by HPE 3PAR StoreServ and StoreVirtual Storage products (https://www.hpe.com/storage/spock).
+Although the plugin software is supported on these linux distributions, you should consult the Hewlett Packard Enterprise Single Point of Connectivity Knowledge (SPOCK) for HPE Storage Products for specific details about which operating systems are supported by HPE 3PAR StoreServ and StoreVirtual Storage products (https://www.hpe.com/storage/spock).
 
 NOTE: Although other linux distributions have not been tested, the containerized version of the plugin should work as well.
 
