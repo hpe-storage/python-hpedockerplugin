@@ -1,4 +1,4 @@
-## Contributors
+## Contributions
 
 This section describes steps that should be done when creating contributions for this plugin.
 

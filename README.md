@@ -32,5 +32,5 @@ Troubleshooting issues with the plugin can be performed using these [tips] (/doc
 
 This section describes steps that should be done when creating contributions for this plugin.
 
-Review the [Contributors instructions] (/docs/contribute.md) 
+Review the [Contribution instructions] (/docs/contribute.md) 
 
