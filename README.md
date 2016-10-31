@@ -28,7 +28,7 @@ See the [usage instructions] (/docs/usage.md) for details on the supported opera
 
 Troubleshooting issues with the plugin can be performed using these [tips] (/docs/troubleshooting.md) 
 
-## Contributors
+## Contributions
 
 This section describes steps that should be done when creating contributions for this plugin.
 
