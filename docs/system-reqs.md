@@ -21,6 +21,8 @@ Supported HPE 3PAR and StoreVirtual iSCSI storage arrays:
 - OS version support for 3PAR (3.2.1 MU2 and beyond)
 - OS version support for StoreVirtual (11.5 and beyond)
 
+NOTE: 3PAR FC support is currently not available.
+
 Supported HPE 3PAR and StoreVirtual clients:
 
 - python-3parclient version 4.0.0 or newer
