@@ -6,7 +6,7 @@ The HPE Docker Volume Plugin is open source software that provides persistent bl
 The following diagram illustrates the HPE Docker Volume Plugin configured on multiple hosts in a Docker cluster. The plugin is now deployed as a Docker container making it much easier to manage alongside containerized applications. See the [quick start instructions] (/quick-start/README.md) for details on how to deploy the plugin container.
 
 
-![HPE Docker Volume Plugin](/docs/pics/HPE-DockerVolumePlugin-Overview.png "Storage Overview")
+![HPE Docker Volume Plugin](/docs/img/HPE-DockerVolumePlugin-Overview.png "Storage Overview")
 
 ## Install and Quick Start instructions
 
