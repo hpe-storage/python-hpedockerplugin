@@ -28,8 +28,10 @@ suppress_requests_ssl_warnings = <True or False>
 # All other attributes are driver specific,
 # but are based directly on the OpenStack
 # Cinder configuration details.
-#hpedockerplugin_driver = hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver
-hpedockerplugin_driver = <path to driver class definition>
+# DO NOT change the hpedockerplugin_driver for this sample file. It is already
+# set to the correct value
+hpedockerplugin_driver = hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver
+
 hpe3par_api_url = https://<3PAR IP address>:8080/api/v1
 hpe3par_username = <3par WSAPI username>
 hpe3par_password = <3par WSAPI password>

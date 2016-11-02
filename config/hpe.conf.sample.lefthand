@@ -27,8 +27,10 @@ suppress_requests_ssl_warnings = <True or False>
 # All other attributes are driver specific,
 # but are based directly on the OpenStack
 # Cinder configuration details.
-#hpedockerplugin_driver = hpedockerplugin.hpe.hpe_lefthand_iscsi.HPELeftHandISCSIDriver
-hpedockerplugin_driver = <path to driver class definition>
+# DO NOT change the hpedockerplugin_driver for this sample file. It is already
+# set to the correct value
+hpedockerplugin_driver = hpedockerplugin.hpe.hpe_lefthand_iscsi.HPELeftHandISCSIDriver
+
 hpelefthand_api_url = https://<lefthand cluster VIP IP address>:8081/lhos 
 hpelefthand_clustername = <lefthand cluster name>
 hpelefthand_username = <lefthand cluster username>

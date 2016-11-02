@@ -1,3 +1,57 @@
+# Deploying the HPE Docker Volume Plugin as a Docker Container
+
+Starting with release v1.1.0 the plugin can now be deployed as a Docker Container. 
+
+NOTE: Manual deployment is NOT supported with releases v1.1.0 and beyond.
+
+## Install etcd
+
+First create an export for your local IP:
+
+```
+export HostIP="<your host IP>"
+```
+
+Then run the following command to create an etcd container in Docker:
+
+```
+sudo docker run -d -v /usr/share/ca-certificates/:/etc/ssl/certs -p 4001:4001 \
+-p 2380:2380 -p 2379:2379 \
+--name etcd quay.io/coreos/etcd:v2.2.0 \
+-name etcd0 \
+-advertise-client-urls http://${HostIP}:2379,http://${HostIP}:4001 \
+-listen-client-urls http://0.0.0.0:2379,http://0.0.0.0:4001 \
+-initial-advertise-peer-urls http://${HostIP}:2380 \
+-listen-peer-urls http://0.0.0.0:2380 \
+-initial-cluster-token etcd-cluster-1 \
+-initial-cluster etcd0=http://${HostIP}:2380 \
+-initial-cluster-state new
+```
+For more information on setting up an etcd cluster see:
+
+https://github.com/coreos/etcd/releases/
+
+Note: The etcd version used here is v2.2.0. Versions of etcd beyond v2.x require changes the the above command.
+
+## Setup the plugin Configuration file
+
+Sample configration files for 3PAR and StoreVirtual Lefthand are located in
+the **config/hpe.conf.sample.xxx** files.
+
+3PAR iSCSI: **config/hpe.conf.sample.3par**
+
+StoreVirtual Lefthand: **config/hpe.conf.sample.lefthand**
+
+```
+<starting from plugin folder>
+cd config
+cp <sample_file> hpe.conf
+<edit hpe.conf>
+```
+
+Copy the edited configs into **/etc/hpedockerplugin/hpe.conf**.
+
+
 #Running the hpedockerplugin with Docker Compose:
 
 You can now start the hpedockerplugin using docker compose. Just do one of the following:
