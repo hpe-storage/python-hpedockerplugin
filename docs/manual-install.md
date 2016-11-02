@@ -65,6 +65,8 @@ sudo docker run -d -v /usr/share/ca-certificates/:/etc/ssl/certs -p 4001:4001 \
 -initial-cluster-state new
 ```
 
+NOTE: If you want to save your etcd data you'll need to use the docker -v option to specify a local directory (or external volume) to save your data. In addition, if you are configuring an etcd cluster then you need to you "existing" instead of "new" if you want a specific node to rejoing an existing cluster.
+
 For more information on setting up an etcd cluster see:
 
 https://github.com/coreos/etcd/releases/
