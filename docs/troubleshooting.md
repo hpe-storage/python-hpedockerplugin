@@ -2,6 +2,11 @@
 
 This section contains solutions to common problems that may arise during the setup and usage of the plugin.
 
+#### iSCSI Connection Errors
+The HPE Docker Volume Plugin must run on the host netowrk in order for iSCSI connections to work properly. Otherwise, unexpected iSCSI errors will occur if you run the plugin on a non-host network.
+
+NOTE: Create and Delete operations will work fine when running the plugin on a non-host network. However, subsequent iSCSI attach operations will fail on those volumes (if the plugin is not on the host network).
+
 #### SSH Host Keys File
 
 Make sure the file path used for the ssh_hosts_key_file exists. The suggested default is the known hosts file located at /home/stack/.ssh/known_hosts but that may not actually exist yet on a system. The easiest way to create this file is to do the following:
