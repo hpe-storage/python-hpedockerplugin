@@ -5,7 +5,7 @@ hpedockerplugin:
   privileged: true
   volumes:
      - /dev:/dev
-     - /run/docker/plugins:/run/docker/plugins
+     - /run/docker/plugins:/run/docker/plugins:rw
      - /lib/modules:/lib/modules
      - /var/lib/docker/:/var/lib/docker
      - /etc/hpedockerplugin/data:/etc/hpedockerplugin/data:shared
