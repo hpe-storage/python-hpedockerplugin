@@ -58,7 +58,7 @@ You can now start the hpedockerplugin using docker compose. Just do one of the f
 
 ##Build and run the container image from source
 1. git clone git@github.com:hpe-storage/python-hpedockerplugin.git
-2. cd python-hpedockerplugin/quick-start
+2. cd python-hpedockerplugin
 3. run ./containerize.sh
 4. tag the image (e.g. docker tag <image-id> myhpedockerplugin:latest
 5. Create an hpe.conf file and place it in the directory /etc/hpedockerplugin
