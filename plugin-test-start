@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# Start iscsid
+/usr/sbin/iscsid start
+
+cd test
+
+trial hpe_plugin_service
