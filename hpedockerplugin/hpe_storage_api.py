@@ -293,7 +293,8 @@ class VolumePlugin(object):
         volname = contents['Name']
 
         # Verify valid Opts arguments.
-        valid_volume_create_opts = ['size', 'provisioning', 'flash-cache']
+        valid_volume_create_opts = ['mount-volume',
+                                    'size', 'provisioning', 'flash-cache']
         if ('Opts' in contents and contents['Opts']):
             for key in contents['Opts']:
                 if key not in valid_volume_create_opts:
@@ -487,8 +488,8 @@ class VolumePlugin(object):
         self._etcd.update_vol(volid, 'path_info', json.dumps(path_info))
 
         response = json.dumps({u"Err": '', u"Name": volname,
-                   u"Mountpoint": mount_dir,
-                   u"Devicename": path.path})
+                               u"Mountpoint": mount_dir,
+                               u"Devicename": path.path})
         return response
 
     @app.route("/VolumeDriver.Path", methods=["POST"])
@@ -546,7 +547,8 @@ class VolumePlugin(object):
             mountdir = ''
             devicename = ''
 
-        volume = {'Name': volname,
+        # use volinfo as volname could be partial match
+        volume = {'Name': volinfo['display_name'],
                   'Mountpoint': mountdir,
                   "Devicename": devicename,
                   'Status': {}}

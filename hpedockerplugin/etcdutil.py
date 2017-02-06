@@ -93,7 +93,9 @@ class EtcdUtil(object):
         for child in volumes.children:
             if child.key != VOLUMEROOT:
                 volmember = json.loads(child.value)
-                if volmember['display_name'] == volname:
+                vol = volmember['display_name']
+                if vol.startswith(volname, 0, len(volname)):
+                    #                if volmember['display_name'] == volname:
                     return volmember
                 elif volmember['name'] == volname:
                     return volmember
