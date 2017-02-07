@@ -37,12 +37,13 @@ RUN apk add --virtual /tmp/.temp --no-cache --update \
     python-dev \
 
 # Need different version of pyasn1 for iscsi to work properly
- && wget https://pypi.python.org/packages/f7/83/377e3dd2e95f9020dbd0dfd3c47aaa7deebe3c68d3857a4e51917146ae8b/pyasn1-0.1.9.tar.gz \
+# && wget https://pypi.python.org/packages/6a/cc/5878c5f2e5043a526653ca61885e65ee834847ed3933545e31a96ecaa40d/pyasn1-0.2.1.tar.gz#md5=9dfafed199b321d56bab9cd341b6dd01 \
+ && wget https://pypi.python.org/packages/57/f7/c18a86169bb9995a69195177b23e736776b347fd92592da0c3cac9f1a724/pyasn1-0.2.2.tar.gz#md5=800d0114db2084f7256586dadf37d1aa \
 # && wget http://10.50.177.1:8088/tmp/pyasn1-0.1.9.tar.gz \
- && tar xvzf pyasn1-0.1.9.tar.gz \
- && cd pyasn1-0.1.9 \
+ && tar xvzf pyasn1-0.2.2.tar.gz \
+ && cd pyasn1-0.2.2 \
  && python setup.py install \
- && rm -rf pyasn1-0.1.9 \
+ && rm -rf pyasn1-0.2.2 \
 
 # build and install hpedockerplugin
  && cd /python-hpedockerplugin \
