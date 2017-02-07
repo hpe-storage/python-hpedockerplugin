@@ -550,7 +550,8 @@ class VolumePlugin(object):
         # use volinfo as volname could be partial match
         volume = {'Name': volinfo['display_name'],
                   'Mountpoint': mountdir,
-                  "Devicename": devicename,
+                  'Devicename': devicename,
+                  'Size': volinfo['size'],
                   'Status': {}}
 
         response = json.dumps({u"Err": err, u"Volume": volume})
@@ -584,7 +585,9 @@ class VolumePlugin(object):
                 info = json.loads(volinfo.value)
                 volume = {'Name': info['display_name'],
                           'Devicename': devicename,
-                          'Mountpoint': mountdir}
+                          'size': info['size'],
+                          'Mountpoint': mountdir,
+                          'Status': {}}
                 volumelist.append(volume)
 
         response = json.dumps({u"Err": '', u"Volumes": volumelist})

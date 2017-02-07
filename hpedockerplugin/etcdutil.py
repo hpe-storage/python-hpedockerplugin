@@ -90,6 +90,8 @@ class EtcdUtil(object):
 
     def get_vol_byname(self, volname):
         volumes = self.client.read(self.volumeroot, recursive=True)
+        LOG.info(_LI('Get volbyname: volname is %s'), volname)
+
         for child in volumes.children:
             if child.key != VOLUMEROOT:
                 volmember = json.loads(child.value)
