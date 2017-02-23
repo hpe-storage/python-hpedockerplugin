@@ -67,7 +67,7 @@ hpedockerplugin:
       - /run/docker/plugins:/run/docker/plugins
       - /lib/modules:/lib/modules
       - /var/lib/docker/:/var/lib/docker
-      - /etc/hpedockerplugin/data:/etc/hpedockerplugin:shared
+      - /etc/hpedockerplugin/data:/etc/hpedockerplugin/data:shared
       - /etc/iscsi/initiatorname.iscsi:/etc/iscsi/initiatorname.iscsi
       - /etc/hpedockerplugin:/etc/hpedockerplugin
       - /var/run/docker.sock:/var/run/docker.sock
