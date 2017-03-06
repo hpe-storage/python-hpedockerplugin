@@ -5,7 +5,7 @@ Starting with release v1.1.0 the plugin can now be deployed as a Docker Containe
 NOTE: Manual deployment is NOT supported with releases v1.1.0 and beyond.
 
 ## Single node etcd setup - Install etcd
-These steps are for a single node setup only. If you plan to run a container orchestration service (such as Docker UCP or Kubernetes) in a cluster of systems then refer to the etcd cluster setup below.
+These steps are for a single node setup only. If you plan to run a container orchestration service (such as Docker UCP or Kubernetes) in a cluster of systems then refer to the etcd cluster setup below. These orchestration services typically already have setup instructions for an etcd cluster, so there is no need to create a separate etcd cluster in these cases. The plugin can safely share access to the same etcd cluster being used by the orchestration technology.
 
 First create an export for your local IP:
 
