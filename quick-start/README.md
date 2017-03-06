@@ -4,7 +4,8 @@ Starting with release v1.1.0 the plugin can now be deployed as a Docker Containe
 
 NOTE: Manual deployment is NOT supported with releases v1.1.0 and beyond.
 
-## Install etcd
+## Single node etcd setup - Install etcd
+These steps are for a single node setup only. If you plan to run a container orchestration service (such as Docker UCP or Kubernetes) in a cluster of systems then refer to the etcd cluster setup below.
 
 First create an export for your local IP:
 
@@ -29,9 +30,9 @@ sudo docker run -d -v /usr/share/ca-certificates/:/etc/ssl/certs -p 4001:4001 \
 ```
 For more information on setting up an etcd cluster see:
 
-https://github.com/coreos/etcd/releases/
+https://coreos.com/etcd/docs/latest/v2/clustering.html
 
-Note: The etcd version used here is v2.2.0. Versions of etcd beyond v2.x require changes the the above command.
+Note: The etcd version used here is v2.2.0. Versions of etcd beyond v2.x require changes to the above command.
 
 ## Setup the plugin Configuration file
 
