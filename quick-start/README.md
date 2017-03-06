@@ -30,7 +30,7 @@ sudo docker run -d -v /usr/share/ca-certificates/:/etc/ssl/certs -p 4001:4001 \
 ```
 For more information on setting up an etcd cluster see:
 
-https://coreos.com/etcd/docs/latest/v2/clustering.html
+https://coreos.com/etcd/docs/latest/v2/docker_guide.html - instructions for etcd under Docker
 
 Note: The etcd version used here is v2.2.0. Versions of etcd beyond v2.x require changes to the above command.
 
