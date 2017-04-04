@@ -10,15 +10,15 @@ The following diagram illustrates the HPE Docker Volume Plugin configured on mul
 
 ## Install and Quick Start instructions
 
-  * Review the [System Requirements] (/docs/system-reqs.md) before installing the plugin
-  * Deploying the plugin as a Container [quick-start instructions] (/quick-start/README.md)
-  * Manually installing the plugin [manual deployment instructions] (docs/manual-install.md)
+* Review the [System Requirements] (/docs/system-reqs.md) before installing the plugin
+* Deploying the plugin as a Container [quick-start instructions] (/quick-start/README.md)
+* Manually installing the plugin [manual deployment instructions] (docs/manual-install.md)
 
 
 ## Supported Features by Release
 
-  * [Release v1.0.0] (/docs/releases/release-v1.0.0.md)
-  * [Release v1.1.0] (/docs/releases/release-v1.1.0.md)
+* [Release v1.0.0] (/docs/releases/release-v1.0.0.md)
+* [Release v1.1.0] (/docs/releases/release-v1.1.0.md)
 
 ## Usage
 
