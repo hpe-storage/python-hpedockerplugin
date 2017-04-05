@@ -23,8 +23,10 @@ Supported HPE 3PAR and StoreVirtual iSCSI storage arrays:
 - OS version support for 3PAR (3.2.1 MU2, 3.2.2 upto MU3)
 - OS version support for StoreVirtual (11.5, 12.6)
 
-NOTE: 3PAR FC support is currently not available.
-      Docker Swarm support is currently not avialable
+Limitations:
+
+- 3PAR FC support is currently not available.
+- Docker Swarm support is currently not avialable
 
 Supported HPE 3PAR and StoreVirtual clients:
 
