@@ -43,6 +43,7 @@ import time
 DEFAULT_SIZE = 100
 DEFAULT_PROV = "thin"
 DEFAULT_FLASH_CACHE = None
+DEFAULT_MOUNT_VOLUME = "True"
 
 LOG = logging.getLogger(__name__)
 
@@ -186,6 +187,11 @@ class VolumePlugin(object):
             LOG.error(msg)
             raise exception.HPEPluginUMountException(reason=msg)
 
+        vol_mount = DEFAULT_MOUNT_VOLUME
+        if ('Opts' in contents and contents['Opts'] and
+                'mount-volume' in contents['Opts']):
+            vol_mount = str(contents['Opts']['mount-volume'])
+
         path_info = self._etcd.get_vol_path_info(volname)
         if path_info:
             path_name = path_info['path']
@@ -203,10 +209,13 @@ class VolumePlugin(object):
         connector_info = connector.get_connector_properties(
             root_helper, self._my_ip, multipath=self.use_multipath,
             enforce_multipath=self.enforce_multipath)
-        # unmount directory
-        fileutil.umount_dir(mount_dir)
-        # remove directory
-        fileutil.remove_dir(mount_dir)
+
+        # Determine if we need to unmount a previously mounted volume
+        if vol_mount is DEFAULT_MOUNT_VOLUME:
+            # unmount directory
+            fileutil.umount_dir(mount_dir)
+            # remove directory
+            fileutil.remove_dir(mount_dir)
 
         # We're deferring the execution of the disconnect_volume as it can take
         # substantial
@@ -284,7 +293,8 @@ class VolumePlugin(object):
         volname = contents['Name']
 
         # Verify valid Opts arguments.
-        valid_volume_create_opts = ['size', 'provisioning', 'flash-cache']
+        valid_volume_create_opts = ['mount-volume',
+                                    'size', 'provisioning', 'flash-cache']
         if ('Opts' in contents and contents['Opts']):
             for key in contents['Opts']:
                 if key not in valid_volume_create_opts:
@@ -386,6 +396,11 @@ class VolumePlugin(object):
             LOG.error(msg)
             raise exception.HPEPluginMountException(reason=msg)
 
+        vol_mount = DEFAULT_MOUNT_VOLUME
+        if ('Opts' in contents and contents['Opts'] and
+                'mount-volume' in contents['Opts']):
+            vol_mount = str(contents['Opts']['mount-volume'])
+
         # Get connector info from OS Brick
         # TODO: retrieve use_multipath and enforce_multipath from config file
         root_helper = 'sudo'
@@ -431,31 +446,37 @@ class VolumePlugin(object):
                   {'name': volname, 'device': device_info['path'],
                    'realpath': path.path})
 
-        # mkdir for mounting the filesystem
-        mount_dir = fileutil.mkdir_for_mounting(device_info['path'])
-        LOG.debug('Directory: %(mount_dir)s, successfully created to mount: '
-                  '%(mount)s',
-                  {'mount_dir': mount_dir, 'mount': device_info['path']})
-
         # Create filesystem on the new device
         if fileutil.has_filesystem(path.path) is False:
             fileutil.create_filesystem(path.path)
             LOG.debug('filesystem successfully created on : %(path)s',
                       {'path': path.path})
 
-        # mount the directory
-        fileutil.mount_dir(path.path, mount_dir)
-        LOG.debug('Device: %(path) successfully mounted on %(mount)s',
-                  {'path': path.path, 'mount': mount_dir})
+        # Determine if we need to mount the volume
+        if vol_mount is DEFAULT_MOUNT_VOLUME:
+            # mkdir for mounting the filesystem
+            mount_dir = fileutil.mkdir_for_mounting(device_info['path'])
+            LOG.debug('Directory: %(mount_dir)s, '
+                      'successfully created to mount: '
+                      '%(mount)s',
+                      {'mount_dir': mount_dir, 'mount': device_info['path']})
 
-        # TODO: find out how to invoke mkfs so that it creates the filesystem
-        # without the lost+found directory
-        # KLUDGE!!!!!
-        lostfound = mount_dir + '/lost+found'
-        lfdir = FilePath(lostfound)
-        if lfdir.exists and fileutil.remove_dir(lostfound):
-            LOG.debug('Successfully removed : %(lost)s from mount: %(mount)s',
-                      {'lost': lostfound, 'mount': mount_dir})
+            # mount the directory
+            fileutil.mount_dir(path.path, mount_dir)
+            LOG.debug('Device: %(path) successfully mounted on %(mount)s',
+                      {'path': path.path, 'mount': mount_dir})
+
+            # TODO: find out how to invoke mkfs so that it creates the
+            # filesystem without the lost+found directory
+            # KLUDGE!!!!!
+            lostfound = mount_dir + '/lost+found'
+            lfdir = FilePath(lostfound)
+            if lfdir.exists and fileutil.remove_dir(lostfound):
+                LOG.debug('Successfully removed : '
+                          '%(lost)s from mount: %(mount)s',
+                          {'lost': lostfound, 'mount': mount_dir})
+        else:
+            mount_dir = ''
 
         path_info = {}
         path_info['name'] = volname
@@ -466,7 +487,9 @@ class VolumePlugin(object):
 
         self._etcd.update_vol(volid, 'path_info', json.dumps(path_info))
 
-        response = json.dumps({u"Err": '', u"Mountpoint": mount_dir})
+        response = json.dumps({u"Err": '', u"Name": volname,
+                               u"Mountpoint": mount_dir,
+                               u"Devicename": path.path})
         return response
 
     @app.route("/VolumeDriver.Path", methods=["POST"])
@@ -519,11 +542,16 @@ class VolumePlugin(object):
         path_info = self._etcd.get_vol_path_info(volname)
         if path_info is not None:
             mountdir = path_info['mount_dir']
+            devicename = path_info['path']
         else:
             mountdir = ''
+            devicename = ''
 
-        volume = {'Name': volname,
+        # use volinfo as volname could be partial match
+        volume = {'Name': volinfo['display_name'],
                   'Mountpoint': mountdir,
+                  'Devicename': devicename,
+                  'Size': volinfo['size'],
                   'Status': {}}
 
         response = json.dumps({u"Err": err, u"Volume": volume})
@@ -550,11 +578,16 @@ class VolumePlugin(object):
                 path_info = self._etcd.get_path_info_from_vol(volinfo.value)
                 if path_info is not None and 'mount_dir' in path_info:
                     mountdir = path_info['mount_dir']
+                    devicename = path_info['path']
                 else:
                     mountdir = ''
+                    devicename = ''
                 info = json.loads(volinfo.value)
                 volume = {'Name': info['display_name'],
-                          'Mountpoint': mountdir}
+                          'Devicename': devicename,
+                          'size': info['size'],
+                          'Mountpoint': mountdir,
+                          'Status': {}}
                 volumelist.append(volume)
 
         response = json.dumps({u"Err": '', u"Volumes": volumelist})
