@@ -133,14 +133,30 @@ class VolumePlugin(object):
         # Only 1 node in a multinode cluster can try to remove the volume.
         # Grab lock for volume name. If lock is inuse, just return with no
         # error.
-        self._lock_volume(volname, 'Remove')
+        # Expand lock code inline as function based lock causes
+        # unexpected behavior
+        try:
+            self._etcd.try_lock_volname(volname)
+        except Exception:
+            LOG.debug('volume: %(name)s is locked',
+                      {'name': volname})
+            response = json.dumps({u"Err": ''})
+            return response
 
         vol = self._etcd.get_vol_byname(volname)
         if vol is None:
             # Just log an error, but don't fail the docker rm command
             msg = (_LE('Volume remove name not found %s'), volname)
             LOG.error(msg)
-            self._unlock_volume(volname)
+            # Expand lock code inline as function based lock causes
+            # unexpected behavior
+            try:
+                self._etcd.try_unlock_volname(volname)
+            except Exception as ex:
+                LOG.debug('volume: %(name)s Unlock Volume Failed',
+                          {'name': volname})
+                response = json.dumps({u"Err": six.text_type(ex)})
+                return response
             return json.dumps({u"Err": ''})
 
         try:
@@ -151,7 +167,15 @@ class VolumePlugin(object):
             msg = (_LE('Err: Failed to remove volume %s, error is %s'),
                    volname, six.text_type(ex))
             LOG.error(msg)
-            self._unlock_volume(volname)
+            # Expand lock code inline as function based lock causes
+            # unexpected behavior
+            try:
+                self._etcd.try_unlock_volname(volname)
+            except Exception as ex:
+                LOG.debug('volume: %(name)s Unlock Volume Failed',
+                          {'name': volname})
+                response = json.dumps({u"Err": six.text_type(ex)})
+                return response
             raise exception.HPEPluginRemoveException(reason=msg)
 
         try:
@@ -162,7 +186,15 @@ class VolumePlugin(object):
             LOG.warning(msg)
             pass
 
-        self._unlock_volume(volname)
+        # Expand lock code inline as function based lock causes
+        # unexpected behavior
+        try:
+            self._etcd.try_unlock_volname(volname)
+        except Exception as ex:
+            LOG.debug('volume: %(name)s Unlock Volume Failed',
+                      {'name': volname})
+            response = json.dumps({u"Err": six.text_type(ex)})
+            return response
         return json.dumps({u"Err": ''})
 
     @app.route("/VolumeDriver.Unmount", methods=["POST"])
@@ -325,7 +357,15 @@ class VolumePlugin(object):
 
         # Grab lock for volume name. If lock is inuse, just return with no
         # error
-        self._lock_volume(volname, 'Create')
+        # Expand lock code inline as function based lock causes
+        # unexpected behavior
+        try:
+            self._etcd.try_lock_volname(volname)
+        except Exception:
+            LOG.debug('volume: %(name)s is locked',
+                      {'name': volname})
+            response = json.dumps({u"Err": ''})
+            return response
 
         # NOTE: Since Docker passes user supplied names and not a unique
         # uuid, we can't allow duplicate volume names to exist.
@@ -334,7 +374,15 @@ class VolumePlugin(object):
         vol = self._etcd.get_vol_byname(volname)
         if vol is not None:
             # Release lock and return
-            self._unlock_volume(volname)
+            # Expand lock code inline as function based lock causes
+            # unexpected behavior
+            try:
+                self._etcd.try_unlock_volname(volname)
+            except Exception as ex:
+                LOG.debug('volume: %(name)s Unlock Volume Failed',
+                          {'name': volname})
+                response = json.dumps({u"Err": six.text_type(ex)})
+                return response
             return json.dumps({u"Err": ''})
 
         voluuid = str(uuid.uuid4())
@@ -348,7 +396,15 @@ class VolumePlugin(object):
             # Release lock and return
             # NOTE: if for some reason unlock fails, we'll lose this
             # create exception.
-            self._unlock_volume(volname)
+            # Expand lock code inline as function based lock causes
+            # unexpected behavior
+            try:
+                self._etcd.try_unlock_volname(volname)
+            except Exception as ex:
+                LOG.debug('volume: %(name)s Unlock Volume Failed',
+                          {'name': volname})
+                response = json.dumps({u"Err": six.text_type(ex)})
+                return response
             return json.dumps({u"Err": six.text_type(ex)})
 
         response = json.dumps({u"Err": ''})
@@ -365,7 +421,15 @@ class VolumePlugin(object):
             LOG.error(msg)
             response = json.dumps({u"Err": six.text_type(ex)})
 
-        self._unlock_volume(volname)
+        # Expand lock code inline as function based lock causes
+        # unexpected behavior
+        try:
+            self._etcd.try_unlock_volname(volname)
+        except Exception as ex:
+            LOG.debug('volume: %(name)s Unlock Volume Failed',
+                      {'name': volname})
+            response = json.dumps({u"Err": six.text_type(ex)})
+            return response
         return response
 
     @app.route("/VolumeDriver.Mount", methods=["POST"])
