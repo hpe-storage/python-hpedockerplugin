@@ -285,24 +285,6 @@ class VolumePlugin(object):
         response = json.dumps({u"Err": ''})
         return response
 
-    def _lock_volume(self, volname, op):
-        try:
-            self._etcd.try_lock_volname(volname)
-        except Exception:
-            LOG.debug('volume: %(name)s Volume %(op)s in progress',
-                      {'name': volname}, {'op': op})
-            response = json.dumps({u"Err": ''})
-            return response
-
-    def _unlock_volume(self, volname):
-        try:
-            self._etcd.try_unlock_volname(volname)
-        except Exception as ex:
-            LOG.debug('volume: %(name)s Unlock Volume Failed',
-                      {'name': volname})
-            response = json.dumps({u"Err": six.text_type(ex)})
-            return response
-
     @app.route("/VolumeDriver.Create", methods=["POST"])
     def volumedriver_create(self, name, opts=None):
         """
