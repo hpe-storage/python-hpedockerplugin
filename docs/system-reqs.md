@@ -26,7 +26,7 @@ Supported HPE 3PAR and StoreVirtual iSCSI storage arrays:
 Limitations:
 
 - 3PAR FC support is currently not available.
-- Docker Swarm support is currently not available
+
 
 Supported HPE 3PAR and StoreVirtual clients:
 
