@@ -97,8 +97,8 @@ class EtcdUtil(object):
                 volmember = json.loads(child.value)
                 vol = volmember['display_name']
                 if vol.startswith(volname, 0, len(volname)):
-                    #                if volmember['display_name'] == volname:
-                    return volmember
+                    if volmember['display_name'] == volname:
+                        return volmember
                 elif volmember['name'] == volname:
                     return volmember
         return None
