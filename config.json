@@ -1,0 +1,144 @@
+{
+  "description": "HPE Docker Volume Plugin",
+  "documentation": "https://github.com/hpe-storage/python-hpedockerplugin/tree/master/quick-start",
+  "Env": [
+                {
+                    "Description": "",
+                    "Name": "DEBUG",
+                    "Settable": [
+                        "value"
+                    ],
+                    "Value": "1"
+                },
+ 		{
+                    "Description": "",
+                    "Name": "PYTHONPATH",
+                    "Settable": [
+                        "value"
+                    ],
+                    "Value": "${HOME}/python-hpedockerplugin:/root/python-hpedockerplugin:/python-hpedockerplugin:/python-hpedockerplugin/hpedockerplugin"
+                }
+
+            ],
+  "entrypoint": [
+    "/bin/sh",
+    "-c",
+    "./plugin-start"
+  ],
+  "interface": {
+    "types": [
+      "docker.volumedriver/1.0"
+    ],
+    "socket": "hpe.sock"
+  },
+  "Linux": {
+    "Capabilities": [
+      "CAP_SYS_ADMIN","CAP_SYS_RESOURCE","CAP_MKNOD","CAP_SYS_MODULE"
+    ],
+    "AllowAllDevices": true,
+    "Devices": null
+  },
+  "hooks": {
+    "poststop" : [
+        {
+          "path":"/python-hpedockerplugin/cleanup.sh",
+          "args":["/python-hpedockerplugin/cleanup.sh"]
+         }
+    ]       
+
+  },
+  "mounts": [
+    {
+      "source": "/dev",
+      "destination": "/dev",
+      "type": "bind",
+      "options": [
+        "rbind"
+      ]
+    },
+    {
+      "source": "/run/lock",
+      "destination": "/run/lock",
+      "type": "bind",
+      "options": [
+        "rbind"
+      ]
+    },
+
+    {
+      "source": "/var/lib",
+      "destination": "/var/lib",
+      "type": "bind",
+      "options": [
+        "rbind"
+      ]
+    },
+    {
+      "source": "/etc",
+      "destination": "/etc",
+      "type": "bind",
+      "options": [
+        "rbind","shared"
+      ]
+    },
+    {
+      "source": "/var/run/docker.sock",
+      "destination": "/var/run/docker.sock",
+      "type": "bind",
+      "options": [
+        "rbind"
+      ]
+    },
+    {
+      "source": "/root/.ssh",
+      "destination": "/root/.ssh",
+      "type": "bind",
+      "options": [
+        "rbind"
+      ]
+    },
+    {
+      "source": "/sys",
+      "destination": "/sys",
+      "type": "bind",
+      "options": [
+        "rbind"
+      ]
+    },
+    {
+      "Description": "The location of the iscsiadm command.",
+      "Name": "iscsiadm",
+      "Source": "/sbin/iscsiadm",
+      "Destination": "/sbin/ia",
+      "Type": "bind",
+      "Options": ["bind"],
+      "Settable": ["source"]
+    },
+    {
+      "Description": "The location of the loadable kernel modules (specifically iscsi_tcp).",
+      "Name": "lib_modules",
+      "Source": "/lib/modules",
+      "Destination": "/lib/modules",
+      "Type": "bind",
+      "Options": ["bind"],
+      "Settable": ["source"]
+    },
+    {
+      "Description": "The location of the glibc libs. (May need to be changed to /lib/x86_64-linux-gnu)",
+      "Name": "glibc_libs",
+      "Source": "/lib/x86_64-linux-gnu",
+      "Destination": "/lib64",
+      "Type": "bind",
+      "Options": ["rbind"],
+      "Settable": ["source"]
+    }
+
+  ],
+  "Network": {
+    "Type": "host"
+  }, 
+  "PropagatedMount":"/opt/hpe/data",
+  "User": {},
+  "WorkDir": "/python-hpedockerplugin"
+}
+
