@@ -28,7 +28,7 @@ from twisted.python.filepath import FilePath
 
 LOG = logging.getLogger(__name__)
 
-prefix = "/etc/hpedockerplugin/data/hpedocker-"
+prefix = "/opt/hpe/data/hpedocker-"
 
 
 def has_filesystem(path):
