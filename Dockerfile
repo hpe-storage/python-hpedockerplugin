@@ -72,6 +72,7 @@ RUN chmod u+x /usr/bin/iscsiadm
 RUN chmod u+x /usr/bin/cleanup.sh
 RUN chmod u+x /usr/bin/multipathd
 RUN chmod u+x /usr/bin/udevd
+
 WORKDIR /python-hpedockerplugin
 ENTRYPOINT ["/bin/sh", "-c", "./plugin-start"]
 
