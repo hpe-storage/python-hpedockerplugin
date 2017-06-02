@@ -23,6 +23,8 @@ RUN apk add --no-cache --update \
 COPY . /python-hpedockerplugin
 COPY ./iscsiadm /usr/bin/
 COPY ./cleanup.sh /usr/bin
+COPY ./multipathd /usr/bin
+COPY ./udevd /usr/bin
 
 
 RUN apk add --virtual /tmp/.temp --no-cache --update \
@@ -68,7 +70,8 @@ RUN chmod 0600 /root/.ssh/known_hosts
 RUN mkdir -p /opt/hpe/data
 RUN chmod u+x /usr/bin/iscsiadm
 RUN chmod u+x /usr/bin/cleanup.sh
-
+RUN chmod u+x /usr/bin/multipathd
+RUN chmod u+x /usr/bin/udevd
 WORKDIR /python-hpedockerplugin
 ENTRYPOINT ["/bin/sh", "-c", "./plugin-start"]
 

@@ -115,6 +115,33 @@
       "Settable": ["source"]
     },
     {
+      "Description": "The location of the multipathd command.",
+      "Name": "multipathd",
+      "Source": "/sbin/multipathd",
+      "Destination": "/sbin/mpd",
+      "Type": "bind",
+      "Options": ["bind"],
+      "Settable": ["source"]
+    },
+    {
+      "Description": "The location of the udevd command.",
+      "Name": "udevd",
+      "Source": "/sbin/udevd",
+      "Destination": "/sbin/udd",
+      "Type": "bind",
+      "Options": ["bind"],
+      "Settable": ["source"]
+    },
+    {
+      "Description": "The location of the /lib command.",
+      "Name": "lib",
+      "Source": "/lib",
+      "Destination": "/lib64_base",
+      "Type": "bind",
+      "Options": ["bind"],
+      "Settable": ["source"]
+    },
+    {
       "Description": "The location of the loadable kernel modules (specifically iscsi_tcp).",
       "Name": "lib_modules",
       "Source": "/lib/modules",
