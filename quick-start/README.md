@@ -1,3 +1,79 @@
+# Steps for Deploying the Managed Plugin 
+
+HPE 3PAR/StoreVirtual Docker Volume Plugin is tested against 
+
+- Docker 17.03 EE edition
+- Ubuntu 16.04 (Xenial) and RHEL 7.3 
+
+Setup etcd in a host following this instructions https://github.com/hpe-storage/python-hpedockerplugin/tree/master/quick-start#single-node-etcd-setup---install-etcd
+
+This etcd container can run in the same host where the HPE Docker Volume plugin is installed.
+
+Configure plugin for the appropriate storage system.
+
+For 3PAR System , use this template https://github.com/hpe-storage/python-hpedockerplugin/blob/master/config/hpe.conf.sample.3par and create a file called hpe.conf in /etc/hpedockerplugin/hpe.conf
+
+For StoreVirtual System, use this template https://github.com/hpe-storage/python-hpedockerplugin/blob/master/config/hpe.conf.sample.lefthand and create file called hpe.conf in /etc/hpedockerplugin/hpe.conf
+
+Note: Template has different place holders for the storage system to be configured. In hpe.conf , parameter host_etcd_ip_address = <ip_address> needs to be replaced with the ip_address of the host where the etcd is started.
+
+Install the plugin
+
+On Ubuntu 16.04
+
+``$ docker plugin install store/hpestorage/hpedockervolumeplugin:1.0 --alias hpe``
+
+On RHEL 7.3
+```
+$ docker plugin install –-disable –-grant-all-permissions –-alias hpe store/hpestorage/hpedockervolumeplugin:1.0 
+$ docker plugin set hpe glibc_libs.source=/lib64 
+$ docker plugin enable hpe
+```
+
+Confirm the plugin is successfully installed by
+
+`$ docker plugin ls`
+
+## Examples of using the HPE Volume Plugin
+
+
+To Create a volume
+```
+$ docker volume create -d hpe --name db_vol -o size=10
+
+```
+
+To List Volumes 
+```
+$ docker volume ls
+
+```
+To Mount a volume 
+
+```
+$ docker run -it -v <volume>:/data1 --rm busybox /bin/sh
+```
+
+To remove a volume
+
+```
+$ docker volume remove <vol_name>
+
+```
+
+
+## Logs for the plugin will be in system logs (eg. /var/log/syslog in Ubuntu).
+
+On RHEL 7.3 issue ``journalctl -f -u docker.service`` to get the plugin logs.
+
+On Ubuntu
+
+grep for the `plugin id` in the logs , where the `plugin id` can be got by
+
+``$ docker-runc list``
+
+
+
 # Deploying the HPE Docker Volume Plugin as a Docker Container
 
 Starting with release v1.1.0 the plugin can now be deployed as a Docker Container. 
