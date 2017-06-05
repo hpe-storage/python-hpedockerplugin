@@ -72,7 +72,10 @@ grep for the `plugin id` in the logs , where the `plugin id` can be got by
 
 ``$ docker-runc list``
 
-
+## Known limitations
+- Enabling multipath causes issue in plugin startup -- https://github.com/hpe-storage/python-hpedockerplugin/issues/36
+- $ docker volume inspect <vol_name> from a node where the volume was not originally created misses the "options" parameter -- https://github.com/hpe-storage/python-hpedockerplugin/issues/33
+- Other list of issues around the containerized version of the plugin/Managed plugin is present in https://github.com/hpe-storage/python-hpedockerplugin/issues 
 
 # Deploying the HPE Docker Volume Plugin as a Docker Container
 
