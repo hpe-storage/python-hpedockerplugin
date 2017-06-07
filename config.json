@@ -115,6 +115,15 @@
       "Settable": ["source"]
     },
     {
+      "Description": "The location of the multipath command.",
+      "Name": "multipath",
+      "Source": "/usr/sbin/multipath",
+      "Destination": "/sbin/mp",
+      "Type": "bind",
+      "Options": ["bind"],
+      "Settable": ["source"]
+    },
+    {
       "Description": "The location of the multipathd command.",
       "Name": "multipathd",
       "Source": "/sbin/multipathd",

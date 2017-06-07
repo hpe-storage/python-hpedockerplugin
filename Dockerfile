@@ -25,6 +25,7 @@ COPY ./iscsiadm /usr/bin/
 COPY ./cleanup.sh /usr/bin
 COPY ./multipathd /usr/bin
 COPY ./udevd /usr/bin
+COPY ./multipath /usr/bin
 
 
 RUN apk add --virtual /tmp/.temp --no-cache --update \
@@ -72,6 +73,7 @@ RUN chmod u+x /usr/bin/iscsiadm
 RUN chmod u+x /usr/bin/cleanup.sh
 RUN chmod u+x /usr/bin/multipathd
 RUN chmod u+x /usr/bin/udevd
+RUN chmod u+x /usr/bin/multipath
 
 WORKDIR /python-hpedockerplugin
 ENTRYPOINT ["/bin/sh", "-c", "./plugin-start"]
