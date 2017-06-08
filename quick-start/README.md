@@ -21,10 +21,23 @@ Install the plugin
 
 On Ubuntu 16.04
 
-``$ docker plugin install store/hpestorage/hpedockervolumeplugin:1.0 --alias hpe``
+```
+#Install these pre-requisite packages
+$ sudo apt-get install -y open-iscsi multipath-tools xfsprogs
+# systemctl daemon-reload
+# systemctl restart open-iscsi multipath-tools docker
+
+$ docker plugin install store/hpestorage/hpedockervolumeplugin:1.0 --alias hpe
+```
 
 On RHEL 7.3
 ```
+# Install these pre-requisite packages
+# yum install -y iscsi-initiator-utils device-mapper-multipath
+# systemctl daemon-reload
+# systemctl enable iscsid multipathd
+# systemctl start iscsid multipathd
+
 $ docker plugin install store/hpestorage/hpedockervolumeplugin:1.0 –-disable –-alias hpe 
 $ docker plugin set hpe glibc_libs.source=/lib64 
 $ docker plugin enable hpe
