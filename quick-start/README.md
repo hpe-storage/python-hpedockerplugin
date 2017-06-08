@@ -25,7 +25,7 @@ On Ubuntu 16.04
 
 On RHEL 7.3
 ```
-$ docker plugin install –-disable –-grant-all-permissions –-alias hpe store/hpestorage/hpedockervolumeplugin:1.0 
+$ docker plugin install store/hpestorage/hpedockervolumeplugin:1.0 –-disable –-alias hpe 
 $ docker plugin set hpe glibc_libs.source=/lib64 
 $ docker plugin enable hpe
 ```
