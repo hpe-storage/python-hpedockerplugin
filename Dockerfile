@@ -9,6 +9,8 @@ RUN apk add --no-cache --update \
     py-setuptools \
     python \
     sysfsutils \
+    multipath-tools \
+    device-mapper \
     util-linux \
     strace \
     eudev \
@@ -23,9 +25,6 @@ RUN apk add --no-cache --update \
 COPY . /python-hpedockerplugin
 COPY ./iscsiadm /usr/bin/
 COPY ./cleanup.sh /usr/bin
-COPY ./multipathd /usr/bin
-COPY ./udevd /usr/bin
-COPY ./multipath /usr/bin
 
 
 RUN apk add --virtual /tmp/.temp --no-cache --update \
@@ -71,9 +70,6 @@ RUN chmod 0600 /root/.ssh/known_hosts
 RUN mkdir -p /opt/hpe/data
 RUN chmod u+x /usr/bin/iscsiadm
 RUN chmod u+x /usr/bin/cleanup.sh
-RUN chmod u+x /usr/bin/multipathd
-RUN chmod u+x /usr/bin/udevd
-RUN chmod u+x /usr/bin/multipath
 
 WORKDIR /python-hpedockerplugin
 ENTRYPOINT ["/bin/sh", "-c", "./plugin-start"]

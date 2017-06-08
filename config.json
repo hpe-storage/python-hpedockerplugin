@@ -106,46 +106,21 @@
       ]
     },
     {
+      "Description":"The location for the certs file used for secure etcd",
+      "Name":"certs",
+      "source": "/root/plugin/certs",
+      "destination": "/root/plugin/certs",
+      "type": "bind",
+      "options": [
+        "rbind"
+      ],
+      "Settable": ["source"]
+    },
+    {
       "Description": "The location of the iscsiadm command.",
       "Name": "iscsiadm",
       "Source": "/sbin/iscsiadm",
       "Destination": "/sbin/ia",
-      "Type": "bind",
-      "Options": ["bind"],
-      "Settable": ["source"]
-    },
-    {
-      "Description": "The location of the multipath command.",
-      "Name": "multipath",
-      "Source": "/usr/sbin/multipath",
-      "Destination": "/sbin/mp",
-      "Type": "bind",
-      "Options": ["bind"],
-      "Settable": ["source"]
-    },
-    {
-      "Description": "The location of the multipathd command.",
-      "Name": "multipathd",
-      "Source": "/sbin/multipathd",
-      "Destination": "/sbin/mpd",
-      "Type": "bind",
-      "Options": ["bind"],
-      "Settable": ["source"]
-    },
-    {
-      "Description": "The location of the udevd command.",
-      "Name": "udevd",
-      "Source": "/sbin/udevd",
-      "Destination": "/sbin/udd",
-      "Type": "bind",
-      "Options": ["bind"],
-      "Settable": ["source"]
-    },
-    {
-      "Description": "The location of the /lib command.",
-      "Name": "lib",
-      "Source": "/lib",
-      "Destination": "/lib64_base",
       "Type": "bind",
       "Options": ["bind"],
       "Settable": ["source"]
