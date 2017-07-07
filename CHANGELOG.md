@@ -21,3 +21,11 @@
   * List Volumes
 * Support for CHAP added for volumes.
 * Documentation added for setting up the plugin.
+
+#### 1.0 
+* Managed Plugin implementation (available in Docker Store as certified plugin)
+
+#### 1.0.1
+* Include support for specifying the folder for the secure etcd certificates
+* Includes support for Multipath
+* Minor bug fixes.
