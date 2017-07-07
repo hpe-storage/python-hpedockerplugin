@@ -31,6 +31,7 @@ $ docker plugin install store/hpestorage/hpedockervolumeplugin:1.0.1  --disable 
 # certs.source should be set to the folder where the certificates for secure etcd is configured , otherwise
 # please default the setting to a valid folder in the system.
 $ docker plugin set hpe certs.source=/tmp
+$ docker plugin enable hpe
 
 ```
 
