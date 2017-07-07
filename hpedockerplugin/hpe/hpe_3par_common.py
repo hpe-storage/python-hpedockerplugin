@@ -300,16 +300,22 @@ class HPE3PARCommon(object):
     def _delete_3par_host(self, hostname):
         self.client.deleteHost(hostname)
 
-    def _create_3par_vlun(self, volume, hostname, nsp):
+    def _create_3par_vlun(self, volume, hostname, nsp, lun_id=None):
         try:
             location = None
+            auto = True
+            
+            if lun_id is not None:
+                auto = False
+
             if nsp is None:
                 location = self.client.createVLUN(volume, hostname=hostname,
-                                                  auto=True)
+                                                  auto=auto, lun=lun_id)
             else:
                 port = self.build_portPos(nsp)
                 location = self.client.createVLUN(volume, hostname=hostname,
-                                                  auto=True, portPos=port)
+                                                  auto=auto, portPos=port, 
+                                                  lun=lun_id)
 
             vlun_info = None
             if location:
@@ -396,13 +402,14 @@ class HPE3PARCommon(object):
                      {'name': volume_name, 'host': hostname})
         return found_vlun
 
-    def create_vlun(self, volume, host, nsp=None):
+    def create_vlun(self, volume, host, nsp=None, lun_id=None):
         """Create a VLUN.
 
         In order to export a volume on a 3PAR box, we have to create a VLUN.
         """
         volume_name = self._get_3par_vol_name(volume['id'])
-        vlun_info = self._create_3par_vlun(volume_name, host['name'], nsp)
+        vlun_info = self._create_3par_vlun(volume_name, host['name'], nsp,
+                                           lun_id=lun_id)
         return self._get_vlun(volume_name,
                               host['name'],
                               vlun_info['lun_id'],
@@ -412,26 +419,17 @@ class HPE3PARCommon(object):
         volume_name = self._get_3par_vol_name(volume['id'])
         vluns = self.client.getHostVLUNs(hostname)
 
-        # Find all the VLUNs associated with the volume. The VLUNs will then
-        # be split into groups based on the active status of the VLUN. If there
-        # are active VLUNs detected a delete will be attempted on them. If
-        # there are no active VLUNs but there are inactive VLUNs, then the
-        # inactive VLUNs will be deleted. The inactive VLUNs are the templates
-        # on the 3PAR backend.
-        active_volume_vluns = []
-        inactive_volume_vluns = []
+        # When deleting VLUNs, you simply need to remove the template VLUN
+        # and any active VLUNs will be automatically removed.  The template
+        # VLUN are marked as active: False
+      
         volume_vluns = []
 
         for vlun in vluns:
             if volume_name in vlun['volumeName']:
-                if vlun['active']:
-                    active_volume_vluns.append(vlun)
-                else:
-                    inactive_volume_vluns.append(vlun)
-        if active_volume_vluns:
-            volume_vluns = active_volume_vluns
-        elif inactive_volume_vluns:
-            volume_vluns = inactive_volume_vluns
+                # template VLUNs are 'active' = False
+                if not vlun['active']:
+                    volume_vluns.append(vlun)
 
         if not volume_vluns:
             msg = (
@@ -440,18 +438,16 @@ class HPE3PARCommon(object):
             LOG.warning(msg)
             return
 
+
         # VLUN Type of MATCHED_SET 4 requires the port to be provided
-        removed_luns = []
         for vlun in volume_vluns:
-            if self.VLUN_TYPE_MATCHED_SET == vlun['type']:
-                self.client.deleteVLUN(volume_name, vlun['lun'], hostname,
-                                       vlun['portPos'])
+            if 'portPos' in vlun:
+                self.client.deleteVLUN(volume_name, vlun['lun'],
+                                       hostname=hostname,
+                                       port=vlun['portPos'])
             else:
-                # This is HOST_SEES or a type that is not MATCHED_SET.
-                # By deleting one VLUN, all the others should be deleted, too.
-                if vlun['lun'] not in removed_luns:
-                    self.client.deleteVLUN(volume_name, vlun['lun'], hostname)
-                    removed_luns.append(vlun['lun'])
+                self.client.deleteVLUN(volume_name, vlun['lun'],
+                                       hostname=hostname)
 
         # Determine if there are other volumes attached to the host.
         # This will determine whether we should try removing host from host set

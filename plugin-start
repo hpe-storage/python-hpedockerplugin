@@ -5,8 +5,8 @@ turnonmultipath=`echo $multipath | cut -d \= -f 2`
 
 nospacemultipath=`echo $turnonmultipath | xargs`
 
-# Start iscsid and multipathd
-/usr/sbin/iscsid start
+# Perform cleanup of twistd.pid, hpe.sock.* files
+/usr/bin/cleanup.sh
 
 if [ "$nospacemultipath" = "True" ]; then
         echo "Multipath configured: Turn on multipath services"

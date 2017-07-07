@@ -5,14 +5,14 @@ ENV PYTHONPATH=${HOME}/python-hpedockerplugin:/root/python-hpedockerplugin
 
 
 RUN apk add --no-cache --update \
-	iscsi-scst \
-    multipath-tools \
-    open-iscsi \
     py-pip \
     py-setuptools \
     python \
     sysfsutils \
+    multipath-tools \
+    device-mapper \
     util-linux \
+    strace \
     eudev \
 	sudo \
  && apk update \
@@ -23,6 +23,9 @@ RUN apk add --no-cache --update \
  && rm -rf /var/cache/apk/*
 
 COPY . /python-hpedockerplugin
+COPY ./iscsiadm /usr/bin/
+COPY ./cleanup.sh /usr/bin
+
 
 RUN apk add --virtual /tmp/.temp --no-cache --update \
     build-base \
@@ -64,6 +67,9 @@ RUN mkdir -p /root/.ssh
 RUN touch /root/.ssh/known_hosts
 RUN chown -R root:root /root/.ssh
 RUN chmod 0600 /root/.ssh/known_hosts
+RUN mkdir -p /opt/hpe/data
+RUN chmod u+x /usr/bin/iscsiadm
+RUN chmod u+x /usr/bin/cleanup.sh
 
 WORKDIR /python-hpedockerplugin
 ENTRYPOINT ["/bin/sh", "-c", "./plugin-start"]

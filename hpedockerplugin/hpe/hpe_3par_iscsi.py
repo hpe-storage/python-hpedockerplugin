@@ -239,6 +239,7 @@ class HPE3PARISCSIDriver(object):
 
                 # Cycle through each ready iSCSI port and determine if a new
                 # VLUN should be created or an existing one used.
+                lun_id = None
                 for port in ready_ports:
                     iscsi_ip = port['IPAddr']
                     if iscsi_ip in target_portal_ips:
@@ -254,7 +255,10 @@ class HPE3PARISCSIDriver(object):
                                 break
                         else:
                             vlun = common.create_vlun(
-                                volume, host, self.iscsi_ips[iscsi_ip]['nsp'])
+                                volume, host, self.iscsi_ips[iscsi_ip]['nsp'],
+                                lun_id=lun_id)
+                            # We want to use the same LUN ID  for every port
+                            lun_id = vlun['lun']
                         iscsi_ip_port = "%s:%s" % (
                             iscsi_ip, self.iscsi_ips[iscsi_ip]['ip_port'])
                         target_portals.append(iscsi_ip_port)

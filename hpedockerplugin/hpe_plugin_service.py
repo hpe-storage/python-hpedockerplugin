@@ -39,7 +39,7 @@ from oslo_log import log as logging
 
 LOG = logging.getLogger(__name__)
 
-PLUGIN_PATH = FilePath("/run/docker/plugins/hpe/hpe.sock")
+PLUGIN_PATH = FilePath("/run/docker/plugins/hpe.sock")
 CONFIG_FILE = '/etc/hpedockerplugin/hpe.conf'
 
 CONFIG = ['--config-file', CONFIG_FILE]
