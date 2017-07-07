@@ -22,12 +22,16 @@ Install the plugin
 On Ubuntu 16.04
 
 ```
-#Install these pre-requisite packages
+# Install these pre-requisite packages
 $ sudo apt-get install -y open-iscsi multipath-tools xfsprogs
 # systemctl daemon-reload
 # systemctl restart open-iscsi multipath-tools docker
 
-$ docker plugin install store/hpestorage/hpedockervolumeplugin:1.0 --alias hpe
+$ docker plugin install store/hpestorage/hpedockervolumeplugin:1.0.1  --disable --alias hpe
+# certs.source should be set to the folder where the certificates for secure etcd is configured , otherwise
+# please default the setting to a valid folder in the system.
+$ docker plugin set hpe certs.source=/tmp
+
 ```
 
 On RHEL 7.3
@@ -38,8 +42,12 @@ On RHEL 7.3
 # systemctl enable iscsid multipathd
 # systemctl start iscsid multipathd
 
-$ docker plugin install store/hpestorage/hpedockervolumeplugin:1.0 –-disable –-alias hpe 
-$ docker plugin set hpe glibc_libs.source=/lib64 
+$ docker plugin install store/hpestorage/hpedockervolumeplugin:1.0.1 –-disable –-alias hpe 
+
+# certs.source should be set to the folder where the certificates for secure etcd is configured , otherwise
+# please default the setting to a valid folder in the system.
+
+$ docker plugin set hpe glibc_libs.source=/lib64 certs.source=/tmp
 $ docker plugin enable hpe
 ```
 
@@ -86,9 +94,9 @@ grep for the `plugin id` in the logs , where the `plugin id` can be got by
 ``$ docker-runc list``
 
 ## Known limitations
-- Enabling multipath causes issue in plugin startup -- https://github.com/hpe-storage/python-hpedockerplugin/issues/36
-- $ docker volume inspect <vol_name> from a node where the volume was not originally created misses the "options" parameter -- https://github.com/hpe-storage/python-hpedockerplugin/issues/33
-- Other list of issues around the containerized version of the plugin/Managed plugin is present in https://github.com/hpe-storage/python-hpedockerplugin/issues 
+- List of issues around the containerized version of the plugin/Managed plugin is present in https://github.com/hpe-storage/python-hpedockerplugin/issues 
+
+- ``$ docker volume prune`` will fail, instead use ``$docker volume rm $(docker volume ls -q -f "dangling=true") ``
 
 # Deploying the HPE Docker Volume Plugin as a Docker Container
 
