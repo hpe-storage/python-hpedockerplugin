@@ -1,4 +1,4 @@
-FROM alpine:3.4
+FROM alpine:edge
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONPATH=${HOME}/python-hpedockerplugin:/root/python-hpedockerplugin
@@ -12,8 +12,8 @@ RUN apk add --no-cache --update \
     multipath-tools \
     device-mapper \
     util-linux \
-    strace \
     eudev \
+    libssl1.0 \
 	sudo \
  && apk update \
  && apk upgrade \
