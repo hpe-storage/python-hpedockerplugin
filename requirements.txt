@@ -1,7 +1,8 @@
-os-brick>=1.4.0
+os-brick==1.13.1
 python-3parclient>=4.0.0
 python-lefthandclient>=2.0.1
 sh>=1.11
+eventlet==0.18.2
 six>=1.10.0
 python-etcd>=0.4.3
 oslo.versionedobjects>=1.3.0
