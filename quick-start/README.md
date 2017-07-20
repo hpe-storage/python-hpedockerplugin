@@ -27,7 +27,7 @@ $ sudo apt-get install -y open-iscsi multipath-tools xfsprogs
 # systemctl daemon-reload
 # systemctl restart open-iscsi multipath-tools docker
 
-$ docker plugin install store/hpestorage/hpedockervolumeplugin:1.0.1  --disable --alias hpe
+$ docker plugin install store/hpestorage/hpedockervolumeplugin:1.1  --disable --alias hpe
 # certs.source should be set to the folder where the certificates for secure etcd is configured , otherwise
 # please default the setting to a valid folder in the system.
 $ docker plugin set hpe certs.source=/tmp
@@ -43,10 +43,11 @@ On RHEL 7.3
 # systemctl enable iscsid multipathd
 # systemctl start iscsid multipathd
 
-$ docker plugin install store/hpestorage/hpedockervolumeplugin:1.0.1 –-disable –-alias hpe 
+$ docker plugin install store/hpestorage/hpedockervolumeplugin:1.1 –-disable –-alias hpe 
 
 # certs.source should be set to the folder where the certificates for secure etcd is configured , otherwise
 # please default the setting to a valid folder in the system.
+# For unsecure etcd, any valid folder in the docker host can be given for certs.source
 
 $ docker plugin set hpe glibc_libs.source=/lib64 certs.source=/tmp
 $ docker plugin enable hpe
