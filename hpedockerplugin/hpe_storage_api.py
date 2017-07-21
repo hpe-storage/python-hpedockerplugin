@@ -99,7 +99,7 @@ class VolumePlugin(object):
         self.use_multipath = self._hpepluginconfig.use_multipath
         self.enforce_multipath = self._hpepluginconfig.enforce_multipath
         self.connector = connector.InitiatorConnector.factory(
-            'ISCSI', root_helper, use_multipath=self.use_multipath,
+            'FIBRE_CHANNEL', root_helper, use_multipath=self.use_multipath,
             device_scan_attempts=5, transport='default')
 
     def disconnect_volume_callback(self, connector_info):

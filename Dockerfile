@@ -12,6 +12,7 @@ RUN apk add --no-cache --update \
     multipath-tools \
     device-mapper \
     util-linux \
+    sg3_utils\
     eudev \
     libssl1.0 \
 	sudo \
