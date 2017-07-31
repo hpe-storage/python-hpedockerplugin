@@ -65,6 +65,11 @@ class VolumePlugin(object):
         self._reactor = reactor
         self._hpepluginconfig = hpepluginconfig
         hpeplugin_driver = hpepluginconfig.hpedockerplugin_driver
+    
+        protocol = 'ISCSI'
+
+        if 'HPE3PARFCDriver' in hpeplugin_driver:
+            protocol = 'FIBRE_CHANNEL'
 
         self.hpeplugin_driver = \
             importutils.import_object(hpeplugin_driver, self._hpepluginconfig)
@@ -99,7 +104,7 @@ class VolumePlugin(object):
         self.use_multipath = self._hpepluginconfig.use_multipath
         self.enforce_multipath = self._hpepluginconfig.enforce_multipath
         self.connector = connector.InitiatorConnector.factory(
-            'FIBRE_CHANNEL', root_helper, use_multipath=self.use_multipath,
+            protocol, root_helper, use_multipath=self.use_multipath,
             device_scan_attempts=5, transport='default')
 
     def disconnect_volume_callback(self, connector_info):

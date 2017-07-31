@@ -42,8 +42,8 @@ from hpedockerplugin.hpe import hpe_3par_common as hpecommon
 from hpedockerplugin.hpe import utils
 from hpedockerplugin.hpe import san_driver
 
-class HPE3PARFCDRIVER(object):
-    """OpenStack iSCSI driver to enable 3PAR storage array.
+class HPE3PARFCDriver(object):
+    """OpenStack FC driver to enable 3PAR storage array.
 
       Version history:
 
