@@ -42,7 +42,7 @@ mkdir v2plugin > /dev/null 2>&1
 rm -rf v2plugin/rootfs
 #docker build -t rootfsimage .a
 ./containerize.sh
-docker tag wdurairaj/python-hpedockerplugin:plugin_v2 $1
+docker tag nilangekarss/python-hpedockerplugin:plugin_v2 $1
 rc=$?
  if [[ $rc -ne 0 ]]; then
   echo "ERROR: failed"
@@ -77,7 +77,7 @@ rc=$?
   exit $rc
 fi
 
-#docker rmi wdurairaj/python-hpedockerplugin:plugin_v2
+#docker rmi nilangekarss/python-hpedockerplugin:plugin_v2
 rc=$?
  if [[ $rc -ne 0 ]]; then
   echo "ERROR: failed"

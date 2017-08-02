@@ -368,6 +368,15 @@ class HPE3PARCommon(object):
 
         return target_ports
 
+    def get_active_fc_target_ports(self):
+        ports = self.get_active_target_ports()
+        fc_ports = []
+        for port in ports:
+            if port['protocol'] == self.client.PORT_PROTO_FC:
+                fc_ports.append(port)
+
+        return fc_ports
+
     def get_active_iscsi_target_ports(self):
         ports = self.get_active_target_ports()
         iscsi_ports = []
@@ -833,3 +842,22 @@ class HPE3PARCommon(object):
             # or flash cache policy or add the volume to the volume set
             self.client.deleteVolumeSet(vvs_name)
             raise exception.PluginException(ex)
+
+    def _get_prioritized_host_on_3par(self, host, hosts, hostname):
+        # Check whether host with wwn/iqn of initiator present on 3par
+        if hosts and hosts['members'] and 'name' in hosts['members'][0]:
+            # Retrieving 'host' and 'hosts' from 3par using hostname
+            # and wwn/iqn respectively. Compare hostname of 'host' and 'hosts',
+            # if they do not match it means 3par has a pre-existing host
+            # with some other name.
+            if host['name'] != hosts['members'][0]['name']:
+                hostname = hosts['members'][0]['name']
+                LOG.info(("Prioritize the host retrieved from wwn/iqn "
+                          "Hostname : %(hosts)s  is used instead "
+                          "of Hostname: %(host)s"),
+                         {'hosts': hostname,
+                          'host': host['name']})
+                host = self._get_3par_host(hostname)
+                return host, hostname
+
+        return host, hostname
