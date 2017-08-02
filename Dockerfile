@@ -12,6 +12,7 @@ RUN apk add --no-cache --update \
     multipath-tools \
     device-mapper \
     util-linux \
+    sg3_utils\
     eudev \
     libssl1.0 \
 	sudo \
@@ -41,12 +42,12 @@ RUN apk add --virtual /tmp/.temp --no-cache --update \
 
 # Need different version of pyasn1 for iscsi to work properly
 # && wget https://pypi.python.org/packages/6a/cc/5878c5f2e5043a526653ca61885e65ee834847ed3933545e31a96ecaa40d/pyasn1-0.2.1.tar.gz#md5=9dfafed199b321d56bab9cd341b6dd01 \
- && wget https://pypi.python.org/packages/69/17/eec927b7604d2663fef82204578a0056e11e0fc08d485fdb3b6199d9b590/pyasn1-0.2.3.tar.gz#md5=79f98135071c8dd5c37b6c923c51be45 \
+# && wget https://pypi.python.org/packages/69/17/eec927b7604d2663fef82204578a0056e11e0fc08d485fdb3b6199d9b590/pyasn1-0.2.3.tar.gz#md5=79f98135071c8dd5c37b6c923c51be45 \
 # && wget http://10.50.177.1:8088/tmp/pyasn1-0.1.9.tar.gz \
- && tar xvzf pyasn1-0.2.3.tar.gz \
- && cd pyasn1-0.2.3 \
- && python setup.py install \
- && rm -rf pyasn1-0.2.3 \
+# && tar xvzf pyasn1-0.2.3.tar.gz \
+# && cd pyasn1-0.2.3 \
+# && python setup.py install \
+# && rm -rf pyasn1-0.2.3 \
 
 # build and install hpedockerplugin
  && cd /python-hpedockerplugin \
