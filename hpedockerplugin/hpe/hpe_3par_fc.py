@@ -42,7 +42,7 @@ from hpedockerplugin.hpe import hpe_3par_common as hpecommon
 from hpedockerplugin.hpe import utils
 from hpedockerplugin.hpe import san_driver
 
-LOG = loggin.getLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 class HPE3PARFCDriver(object):
     """OpenStack FC driver to enable 3PAR storage array.
