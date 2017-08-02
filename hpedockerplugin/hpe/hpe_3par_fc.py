@@ -42,10 +42,14 @@ from hpedockerplugin.hpe import hpe_3par_common as hpecommon
 from hpedockerplugin.hpe import utils
 from hpedockerplugin.hpe import san_driver
 
+LOG = loggin.getLogger(__name__)
+
 class HPE3PARFCDriver(object):
     """OpenStack FC driver to enable 3PAR storage array.
 
       Version history:
+
+      1.0 -- First commit of FC plugin
 
     """
 
@@ -263,22 +267,21 @@ class HPE3PARFCDriver(object):
     def _create_host(self, common, volume, connector):
         """Creates or modifies existing 3PAR host."""
         host = None
-        print('\nBefore safe_hostname value is %s', connector['host'])
+        LOG.debug('\nBefore safe_hostname value is %s', connector['host'])
         hostname = common._safe_hostname(connector['host'])
         cpg = common.get_cpg(volume, allowSnap=True)
         domain = common.get_domain(cpg)
-        print('\nAfter domain : %s', domain)
+        LOG.debug('\nAfter domain : %s', domain)
         try:
 #            host = common._get_3par_host(hostname)
             host = common.client.getHost(hostname)
-            print('\n After get host method, value of host is %s', host)
+            LOG.debug('\n After get host method, value of host is %s', host)
             # Check whether host with wwn of initiator present on 3par
             hosts = common.client.queryHost(wwns=connector['wwpns'])
             host, hostname = common._get_prioritized_host_on_3par(host,
                                                                   hosts,
                                                                   hostname)
         except hpeexceptions.HTTPNotFound:
-            print('\nInside exception block')
             # get persona from the volume type extra specs
             persona_id = 2
             # host doesn't exist, we have to create it
@@ -287,7 +290,6 @@ class HPE3PARFCDriver(object):
                                                         connector['wwpns'],
                                                         domain,
                                                         persona_id)
-            print('\n After create_fc_host')
             host = common._get_3par_host(hostname)
             return host
         else:
@@ -349,7 +351,7 @@ class HPE3PARFCDriver(object):
                                          optional={'domain': domain,
                                                    'persona': persona_id})
             except hpeexceptions.HTTPConflict as path_conflict:
-                msg = "Create FC host caught HTTP conflict code: %s"
+                msg = _LE("Create FC host caught HTTP conflict code: %s")
                 LOG.exception(msg, path_conflict.get_code())
                 with save_and_reraise_exception(reraise=False) as ctxt:
                     if path_conflict.get_code() is EXISTENT_PATH:
