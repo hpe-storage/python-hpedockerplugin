@@ -59,7 +59,9 @@ class EtcdUtil(object):
         else:
             LOG.info('ETCDUTIL no certs')
             if len(host_tuple) > 0:
-               self.client = etcd.Client(host=host_tuple, port=port)
+               LOG.info('Use http protocol')
+               self.client = etcd.Client(host=host_tuple, port=port,
+                              protocol='http', allow_reconnect=True)
             else:
                self.client = etcd.Client(host, port)
         self._make_root()
