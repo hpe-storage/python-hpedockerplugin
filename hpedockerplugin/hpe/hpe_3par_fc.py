@@ -264,6 +264,18 @@ class HPE3PARFCDriver(object):
         return target_wwns, init_targ_map, numPaths
 
 
+    def _modify_3par_fibrechan_host(self, common, hostname, wwn):
+        mod_request = {'pathOperation': common.client.HOST_EDIT_ADD,
+                       'FCWWNs': wwn}
+        try:
+            common.client.modifyHost(hostname, mod_request)
+        except hpeexceptions.HTTPConflict as path_conflict:
+            msg = _LE("Modify FC Host %(hostname)s caught "
+                      "HTTP conflict code: %(code)s")
+            LOG.exception(msg,
+                          {'hostname': hostname,
+                           'code': path_conflict.get_code()})
+
     def _create_host(self, common, volume, connector):
         """Creates or modifies existing 3PAR host."""
         host = None
