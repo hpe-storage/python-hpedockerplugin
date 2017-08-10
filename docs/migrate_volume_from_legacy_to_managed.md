@@ -17,7 +17,7 @@
 12.	Create a new volume.
 13.	Navigate to 3par array CLI and migrate the data from old volume to new volume using following commands:
 
->*$ setvv -snp_cpg <CPG name> <name of old volumes with prefix dcv- followed by UUID>*
+>*$ setvv -snp_cpg `<CPG name>` `<name of old volumes with prefix dcv- followed by UUID>`*
 
 >*$ createvvcopy -p `<name of old volume with prefix dcv- followed by UUID>` `<name of new volume created at step 12 with prefix dcv- followed by UUID>`*
 
