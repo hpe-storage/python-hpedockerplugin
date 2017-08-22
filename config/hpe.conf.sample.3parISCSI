@@ -4,21 +4,27 @@
 #ssh_hosts_key_file = /root/.ssh/known_hosts
 ssh_hosts_key_file = <path to known_hosts>
 
-# IP Address and port # of the etcd instance 
+# IP Address and port number of the etcd instance 
 # to use for storing volume meta data
+# for setting up etcd client with cluster members give host_etcd_ip_address in this 
+# below format where each member's ip/port is given with comma as delimiter. 
+# For example, host_etcd_ip_address = 10.50.180.1:3379,10.50.164.1:3379,10.50.198.1:3379
+# Please note this is only supported in managed plugin. 
+# Check the plugin version for the support. 
 host_etcd_ip_address = <ip-address>
 host_etcd_port_number = <port-number>
 
-# Client certificate and key details for secured
-# etcd cluster
-host_etcd_client_cert = <path to client certificate>
-host_etcd_client_key = <path to client certificate key>
+# Client certificate and key details for secured etcd cluster
+# Please note this is only supported in managed plugin. 
+# Check the plugin version for the support.
+host_etcd_client_cert = /root/plugin/certs/<path to client certificate>.pem
+host_etcd_client_key = /root/plugin/certs/<path to client certificate key>.pem
 
 # OSLO based Logging level for the plugin.
-logging = INFO
+logging = <INFO or DEBUG or ERROR>
 
 # Enable 3PAR client debug messages
-#hpe3par_debug = False
+hpe3par_debug = <True or False>
 
 # Suppress Requests Library SSL warnings
 suppress_requests_ssl_warnings = <True or False>
