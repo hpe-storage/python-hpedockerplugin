@@ -46,7 +46,8 @@ defaults {
 
 Lastly, make the following additions to the /etc/hpedockerplugin/hpe.conf file to enable multipathing.
 
- ```
+```
+hpe3par_iscsi_ips = <iSCSI IP addresses separated by comma>    # Only applicable for 3PAR iSCSI plugin
 use_multipath = True
 enforce_multipath = True
 ```
