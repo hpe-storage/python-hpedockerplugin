@@ -29,4 +29,5 @@ Add below entries to hpe.conf to enable FC plugin:
 7. Mount all the volumes and resume all I/O operations.
 
 > NOTE:  
-> If one or more volumes are still mounted where Step 3 is not followed, the switching process would not be successful and volume mount and unmount operations would result in unexpected behaviour or errors.
+> 1) If one or more volumes are still mounted where Step 3 is not followed, the switching process would not be successful and volume mount and unmount operations would result in unexpected behaviour or errors.  
+> 2) If any of volume mount operation fails which is a very rare scenario, restarting docker service and etcd daemon would help further for successful mount operation.
