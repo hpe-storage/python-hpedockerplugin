@@ -14,7 +14,11 @@
 
 >*For example, $ docker plugin upgrade store/hpestorage/hpedockervolumeplugin:1.1 store/hpestorage/hpedockervolumeplugin:2.0*
 
-7. Mount all the volumes and resume all I/O operations.
+7. Enable the plugin using below command:
+
+>*$ docker plugin enable PLUGIN*
+
+8. Mount all the volumes and resume all I/O operations.
 
 > NOTE:  
 > If one or more volumes are still mounted where Step 3 is not followed, the upgrade process would not be successful. If any volume is unmounted after performing the upgrade, the resulting container would be in DEAD state and volume plugin would be highly unusable subsequently. The only workaround is to reboot the docker container host and start etcd daemon again. This is a known issue in docker engine: https://github.com/moby/moby/issues/27381
