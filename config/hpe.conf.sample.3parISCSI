@@ -47,5 +47,8 @@ san_password = <SAN password>
 hpe3par_cpg = <CPG name used for volume creation>
 iscsi_ip_address = <iSCSI IP address>
 hpe3par_iscsi_chap_enabled = <True or False>
+hpe3par_iscsi_ips = <iSCSI IP addresses separated by comma>
 use_multipath = <True or False>
 enforce_multipath = <True or False>
+
+# Last three flags are only applicable to enable and configure multipath for 3par ISCSI plugin
