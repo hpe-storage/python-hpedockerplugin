@@ -13,6 +13,9 @@
 >*$ docker plugin upgrade PLUGIN [REMOTE]*
 
 >*For example, $ docker plugin upgrade store/hpestorage/hpedockervolumeplugin:1.1 store/hpestorage/hpedockervolumeplugin:2.0*
+> Note: Here you will be able to switch between FC (Fibre Channel) , 
+> iSCSI Driver in hpe.conf starting from 2.0 release of the plugin
+
 
 7. Enable the plugin using below command:
 
