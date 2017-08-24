@@ -2,8 +2,13 @@
 ## Possible configuration for etcd clustering
 ![Approaches for etcd clustering](/docs/secure_etcd_configurations.png "etcd clustering")
 
+Procedure for self signed certificates is given in the below links. Self signed certificates is used for setting up a secure
+etcd cluster.
+
 https://github.com/coreos/docs/blob/master/os/generate-self-signed-certificates.md  (Generating certificates)
- 
+
+## Steps to setup a 3 node secure etcd cluster 
+
 Following three shell scripts (etcd1,2,3.sh will be invoked on 3 different machines, whose IP’s are given in etcd1,2,3 shell variables), and the certs folder will contain the server’s key/certificate, client’s key/certificate files in /home/docker/cfssl
  
 etcd1.sh
@@ -71,7 +76,7 @@ etcd=$etcd3
   --initial-cluster-state existing
 ``` 
  
-## Sample program using etcd client.  
+## Sample python program using etcd client.  
 ``` 
 import etcd 
 client = etcd.Client(host=(('10.50.180.1',3379),('10.50.164.1',3379),('10.50.198.1',3379)),cert=('/home/docker/cfssl/client.pem','/home/docker/cfssl/client-key.pem'),protocol='https',port=3379,allow_reconnect=True)
