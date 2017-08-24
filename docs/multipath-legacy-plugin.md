@@ -1,6 +1,6 @@
 ## Multipath Support
 
-This section describes steps that should be performed to properly enable multipath support with the HPE 3PAR StoreServ and HPE Docker Volume Plugin.
+This section describes steps that should be performed to properly enable multipath support with the HPE 3PAR StoreServ and HPE Docker Volume Plugin. The below steps are only applicable if HPE 3PAR Docker Volume plugin is deployed as a container via Legacy Docker plugin system.
 
 ### Multipath Settings
 
@@ -58,7 +58,7 @@ The files previously modified need to be made available to the HPE Docker Volume
 
 ```
 hpedockerplugin:
-   image: hub.docker.hpecorp.net/hpe-storage/hpedockerplugin:<tag>
+   image: hpe-storage/python-hpedockerplugin:<tag>
    container_name: hpeplugin
    net: host
    privileged: true
@@ -71,6 +71,7 @@ hpedockerplugin:
       - /etc/iscsi/initiatorname.iscsi:/etc/iscsi/initiatorname.iscsi
       - /etc/hpedockerplugin:/etc/hpedockerplugin
       - /var/run/docker.sock:/var/run/docker.sock
+      - /home/docker/.ssh:/home/docker/.ssh
       - /etc/iscsi/iscsid.conf:/etc/iscsi/iscsid.conf
       - /etc/multipath.conf:/etc/multipath.conf
 ```
