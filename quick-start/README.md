@@ -142,7 +142,8 @@ On RHEL and CentOS, issue ``journalctl -f -u docker.service`` to get the plugin 
 
 - Shared volume support is not present. Shared volume support implies using a single volume across multiple containers either on the same docker node (or) across node(s) in a swarm cluster.
 
-# Deploying the HPE Docker Volume Plugin as a Docker Container
+
+# Deploying the HPE Docker Volume Plugin as a Docker Container (Deprecated -- Please use the Managed plugin only)
 
 Starting from release v1.1.0 to v1.12 the plugin can be deployed as a Docker Container. 
 
