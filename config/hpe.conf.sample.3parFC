@@ -48,4 +48,5 @@ hpe3par_cpg = <CPG name used for volume creation>
 use_multipath = <True or False>  
 enforce_multipath = <True or False>
 
-#Last two multipath flags are mandatory for HPE 3PAR FC volume plugin
+#Last two multipath flags are mandatory for HPE 3PAR FC volume plugin, and these
+# flags should be set to True
