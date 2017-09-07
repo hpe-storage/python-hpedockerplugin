@@ -61,9 +61,9 @@ Confirm the plugin is successfully installed by
 
 Support for HPE 3PAR FC Volume Plugin has been added in hpestorage/hpedockervolumeplugin:2.0 and it is tested against Docker 17.06 EE.
 Note: FC plugin requires proper zoning between the docker host(s) and the 3PAR Array.
-      Also, create /etc/multipath.conf based on instructions in 
+      Also, create /etc/multipath.conf based on instructions in :https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/multipath-managed-plugin.md
 
-Execute below commands to install the FC plugin:https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/multipath-managed-plugin.md
+Execute below commands to install the FC plugin
 
 ```
 # Please follow the pre-requisites and other details from the previous instructions on how to install plugin on different platforms.
