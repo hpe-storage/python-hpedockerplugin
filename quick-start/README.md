@@ -2,7 +2,7 @@
 
 HPE 3PAR Docker Volume Plugin is tested against: 
 
-- Docker 17.03 and 17.06 EE editions
+- Docker EE release version >= 17.03
 - Ubuntu 16.04 (Xenial), RHEL 7.3 and CentOS 7.3 
 
 Setup etcd in a host following this instructions https://github.com/hpe-storage/python-hpedockerplugin/tree/master/quick-start#single-node-etcd-setup---install-etcd
@@ -60,14 +60,23 @@ Confirm the plugin is successfully installed by
 ### HPE 3PAR Fibre Channel plugin
 
 Support for HPE 3PAR FC Volume Plugin has been added in hpestorage/hpedockervolumeplugin:2.0 and it is tested against Docker 17.06 EE.
+Note: FC plugin requires proper zoning between the docker host(s) and the 3PAR Array.
+      Also, create /etc/multipath.conf based on instructions in :https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/multipath-managed-plugin.md
 
-Execute below commands to install the FC plugin:
+Execute below commands to install the FC plugin
 
 ```
 # Please follow the pre-requisites and other details from the previous instructions on how to install plugin on different platforms.
 
 $ docker plugin install store/hpestorage/hpedockervolumeplugin:2.0 –-disable –-alias hpe 
+
+# certs.source should point to a folder containing the valid client certificates for the secure etcd
+# support. If unsecure etcd setup is used please default to value of /tmp as given below.
+# For RHEL/CentOS following set command is required.
 $ docker plugin set hpe glibc_libs.source=/lib64 certs.source=/tmp
+
+# For Ubuntu the set command will be 
+$ docker plugin set hpe certs.source=/tmp
 $ docker plugin enable hpe
 ```
 
@@ -83,6 +92,8 @@ host_etcd_ip_address = 10.50.180.1:3379,10.50.164.1:3379,10.50.198.1:3379
 ```
 
 In Docker Swarm mode, etcd cluster will be created between manager nodes and etcd clients will be workers nodes where volume plugin will be installed.
+
+Example configuration for secure etcd setup is given in this link - https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/etcd_cluster_setup.md
 
 ## Examples of using the HPE Volume Plugin
 
@@ -129,7 +140,10 @@ On RHEL and CentOS, issue ``journalctl -f -u docker.service`` to get the plugin 
 
 - ``$ docker volume prune`` is not supported for volume plugin, instead use ``$docker volume rm $(docker volume ls -q -f "dangling=true") `` to clean up orphaned volumes.
 
-# Deploying the HPE Docker Volume Plugin as a Docker Container
+- Shared volume support is not present. Shared volume support implies using a single volume across multiple containers either on the same docker node (or) across node(s) in a swarm cluster.
+
+
+# Deploying the HPE Docker Volume Plugin as a Docker Container (Deprecated -- Please use the Managed plugin only)
 
 Starting from release v1.1.0 to v1.12 the plugin can be deployed as a Docker Container. 
 
