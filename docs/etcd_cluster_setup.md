@@ -17,8 +17,8 @@ etcd1.sh
 etcd1=10.50.180.1
 etcd2=10.50.164.1
 etcd3=10.50.198.1
-etcd=$etcd2
-/usr/bin/etcd  --name infra1 --data-dir ./infra1 \
+etcd=$etcd1
+/usr/bin/etcd  --name infra0 --data-dir ./infra0 \
   --advertise-client-urls https://${etcd}:3379 \
   --listen-client-urls https://${etcd}:3379 \
   --initial-advertise-peer-urls http://${etcd}:23380 \
@@ -29,7 +29,7 @@ etcd=$etcd2
   --key-file=/home/docker/cfssl/server-key.pem \
   --trusted-ca-file=/home/docker/cfssl/ca.pem \
   --client-cert-auth \
-  --initial-cluster-state existing
+  --initial-cluster-state new
 ```
 
 
@@ -39,8 +39,8 @@ etcd2.sh
 etcd1=10.50.180.1
 etcd2=10.50.164.1
 etcd3=10.50.198.1
-etcd=$etcd1
-/usr/bin/etcd  --name infra0 --data-dir ./infra0 \
+etcd=$etcd2
+/usr/bin/etcd  --name infra1 --data-dir ./infra1 \
   --advertise-client-urls https://${etcd}:3379,https://${etcd}:4001 \
   --listen-client-urls https://${etcd}:3379,https://${etcd}:4001 \
   --initial-advertise-peer-urls http://${etcd}:23380 \
@@ -73,7 +73,7 @@ etcd=$etcd3
   --key-file=/home/docker/cfssl/server-key.pem \
   --trusted-ca-file=/home/docker/cfssl/ca.pem \
   --client-cert-auth \
-  --initial-cluster-state existing
+  --initial-cluster-state new
 ``` 
  
 ## Sample python program using etcd client.  
