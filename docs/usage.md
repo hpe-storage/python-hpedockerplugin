@@ -9,9 +9,9 @@ sudo docker volume create -d hpe --name <vol_name>
 
 There are several optional parameters that can be used during volume creation:
 
-- size -- specifies the desired size in GB of the volume.
-- provisioning -- specifies the type of provisioning to use (thin, full, dedup).
-- flash-cache -- specifies whether flash cache should be used or not (True, False).
+- size -- It specifies the desired size in GB of the volume. If size is not specified during volume creation , it defaults to 100 GB.
+- provisioning -- It specifies the type of provisioning to use (thin, full, dedup). If provisioning is not specified during volume creation, it defaults to thin provisioning. For dedup provisioning, CPG with SSD device type must be configured.
+- flash-cache -- It specifies whether flash cache should be used or not (True, False).
 
 Note: Setting flash-cache to True does not gurantee flash-cache will be used. The backend system
 must have the appropriate SSD setup configured, too.
@@ -49,6 +49,12 @@ Use the following command to mount a volume and start a bash prompt:
 
 ```
 sudo docker run -it -v <vol_name>:/<mount_point>/ --volume-driver hpe <image_name> bash
+```
+
+On Docker 17.06 or later, run below command:
+
+```
+sudo docker run -it --mount type=volume,src=<VOLUME-NAME>,dst=<CONTAINER-PATH>,volume-driver=<DRIVER>,volume-opt=<KEY0>=<VALUE0>,volume-opt=<KEY1>=<VALUE1> --name mycontainer <IMAGE>
 ```
 
 Note: If the volume does not exist it will be created.
