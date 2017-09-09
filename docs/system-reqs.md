@@ -23,4 +23,4 @@ Supported HPE 3PAR storage arrays:
 
 Supported HPE 3PAR client:
 
-- python-3parclient version 4.0.0 or newer
+- python-3parclient version 4.2.3 or later
