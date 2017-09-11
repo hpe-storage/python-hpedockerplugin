@@ -13,3 +13,4 @@ pbr==2.0.0
 klein==17.2.0
 pycrypto
 pyasn1==0.2.3
+pika==0.10.0
