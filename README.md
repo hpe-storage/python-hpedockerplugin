@@ -1,9 +1,9 @@
 ## HPE Docker Volume Plugin
 
-The HPE Docker Volume Plugin is open source software that provides persistent block storage for containerized applications using HPE 3PAR StoreServ or HPE StoreVirtual Storage. 
+The HPE Docker Volume Plugin is open source software that provides persistent block storage for containerized applications using HPE 3PAR StoreServ Storage. 
 
 ## HPE Docker Volume Plugin Overview
-The following diagram illustrates the HPE Docker Volume Plugin configured on multiple hosts in a Docker cluster. The plugin is now deployed as a Docker container making it much easier to manage alongside containerized applications. See the [quick start instructions](/quick-start/README.md) for details on how to deploy the plugin container.
+The following diagram illustrates the HPE Docker Volume Plugin configured on multiple hosts in a Docker cluster. The plugin is a part of Docker Engine Managed Plugin System. See the [quick start instructions](/quick-start/README.md) for details on how to install the plugin.
 
 
 ![HPE Docker Volume Plugin](/docs/img/HPE-DockerVolumePlugin-Overview.png "Storage Overview")
@@ -11,14 +11,14 @@ The following diagram illustrates the HPE Docker Volume Plugin configured on mul
 ## Install and Quick Start instructions
 
 * Review the [System Requirements](/docs/system-reqs.md) before installing the plugin
-* Deploying the plugin as a Container [quick-start instructions](/quick-start/README.md)
-* Manually installing the plugin [manual deployment instructions](docs/manual-install.md)
+* Deploying the plugin into Docker Engine Managed Plugin System [quick-start instructions](/quick-start/README.md)
 
 
 ## Supported Features by Release
 
-* [Release v1.0.0](/docs/releases/release-v1.0.0.md)
-* [Release v1.1.0](/docs/releases/release-v1.1.0.md)
+* Release v1.0 - Initial Realease - iSCSI driver for 3PAR
+* Release v1.1 - Support for multipath and key defect fixes around volume mount operations
+* Release v2.0 - Support for secure / unsecure etcd cluster for fault tolerance - Fibre Channel Driver for 3PAR
 
 ## Usage
 
