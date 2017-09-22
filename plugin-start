@@ -1,5 +1,7 @@
 #!/bin/sh
 
+/sbin/multipathd
+/sbin/udevd &
 
 # Perform cleanup of twistd.pid, hpe.sock.* files
 /usr/bin/cleanup.sh
