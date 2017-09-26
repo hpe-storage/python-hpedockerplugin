@@ -21,7 +21,7 @@ host_etcd_client_cert = /root/plugin/certs/<path to client certificate>.pem
 host_etcd_client_key = /root/plugin/certs/<path to client certificate key>.pem
 
 # OSLO based Logging level for the plugin.
-logging = <INFO or DEBUG or ERROR>
+logging = <INFO or DEBUG or ERROR or WARNING>
 
 # Enable 3PAR client debug messages
 hpe3par_debug = <True or False>
@@ -48,5 +48,7 @@ hpe3par_cpg = <CPG name used for volume creation>
 use_multipath = <True or False>  
 enforce_multipath = <True or False>
 
-#Last two multipath flags are mandatory for HPE 3PAR FC volume plugin, and these
-# flags should be set to True
+# "use_multipath" and "enforce_multipath" flags are mandatory for HPE 3PAR FC volume plugin V2.0,
+# and these flags should be set to True.
+# These flags should be omitted for
+# HPE 3PAR volume plugin v2.0.1 and later versions.
