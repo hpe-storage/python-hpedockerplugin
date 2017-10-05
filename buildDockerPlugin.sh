@@ -26,12 +26,14 @@ pluginName=$1
 docker plugin disable ${pluginName} -f > /dev/null 2>&1
 docker plugin rm ${pluginName} -f > /dev/null 2>&1
 
+REPO_NAME=`git remote -v  | awk '{print $2}' | awk -F/ '{print $4}' | head -1`
+
 for x in `ls /var/lib/docker/plugins`
 do
    if [ ${x} = "storage" ] || [ ${x} = "tmp" ]; then
      echo skipping ${x}
    else
-     umount /var/lib/docker/plugins/${x}/rootfs/etc/hpedockerplugin/data
+     umount /var/lib/docker/plugins/${x}/rootfs/opt/hpe/data
      rm -rf /var/lib/docker/plugins/${x}
    fi
 done
@@ -40,9 +42,9 @@ rm -rf v2plugin
 mkdir v2plugin > /dev/null 2>&1
 
 rm -rf v2plugin/rootfs
-#docker build -t rootfsimage .a
+
 ./containerize.sh
-docker tag nilangekarss/python-hpedockerplugin:plugin_v2 $1
+docker tag $REPO_NAME/python-hpedockerplugin:plugin_v2 $1
 rc=$?
  if [[ $rc -ne 0 ]]; then
   echo "ERROR: failed"
@@ -70,14 +72,12 @@ rc=$?
   exit $rc
 fi
 
-#docker rm -vf "$id"
 rc=$?
  if [[ $rc -ne 0 ]]; then
   echo "ERROR: failed"
   exit $rc
 fi
 
-#docker rmi nilangekarss/python-hpedockerplugin:plugin_v2
 rc=$?
  if [[ $rc -ne 0 ]]; then
   echo "ERROR: failed"
@@ -90,4 +90,11 @@ rc=$?
   echo "ERROR: failed"
   exit $rc
 fi
+
+# Patch the os-bricks code
+
+sudo rm ./v2plugin/rootfs/usr/lib/python2.7/site-packages/os_brick/initiator/linuxscsi.pyc
+sudo cp ./patch_os_bricks/linuxscsi.py ./v2plugin/rootfs/usr/lib/python2.7/site-packages/os_brick/initiator/linuxscsi.py
+
+# end of patch for os-bricks
 docker plugin create ${pluginName} v2plugin
