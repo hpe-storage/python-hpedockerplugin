@@ -9,7 +9,7 @@ When multipathing is required with the HPE 3PAR StoreServ, you must update the m
 > ##### Note
 > 1. If 3PAR Fibre Channel plugin is configured for use, two or more fibre channel ports of container host and HPE 3PAR StoreServ must be in same zone.
 > 2. "multipath-tools" and "open-iscsi" should be installed on container host.
-> 3. Please make sure multipathd daemon is enabled and running correctly i.e. the output of the commands like "multipathd show status" should be valid.  
+> 3. Please make sure multipathd daemon is enabled and running correctly i.e. the output of commands like "multipath -ll" and "multipathd show status" should be valid.
 
 #### /etc/multipath.conf
 
@@ -44,10 +44,8 @@ defaults {
 
 #### /etc/hpedockerplugin/hpe.conf
 
-Lastly, make the following additions to the /etc/hpedockerplugin/hpe.conf file to enable multipathing.
+Lastly, make the following additions to the /etc/hpedockerplugin/hpe.conf file to enable multipathing for HPE 3PAR iSCSI volume plugin.
 
 ```
-hpe3par_iscsi_ips = <iSCSI IP addresses separated by comma>    # Only applicable for 3PAR iSCSI plugin
-use_multipath = True
-enforce_multipath = True
+hpe3par_iscsi_ips = <iSCSI IP addresses separated by comma>
 ```

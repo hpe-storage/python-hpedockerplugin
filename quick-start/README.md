@@ -3,7 +3,7 @@
 HPE 3PAR Docker Volume Plugin is tested against: 
 
 - Docker EE release version >= 17.03
-- Ubuntu 16.04 (Xenial), RHEL 7.3 and CentOS 7.3 
+- Ubuntu 16.04 (Xenial), RHEL 7.4 and CentOS 7.3
 
 Setup etcd in a host following this instructions https://github.com/hpe-storage/python-hpedockerplugin/tree/master/quick-start#single-node-etcd-setup---install-etcd
 
@@ -21,9 +21,9 @@ Execute below commands to install the plugin on Ubuntu 16.04
 
 ```
 # Install these pre-requisite packages
-$ sudo apt-get install -y open-iscsi multipath-tools xfsprogs
-# systemctl daemon-reload
-# systemctl restart open-iscsi multipath-tools docker
+$ sudo apt-get install -y open-iscsi multipath-tools
+$ systemctl daemon-reload
+$ systemctl restart open-iscsi multipath-tools docker
 
 $ docker plugin install store/hpestorage/hpedockervolumeplugin:<version>  --disable --alias hpe
 # certs.source should be set to the folder where the certificates for secure etcd is configured , otherwise
@@ -37,10 +37,11 @@ Execute below commands to install the plugin on RHEL 7.3 and CentOS 7.3
 
 ```
 # Install these pre-requisite packages
-# yum install -y iscsi-initiator-utils device-mapper-multipath
-# systemctl daemon-reload
-# systemctl enable iscsid multipathd
-# systemctl start iscsid multipathd
+$ yum install -y iscsi-initiator-utils device-mapper-multipath
+# configure /etc/multipath.conf and run below commands
+$ systemctl daemon-reload
+$ systemctl enable iscsid multipathd
+$ systemctl start iscsid multipathd
 
 $ docker plugin install store/hpestorage/hpedockervolumeplugin:<version> –-disable –-alias hpe 
 
@@ -140,7 +141,7 @@ On RHEL and CentOS, issue ``journalctl -f -u docker.service`` to get the plugin 
 
 - ``$ docker volume prune`` is not supported for volume plugin, instead use ``$docker volume rm $(docker volume ls -q -f "dangling=true") `` to clean up orphaned volumes.
 
-- Shared volume support is not present. Shared volume support implies using a single volume across multiple containers either on the same docker node (or) across node(s) in a swarm cluster.
+- Shared volume support is not present. Shared volume support implies using a single volume across multiple containers either on the same docker node (or) across node(s) in a swarm cluster. Also, backup and restore support is not present yet.
 
 
 # Deploying the HPE Docker Volume Plugin as a Docker Container (Deprecated -- Please use the Managed plugin only)

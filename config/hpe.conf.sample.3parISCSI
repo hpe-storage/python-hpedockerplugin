@@ -21,7 +21,7 @@ host_etcd_client_cert = /root/plugin/certs/<path to client certificate>.pem
 host_etcd_client_key = /root/plugin/certs/<path to client certificate key>.pem
 
 # OSLO based Logging level for the plugin.
-logging = <INFO or DEBUG or ERROR>
+logging = <INFO or DEBUG or ERROR or WARNING>
 
 # Enable 3PAR client debug messages
 hpe3par_debug = <True or False>
@@ -51,4 +51,9 @@ hpe3par_iscsi_ips = <iSCSI IP addresses separated by comma>
 use_multipath = <True or False>
 enforce_multipath = <True or False>
 
-# Last three flags are only applicable to enable and configure multipath for 3par ISCSI plugin
+# "use_multipath" and "enforce_multipath" flags are mandatory for HPE 3PAR
+# iSCSI volume plugin V2.0, and these flags should be set to True.
+# These flags should be omitted for
+# HPE 3PAR volume plugin v2.0.1 and later versions.
+# Also, multiple IP addresses of iSCSI ports must be assigned to
+# "hpe3par_iscsi_ips" parameter to configure multipath.
