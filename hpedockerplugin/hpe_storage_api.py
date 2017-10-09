@@ -38,7 +38,7 @@ import etcdutil as util
 from twisted.internet import threads
 from oslo_log import log as logging
 
-import time
+# import time
 
 DEFAULT_SIZE = 100
 DEFAULT_PROV = "thin"
@@ -65,7 +65,7 @@ class VolumePlugin(object):
         self._reactor = reactor
         self._hpepluginconfig = hpepluginconfig
         hpeplugin_driver = hpepluginconfig.hpedockerplugin_driver
-    
+
         protocol = 'ISCSI'
 
         if 'HPE3PARFCDriver' in hpeplugin_driver:
@@ -101,17 +101,35 @@ class VolumePlugin(object):
         # TODO: make device_scan_attempts configurable
         # see nova/virt/libvirt/volume/iscsi.py
         root_helper = 'sudo'
-         
+
         # Override the settings of use_multipath, enforce_multipath
+        # in case of FC Driver for 3PAR
         # This will be a workaround until Issue #50 is fixed.
-        msg = (_('Overriding the value of multipath flags to True'))
-        LOG.info(msg)
-        self.use_multipath = True
-        self.enforce_multipath = True
+        if 'HPE3PARFCDriver' in hpeplugin_driver:
+            msg = (_('Overriding the value of multipath flags to True'))
+            LOG.info(msg)
+            self.use_multipath = True
+            self.enforce_multipath = True
+        else:
+            self.use_multipath = self._hpepluginconfig.use_multipath
+            self.enforce_multipath = self._hpepluginconfig.enforce_multipath
 
         self.connector = connector.InitiatorConnector.factory(
             protocol, root_helper, use_multipath=self.use_multipath,
             device_scan_attempts=5, transport='default')
+
+    def _get_connector(self):
+        root_helper = 'sudo'
+        return connector.InitiatorConnector.factory(
+            'ISCSI', root_helper, use_multipath=self.use_multipath,
+            device_scan_attempts=5, transport='default')
+
+    def _get_etcd_util(self):
+        return util.EtcdUtil(
+            self._hpepluginconfig.host_etcd_ip_address,
+            self._hpepluginconfig.host_etcd_port_number,
+            self._hpepluginconfig.host_etcd_client_cert,
+            self._hpepluginconfig.host_etcd_client_key)
 
     def disconnect_volume_callback(self, connector_info):
         LOG.info(_LI('In disconnect_volume_callback: connector info is %s'),
