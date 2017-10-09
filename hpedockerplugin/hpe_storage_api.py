@@ -104,16 +104,11 @@ class VolumePlugin(object):
         root_helper = 'sudo'
 
         # Override the settings of use_multipath, enforce_multipath
-        # in case of FC Driver for 3PAR
         # This will be a workaround until Issue #50 is fixed.
-        if 'HPE3PARFCDriver' in hpeplugin_driver:
-            msg = (_('Overriding the value of multipath flags to True'))
-            LOG.info(msg)
-            self.use_multipath = True
-            self.enforce_multipath = True
-        else:
-            self.use_multipath = self._hpepluginconfig.use_multipath
-            self.enforce_multipath = self._hpepluginconfig.enforce_multipath
+        msg = (_('Overriding the value of multipath flags to True'))
+        LOG.info(msg)
+        self.use_multipath = True
+        self.enforce_multipath = True
 
         self.connector = connector.InitiatorConnector.factory(
             protocol, root_helper, use_multipath=self.use_multipath,
