@@ -43,6 +43,7 @@ DEFAULT_SIZE = 100
 DEFAULT_PROV = "thin"
 DEFAULT_FLASH_CACHE = None
 DEFAULT_MOUNT_VOLUME = "True"
+DEFAULT_COMPRESSION_VAL = None
 
 LOG = logging.getLogger(__name__)
 
@@ -330,8 +331,11 @@ class VolumePlugin(object):
         volname = contents['Name']
 
         # Verify valid Opts arguments.
-        valid_volume_create_opts = ['mount-volume',
+        valid_volume_create_opts = ['mount-volume', 'compression',
                                     'size', 'provisioning', 'flash-cache']
+
+        valid_compression_opts = ['true', 'false']
+
         if ('Opts' in contents and contents['Opts']):
             for key in contents['Opts']:
                 if key not in valid_volume_create_opts:
@@ -352,6 +356,21 @@ class VolumePlugin(object):
         if ('Opts' in contents and contents['Opts'] and
                 'provisioning' in contents['Opts']):
             vol_prov = str(contents['Opts']['provisioning'])
+
+        compression_val = DEFAULT_COMPRESSION_VAL
+        if ('Opts' in contents and contents['Opts'] and
+                'compression' in contents['Opts']):
+            compression_val = str(contents['Opts']['compression'])
+
+        if compression_val is not None:
+            if compression_val.lower() not in valid_compression_opts:
+                msg = (_('create volume failed, error is:'
+                         'passed compression parameterdo not have a valid '
+                         'value. Valid vaues are: %(valid)s') %
+                         {'valid': valid_compression_opts, })
+                LOG.error(msg)
+                return json.dumps({u"Err": six.text_type(msg)})
+
 
         vol_flash = DEFAULT_FLASH_CACHE
         if ('Opts' in contents and contents['Opts'] and
@@ -391,7 +410,8 @@ class VolumePlugin(object):
             return json.dumps({u"Err": ''})
 
         voluuid = str(uuid.uuid4())
-        vol = volume.createvol(volname, voluuid, vol_size, vol_prov, vol_flash)
+        vol = volume.createvol(volname, voluuid, vol_size, vol_prov,
+                                vol_flash, compression_val)
 
         try:
             self.hpeplugin_driver.create_volume(vol)
