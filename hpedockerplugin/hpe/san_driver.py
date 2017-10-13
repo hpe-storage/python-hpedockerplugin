@@ -79,8 +79,8 @@ def _do_iscsi_discovery(volume, targetip):
                        '-t', 'sendtargets', '-p', targetip)
 
     except Exception as e:
-        print "Error from iscsiadm -m discovery: ", targetip
-        print 'exception is : ', e
+        print("Error from iscsiadm -m discovery: %s" % (targetip))
+        print('exception is : %s' % (e))
         raise
 
     for target in out.splitlines():
@@ -150,7 +150,7 @@ def _get_iscsi_properties(volume, targetip):
                    % (volume['name']))
             raise msg
 
-        print "ISCSI Discovery: Found ", location
+        print("ISCSI Discovery: Found %s" % (location))
         properties['target_discovered'] = True
 
     results = location.split(" ")

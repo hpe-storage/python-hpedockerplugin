@@ -70,7 +70,7 @@ class HPEPLUGINTESTS(unittest.TestCase):
 
         if os.path.isfile(filename):
             self.twistd_pid = cat(filename)
-            print 'self.twistd_pid: ', self.twistd_pid
+            print('self.twistd_pid: %d ' % (self.twistd_pid))
         else:
             raise ValueError("%s isn't a file!" % filename)
 
