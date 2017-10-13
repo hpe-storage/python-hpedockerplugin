@@ -119,7 +119,6 @@ class HpeFactory(object):
 
     def __init__(self, cfg):
         self._cfg = cfg
-        print cfg
 
     def start_service(self):
         hpedockerplugin = HPEDockerPluginService(self._cfg)

@@ -33,7 +33,7 @@ class EtcdUtil(object):
 
         LOG.info('ETCDUTIL datatype of host is %s ' % type(self.host))
         host_tuple = ()
-        if isinstance(self.host, basestring):
+        if isinstance(self.host, str):
             if ',' in self.host:
                 host_list = [h.strip() for h in host.split(',')]
 
