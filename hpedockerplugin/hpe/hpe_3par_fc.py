@@ -35,14 +35,21 @@ except ImportError:
 from oslo_log import log as logging
 
 from hpedockerplugin import exception
-from hpedockerplugin.i18n import _, _LI, _LW, _LE
+# from hpedockerplugin.i18n import _, _LI, _LW, _LE
+from hpedockerplugin.i18n import _, _LE
 
 from hpedockerplugin.hpe import hpe_3par_common as hpecommon
 
-from hpedockerplugin.hpe import utils
+# from hpedockerplugin.hpe import utils
 from hpedockerplugin.hpe import san_driver
 
+from oslo_utils.excutils import save_and_reraise_exception
+
 LOG = logging.getLogger(__name__)
+
+# EXISTENT_PATH error code returned from hpe3parclient
+EXISTENT_PATH = 73
+
 
 class HPE3PARFCDriver(object):
     """OpenStack FC driver to enable 3PAR storage array.
@@ -55,7 +62,6 @@ class HPE3PARFCDriver(object):
 
     VERSION = "1.0"
 
-
     def __init__(self, hpe3parconfig):
         self.hpe3parconfig = hpe3parconfig
         self.configuration = hpe3parconfig
@@ -63,7 +69,6 @@ class HPE3PARFCDriver(object):
 
         self.hpe3parconfig.append_config_values(san_driver.san_opts)
         self.hpe3parconfig.append_config_values(san_driver.volume_opts)
-
 
     def _init_common(self):
         return hpecommon.HPE3PARCommon(self.configuration)
@@ -74,10 +79,8 @@ class HPE3PARFCDriver(object):
         common.client_login()
         return common
 
-
     def _logout(self, common):
         common.client_logout()
-
 
     def _check_flags(self, common):
         required_flags = ['hpe3par_api_url', 'hpe3par_username',
@@ -90,8 +93,6 @@ class HPE3PARFCDriver(object):
         common.do_setup()
         self._check_flags(common)
         common.check_for_setup_error()
-
-
 
     def check_for_setup_error(self):
         """Setup errors are already checked for in do_setup so return pass."""
@@ -110,7 +111,6 @@ class HPE3PARFCDriver(object):
             common.delete_volume(volume)
         finally:
             self._logout(common)
-
 
     def initialize_connection(self, volume, connector):
         """Assigns the volume to a server.
@@ -213,7 +213,6 @@ class HPE3PARFCDriver(object):
         finally:
             self._logout(common)
 
-
     def terminate_connection(self, volume, connector, **kwargs):
         """Driver entry point to unattach a volume from an instance."""
         common = self._login()
@@ -225,11 +224,11 @@ class HPE3PARFCDriver(object):
             info = {'driver_volume_type': 'fibre_channel',
                     'data': {}}
 
-            #try:
+            # try:
             #    common.client.getHostVLUNs(hostname)
-            #except hpeexceptions.HTTPNotFound:
-                # No more exports for this host.
-            #    LOG.info("Need to remove FC Zone, building initiator "
+            # except hpeexceptions.HTTPNotFound:
+            #    # No more exports for this host.
+            #     LOG.info("Need to remove FC Zone, building initiator "
             #             "target map")
             #
             #    target_wwns, init_targ_map, _numPaths = \
@@ -254,7 +253,6 @@ class HPE3PARFCDriver(object):
         for port in fc_ports:
             all_target_wwns.append(port['portWWN'])
 
-
         initiator_wwns = connector['wwpns']
         target_wwns = all_target_wwns
 
@@ -262,7 +260,6 @@ class HPE3PARFCDriver(object):
             init_targ_map[initiator] = target_wwns
 
         return target_wwns, init_targ_map, numPaths
-
 
     def _modify_3par_fibrechan_host(self, common, hostname, wwn):
         mod_request = {'pathOperation': common.client.HOST_EDIT_ADD,
@@ -285,7 +282,7 @@ class HPE3PARFCDriver(object):
         domain = common.get_domain(cpg)
         LOG.debug('\nAfter domain : %s', domain)
         try:
-#            host = common._get_3par_host(hostname)
+            # host = common._get_3par_host(hostname)
             host = common.client.getHost(hostname)
             LOG.debug('\n After get host method, value of host is %s', host)
             # Check whether host with wwn of initiator present on 3par

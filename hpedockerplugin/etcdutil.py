@@ -34,36 +34,41 @@ class EtcdUtil(object):
         LOG.info('ETCDUTIL datatype of host is %s ' % type(self.host))
         host_tuple = ()
         if isinstance(self.host, basestring):
-          if ',' in self.host:
-            host_list = [ h.strip() for h in host.split(',') ]
+            if ',' in self.host:
+                host_list = [h.strip() for h in host.split(',')]
 
-            for i in host_list:
-              temp_tuple = (  i.split(':')[0] , int(i.split(':')[1]) )
-              host_tuple = host_tuple + (temp_tuple,)
+                for i in host_list:
+                    temp_tuple = (i.split(':')[0], int(i.split(':')[1]))
+                    host_tuple = host_tuple + (temp_tuple,)
 
-            host_tuple  = tuple(host_tuple)
+                host_tuple = tuple(host_tuple)
 
-        LOG.info('ETCDUTIL host_tuple is %s, host is %s ' % (host_tuple, self.host))
+        LOG.info('ETCDUTIL host_tuple is %s, host is %s ' % (host_tuple,
+                                                             self.host))
 
         self.volumeroot = VOLUMEROOT + '/'
         self.lockroot = LOCKROOT + '/'
         if client_cert is not None and client_key is not None:
             if len(host_tuple) > 0:
-               LOG.info('ETCDUTIL host tuple is not None')
-               self.client = etcd.Client(host=host_tuple, port=port, protocol='https',
-                                      cert=(client_cert, client_key), allow_reconnect=True)
+                LOG.info('ETCDUTIL host tuple is not None')
+                self.client = etcd.Client(host=host_tuple, port=port,
+                                          protocol='https',
+                                          cert=(client_cert, client_key),
+                                          allow_reconnect=True)
             else:
-               LOG.info('ETCDUTIL host %s ' % host)
-               self.client = etcd.Client(host=host, port=port, protocol='https',
-                                      cert=(client_cert, client_key))
+                LOG.info('ETCDUTIL host %s ' % host)
+                self.client = etcd.Client(host=host, port=port,
+                                          protocol='https',
+                                          cert=(client_cert, client_key))
         else:
             LOG.info('ETCDUTIL no certs')
             if len(host_tuple) > 0:
-               LOG.info('Use http protocol')
-               self.client = etcd.Client(host=host_tuple, port=port,
-                              protocol='http', allow_reconnect=True)
+                LOG.info('Use http protocol')
+                self.client = etcd.Client(host=host_tuple, port=port,
+                                          protocol='http',
+                                          allow_reconnect=True)
             else:
-               self.client = etcd.Client(host, port)
+                self.client = etcd.Client(host, port)
         self._make_root()
 
     def _make_root(self):

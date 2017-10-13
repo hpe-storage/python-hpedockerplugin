@@ -304,7 +304,7 @@ class HPE3PARCommon(object):
         try:
             location = None
             auto = True
-            
+
             if lun_id is not None:
                 auto = False
 
@@ -314,7 +314,7 @@ class HPE3PARCommon(object):
             else:
                 port = self.build_portPos(nsp)
                 location = self.client.createVLUN(volume, hostname=hostname,
-                                                  auto=auto, portPos=port, 
+                                                  auto=auto, portPos=port,
                                                   lun=lun_id)
 
             vlun_info = None
@@ -431,7 +431,7 @@ class HPE3PARCommon(object):
         # When deleting VLUNs, you simply need to remove the template VLUN
         # and any active VLUNs will be automatically removed.  The template
         # VLUN are marked as active: False
-      
+
         volume_vluns = []
 
         for vlun in vluns:
@@ -446,7 +446,6 @@ class HPE3PARCommon(object):
                     "host %(host)s"), {'name': volume_name, 'host': hostname})
             LOG.warning(msg)
             return
-
 
         # VLUN Type of MATCHED_SET 4 requires the port to be provided
         for vlun in volume_vluns:
