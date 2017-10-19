@@ -94,7 +94,9 @@ fi
 # Patch the os-bricks code
 
 sudo rm ./v2plugin/rootfs/usr/lib/python2.7/site-packages/os_brick/initiator/linuxscsi.pyc
+sudo rm ./v2plugin/rootfs/usr/lib/python2.7/site-packages/os_brick/privileged/rootwrap.pyc
 sudo cp ./patch_os_bricks/linuxscsi.py ./v2plugin/rootfs/usr/lib/python2.7/site-packages/os_brick/initiator/linuxscsi.py
+sudo cp ./patch_os_bricks/rootwrap.py ./v2plugin/rootfs/usr/lib/python2.7/site-packages/os_brick/privileged/rootwrap.py
 
 # end of patch for os-bricks
 docker plugin create ${pluginName} v2plugin

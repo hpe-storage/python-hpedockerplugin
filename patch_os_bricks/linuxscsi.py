@@ -142,9 +142,10 @@ class LinuxSCSI(executor.Executor):
     def flush_device_io(self, device):
         """This is used to flush any remaining IO in the buffers."""
         try:
-            LOG.debug("Flushing IO for device %s", device)
-            self._execute('blockdev', '--flushbufs', device, run_as_root=True,
-                          root_helper=self._root_helper)
+            LOG.debug("Flushing IO for device with retry %s", device)
+            self._execute('blockdev', '--flushbufs', device,
+                              run_as_root=True, attempts=3, timeout=300,
+                              interval=10, root_helper=self._root_helper)
         except putils.ProcessExecutionError as exc:
             LOG.warning("Failed to flush IO buffers prior to removing "
                         "device: %(code)s", {'code': exc.exit_code})
