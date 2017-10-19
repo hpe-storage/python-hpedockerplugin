@@ -35,7 +35,6 @@ from hpe import volume
 from oslo_utils import importutils
 import etcdutil as util
 
-from twisted.internet import threads
 from oslo_log import log as logging
 
 # import time
@@ -274,15 +273,15 @@ class VolumePlugin(object):
             # remove directory
             fileutil.remove_dir(mount_dir)
 
-        # We're deferring the execution of the disconnect_volume as it can take
-        # substantial
-        # time (over 2 minutes) to cleanup the iscsi files
+        # Changed asynchronous disconnect_volume to sync call
+        # since it causes a race condition between unmount and
+        # mount operation on the same volume. This scenario is
+        # more noticed in case of repeated mount & unmount
+        # operations on the same volume. Refer Issue #64
         if connection_info:
-            LOG.info(_LI('call os brick to disconnect volume'))
-            d = threads.deferToThread(self.connector.disconnect_volume,
-                                      connection_info['data'], None)
-            d.addCallbacks(self.disconnect_volume_callback,
-                           self.disconnect_volume_error_callback)
+            LOG.info(_LI('sync call os brick to disconnect volume'))
+            self.connector.disconnect_volume(connection_info['data'], None)
+            LOG.info(_LI('end of sync call to disconnect volume'))
 
         try:
             # Call driver to terminate the connection
