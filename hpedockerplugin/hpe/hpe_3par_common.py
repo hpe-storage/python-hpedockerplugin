@@ -121,7 +121,7 @@ class HPE3PARCommon(object):
     CONVERT_TO_FULL = 2
     CONVERT_TO_DEDUP = 3
 
-    #License values for reported capabilities
+    # License values for reported capabilities
     COMPRESSION_LIC = "Compression"
 
     # Valid values for volume type extra specs
@@ -534,7 +534,6 @@ class HPE3PARCommon(object):
                 key = fields[1]
             if key in self.hpe3par_valid_keys:
                 hpe3par_keys[key] = value
-        
         return hpe3par_keys
 
     def get_cpg(self, volume, allowSnap=False):
@@ -560,11 +559,11 @@ class HPE3PARCommon(object):
                 valid_licenses = info['licenseInfo']['licenses']
                 compression_support = self._check_license_enabled(
                     valid_licenses, self.COMPRESSION_LIC, "Compression")
-            #here check the WSAPI version
+            # here check the WSAPI version
         if self.API_VERSION < COMPRESSION_API_VERSION:
             err = (_("Compression policy requires "
                      "WSAPI version '%(compression_version)s' "
-                     "version '%(version)s' is installed.")%
+                     "version '%(version)s' is installed.") %
                    {'compression_version': COMPRESSION_API_VERSION,
                     'version': self.self.API_VERSION})
             LOG.error(err)
@@ -614,7 +613,7 @@ class HPE3PARCommon(object):
             tpvv = True
             tdvv = False
             fullprovision = False
-            compression =None
+            compression = None
 
             if prov_value == "full":
                 tpvv = False
@@ -640,17 +639,17 @@ class HPE3PARCommon(object):
 
             capacity = self._capacity_from_size(volume['size'])
 
-            if (tpvv==False and tdvv ==False):
+            if (tpvv is False and tdvv is False):
                 fullprovision = True
 
-            compression_val = volume['compression'] #None/true/False
-            compression =None
+            compression_val = volume['compression']   # None/true/False
+            compression = None
 
             if compression_val is not None:
                 compression = self.get_compression_policy(compression_val)
 
-            if compression == True:
-                if not fullprovision  and capacity >= 16384:
+            if compression is True:
+                if not fullprovision and capacity >= 16384:
                     extras['compression'] = compression
                 else:
                     err = (_("To create compression enabled volume, size of "
@@ -662,7 +661,6 @@ class HPE3PARCommon(object):
                     raise exception.InvalidInput(reason=err)
             if compression is not None:
                 extras['compression'] = compression
-
 
             volume_name = self._get_3par_vol_name(volume['id'])
             self.client.createVolume(volume_name, cpg, capacity, extras)
