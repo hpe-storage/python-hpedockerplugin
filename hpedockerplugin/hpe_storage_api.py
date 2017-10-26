@@ -367,10 +367,9 @@ class VolumePlugin(object):
                 msg = (_('create volume failed, error is:'
                          'passed compression parameterdo not have a valid '
                          'value. Valid vaues are: %(valid)s') %
-                         {'valid': valid_compression_opts, })
+                       {'valid': valid_compression_opts, })
                 LOG.error(msg)
                 return json.dumps({u"Err": six.text_type(msg)})
-
 
         vol_flash = DEFAULT_FLASH_CACHE
         if ('Opts' in contents and contents['Opts'] and
@@ -411,7 +410,7 @@ class VolumePlugin(object):
 
         voluuid = str(uuid.uuid4())
         vol = volume.createvol(volname, voluuid, vol_size, vol_prov,
-                                vol_flash, compression_val)
+                               vol_flash, compression_val)
 
         try:
             self.hpeplugin_driver.create_volume(vol)
