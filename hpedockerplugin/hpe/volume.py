@@ -12,9 +12,10 @@ volume['volume_type'] = ''
 volume['volume_attachment'] = ''
 volume['provisioning'] = ''
 volume['flash_cache'] = ''
+volume['compression'] = ''
 
 
-def createvol(name, uuid, size, prov, flash_cache):
+def createvol(name, uuid, size, prov, flash_cache, compression_val):
     volume['id'] = uuid
     volume['name'] = uuid
     volume['host'] = ''
@@ -30,5 +31,6 @@ def createvol(name, uuid, size, prov, flash_cache):
     volume['path_info'] = None
     volume['provisioning'] = prov
     volume['flash_cache'] = flash_cache
+    volume['compression'] = compression_val
 
     return volume
