@@ -12,6 +12,7 @@ There are several optional parameters that can be used during volume creation:
 - size -- It specifies the desired size in GB of the volume. If size is not specified during volume creation , it defaults to 100 GB.
 - provisioning -- It specifies the type of provisioning to use (thin, full, dedup). If provisioning is not specified during volume creation, it defaults to thin provisioning. For dedup provisioning, CPG with SSD device type must be configured.
 - flash-cache -- It specifies whether flash cache should be used or not (True, False).
+- compression -- It enables or disabled compression on volume which is being created. It is only supported for thin/dedup volumes of size greater or equal to 16 GB. Valid values for compression are (true, false) or (True, False).
 
 Note: Setting flash-cache to True does not gurantee flash-cache will be used. The backend system
 must have the appropriate SSD setup configured, too.
