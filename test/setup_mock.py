@@ -1,11 +1,11 @@
 import mock
-import fake_hpe_3par_client as hpe3parclient
+# import fake_hpe_3par_client as hpe3parclient
 
 from hpedockerplugin.hpe import hpe_3par_common as hpecommon
 from hpedockerplugin import hpe_storage_api as api
 from oslo_config import cfg
 
-hpeexceptions = hpe3parclient.hpeexceptions
+# hpeexceptions = hpe3parclient.hpeexceptions
 
 CONF = cfg.CONF
 
@@ -36,7 +36,7 @@ FAKE_ISCSI_PORT = {'portPos': {'node': 8, 'slot': 1, 'cardPort': 1},
 
 
 @mock.patch(
-    'hpe3parclient.client.HPE3ParClient',
+    'hpedockerplugin.hpe.hpe_3par_common.client.HPE3ParClient',
     spec=True,
 )
 def setup_mock_3parclient(_m_client, conf=None, m_conf=None):
@@ -61,7 +61,6 @@ def setup_mock_3parclient(_m_client, conf=None, m_conf=None):
     # Use this to point to latest version of wsapi
     wsapi_version_latest = wsapi_version_for_compression
 
-    _m_client = _m_client.return_value
 
     # Configure the base constants, defaults etc...
     _m_client.configure_mock(**mock_client_conf)
@@ -98,5 +97,5 @@ def mock_decorator(func):
                      'mock_fileutil': mock_fileutil,
                      'mock_osbrick_connector': mock_osbrick_connector,
                      'mock_etcd': mock_etcd}
-        return func(self, mock_objects, *args, **kwargs)
+                return func(self, mock_objects, *args, **kwargs)
     return setup_mock_wrapper

@@ -20,6 +20,7 @@ from oslo_serialization import base64
 from oslo_utils import importutils
 from oslo_config import cfg
 from oslo_log import log as logging
+from oslo_service import loopingcall
 from oslo_utils import units
 
 from hpedockerplugin import exception
@@ -57,6 +58,10 @@ hpe3par_opts = [
                 default=["OpenStack"],
                 help="List of the CPG(s) to use for volume creation",
                 deprecated_name='hp3par_cpg'),
+    cfg.ListOpt('hpe3par_snapcpg',
+                default=[],
+                help="List of the CPG(s) to use for snapshot creation",
+                deprecated_name='hp3par_snapcpg'),
     cfg.BoolOpt('hpe3par_debug',
                 default=False,
                 help="Enable HTTP debugging to 3PAR",
@@ -103,10 +108,11 @@ class HPE3PARCommon(object):
         0.0.2 - Added the ability to choose volume provisionings.
         0.0.3 - Added support for flash cache.
         0.0.4 - Added support for compression CRUD operation.
+        0.0.5 - Added support for snapshot and clone.
 
     """
 
-    VERSION = "0.0.4"
+    VERSION = "0.0.5"
 
     # TODO(Ramy): move these to the 3PAR Client
     VLUN_TYPE_EMPTY = 1
@@ -275,6 +281,24 @@ class HPE3PARCommon(object):
         """
         volume_name = self._encode_name(volume_id)
         return "dcv-%s" % volume_name
+
+    def _get_3par_snap_name(self, snapshot_id):
+        """Get converted 3PAR volume name.
+
+        Converts the openstack volume id from
+        ecffc30f-98cb-4cf5-85ee-d7309cc17cd2
+        to
+        dcv-7P.DD5jLTPWF7tcwnMF80g
+
+        We convert the 128 bits of the uuid into a 24character long
+        base64 encoded string to ensure we don't exceed the maximum
+        allowed 31 character name limit on 3Par
+
+        We strip the padding '=' and replace + with .
+        and / with -
+        """
+        snapshot_name = self._encode_name(snapshot_id)
+        return "dcs-%s" % snapshot_name
 
     def _get_3par_vvs_name(self, volume_id):
         vvs_name = self._encode_name(volume_id)
@@ -633,6 +657,9 @@ class HPE3PARCommon(object):
             extras = {'comment': json.dumps(comments),
                       'tpvv': tpvv, }
 
+            if len(self.config.hpe3par_snapcpg):
+                extras['snapCPG'] = self.config.hpe3par_snapcpg[0]
+
             # Only set the dedup option if the backend supports it.
             if self.API_VERSION >= DEDUP_API_VERSION:
                 extras['tdvv'] = tdvv
@@ -694,9 +721,12 @@ class HPE3PARCommon(object):
             LOG.error(_LE("Exception: %s"), ex)
             raise exception.PluginException(ex)
 
-    def delete_volume(self, volume):
+    def delete_volume(self, volume, is_snapshot=False):
         try:
-            volume_name = self._get_3par_vol_name(volume['id'])
+            if is_snapshot:
+                volume_name = self._get_3par_snap_name(volume['id'])
+            else:
+                volume_name = self._get_3par_vol_name(volume['id'])
             # Try and delete the volume, it might fail here because
             # the volume is part of a volume set which will have the
             # volume set name in the error.
@@ -938,3 +968,202 @@ class HPE3PARCommon(object):
                 return host, hostname
 
         return host, hostname
+
+    def create_snapshot(self, snapshot):
+        LOG.debug("Create Snapshot\n%s", json.dumps(snapshot, indent=2))
+
+        try:
+            snap_name = self._get_3par_snap_name(snapshot['id'])
+            vol_name = self._get_3par_vol_name(snapshot['volume_id'])
+
+            extra = {'volume_name': snapshot['volume_name']}
+            vol_id = snapshot.get('volume_id', None)
+            if vol_id:
+                extra['volume_id'] = vol_id
+
+            try:
+                extra['display_name'] = snapshot['display_name']
+            except AttributeError:
+                pass
+
+            try:
+                extra['description'] = snapshot['display_description']
+            except AttributeError:
+                pass
+
+            optional = {'comment': json.dumps(extra),
+                        'readOnly': True}
+            if snapshot['expirationHours']:
+                optional['expirationHours'] = snapshot['expirationHours']
+            if snapshot['retentionHours']:
+                optional['retentionHours'] = snapshot['retentionHours']
+
+            self.client.createSnapshot(snap_name, vol_name, optional)
+        except hpeexceptions.HTTPForbidden as ex:
+            LOG.error("Exception: %s", ex)
+            raise exception.NotAuthorized()
+        except hpeexceptions.HTTPNotFound as ex:
+            LOG.error("Exception: %s", ex)
+            raise exception.NotFound()
+
+    def create_cloned_volume(self, dst_volume, src_vref):
+        try:
+            dst_3par_vol_name = self._get_3par_vol_name(dst_volume['id'])
+            src_3par_vol_name = self._get_3par_vol_name(src_vref['id'])
+            # back_up_process = False
+            vol_chap_enabled = False
+
+            # Check whether a volume is ISCSI and CHAP enabled on it.
+            if self.config.hpe3par_iscsi_chap_enabled:
+                try:
+                    vol_chap_enabled = self.client.getVolumeMetaData(
+                        src_3par_vol_name, 'HPQ-docker-CHAP-name')['value']
+                except hpeexceptions.HTTPNotFound:
+                    LOG.debug("CHAP is not enabled on volume %(vol)s ",
+                              {'vol': src_vref['id']})
+                    vol_chap_enabled = False
+
+            # # Check whether a process is a backup
+            # if str(src_vref['status']) == 'backing-up':
+            #     back_up_process = True
+
+            # if the sizes of the 2 volumes are the same and except backup
+            # process for ISCSI volume with chap enabled on it.
+            # we can do an online copy, which is a background process
+            # on the 3PAR that makes the volume instantly available.
+            # We can't resize a volume, while it's being copied.
+            if dst_volume['size'] == src_vref['size'] and not (
+               #back_up_process and
+               vol_chap_enabled):
+                LOG.debug("Creating a clone of volume, using online copy.")
+
+                cpg = self.config.hpe3par_cpg[0]
+                snap_cpg = None
+                if len(self.config.hpe3par_snapcpg):
+                    snap_cpg = self.config.hpe3par_snapcpg[0]
+
+                # check for valid provisioning type
+                prov_value = src_vref['provisioning']
+                if prov_value not in self.valid_prov_values:
+                    err = (_("Must specify a valid provisioning type %(valid)s, "
+                             "value '%(prov)s' is invalid.") %
+                           {'valid': self.valid_prov_values,
+                            'prov': prov_value})
+                    LOG.error(err)
+                    raise exception.InvalidInput(reason=err)
+
+                prov_map = {"full": {"tpvv": False, "tdvv": False},
+                            "thin": {"tpvv": True, "tdvv": False},
+                            "dedup": {"tpvv": False, "tdvv": True}}
+                tpvv = prov_map[prov_value]['tpvv']
+                tdvv = prov_map[prov_value]['tdvv']
+
+                if tdvv and (self.API_VERSION < DEDUP_API_VERSION):
+                    err = (_("Dedup is a valid provisioning type, "
+                             "but requires WSAPI version '%(dedup_version)s' "
+                             "version '%(version)s' is installed.") %
+                           {'dedup_version': DEDUP_API_VERSION,
+                            'version': self.API_VERSION})
+                    LOG.error(err)
+                    raise exception.InvalidInput(reason=err)
+
+                # compression_val = self.get_compression_policy(
+                #     type_info['hpe3par_keys'])
+                compression_val = None
+
+                # make the 3PAR copy the contents.
+                # can't delete the original until the copy is done.
+                self._copy_volume(src_3par_vol_name, dst_3par_vol_name, cpg=cpg,
+                                  snap_cpg=snap_cpg,
+                                  tpvv=tpvv,
+                                  tdvv=tdvv,
+                                  compression=compression_val)
+
+                # Check if flash cache needs to be enabled
+                flash_cache = self.get_flash_cache_policy(src_vref['flash_cache'])
+
+                if flash_cache is not None:
+                    try:
+                        self._add_volume_to_volume_set(dst_volume, src_3par_vol_name,
+                                                       cpg, flash_cache)
+                    except exception.InvalidInput as ex:
+                        # Delete the volume if unable to add it to the volume set
+                        self.client.deleteVolume(dst_3par_vol_name)
+                        LOG.error(_LE("Exception: %s"), ex)
+                        raise exception.PluginException(ex)
+            else:
+                # The size of the new volume is different, so we have to
+                # copy the volume and wait.  Do the resize after the copy
+                # is complete.
+                LOG.debug("Creating a clone of volume, using offline copy.")
+
+                # we first have to create the destination volume
+                model_update = self.create_volume(dst_volume)
+
+                optional = {'priority': 1}
+                body = self.client.copyVolume(src_3par_vol_name, dst_3par_vol_name, None,
+                                              optional=optional)
+                task_id = body['taskid']
+
+                task_status = self._wait_for_task_completion(task_id)
+                if task_status['status'] is not self.client.TASK_DONE:
+                    dbg = {'status': task_status, 'id': dst_volume['id']}
+                    msg = _('Copy volume task failed: create_cloned_volume '
+                            'id=%(id)s, status=%(status)s.') % dbg
+                    raise exception.PluginException(msg)
+                else:
+                    LOG.debug('Copy volume completed: create_cloned_volume: '
+                              'id=%s.', dst_volume['id'])
+
+                return model_update
+
+        except hpeexceptions.HTTPForbidden:
+            raise exception.NotAuthorized()
+        except hpeexceptions.HTTPNotFound:
+            raise exception.NotFound()
+        except Exception as ex:
+            LOG.error("Exception: %s", ex)
+            raise exception.PluginException(ex)
+
+    def _copy_volume(self, src_name, dest_name, cpg, snap_cpg=None,
+                     tpvv=True, tdvv=False, compression=None):
+        # Virtual volume sets are not supported with the -online option
+        LOG.debug('Creating clone of a volume %(src)s to %(dest)s.',
+                  {'src': src_name, 'dest': dest_name})
+
+        optional = {'tpvv': tpvv, 'online': True}
+        if snap_cpg is not None:
+            optional['snapCPG'] = snap_cpg
+
+        if self.API_VERSION >= DEDUP_API_VERSION:
+            optional['tdvv'] = tdvv
+
+        # TODO: To be uncommented
+        # if (compression is not None and
+        #         self.API_VERSION >= COMPRESSION_API_VERSION):
+        #     optional['compression'] = compression
+
+        body = self.client.copyVolume(src_name, dest_name, cpg, optional)
+        return body['taskid']
+
+    def _wait_for_task_completion(self, task_id):
+        """This waits for a 3PAR background task complete or fail.
+
+        This looks for a task to get out of the 'active' state.
+        """
+        # Wait for the physical copy task to complete
+        def _wait_for_task(task_id):
+            status = self.client.getTask(task_id)
+            LOG.debug("3PAR Task id %(id)s status = %(status)s",
+                      {'id': task_id,
+                       'status': status['status']})
+            if status['status'] is not self.client.TASK_ACTIVE:
+                self._task_status = status
+                raise loopingcall.LoopingCallDone()
+
+        self._task_status = None
+        timer = loopingcall.FixedIntervalLoopingCall(
+            _wait_for_task, task_id)
+        timer.start(interval=1).wait()
+
+        return self._task_status

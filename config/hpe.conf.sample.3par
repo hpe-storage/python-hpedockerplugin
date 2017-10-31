@@ -50,6 +50,7 @@ san_ip = <SAN IP>
 san_login = <SAN username>
 san_password = <SAN password>
 hpe3par_cpg = <CPG name used for volume creation>
+hpe3par_snapcpg = <CPG name used for snapshot creation>
 iscsi_ip_address = <iSCSI IP address>
 hpe3par_iscsi_chap_enabled = <True or False>
 use_multipath = <True or False>

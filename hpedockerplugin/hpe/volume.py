@@ -13,6 +13,7 @@ volume['volume_attachment'] = ''
 volume['provisioning'] = ''
 volume['flash_cache'] = ''
 volume['compression'] = ''
+volume['snapshots'] = []
 
 
 def createvol(name, uuid, size, prov, flash_cache, compression_val):
@@ -32,5 +33,6 @@ def createvol(name, uuid, size, prov, flash_cache, compression_val):
     volume['provisioning'] = prov
     volume['flash_cache'] = flash_cache
     volume['compression'] = compression_val
+    volume['snapshots'] = []
 
     return volume

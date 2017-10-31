@@ -92,11 +92,7 @@ class VolumePlugin(object):
         self._path_info = []
         self._my_ip = netutils.get_my_ipv4()
 
-        self._etcd = util.EtcdUtil(
-            self._hpepluginconfig.host_etcd_ip_address,
-            self._hpepluginconfig.host_etcd_port_number,
-            self._hpepluginconfig.host_etcd_client_cert,
-            self._hpepluginconfig.host_etcd_client_key)
+        self._etcd = self._get_etcd_util()
 
         # TODO: make device_scan_attempts configurable
         # see nova/virt/libvirt/volume/iscsi.py
@@ -109,14 +105,12 @@ class VolumePlugin(object):
         self.use_multipath = True
         self.enforce_multipath = True
 
-        self.connector = connector.InitiatorConnector.factory(
-            protocol, root_helper, use_multipath=self.use_multipath,
-            device_scan_attempts=5, transport='default')
+        self.connector = self._get_connector(protocol)
 
-    def _get_connector(self):
+    def _get_connector(self, protocol):
         root_helper = 'sudo'
         return connector.InitiatorConnector.factory(
-            'ISCSI', root_helper, use_multipath=self.use_multipath,
+            protocol, root_helper, use_multipath=self.use_multipath,
             device_scan_attempts=5, transport='default')
 
     def _get_etcd_util(self):
@@ -152,7 +146,29 @@ class VolumePlugin(object):
         :return: Result indicating success.
         """
         contents = json.loads(name.content.getvalue())
-        volname = contents['Name']
+        obj_to_remove = contents['Name']
+        tokens = obj_to_remove.split('/')
+        token_cnt = len(tokens)
+        LOG.debug("volumedriver_remove - obj_to_remove: %s" %
+                  obj_to_remove)
+        if token_cnt > 2:
+            msg = (_LE("invalid volume or snapshot name %s"
+                       % obj_to_remove))
+            LOG.error(msg)
+            response = json.dumps({u"Err": msg})
+            return response
+
+        if token_cnt == 2:
+            volname = tokens[0]
+            snapname = tokens[1]
+            # We don't want to insert remove-snapshot code within
+            # remove-volume code for two reasons:
+            # 1. We want to avoid regression in existing remove-volume
+            # 2. In the future, if docker engine provides snapshot
+            #    support, this code should have minimum impact
+            return self.volumedriver_remove_snapshot(volname, snapname)
+        else:
+            volname = tokens[0]
 
         # Only 1 node in a multinode cluster can try to remove the volume.
         # Grab lock for volume name. If lock is inuse, just return with no
@@ -184,9 +200,18 @@ class VolumePlugin(object):
             return json.dumps({u"Err": ''})
 
         try:
-            self.hpeplugin_driver.delete_volume(vol)
-            LOG.info(_LI('volume: %(name)s,' 'was successfully deleted'),
-                     {'name': volname})
+            if vol['snapshots']:
+                msg = (_LE('Err: Volume %s has one or more child '
+                           'snapshots - volume cannot be deleted!'
+                           % volname))
+                LOG.error(msg)
+                # raise exception.HPEPluginRemoveException(reason=msg)
+                response = json.dumps({u"Err": msg})
+                return response
+            else:
+                self.hpeplugin_driver.delete_volume(vol)
+                LOG.info(_LI('volume: %(name)s,' 'was successfully deleted'),
+                         {'name': volname})
         except Exception as ex:
             msg = (_LE('Err: Failed to remove volume %s, error is %s'),
                    volname, six.text_type(ex))
@@ -220,6 +245,99 @@ class VolumePlugin(object):
             response = json.dumps({u"Err": six.text_type(ex)})
             return response
         return json.dumps({u"Err": ''})
+
+    def _get_snapshot_by_name(self, snapshots, snapname):
+        idx = 0
+        for s in snapshots:
+            if s['name'] == snapname:
+                return s, idx
+            idx = idx + 1
+        return None, None
+
+    def volumedriver_remove_snapshot(self, volname, snapname):
+        try:
+            LOG.debug("volumedriver_remove_snapshot - locking volume %s"
+                      % volname)
+            self._etcd.try_lock_volname(volname)
+
+            LOG.debug("volumedriver_remove_snapshot - getting volume %s"
+                      % volname)
+
+            vol = self._etcd.get_vol_byname(volname)
+            if vol is None:
+                # Just log an error, but don't fail the docker rm command
+                msg = (_LE('Volume remove name not found %s'), volname)
+                LOG.error(msg)
+                return json.dumps({u"Err": msg})
+
+            if snapname:
+                snapshots = vol['snapshots']
+                LOG.debug("Getting snapshot by name: %s" % snapname)
+                snapshot, idx = self._get_snapshot_by_name(snapshots,
+                                                           snapname)
+
+                if snapshot:
+                    LOG.debug("Found snapshot by name: %s" % snapname)
+                    # Does the snapshot have child snapshot(s)?
+                    for s in snapshots:
+                        LOG.debug("Checking if snapshot has children: %s" % snapname)
+                        if s['parent_id'] == snapshot['id']:
+                            msg = (_LE('snapshot %s has one or more child '
+                                       'snapshots - it cannot be deleted!'
+                                       % snapname))
+                            LOG.error(msg)
+                            # raise exception.HPEPluginRemoveException(reason=msg)
+                            response = json.dumps({u"Err": msg})
+                            return response
+                    LOG.debug("Deleting snapshot at backend: %s" % snapname)
+                    self.hpeplugin_driver.delete_volume(snapshot,
+                                                        is_snapshot=True)
+
+                    LOG.debug("Deleting snapshot in ETCD - %s" % snapname)
+                    # Remove snapshot entry from list and save it back to ETCD DB
+                    del snapshots[idx]
+                    try:
+                        LOG.debug("Updating volume in ETCD after snapshot removal"
+                                  " - vol-name: %s" % volname)
+                        # For now just track volume to uuid mapping internally
+                        # TODO: Save volume name and uuid mapping in etcd as well
+                        # This will make get_vol_byname more efficient
+                        self._etcd.update_vol(vol['id'],
+                                              'snapshots',
+                                              snapshots)
+                        LOG.debug('snapshot: %(name)s was successfully removed',
+                                  {'name': snapname})
+                        response = json.dumps({u"Err": ''})
+                        return response
+                    except Exception as ex:
+                        msg = (_('remove snapshot from etcd failed, error is: %s'),
+                               six.text_type(ex))
+                        LOG.error(msg)
+                        response = json.dumps({u"Err": six.text_type(ex)})
+                        return response
+                else:
+                    msg = (_LE('snapshot %s does not exist!' % snapname))
+                    LOG.error(msg)
+                    # raise exception.HPEPluginRemoveException(reason=msg)
+                    response = json.dumps({u"Err": msg})
+                    return response
+
+        except Exception:
+                LOG.debug('volume: %(name)s is locked',
+                          {'name': volname})
+                response = json.dumps({u"Err": ''})
+                return response
+        finally:
+            # Expand lock code inline as function based lock causes
+            # unexpected behavior
+            try:
+                self._etcd.try_unlock_volname(volname)
+            except Exception as ex:
+
+                LOG.debug('volume: %(name)s Unlock Volume Failed',
+                          {'name': volname})
+                response = json.dumps({u"Err": six.text_type(ex)})
+                return response
 
     @app.route("/VolumeDriver.Unmount", methods=["POST"])
     def volumedriver_unmount(self, name):
@@ -332,7 +450,9 @@ class VolumePlugin(object):
 
         # Verify valid Opts arguments.
         valid_volume_create_opts = ['mount-volume', 'compression',
-                                    'size', 'provisioning', 'flash-cache']
+                                    'size', 'provisioning', 'flash-cache',
+                                    'cloneOf', 'snapshotOf', 'expirationHours',
+                                    'retentionHours']
 
         valid_compression_opts = ['true', 'false']
 
@@ -346,6 +466,13 @@ class VolumePlugin(object):
                             'valid': valid_volume_create_opts, })
                     LOG.error(msg)
                     return json.dumps({u"Err": six.text_type(msg)})
+
+        if ('Opts' in contents and contents['Opts'] and
+            'snapshotOf' in contents['Opts']):
+            return self.volumedriver_create_snapshot(name, opts)
+        elif ('Opts' in contents and contents['Opts'] and
+            'cloneOf' in contents['Opts']):
+            return self.volumedriver_clone_volume(name, opts)
 
         vol_size = DEFAULT_SIZE
         if ('Opts' in contents and contents['Opts'] and
@@ -455,6 +582,223 @@ class VolumePlugin(object):
             response = json.dumps({u"Err": six.text_type(ex)})
             return response
         return response
+
+    def volumedriver_clone_volume(self, name, opts=None):
+        # Repeating the validation here in anticipation that when
+        # actual REST call for clone is added, this
+        # function will have minimal impact
+        contents = json.loads(name.content.getvalue())
+        if 'Name' not in contents:
+            msg = (_('clone volume failed, error is: Name is required.'))
+            LOG.error(msg)
+            raise exception.HPEPluginCreateException(reason=msg)
+
+        src_vol_name = str(contents['Opts']['cloneOf'])
+        clone_name = contents['Name']
+
+        src_lock_acquired = False
+        clone_lock_acquired = False
+        try:
+            self._etcd.try_lock_volname(src_vol_name)
+            src_lock_acquired = True
+
+            self._etcd.try_lock_volname(clone_name)
+            clone_lock_acquired = True
+
+            # Check if volume is present in database
+            src_vol = self._etcd.get_vol_byname(src_vol_name)
+            if src_vol is None:
+                msg = 'source volume: %s does not exist' % src_vol_name
+                LOG.debug(msg)
+                response = json.dumps({u"Err": msg})
+                return response
+
+            if ('Opts' in contents and contents['Opts'] and
+                        'size' in contents['Opts']):
+                size = int(contents['Opts']['size'])
+            else:
+                size = src_vol['size']
+
+            if size < src_vol['size']:
+                msg = 'clone volume size %s is less than source ' \
+                      'volume size %s' % (size, src_vol['size'])
+                LOG.debug(msg)
+                response = json.dumps({u"Err": msg})
+                return response
+
+            clone_vol_id = str(uuid.uuid4())
+            # Create clone volume specification
+            clone_vol = volume.createvol(clone_name, clone_vol_id, size,
+                                         src_vol['provisioning'],
+                                         src_vol['flash_cache'])
+            try:
+                self.hpeplugin_driver.create_cloned_volume(clone_vol, src_vol)
+
+                response = json.dumps({u"Err": ''})
+                # For now just track volume to uuid mapping internally
+                # TODO: Save volume name and uuid mapping in etcd as well
+                # This will make get_vol_byname more efficient
+                self._etcd.save_vol(clone_vol)
+                return response
+            except exception.HPEPluginEtcdException as ex:
+                # TODO: 3PAR clean up issue over here - clone got created
+                # in the backend but since it could not be saved in etcd db
+                # we are throwing an error saying operation failed.
+                # TODO: This needs to be fixed
+                response = json.dumps({u"Err": ex.message})
+                return response
+
+            except Exception as ex:
+                msg = (_('clone volume failed, error is: %s'), six.text_type(ex))
+                LOG.error(msg)
+                response = json.dumps({u"Err": six.text_type(ex)})
+                return response
+        except exception.HPEPluginEtcdException as ex:
+            # Imran: Returning good response even when exception is caught???
+            response = json.dumps({u"Err": ''})
+            return response
+        except Exception as ex:
+            msg = (_('unknown exception caught while cloning volume %(name)s - '
+                     'reason: %(reason)s',
+                      {'name': clone_name, 'reason': ex.message}))
+            LOG.debug(msg)
+            response = json.dumps({u"Err": ''})
+            return response
+
+        finally:
+            # Release lock and return
+            # NOTE: if for some reason unlock fails, we'll lose this
+            # create exception.
+            # Expand lock code inline as function based lock causes
+            # unexpected behavior
+            if src_lock_acquired:
+                try:
+                    self._etcd.try_unlock_volname(src_vol_name)
+                except Exception as ex:
+                    LOG.debug('volume: %(name)s Unlock Volume Failed',
+                              {'name': src_vol_name})
+                    # response = json.dumps({u"Err": six.text_type(ex)})
+                    # return response
+            if clone_lock_acquired:
+                try:
+                    self._etcd.try_unlock_volname(clone_name)
+                except Exception as ex:
+                    LOG.debug('volume: %(name)s Unlock Volume Failed',
+                              {'name': clone_name})
+                    # response = json.dumps({u"Err": six.text_type(ex)})
+                    # return response
+
+    def volumedriver_create_snapshot(self, name, opts=None):
+        # Repeating the validation here in anticipation that when
+        # actual REST call for snapshot creation is added, this
+        # function will have minimal impact
+        contents = json.loads(name.content.getvalue())
+        if 'Name' not in contents:
+            msg = (_('create snapshot failed, error is: Name is required.'))
+            LOG.error(msg)
+            raise exception.HPEPluginCreateException(reason=msg)
+
+        src_vol_name = str(contents['Opts']['snapshotOf'])
+        snapshot_name = contents['Name']
+
+        # Verify valid Opts arguments.
+        valid_volume_create_opts = ['snapshotOf', 'expirationHours',
+                                    'retentionHours']
+        if 'Opts' in contents and contents['Opts']:
+            for key in contents['Opts']:
+                if key not in valid_volume_create_opts:
+                    msg = (_('create snapshot failed, error is: '
+                             '%(key)s is not a valid option. Valid options '
+                             'are: %(valid)s') %
+                           {'key': key,
+                            'valid': valid_volume_create_opts, })
+                    LOG.error(msg)
+                    return json.dumps({u"Err": six.text_type(msg)})
+
+        expiration_hrs = None
+        if 'Opts' in contents and contents['Opts'] and \
+                        'expirationHours' in contents['Opts']:
+            expiration_hrs = int(contents['Opts']['expirationHours'])
+
+        retention_hrs = None
+        if 'Opts' in contents and contents['Opts'] and \
+                        'retentionHours' in contents['Opts']:
+            retention_hrs = int(contents['Opts']['retentionHours'])
+
+        lock_acquired = False
+        try:
+            self._etcd.try_lock_volname(src_vol_name)
+
+            lock_acquired = True
+
+            # Check if volume is present in database
+            vol = self._etcd.get_vol_byname(src_vol_name)
+            if vol is None:
+                msg = 'source volume: %s does not exist' % src_vol_name
+                LOG.debug(msg)
+                response = json.dumps({u"Err": msg})
+                return response
+
+            snapshot_id = str(uuid.uuid4())
+            snapshot = {'id': snapshot_id,
+                        'display_name': snapshot_name,
+                        'volume_id': vol['id'],
+                        'volume_name': src_vol_name,
+                        'expirationHours': expiration_hrs,
+                        'retentionHours': retention_hrs,
+                        'display_description': 'snapshot of volume %s' %src_vol_name}
+
+            try:
+                self.hpeplugin_driver.create_snapshot(snapshot)
+
+                response = json.dumps({u"Err": ''})
+                db_snapshot = {'name': snapshot_name,
+                               'id': snapshot_id,
+                               'parent_id': vol['id'],
+                               'expiration_hours': expiration_hrs,
+                               'retention_hours': retention_hrs}
+                vol['snapshots'].append(db_snapshot)
+                try:
+                    # For now just track volume to uuid mapping internally
+                    # TODO: Save volume name and uuid mapping in etcd as well
+                    # This will make get_vol_byname more efficient
+                    self._etcd.save_vol(vol)
+                    LOG.debug('snapshot: %(name)s was successfully saved to etcd',
+                              {'name': snapshot_name})
+                except Exception as ex:
+                    # TODO: 3PAR clean up issue over here - snapshot got created
+                    # in the backend but since it could not be saved in etcd db
+                    # we are throwing an error saying operation failed.
+                    msg = (_('save volume to etcd failed, error is: %s'),
+                           six.text_type(ex))
+                    LOG.error(msg)
+                    response = json.dumps({u"Err": six.text_type(ex)})
+                return response
+
+            except Exception as ex:
+                msg = (_('create snapshot failed, error is: %s'), six.text_type(ex))
+                LOG.error(msg)
+                return json.dumps({u"Err": six.text_type(ex)})
+
+        except Exception:
+            LOG.debug('volume: %(name)s is locked',
+                      {'name': src_vol_name})
+            response = json.dumps({u"Err": ''})
+            return response
+        finally:
+            # Release lock and return
+            # NOTE: if for some reason unlock fails, we'll lose this
+            # create exception.
+            # Expand lock code inline as function based lock causes
+            # unexpected behavior
+            if lock_acquired:
+                try:
+                    self._etcd.try_unlock_volname(src_vol_name)
+                except Exception as ex:
+                    LOG.debug('volume: %(name)s Unlock Volume Failed',
+                              {'name': src_vol_name})
+                    # response = json.dumps({u"Err": six.text_type(ex)})
+                    # return response
 
     @app.route("/VolumeDriver.Mount", methods=["POST"])
     def volumedriver_mount(self, name):
@@ -619,6 +963,21 @@ class VolumePlugin(object):
         """
         contents = json.loads(name.content.getvalue())
         volname = contents['Name']
+        tokens = volname.split('/')
+        token_cnt = len(tokens)
+
+        if token_cnt > 2:
+            msg = (_LE("invalid volume or snapshot name %s"
+                       % volname))
+            LOG.error(msg)
+            response = json.dumps({u"Err": msg})
+            return response
+
+        volname = tokens[0]
+        snapname = None
+        if token_cnt == 2:
+            snapname = tokens[1]
+
         volinfo = self._etcd.get_vol_byname(volname)
         err = ''
         if volinfo is None:
@@ -636,13 +995,30 @@ class VolumePlugin(object):
             devicename = ''
 
         # use volinfo as volname could be partial match
-        volume = {'Name': volinfo['display_name'],
+        volume = {'Name': contents['Name'],
                   'Mountpoint': mountdir,
                   'Devicename': devicename,
-                  'Size': volinfo['size'],
-                  'Status': {}}
+                  'Size': volinfo['size']}
+        if snapname:
+            snapshot, idx = self._get_snapshot_by_name(volinfo['snapshots'],
+                                                       snapname)
+            settings = {"Settings": {'expirationHours': snapshot['expiration_hours'],
+                       'retentionHours': snapshot['retention_hours']}}
+            volume['Status'] = settings
+        else:
+            snapshots = volinfo.get('snapshots', None)
+            if snapshots:
+                ss_list_to_show = []
+                for s in snapshots:
+                    snapshot = {'Name': s['name'],
+                                'ParentName': volname}
+                    ss_list_to_show.append(snapshot)
+                volume['Status'] = {'Snapshots': ss_list_to_show}
+            else:
+                volume['Status'] = {}
 
         response = json.dumps({u"Err": err, u"Volume": volume})
+        LOG.debug("Get volume/snapshot: \n%s" % str(response))
         return response
 
     @app.route("/VolumeDriver.List", methods=["POST"])

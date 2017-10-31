@@ -54,8 +54,8 @@ def create_configuration():
     config.hpe3par_debug = False
     config.suppress_requests_ssl_warnings = False
     # self._config.hpedockerplugin_driver = self.get_driver_class_name()
-    config.hpedockerplugin_driver = "hpedockerplugin.hpe.hpe_3par_iscsi. \
-        HPE3PARISCSIDriver"
+    config.hpedockerplugin_driver = "hpedockerplugin.hpe.hpe_3par_iscsi." \
+                                    "HPE3PARISCSIDriver"
     config.hpe3par_api_url = "https://10.50.3.7:8080/api/v1"
     config.hpe3par_username = "3paradm"
     config.hpe3par_password = "3pardata"
@@ -63,6 +63,7 @@ def create_configuration():
     config.san_login = "3paradm"
     config.san_password = "3pardata"
     config.hpe3par_cpg = [HPE3PAR_CPG, HPE3PAR_CPG2]
+    config.hpe3par_snapcpg = [HPE3PAR_CPG]
     # config.hpe3par_iscsi_ips = ["10.50.17.220", "10.50.17.221",
     #                             "10.50.17.222", "10.50.17.223"]
     config.hpe3par_iscsi_ips = []
