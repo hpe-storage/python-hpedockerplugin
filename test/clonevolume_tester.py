@@ -2,7 +2,7 @@ import mock
 import testtools
 
 import fake_3par_data as data
-import test_createvolume as createvolume
+import createvolume_tester as createvolume
 from hpe3parclient import exceptions
 
 
@@ -12,7 +12,7 @@ class CloneVolumeUnitTest(createvolume.CreateVolumeUnitTest):
 
 
 # This exercises online-copy path
-class TestCloneDefault(CloneVolumeUnitTest, testtools.TestCase):
+class TestCloneDefault(CloneVolumeUnitTest):
     def check_response(self, resp):
         self.assertEqual(resp, {u"Err": ''})
 
@@ -30,18 +30,17 @@ class TestCloneDefault(CloneVolumeUnitTest, testtools.TestCase):
 
 
 # TODO: Rollback is needed for created volume else unit test would fail
-class TestCloneDefaultEtcdSaveFails(CloneVolumeUnitTest, testtools.TestCase):
+class TestCloneDefaultEtcdSaveFails(CloneVolumeUnitTest):
     pass
 
 
 # Offline copy
-class TestCloneOfflineCopy(CloneVolumeUnitTest, testtools.TestCase):
+class TestCloneOfflineCopy(CloneVolumeUnitTest):
     def check_response(self, resp):
         self.assertEqual(resp, {u"Err": ''})
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.createVolume.assert_called()
         mock_3parclient.copyVolume.assert_called()
-
 
     def get_request_params(self):
         return {"Name": "clone-vol-001",
@@ -61,7 +60,7 @@ class TestCloneOfflineCopy(CloneVolumeUnitTest, testtools.TestCase):
 
 
 # Make copyVolume operation fail
-class TestCloneOfflineCopyFailed(CloneVolumeUnitTest, testtools.TestCase):
+class TestCloneOfflineCopyFails(CloneVolumeUnitTest):
     def check_response(self, resp):
         self.assertEqual(resp, {u"Err": ''})
 
@@ -88,7 +87,7 @@ class TestCloneOfflineCopyFailed(CloneVolumeUnitTest, testtools.TestCase):
         mock_3parclient.getTask.return_value = {'status': data.TASK_FAILED}
 
 
-class TestCloneInvalidSourceVolume(CloneVolumeUnitTest, testtools.TestCase):
+class TestCloneInvalidSourceVolume(CloneVolumeUnitTest):
     def check_response(self, resp):
         self.assertEqual(resp, {u"Err": ''})
 
@@ -106,11 +105,11 @@ class TestCloneInvalidSourceVolume(CloneVolumeUnitTest, testtools.TestCase):
 
 
 # TODO: Make this fail and in validation compare error message
-class TestCloneWithInvalidSize(CloneVolumeUnitTest, testtools.TestCase):
+class TestCloneWithInvalidSize(CloneVolumeUnitTest):
     pass
 
 # Online copy with dedup
-class TestCloneDedupVolume(CloneVolumeUnitTest, testtools.TestCase):
+class TestCloneDedupVolume(CloneVolumeUnitTest):
     def check_response(self, resp):
         self.assertEqual(resp, {u"Err": ''})
 
@@ -128,7 +127,7 @@ class TestCloneDedupVolume(CloneVolumeUnitTest, testtools.TestCase):
 
 
 # Online copy with flash cache flow
-class TestCloneWithFlashCache(CloneVolumeUnitTest, testtools.TestCase):
+class TestCloneWithFlashCache(CloneVolumeUnitTest):
     def check_response(self, resp):
         self.assertEqual(resp, {u"Err": ''})
 
@@ -152,7 +151,7 @@ class TestCloneWithFlashCache(CloneVolumeUnitTest, testtools.TestCase):
 
 
 # Online copy with flash cache - add to vvset fails
-class TestCloneWithFlashCacheAddVVSetFails(CloneVolumeUnitTest, testtools.TestCase):
+class TestCloneWithFlashCacheAddVVSetFails(CloneVolumeUnitTest):
     def check_response(self, resp):
         self.assertEqual(resp, {u"Err": u'Not found (HTTP 404) - fake'})
 
@@ -182,7 +181,7 @@ class TestCloneWithFlashCacheAddVVSetFails(CloneVolumeUnitTest, testtools.TestCa
 
 
 # CHAP enabled makes Offline copy flow to execute
-class TestCloneWithCHAP(CloneVolumeUnitTest, testtools.TestCase):
+class TestCloneWithCHAP(CloneVolumeUnitTest):
     def override_configuration(self, config):
         config.hpe3par_iscsi_chap_enabled = True
 
@@ -208,12 +207,12 @@ class TestCloneWithCHAP(CloneVolumeUnitTest, testtools.TestCase):
         mock_3parclient.getTask.return_value = {'status': data.TASK_DONE}
 
 # TODO: This is already covered in other tests above
-class TestCloneWithoutCHAP(CloneVolumeUnitTest, testtools.TestCase):
+class TestCloneWithoutCHAP(CloneVolumeUnitTest):
     pass
 
 
 # Override WS-API-Version to have lower value
-class TestCloneUnsupportedDedupVersion(CloneVolumeUnitTest, testtools.TestCase):
+class TestCloneUnsupportedDedupVersion(CloneVolumeUnitTest):
     def check_response(self, resp):
         self.assertEqual(resp, {u"Err": ''})
 
@@ -237,3 +236,26 @@ class TestCloneUnsupportedDedupVersion(CloneVolumeUnitTest, testtools.TestCase):
 
 
 # TODO: Compression related TCs to be added later
+class TestCloneCompressedVolume(CloneVolumeUnitTest):
+    def check_response(self, resp):
+        self.assertEqual(resp, {u"Err": ''})
+
+    def get_request_params(self):
+        return {"Name": "clone-vol-001",
+                "Opts": {"cloneOf": data.VOLUME_NAME}}
+
+    def setup_mock_objects(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.return_value = data.volume_compression
+
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.getWsApiVersion.return_value = \
+            {'major': 1,
+             # Setting it to lower version that doesn't support dedup
+             'build': 30301215,
+             'minor': 6,
+             'revision': 0}
+        mock_3parclient.copyVolume.return_value = {'taskid': data.TASK_ID}
+        mock_3parclient.getCPG.return_value = {}
+        mock_3parclient.getStorageSystemInfo.return_value = \
+            {'licenseInfo': {'licenses': [{'name': 'Compression'}]}}

@@ -1,8 +1,9 @@
+import fake_3par_data as data
 import json
 import mock
-
-from hpedockerplugin import hpe_storage_api as api
+import setup_mock
 from cStringIO import StringIO
+from hpedockerplugin import hpe_storage_api as api
 from twisted.internet import reactor
 
 
@@ -11,19 +12,21 @@ class RequestBody:
         self.content = StringIO(req_body_str)
 
 
-class HpeDockerUnitTest(object):
+class HpeDockerUnitTestExecutor(object):
     @staticmethod
     def _get_request_body(request_dict):
         req_body_str = json.dumps(request_dict)
         return RequestBody(req_body_str)
 
-    def _test_operation(self, operation):
-        # Configure all mock objects
+    @setup_mock.mock_decorator
+    def _execute_operation(self, mock_objects, operation=None):
+        import pdb
+        pdb.set_trace()
+        self.mock_objects = mock_objects
         self.setup_mock_objects()
         req_body = self._get_request_body(self.get_request_params())
 
-        config = self.get_configuration()
-        _api = api.VolumePlugin(reactor, config)
+        _api = api.VolumePlugin(reactor, self._config)
         try:
             resp = getattr(_api, operation)(req_body)
             resp = json.loads(resp)
@@ -31,8 +34,15 @@ class HpeDockerUnitTest(object):
         except Exception as ex:
             self.handle_exception(ex)
 
+    def _test_operation(self, operation):
+        # We MUST create configuration before creating
+        # mock objects. As mock decorator needs configuration
+        # to decide whether to mock ISCSI or FC connector
+        self._config = self.get_configuration()
+        self._execute_operation(operation=operation)
+
     def get_configuration(self):
-        config = create_configuration()
+        config = create_configuration(self._protocol)
         # Allow child classes to override configuration
         self.override_configuration(config)
         return config
@@ -41,11 +51,7 @@ class HpeDockerUnitTest(object):
         pass
 
 
-HPE3PAR_CPG = 'DockerCPG'
-HPE3PAR_CPG2 = 'fakepool'
-
-
-def create_configuration():
+def create_configuration(protocol):
     config = mock.Mock()
     config.ssh_hosts_key_file = "/root/.ssh/known_hosts"
     config.host_etcd_ip_address = "10.50.3.140"
@@ -53,17 +59,22 @@ def create_configuration():
     config.logging = "DEBUG"
     config.hpe3par_debug = False
     config.suppress_requests_ssl_warnings = False
-    # self._config.hpedockerplugin_driver = self.get_driver_class_name()
-    config.hpedockerplugin_driver = "hpedockerplugin.hpe.hpe_3par_iscsi." \
-                                    "HPE3PARISCSIDriver"
+
+    if protocol == 'ISCSI':
+        config.hpedockerplugin_driver = \
+            "hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver"
+    else:
+        config.hpedockerplugin_driver = \
+            "hpedockerplugin.hpe.hpe_3par_fc.HPE3PARFCDriver"
+
     config.hpe3par_api_url = "https://10.50.3.7:8080/api/v1"
     config.hpe3par_username = "3paradm"
     config.hpe3par_password = "3pardata"
     config.san_ip = "10.50.3.7"
     config.san_login = "3paradm"
     config.san_password = "3pardata"
-    config.hpe3par_cpg = [HPE3PAR_CPG, HPE3PAR_CPG2]
-    config.hpe3par_snapcpg = [HPE3PAR_CPG]
+    config.hpe3par_cpg = [data.HPE3PAR_CPG, data.HPE3PAR_CPG2]
+    config.hpe3par_snapcpg = [data.HPE3PAR_CPG]
     # config.hpe3par_iscsi_ips = ["10.50.17.220", "10.50.17.221",
     #                             "10.50.17.222", "10.50.17.223"]
     config.hpe3par_iscsi_ips = []
@@ -76,17 +87,7 @@ def create_configuration():
     return config
 
 
-class RemoveVolumeUnitTest(HpeDockerUnitTest):
-    def _test_remove_volume(self, op_data):
-        def setup_mock_objects():
-            op_data['setup_mock_etcd']()
-
-        op_data['setup_mock_objects'] = setup_mock_objects
-        op_data['operation'] = 'volumedriver_remove'
-        self._test_operation(op_data)
-
-
-class UnmountVolumeUnitTest(HpeDockerUnitTest):
+class UnmountVolumeUnitTestExecutor(HpeDockerUnitTestExecutor):
     def _test_unmount_volume(self, op_data):
         # Set up mock configuration of all mock objects
         # required to run mount volume unit test

@@ -589,7 +589,7 @@ class HPE3PARCommon(object):
                      "WSAPI version '%(compression_version)s' "
                      "version '%(version)s' is installed.") %
                    {'compression_version': COMPRESSION_API_VERSION,
-                    'version': self.self.API_VERSION})
+                    'version': self.API_VERSION})
             LOG.error(err)
             raise exception.InvalidInput(reason=err)
         else:
@@ -637,7 +637,6 @@ class HPE3PARCommon(object):
             tpvv = True
             tdvv = False
             fullprovision = False
-            compression = None
 
             if prov_value == "full":
                 tpvv = False
@@ -1023,18 +1022,13 @@ class HPE3PARCommon(object):
                               {'vol': src_vref['id']})
                     vol_chap_enabled = False
 
-            # # Check whether a process is a backup
-            # if str(src_vref['status']) == 'backing-up':
-            #     back_up_process = True
-
             # if the sizes of the 2 volumes are the same and except backup
             # process for ISCSI volume with chap enabled on it.
             # we can do an online copy, which is a background process
             # on the 3PAR that makes the volume instantly available.
             # We can't resize a volume, while it's being copied.
-            if dst_volume['size'] == src_vref['size'] and not (
-               #back_up_process and
-               vol_chap_enabled):
+            if dst_volume['size'] == src_vref['size'] and not \
+                    (vol_chap_enabled):
                 LOG.debug("Creating a clone of volume, using online copy.")
 
                 cpg = self.config.hpe3par_cpg[0]
@@ -1067,9 +1061,10 @@ class HPE3PARCommon(object):
                     LOG.error(err)
                     raise exception.InvalidInput(reason=err)
 
-                # compression_val = self.get_compression_policy(
-                #     type_info['hpe3par_keys'])
-                compression_val = None
+                compression_val = src_vref['compression']  # None/true/False
+                compression = None
+                if compression_val is not None:
+                    compression = self.get_compression_policy(compression_val)
 
                 # make the 3PAR copy the contents.
                 # can't delete the original until the copy is done.
@@ -1077,7 +1072,7 @@ class HPE3PARCommon(object):
                                   snap_cpg=snap_cpg,
                                   tpvv=tpvv,
                                   tdvv=tdvv,
-                                  compression=compression_val)
+                                  compression=compression)
 
                 # Check if flash cache needs to be enabled
                 flash_cache = self.get_flash_cache_policy(src_vref['flash_cache'])
@@ -1138,10 +1133,9 @@ class HPE3PARCommon(object):
         if self.API_VERSION >= DEDUP_API_VERSION:
             optional['tdvv'] = tdvv
 
-        # TODO: To be uncommented
-        # if (compression is not None and
-        #         self.API_VERSION >= COMPRESSION_API_VERSION):
-        #     optional['compression'] = compression
+        if (compression is not None and
+                self.API_VERSION >= COMPRESSION_API_VERSION):
+            optional['compression'] = compression
 
         body = self.client.copyVolume(src_name, dest_name, cpg, optional)
         return body['taskid']

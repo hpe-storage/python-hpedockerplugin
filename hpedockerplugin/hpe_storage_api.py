@@ -323,8 +323,8 @@ class VolumePlugin(object):
                     return response
 
         except Exception:
-                LOG.debug('volume: %(name)s is locked',
-                          {'name': volname})
+                LOG.erro('volume: %(name)s is locked',
+                         {'name': volname})
                 response = json.dumps({u"Err": ''})
                 return response
         finally:
@@ -334,7 +334,7 @@ class VolumePlugin(object):
                 self._etcd.try_unlock_volname(volname)
             except Exception as ex:
 
-                LOG.debug('volume: %(name)s Unlock Volume Failed',
+                LOG.error('volume: %(name)s Unlock Volume Failed',
                           {'name': volname})
                 response = json.dumps({u"Err": six.text_type(ex)})
                 return response
@@ -454,8 +454,6 @@ class VolumePlugin(object):
                                     'cloneOf', 'snapshotOf', 'expirationHours',
                                     'retentionHours']
 
-        valid_compression_opts = ['true', 'false']
-
         if ('Opts' in contents and contents['Opts']):
             for key in contents['Opts']:
                 if key not in valid_volume_create_opts:
@@ -488,6 +486,8 @@ class VolumePlugin(object):
         if ('Opts' in contents and contents['Opts'] and
                 'compression' in contents['Opts']):
             compression_val = str(contents['Opts']['compression'])
+
+        valid_compression_opts = ['true', 'false']
 
         if compression_val is not None:
             if compression_val.lower() not in valid_compression_opts:
@@ -630,7 +630,8 @@ class VolumePlugin(object):
             # Create clone volume specification
             clone_vol = volume.createvol(clone_name, clone_vol_id, size,
                                          src_vol['provisioning'],
-                                         src_vol['flash_cache'])
+                                         src_vol['flash_cache'],
+                                         src_vol['compression'])
             try:
                 self.hpeplugin_driver.create_cloned_volume(clone_vol, src_vol)
 

@@ -16,7 +16,8 @@ volume['compression'] = ''
 volume['snapshots'] = []
 
 
-def createvol(name, uuid, size, prov, flash_cache, compression_val):
+def createvol(name, uuid, size=100, prov='thin', flash_cache=None,
+              compression_val=None):
     volume['id'] = uuid
     volume['name'] = uuid
     volume['host'] = ''

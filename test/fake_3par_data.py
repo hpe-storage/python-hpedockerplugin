@@ -32,7 +32,6 @@ VOLUME_TYPE_ID_DEDUP = 'd03338a9-9115-48a3-8dfc-11111111111'
 VOL_TYPE_ID_DEDUP_COMPRESS = 'd03338a9-9115-48a3-8dfc-33333333333'
 VOLUME_TYPE_ID_FLASH_CACHE = 'd03338a9-9115-48a3-8dfc-22222222222'
 VOLUME_NAME = 'volume-' + VOLUME_ID
-SRC_CG_VOLUME_NAME = 'volume-' + SRC_CG_VOLUME_ID
 VOLUME_NAME_3PAR = 'osv-0DM4qZEVSKON-DXN-NwVpw'
 SNAPSHOT_ID1 = '2f823bdc-e36e-4dc8-bd15-de1c7a28ff31'
 SNAPSHOT_NAME1 = 'snapshot-2f823bdc-e36e-4dc8-bd15-de1c7a28ff31'
@@ -41,20 +40,10 @@ SNAPSHOT_NAME2 = 'snapshot-8da7488a-7920-451a-ad18-0e41eca15d25'
 VOLUME_3PAR_NAME = 'osv-0DM4qZEVSKON-DXN-NwVpw'
 SNAPSHOT_3PAR_NAME = 'oss-L4I73ONuTci9Fd4ceij-MQ'
 RCG_3PAR_NAME = 'rcg-0DM4qZEVSKON-DXN-N'
-GROUP_ID = '6044fedf-c889-4752-900f-2039d247a5df'
-CONSIS_GROUP_NAME = 'vvs-YET.38iJR1KQDyA50kel3w'
-SRC_CONSIS_GROUP_ID = '7d7dfa02-ac6e-48cb-96af-8a0cd3008d47'
-SRC_CONSIS_GROUP_NAME = 'vvs-fX36AqxuSMuWr4oM0wCNRw'
-CGSNAPSHOT_ID = 'e91c5ed5-daee-4e84-8724-1c9e31e7a1f2'
-CGSNAPSHOT_BASE_NAME = 'oss-6Rxe1druToSHJByeMeeh8g'
 CLIENT_ID = "12345"
-REPLICATION_CLIENT_ID = "54321"
-REPLICATION_BACKEND_ID = 'target'
 # fake host on the 3par
 FAKE_HOST = 'fakehost'
-FAKE_CINDER_HOST = 'fakehost@foo#' + HPE3PAR_CPG
-USER_ID = '2689d9a913974c008b1d859013f23607'
-PROJECT_ID = 'fac88235b9d64685a3530f73e490348f'
+FAKE_DOCKER_HOST = 'fakehost@foo#' + HPE3PAR_CPG
 VOLUME_ID_SNAP = '761fc5e5-5191-4ec7-aeba-33e36de44156'
 FAKE_DESC = 'test description name'
 FAKE_FC_PORTS = [{'portPos': {'node': 7, 'slot': 1, 'cardPort': 1},
@@ -88,11 +77,10 @@ volume = {'name': VOLUME_NAME,
           'id': VOLUME_ID,
           'display_name': 'Foo Volume',
           'size': 2,
-          'host': FAKE_CINDER_HOST,
+          'host': FAKE_DOCKER_HOST,
           'provisioning': THIN,
           'flash_cache': None,
-          'volume_type': None,
-          'volume_type_id': None,
+          'compression': None,
           'snapshots': []}
 
 snapshot1 = {'name': SNAPSHOT_NAME1,
@@ -119,11 +107,10 @@ volume_with_snapshots = {
     'id': VOLUME_ID,
     'display_name': 'Foo Volume',
     'size': 2,
-    'host': FAKE_CINDER_HOST,
+    'host': FAKE_DOCKER_HOST,
     'provisioning': THIN,
     'flash_cache': None,
-    'volume_type': None,
-    'volume_type_id': None,
+    'compression': None,
     'snapshots': [snapshot1, snapshot2]}
 
 
@@ -132,31 +119,17 @@ volume_with_multilevel_snapshot = {
     'id': VOLUME_ID,
     'display_name': 'Foo Volume',
     'size': 2,
-    'host': FAKE_CINDER_HOST,
+    'host': FAKE_DOCKER_HOST,
     'provisioning': THIN,
     'flash_cache': None,
-    'volume_type': None,
-    'volume_type_id': None,
+    'compression': None,
     'snapshots': [snapshot1, snapshot2, snapshot3]}
-
-volume_replicated = {'name': VOLUME_NAME,
-                     'id': VOLUME_ID,
-                     'display_name': 'Foo Volume',
-                     'replication_status': 'disabled',
-                     'provider_location': CLIENT_ID,
-                     'size': 2,
-                     'host': FAKE_CINDER_HOST,
-                     'volume_type': 'replicated',
-                     'volume_type_id': VOLUME_TYPE_ID_REPLICATED}
-
 
 volume_encrypted = {'name': VOLUME_NAME,
                     'id': VOLUME_ID,
                     'display_name': 'Foo Volume',
                     'size': 2,
-                    'host': FAKE_CINDER_HOST,
-                    'volume_type': None,
-                    'volume_type_id': None,
+                    'host': FAKE_DOCKER_HOST,
                     'encryption_key_id': 'fake_key',
                     'provisioning': THIN,
                     'flash_cache': None,
@@ -166,38 +139,50 @@ volume_dedup_compression = {'name': VOLUME_NAME,
                             'id': VOLUME_ID,
                             'display_name': 'Foo Volume',
                             'size': 16,
-                            'host': FAKE_CINDER_HOST,
-                            'volume_type': 'dedup_compression',
-                            'volume_type_id': VOL_TYPE_ID_DEDUP_COMPRESS}
+                            'host': FAKE_DOCKER_HOST,
+                            'compression': None,
+                            'flash_cache': None,
+                            'provisioning': DEDUP,
+                            'snapshots': []}
+
+volume_compression = {'name': VOLUME_NAME,
+                      'id': VOLUME_ID,
+                      'display_name': 'Foo Volume',
+                      'size': 16,
+                      'host': FAKE_DOCKER_HOST,
+                      'compression': 'true',
+                      'provisioning': THIN,
+                      'flash_cache': None,
+                      'snapshots': []}
 
 volume_dedup = {'name': VOLUME_NAME,
                 'id': VOLUME_ID,
                 'display_name': 'Foo Volume',
                 'size': 2,
-                'host': FAKE_CINDER_HOST,
-                'volume_type': 'dedup',
-                'volume_type_id': VOLUME_TYPE_ID_DEDUP,
+                'host': FAKE_DOCKER_HOST,
                 'provisioning': DEDUP,
                 'flash_cache': None,
+                'compression': None,
                 'snapshots': []}
 
 volume_qos = {'name': VOLUME_NAME,
               'id': VOLUME_ID,
               'display_name': 'Foo Volume',
               'size': 2,
-              'host': FAKE_CINDER_HOST,
-              'volume_type': None,
-              'volume_type_id': 'gold'}
+              'host': FAKE_DOCKER_HOST,
+              'provisioning': THIN,
+              'flash_cache': None,
+              'compression': None,
+              'snapshots': []}
 
 volume_flash_cache = {'name': VOLUME_NAME,
                       'id': VOLUME_ID,
                       'display_name': 'Foo Volume',
                       'size': 2,
-                      'host': FAKE_CINDER_HOST,
-                      'volume_type': None,
-                      'volume_type_id': VOLUME_TYPE_ID_FLASH_CACHE,
+                      'host': FAKE_DOCKER_HOST,
                       'provisioning': THIN,
                       'flash_cache': 'true',
+                      'compression': None,
                       'snapshots': []}
 
 wwn = ["123456789012345", "123456789054321"]
@@ -230,14 +215,6 @@ volume_type = {'name': 'gold',
                                'qos:priority': 'low'},
                'deleted_at': None,
                'id': 'gold'}
-
-volume_type_replicated = {'name': 'replicated',
-                          'deleted': False,
-                          'updated_at': None,
-                          'extra_specs':
-                              {'replication_enabled': '<is> True'},
-                          'deleted_at': None,
-                          'id': VOLUME_TYPE_ID_REPLICATED}
 
 volume_type_dedup_compression = {'name': 'dedup',
                                  'deleted': False,

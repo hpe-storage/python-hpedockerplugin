@@ -70,18 +70,33 @@ def setup_mock_3parclient(_m_client, conf=None, m_conf=None):
     return _m_client
 
 
+@mock.patch('hpedockerplugin.hpe_storage_api.connector.ISCSIConnector',
+            spec=True)
+def _get_mock_iscsi_connector(mock_connector):
+    return mock_connector
+
+
+@mock.patch('hpedockerplugin.hpe_storage_api.connector.FibreChannelConnector',
+            spec=True)
+def _get_mock_fc_connector(mock_connector):
+    return mock_connector
+
+
 def mock_decorator(func):
     @mock.patch('hpedockerplugin.hpe_storage_api.fileutil', spec=True)
-    @mock.patch('hpedockerplugin.hpe_storage_api.connector.ISCSIConnector',
-                spec=True)
     @mock.patch('hpedockerplugin.hpe_storage_api.util.EtcdUtil', spec=True)
-    def setup_mock_wrapper(self, mock_etcd, mock_osbrick_connector,
-                           mock_fileutil, *args, **kwargs):
+    def setup_mock_wrapper(self, mock_etcd, mock_fileutil, *args, **kwargs):
         # Override the value as without it it throws an exception
         CONF.set_override('ssh_hosts_key_file',
                           KNOWN_HOSTS_FILE)
 
         mock_3parclient = setup_mock_3parclient()
+
+        mock_osbrick_connector = None
+        if 'ISCSI' in self._config.hpedockerplugin_driver:
+            mock_osbrick_connector = _get_mock_iscsi_connector()
+        elif 'FC' in self._config.hpedockerplugin_driver:
+            mock_osbrick_connector = _get_mock_fc_connector()
 
         with mock.patch.object(hpecommon.HPE3PARCommon, '_create_client') \
             as mock_create_client, \

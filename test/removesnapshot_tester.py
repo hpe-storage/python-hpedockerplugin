@@ -1,18 +1,13 @@
-import setup_mock
-import testtools
-
 import fake_3par_data as data
 import hpe_docker_unit_test as hpedockerunittest
 
 
-class RemoveSnapshotUnitTest(hpedockerunittest.HpeDockerUnitTest):
+class RemoveSnapshotUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):
 
     # This function carries out common steps needed by create-volume for
     # different mock-etcd configurations, docker configuration, create-volume
     # requests and checking of responses for success/failure
-    @setup_mock.mock_decorator
-    def test_remove_snapshot(self, mock_objects):
-        self.mock_objects = mock_objects
+    def test_remove_snapshot(self):
         operation = 'volumedriver_remove'
         self._test_operation(operation)
 
@@ -28,7 +23,7 @@ class RemoveSnapshotUnitTest(hpedockerunittest.HpeDockerUnitTest):
         pass
 
 
-class TestRemoveSnapshot(RemoveSnapshotUnitTest, testtools.TestCase):
+class TestRemoveSnapshot(RemoveSnapshotUnitTest):
     def check_response(self, resp):
         self.assertEqual(resp, {u"Err": ''})
 
@@ -45,7 +40,7 @@ class TestRemoveSnapshot(RemoveSnapshotUnitTest, testtools.TestCase):
 
 # Tries to remove a snapshot present at the second level
 # This shouldn't even enter driver code
-class TestRemoveMultilevelSnapshot(RemoveSnapshotUnitTest, testtools.TestCase):
+class TestRemoveMultilevelSnapshot(RemoveSnapshotUnitTest):
     def get_request_params(self):
         parent_volume_name = data.volume_with_snapshots['name']
         snapshot_name = 'snap01/snap02'
@@ -68,8 +63,7 @@ class TestRemoveMultilevelSnapshot(RemoveSnapshotUnitTest, testtools.TestCase):
 # Remove snapshot that has child snapshot(s)
 # Creation of multi-level snapshot is not supported as of now
 # This would help in case it is supported in the future
-class TestRemoveSnapshotWithChildSnapshots(RemoveSnapshotUnitTest,
-                                           testtools.TestCase):
+class TestRemoveSnapshotWithChildSnapshots(RemoveSnapshotUnitTest):
     def get_request_params(self):
         parent_volume_name = data.volume_with_snapshots['name']
         snapshot_name = data.volume_with_snapshots['snapshots'][0]['name']
@@ -89,7 +83,7 @@ class TestRemoveSnapshotWithChildSnapshots(RemoveSnapshotUnitTest,
         self.assertEqual(resp, expected)
 
 
-class TestRemoveNonExistentSnapshot(RemoveSnapshotUnitTest, testtools.TestCase):
+class TestRemoveNonExistentSnapshot(RemoveSnapshotUnitTest):
     def get_request_params(self):
         parent_volume_name = data.volume_with_snapshots['name']
         self.snapshot_name = 'non-existent-snapshot'
