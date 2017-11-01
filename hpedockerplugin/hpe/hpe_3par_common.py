@@ -1032,7 +1032,7 @@ class HPE3PARCommon(object):
                 LOG.debug("Creating a clone of volume, using online copy.")
 
                 cpg = self.config.hpe3par_cpg[0]
-                snap_cpg = None
+                snap_cpg = cpg
                 if len(self.config.hpe3par_snapcpg):
                     snap_cpg = self.config.hpe3par_snapcpg[0]
 

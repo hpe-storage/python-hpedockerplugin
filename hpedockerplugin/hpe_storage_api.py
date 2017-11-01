@@ -323,7 +323,7 @@ class VolumePlugin(object):
                     return response
 
         except Exception:
-                LOG.erro('volume: %(name)s is locked',
+                LOG.error('volume: %(name)s is locked',
                          {'name': volname})
                 response = json.dumps({u"Err": ''})
                 return response
