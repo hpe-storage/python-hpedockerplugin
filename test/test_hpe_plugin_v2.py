@@ -13,101 +13,101 @@ class HpeDockerUnitTestsBase(object):
     """
     def test_create_volume_default(self):
         test = createvolume_tester.TestCreateVolumeDefault()
-        test.run_test(self.protocol)
+        test.run_test(self)
 
     def test_create_thick_volume(self):
         test = createvolume_tester.TestCreateThickVolume()
-        test.run_test(self.protocol)
+        test.run_test(self)
 
     def test_create_dedup_volume(self):
         test = createvolume_tester.TestCreateDedupVolume()
-        test.run_test(self.protocol)
+        test.run_test(self)
 
     def test_create_volume_with_flashcache(self):
         test = createvolume_tester.TestCreateVolumeWithFlashCache()
-        test.run_test(self.protocol)
+        test.run_test(self)
 
     def test_create_volume_flashcache_addtovvs_fails(self):
         test = createvolume_tester.TestCreateVolumeFlashCacheAddToVVSFails()
-        test.run_test(self.protocol)
+        test.run_test(self)
 
     def test_create_compressed_volume(self):
         test = createvolume_tester.TestCompressedVolume()
-        test.run_test(self.protocol)
+        test.run_test(self)
 
     """
     CLONE VOLUME related tests
     """
     def test_clone_default(self):
         test = clonevolume_tester.TestCloneDefault()
-        test.run_test(self.protocol)
+        test.run_test(self)
 
     def test_clone_default_etcd_fails(self):
         test = clonevolume_tester.TestCloneDefaultEtcdSaveFails()
-        test.run_test(self.protocol)
+        test.run_test(self)
 
     def test_clone_offline_copy(self):
         test = clonevolume_tester.TestCloneOfflineCopy()
-        test.run_test(self.protocol)
+        test.run_test(self)
 
     def test_clone_offline_copy_fails(self):
         test = clonevolume_tester.TestCloneOfflineCopyFails()
-        test.run_test(self.protocol)
+        test.run_test(self)
 
     def test_clone_invalid_source_volume(self):
         test = clonevolume_tester.TestCloneInvalidSourceVolume()
-        test.run_test(self.protocol)
+        test.run_test(self)
 
     def test_clone_with_invalid_size(self):
         test = clonevolume_tester.TestCloneWithInvalidSize()
-        test.run_test(self.protocol)
+        test.run_test(self)
 
     def test_clone_dedup_volume(self):
         test = clonevolume_tester.TestCloneDedupVolume()
-        test.run_test(self.protocol)
+        test.run_test(self)
 
     def test_clone_with_flashcache(self):
         test = clonevolume_tester.TestCloneWithFlashCache()
-        test.run_test(self.protocol)
+        test.run_test(self)
 
     def test_clone_with_flashcache_add_to_vvset_fails(self):
         test = clonevolume_tester.TestCloneWithFlashCacheAddVVSetFails()
-        test.run_test(self.protocol)
+        test.run_test(self)
 
     def test_clone_with_CHAP(self):
         test = clonevolume_tester.TestCloneWithCHAP()
-        test.run_test(self.protocol)
+        test.run_test(self)
 
     def test_clone_without_CHAP(self):
         test = clonevolume_tester.TestCloneWithoutCHAP()
-        test.run_test(self.protocol)
+        test.run_test(self)
 
     def test_clone_unsupported_dedup_version(self):
         test = clonevolume_tester.TestCloneUnsupportedDedupVersion()
-        test.run_test(self.protocol)
+        test.run_test(self)
 
     def test_clone_compressed_volume(self):
         test = clonevolume_tester.TestCloneCompressedVolume()
-        test.run_test(self.protocol)
+        test.run_test(self)
 
     """
     REMOVE VOLUME related tests
     """
     def test_remove_snapshot(self):
         test = removesnapshot_tester.TestRemoveSnapshot()
-        test.run_test(self.protocol)
+        test.run_test(self)
 
     def test_remove_multilevel_snapshot(self):
         test = removesnapshot_tester.TestRemoveMultilevelSnapshot()
-        test.run_test(self.protocol)
+        test.run_test(self)
 
     def test_remove_snapshot_with_child_snapshots(self):
         test = removesnapshot_tester.TestRemoveSnapshotWithChildSnapshots()
-        test.run_test(self.protocol)
+        test.run_test(self)
 
     def test_remove_non_existing_snapshot(self):
         test = removesnapshot_tester.TestRemoveNonExistentSnapshot()
-        test.run_test(self.protocol)
+        test.run_test(self)
 
 
 class HpeDockerISCSIUnitTests(HpeDockerUnitTestsBase, testtools.TestCase):

@@ -7,7 +7,11 @@ class RemoveSnapshotUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):
     # This function carries out common steps needed by create-volume for
     # different mock-etcd configurations, docker configuration, create-volume
     # requests and checking of responses for success/failure
-    def test_remove_snapshot(self):
+    def run_test(self, test_case):
+        self._test_case = test_case
+        # This is important to set as it is used by the base class to
+        # take decision which driver to instantiate
+        self._protocol = test_case.protocol
         operation = 'volumedriver_remove'
         self._test_operation(operation)
 
@@ -25,7 +29,7 @@ class RemoveSnapshotUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):
 
 class TestRemoveSnapshot(RemoveSnapshotUnitTest):
     def check_response(self, resp):
-        self.assertEqual(resp, {u"Err": ''})
+        self._test_case.assertEqual(resp, {u"Err": ''})
 
     def get_request_params(self):
         parent_volume_name = data.volume_with_snapshots['name']
@@ -55,7 +59,7 @@ class TestRemoveMultilevelSnapshot(RemoveSnapshotUnitTest):
     def check_response(self, resp):
         expected = {u"Err": 'invalid volume or snapshot name %s'
                             % self.snapshot_path}
-        self.assertEqual(resp, expected)
+        self._test_case.assertEqual(resp, expected)
 
 
 # Remove snapshot that has child snapshot(s)
@@ -76,7 +80,7 @@ class TestRemoveSnapshotWithChildSnapshots(RemoveSnapshotUnitTest):
     def check_response(self, resp):
         expected = {u"Err": 'snapshot %s has one or more child snapshots - it'
                             ' cannot be deleted!' % self.snapshot_path}
-        self.assertEqual(resp, expected)
+        self._test_case.assertEqual(resp, expected)
 
 
 class TestRemoveNonExistentSnapshot(RemoveSnapshotUnitTest):
@@ -95,4 +99,4 @@ class TestRemoveNonExistentSnapshot(RemoveSnapshotUnitTest):
     def check_response(self, resp):
         expected = {u'Err': u'snapshot %s does not exist!'
                     % self.snapshot_name}
-        self.assertEqual(resp, expected)
+        self._test_case.assertEqual(resp, expected)

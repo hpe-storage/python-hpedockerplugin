@@ -1,4 +1,5 @@
 # import mock
+import testtools
 import fake_3par_data as data
 
 import hpe_docker_unit_test as hpedockerunittest
@@ -9,10 +10,11 @@ class CreateVolumeUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):
     # This function carries out common steps needed by create-volume for
     # different mock-etcd configurations, docker configuration, create-volume
     # requests and checking of responses for success/failure
-    def run_test(self, protocol):
+    def run_test(self, test_case):
+        self._test_case = test_case
         # This is important to set as it is used by the base class to
         # take decision which driver to instantiate
-        self._protocol = protocol
+        self._protocol = test_case.protocol
         operation = 'volumedriver_create'
         self._test_operation(operation)
 
@@ -27,7 +29,7 @@ class CreateVolumeUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):
 # class TestCreateVolumeDefault(CreateVolumeUnitTest, testtools.TestCase):
 class TestCreateVolumeDefault(CreateVolumeUnitTest):
     def check_response(self, resp):
-        self.assertEqual(resp, {u"Err": ''})
+        self._test_case.assertEqual(resp, {u"Err": ''})
 
     def get_request_params(self):
         return {"Name": "test-vol-001",
@@ -41,7 +43,7 @@ class TestCreateVolumeDefault(CreateVolumeUnitTest):
 # Provisioning = Full
 class TestCreateThickVolume(CreateVolumeUnitTest):
     def check_response(self, resp):
-        self.assertEqual(resp, {u"Err": ''})
+        self._test_case.assertEqual(resp, {u"Err": ''})
 
     def get_request_params(self):
         return {"Name": "test-vol-001",
@@ -55,7 +57,7 @@ class TestCreateThickVolume(CreateVolumeUnitTest):
 # Provisioning = Dedup
 class TestCreateDedupVolume(CreateVolumeUnitTest):
     def check_response(self, resp):
-        self.assertEqual(resp, {u"Err": ''})
+        self._test_case.assertEqual(resp, {u"Err": ''})
 
     def get_request_params(self):
         return {"Name": "test-vol-001",
@@ -69,7 +71,7 @@ class TestCreateDedupVolume(CreateVolumeUnitTest):
 # FlashCache = True
 class TestCreateVolumeWithFlashCache(CreateVolumeUnitTest):
     def check_response(self, resp):
-        self.assertEqual(resp, {u"Err": ''})
+        self._test_case.assertEqual(resp, {u"Err": ''})
 
     def get_request_params(self):
         return {"Name": "test-vol-001",
@@ -85,7 +87,7 @@ class TestCreateVolumeWithFlashCache(CreateVolumeUnitTest):
 # FlashCache = True
 class TestCreateVolumeFlashCacheAddToVVSFails(CreateVolumeUnitTest):
     def check_response(self, resp):
-        self.assertEqual(resp, {u"Err": ''})
+        self._test_case.assertEqual(resp, {u"Err": ''})
 
     def get_request_params(self):
         return {"Name": "test-vol-001",
@@ -109,7 +111,7 @@ class TestCreateVolumeFlashCacheAddToVVSFails(CreateVolumeUnitTest):
 
 class TestCompressedVolume(CreateVolumeUnitTest):
     def check_response(self, resp):
-        self.assertEqual(resp, {u"Err": ''})
+        self._test_case.assertEqual(resp, {u"Err": ''})
 
     def get_request_params(self):
         return {"Name": "clone-vol-001",

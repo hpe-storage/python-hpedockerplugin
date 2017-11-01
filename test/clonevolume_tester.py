@@ -14,7 +14,7 @@ class CloneVolumeUnitTest(createvolume.CreateVolumeUnitTest):
 # This exercises online-copy path
 class TestCloneDefault(CloneVolumeUnitTest):
     def check_response(self, resp):
-        self.assertEqual(resp, {u"Err": ''})
+        self._test_case.assertEqual(resp, {u"Err": ''})
 
     def get_request_params(self):
         return {"Name": "clone-vol-001",
@@ -37,7 +37,7 @@ class TestCloneDefaultEtcdSaveFails(CloneVolumeUnitTest):
 # Offline copy
 class TestCloneOfflineCopy(CloneVolumeUnitTest):
     def check_response(self, resp):
-        self.assertEqual(resp, {u"Err": ''})
+        self._test_case.assertEqual(resp, {u"Err": ''})
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.createVolume.assert_called()
         mock_3parclient.copyVolume.assert_called()
@@ -62,7 +62,7 @@ class TestCloneOfflineCopy(CloneVolumeUnitTest):
 # Make copyVolume operation fail
 class TestCloneOfflineCopyFails(CloneVolumeUnitTest):
     def check_response(self, resp):
-        self.assertEqual(resp, {u"Err": ''})
+        self._test_case.assertEqual(resp, {u"Err": ''})
 
         # TODO: Check following were invoked
         # self.client.createVolumeSet(vvs_name, domain)
@@ -89,7 +89,7 @@ class TestCloneOfflineCopyFails(CloneVolumeUnitTest):
 
 class TestCloneInvalidSourceVolume(CloneVolumeUnitTest):
     def check_response(self, resp):
-        self.assertEqual(resp, {u"Err": ''})
+        self._test_case.assertEqual(resp, {u"Err": ''})
 
     def get_request_params(self):
         return {"Name": "clone-vol-001",
@@ -111,7 +111,7 @@ class TestCloneWithInvalidSize(CloneVolumeUnitTest):
 # Online copy with dedup
 class TestCloneDedupVolume(CloneVolumeUnitTest):
     def check_response(self, resp):
-        self.assertEqual(resp, {u"Err": ''})
+        self._test_case.assertEqual(resp, {u"Err": ''})
 
     def get_request_params(self):
         return {"Name": "clone-vol-001",
@@ -129,7 +129,7 @@ class TestCloneDedupVolume(CloneVolumeUnitTest):
 # Online copy with flash cache flow
 class TestCloneWithFlashCache(CloneVolumeUnitTest):
     def check_response(self, resp):
-        self.assertEqual(resp, {u"Err": ''})
+        self._test_case.assertEqual(resp, {u"Err": ''})
 
         # Check required WSAPI calls were made
         mock_3parclient = self.mock_objects['mock_3parclient']
@@ -153,7 +153,8 @@ class TestCloneWithFlashCache(CloneVolumeUnitTest):
 # Online copy with flash cache - add to vvset fails
 class TestCloneWithFlashCacheAddVVSetFails(CloneVolumeUnitTest):
     def check_response(self, resp):
-        self.assertEqual(resp, {u"Err": u'Not found (HTTP 404) - fake'})
+        self._test_case.assertEqual(resp,
+                                    {u"Err": u'Not found (HTTP 404) - fake'})
 
         # Check required WSAPI calls were made
         mock_3parclient = self.mock_objects['mock_3parclient']
@@ -186,7 +187,7 @@ class TestCloneWithCHAP(CloneVolumeUnitTest):
         config.hpe3par_iscsi_chap_enabled = True
 
     def check_response(self, resp):
-        self.assertEqual(resp, {u"Err": ''})
+        self._test_case.assertEqual(resp, {u"Err": ''})
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.getVolumeMetaData.assert_called()
         mock_3parclient.createVolume.assert_called()
@@ -214,7 +215,7 @@ class TestCloneWithoutCHAP(CloneVolumeUnitTest):
 # Override WS-API-Version to have lower value
 class TestCloneUnsupportedDedupVersion(CloneVolumeUnitTest):
     def check_response(self, resp):
-        self.assertEqual(resp, {u"Err": ''})
+        self._test_case.assertEqual(resp, {u"Err": ''})
 
     def get_request_params(self):
         return {"Name": "clone-vol-001",
@@ -238,7 +239,7 @@ class TestCloneUnsupportedDedupVersion(CloneVolumeUnitTest):
 # TODO: Compression related TCs to be added later
 class TestCloneCompressedVolume(CloneVolumeUnitTest):
     def check_response(self, resp):
-        self.assertEqual(resp, {u"Err": ''})
+        self._test_case.assertEqual(resp, {u"Err": ''})
 
     def get_request_params(self):
         return {"Name": "clone-vol-001",
