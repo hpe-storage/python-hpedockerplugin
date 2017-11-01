@@ -53,8 +53,6 @@ class TestRemoveMultilevelSnapshot(RemoveSnapshotUnitTest):
             data.volume_with_multilevel_snapshot
 
     def check_response(self, resp):
-        import pdb
-        pdb.set_trace()
         expected = {u"Err": 'invalid volume or snapshot name %s'
                             % self.snapshot_path}
         self.assertEqual(resp, expected)
@@ -76,8 +74,6 @@ class TestRemoveSnapshotWithChildSnapshots(RemoveSnapshotUnitTest):
             data.volume_with_multilevel_snapshot
 
     def check_response(self, resp):
-        import pdb
-        pdb.set_trace()
         expected = {u"Err": 'snapshot %s has one or more child snapshots - it'
                             ' cannot be deleted!' % self.snapshot_path}
         self.assertEqual(resp, expected)

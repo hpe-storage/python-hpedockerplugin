@@ -20,8 +20,6 @@ class HpeDockerUnitTestExecutor(object):
 
     @setup_mock.mock_decorator
     def _execute_operation(self, mock_objects, operation=None):
-        import pdb
-        pdb.set_trace()
         self.mock_objects = mock_objects
         self.setup_mock_objects()
         req_body = self._get_request_body(self.get_request_params())
@@ -85,19 +83,3 @@ def create_configuration(protocol):
     config.host_etcd_client_cert = None
     config.host_etcd_client_key = None
     return config
-
-
-class UnmountVolumeUnitTestExecutor(HpeDockerUnitTestExecutor):
-    def _test_unmount_volume(self, op_data):
-        # Set up mock configuration of all mock objects
-        # required to run mount volume unit test
-        def setup_mock_objects():
-            # Call child class functions to configure mock objects
-            op_data['setup_mock_3parclient']()
-            op_data['setup_mock_etcd']()
-            op_data['setup_mock_fileutil']()
-            op_data['setup_mock_osbrick']()
-
-        op_data['setup_mock_objects'] = setup_mock_objects
-        op_data['operation'] = 'volumedriver_unmount'
-        self._test_operation(op_data)
