@@ -4,16 +4,8 @@ import hpe_docker_unit_test as hpedockerunittest
 
 class RemoveSnapshotUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):
 
-    # This function carries out common steps needed by create-volume for
-    # different mock-etcd configurations, docker configuration, create-volume
-    # requests and checking of responses for success/failure
-    def run_test(self, test_case):
-        self._test_case = test_case
-        # This is important to set as it is used by the base class to
-        # take decision which driver to instantiate
-        self._protocol = test_case.protocol
-        operation = 'volumedriver_remove'
-        self._test_operation(operation)
+    def _get_plugin_api(self):
+        return 'volumedriver_remove'
 
     # def setup_mock_objects(self):
     #     mock_etcd = self.mock_objects['mock_etcd']

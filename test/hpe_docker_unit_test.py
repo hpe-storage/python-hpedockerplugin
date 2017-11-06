@@ -1,3 +1,4 @@
+import abc
 import fake_3par_data as data
 import json
 import mock
@@ -13,39 +14,120 @@ class RequestBody:
 
 
 class HpeDockerUnitTestExecutor(object):
+    """
+    Base class to facilitate execution of VolumePlugin APIs
+    Does the following:
+    1. Gets mock objects using mock_decorator
+    2. Allows the child class to set the desired configuration needed by the
+       plugin
+    3. Allows the child class to configure mock objects, their return values
+    4. Finally allows the child class to validate if the operation executed
+       as desired
+    """
+
     @staticmethod
     def _get_request_body(request_dict):
         req_body_str = json.dumps(request_dict)
         return RequestBody(req_body_str)
 
     @setup_mock.mock_decorator
-    def _execute_operation(self, mock_objects, operation=None):
+    def _execute_api(self, mock_objects, plugin_api=''):
+        """
+        This is the method where all the action related to execution of
+        VolumePlugin API happen. This also has hooks for child class to
+        carry out the pre-requisites for the execution of VolumePlugin API
+        :param mock_objects:
+            Dictionary of four mock objects returned by
+            mock_decorator. Following are the keys and their descriptions
+            to access specific mock object
+            {'mock_3parclient': 3PAR Client mock object,
+            'mock_fileutil': File utilities mock object,
+            'mock_osbrick_connector': Protocol specific mock connector,
+            'mock_etcd': Etcd mock object}
+        :param operation:
+            String containing VolumePlugin API name
+        :return: Nothing
+        """
         self.mock_objects = mock_objects
+        self._config = self._get_configuration()
+
+        # Let the child class configure mock objects
         self.setup_mock_objects()
+
+        # Get API parameters from child class
         req_body = self._get_request_body(self.get_request_params())
 
         _api = api.VolumePlugin(reactor, self._config)
         try:
-            resp = getattr(_api, operation)(req_body)
+            resp = getattr(_api, plugin_api)(req_body)
             resp = json.loads(resp)
+
+            # Allow child class to validate response
             self.check_response(resp)
         except Exception as ex:
             self.handle_exception(ex)
 
-    def _test_operation(self, operation):
-        # We MUST create configuration before creating
-        # mock objects. As mock decorator needs configuration
-        # to decide whether to mock ISCSI or FC connector
-        self._config = self.get_configuration()
-        self._execute_operation(operation=operation)
+    def run_test(self, test_case):
+        self._test_case = test_case
+        # This is important to set as it is used by the mock decorator to
+        # take decision which driver to instantiate
+        self._protocol = test_case.protocol
+        self._execute_api(plugin_api=self._get_plugin_api())
 
-    def get_configuration(self):
+    def _get_configuration(self):
+        # _protocol is set in the immediate child class
         config = create_configuration(self._protocol)
         # Allow child classes to override configuration
         self.override_configuration(config)
         return config
 
+    """
+    Allows the child class to override the HPE configuration parameters
+    needed to invoke VolumePlugin APIs
+    """
+
+    def override_configuration(self, config):
+        pass
+
+    """
+    May need to override this in some rare case where exception is
+    thrown from the VolumePlugin
+    """
+
     def handle_exception(self, ex):
+        pass
+
+    @abc.abstractmethod
+    def _get_plugin_api(self):
+        pass
+
+    """
+    Allows the child class configure mock objects so that they can return
+    the desired values when used in the actual VolumePlugin API flow
+    """
+
+    @abc.abstractmethod
+    def setup_mock_objects(self):
+        pass
+
+    """
+    Child class to return dictionary containing input paramteres required to
+    execute a particular API in VolumePlugin
+    """
+
+    @abc.abstractmethod
+    def get_request_params(self):
+        pass
+
+    """
+    This method is invoked after completing the execution of VolumePlugin API
+    Allows the child class to validate if appropriate response was returned
+    from the plugin and that the desired methods were invoked on the 3PAR
+    Client, ETCD and/or other mock objects
+    """
+
+    @abc.abstractmethod
+    def check_response(self, resp):
         pass
 
 
@@ -73,13 +155,11 @@ def create_configuration(protocol):
     config.san_password = "3pardata"
     config.hpe3par_cpg = [data.HPE3PAR_CPG, data.HPE3PAR_CPG2]
     config.hpe3par_snapcpg = [data.HPE3PAR_CPG]
-    # config.hpe3par_iscsi_ips = ["10.50.17.220", "10.50.17.221",
-    #                             "10.50.17.222", "10.50.17.223"]
     config.hpe3par_iscsi_ips = []
     config.iscsi_ip_address = '1.1.1.2'
     config.hpe3par_iscsi_chap_enabled = False
-    config.use_multipath = False
-    config.enforce_multipath = False
+    config.use_multipath = True
+    config.enforce_multipath = True
     config.host_etcd_client_cert = None
     config.host_etcd_client_key = None
     return config

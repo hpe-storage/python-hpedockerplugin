@@ -1,3 +1,9 @@
+DEFAULT_SIZE = 100
+DEFAULT_PROV = "thin"
+DEFAULT_FLASH_CACHE = None
+DEFAULT_MOUNT_VOLUME = "True"
+DEFAULT_COMPRESSION_VAL = None
+
 volume = {}
 volume['id'] = ''
 volume['name'] = ''
@@ -16,8 +22,8 @@ volume['compression'] = ''
 volume['snapshots'] = []
 
 
-def createvol(name, uuid, size=100, prov='thin', flash_cache=None,
-              compression_val=None):
+def createvol(name, uuid, size=DEFAULT_SIZE, prov=DEFAULT_PROV,
+              flash_cache=None, compression_val=None):
     volume['id'] = uuid
     volume['name'] = uuid
     volume['host'] = ''

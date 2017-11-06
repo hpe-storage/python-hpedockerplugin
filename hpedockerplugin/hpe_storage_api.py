@@ -39,11 +39,6 @@ from oslo_log import log as logging
 
 # import time
 
-DEFAULT_SIZE = 100
-DEFAULT_PROV = "thin"
-DEFAULT_FLASH_CACHE = None
-DEFAULT_MOUNT_VOLUME = "True"
-DEFAULT_COMPRESSION_VAL = None
 
 LOG = logging.getLogger(__name__)
 
@@ -96,7 +91,6 @@ class VolumePlugin(object):
 
         # TODO: make device_scan_attempts configurable
         # see nova/virt/libvirt/volume/iscsi.py
-        root_helper = 'sudo'
 
         # Override the settings of use_multipath, enforce_multipath
         # This will be a workaround until Issue #50 is fixed.
@@ -280,13 +274,15 @@ class VolumePlugin(object):
                     LOG.debug("Found snapshot by name: %s" % snapname)
                     # Does the snapshot have child snapshot(s)?
                     for s in snapshots:
-                        LOG.debug("Checking if snapshot has children: %s" % snapname)
+                        LOG.debug("Checking if snapshot has children: %s"
+                                  % snapname)
                         if s['parent_id'] == snapshot['id']:
                             msg = (_LE('snapshot %s has one or more child '
                                        'snapshots - it cannot be deleted!'
                                        % snapname))
                             LOG.error(msg)
-                            # raise exception.HPEPluginRemoveException(reason=msg)
+                            # raise exception.HPEPluginRemoveException(
+                            # reason=msg)
                             response = json.dumps({u"Err": msg})
                             return response
                     LOG.debug("Deleting snapshot at backend: %s" % snapname)
@@ -294,24 +290,25 @@ class VolumePlugin(object):
                                                         is_snapshot=True)
 
                     LOG.debug("Deleting snapshot in ETCD - %s" % snapname)
-                    # Remove snapshot entry from list and save it back to ETCD DB
+                    # Remove snapshot entry from list and save it back to
+                    # ETCD DB
                     del snapshots[idx]
                     try:
-                        LOG.debug("Updating volume in ETCD after snapshot removal"
-                                  " - vol-name: %s" % volname)
+                        LOG.debug("Updating volume in ETCD after snapshot "
+                                  "removal - vol-name: %s" % volname)
                         # For now just track volume to uuid mapping internally
-                        # TODO: Save volume name and uuid mapping in etcd as well
-                        # This will make get_vol_byname more efficient
+                        # TODO: Save volume name and uuid mapping in etcd as
+                        # well. This will make get_vol_byname more efficient
                         self._etcd.update_vol(vol['id'],
                                               'snapshots',
                                               snapshots)
-                        LOG.debug('snapshot: %(name)s was successfully removed',
-                                  {'name': snapname})
+                        LOG.debug('snapshot: %(name)s was successfully '
+                                  'removed', {'name': snapname})
                         response = json.dumps({u"Err": ''})
                         return response
                     except Exception as ex:
-                        msg = (_('remove snapshot from etcd failed, error is: %s'),
-                               six.text_type(ex))
+                        msg = (_('remove snapshot from etcd failed, error is:'
+                                 ' %s'), six.text_type(ex))
                         LOG.error(msg)
                         response = json.dumps({u"Err": six.text_type(ex)})
                         return response
@@ -324,7 +321,7 @@ class VolumePlugin(object):
 
         except Exception:
                 LOG.error('volume: %(name)s is locked',
-                         {'name': volname})
+                          {'name': volname})
                 response = json.dumps({u"Err": ''})
                 return response
         finally:
@@ -361,7 +358,7 @@ class VolumePlugin(object):
             LOG.error(msg)
             raise exception.HPEPluginUMountException(reason=msg)
 
-        vol_mount = DEFAULT_MOUNT_VOLUME
+        vol_mount = volume.DEFAULT_MOUNT_VOLUME
         if ('Opts' in contents and contents['Opts'] and
                 'mount-volume' in contents['Opts']):
             vol_mount = str(contents['Opts']['mount-volume'])
@@ -385,7 +382,7 @@ class VolumePlugin(object):
             enforce_multipath=self.enforce_multipath)
 
         # Determine if we need to unmount a previously mounted volume
-        if vol_mount is DEFAULT_MOUNT_VOLUME:
+        if vol_mount is volume.DEFAULT_MOUNT_VOLUME:
             # unmount directory
             fileutil.umount_dir(mount_dir)
             # remove directory
@@ -466,23 +463,23 @@ class VolumePlugin(object):
                     return json.dumps({u"Err": six.text_type(msg)})
 
         if ('Opts' in contents and contents['Opts'] and
-            'snapshotOf' in contents['Opts']):
+                'snapshotOf' in contents['Opts']):
             return self.volumedriver_create_snapshot(name, opts)
         elif ('Opts' in contents and contents['Opts'] and
-            'cloneOf' in contents['Opts']):
+                'cloneOf' in contents['Opts']):
             return self.volumedriver_clone_volume(name, opts)
 
-        vol_size = DEFAULT_SIZE
+        vol_size = volume.DEFAULT_SIZE
         if ('Opts' in contents and contents['Opts'] and
                 'size' in contents['Opts']):
             vol_size = int(contents['Opts']['size'])
 
-        vol_prov = DEFAULT_PROV
+        vol_prov = volume.DEFAULT_PROV
         if ('Opts' in contents and contents['Opts'] and
                 'provisioning' in contents['Opts']):
             vol_prov = str(contents['Opts']['provisioning'])
 
-        compression_val = DEFAULT_COMPRESSION_VAL
+        compression_val = volume.DEFAULT_COMPRESSION_VAL
         if ('Opts' in contents and contents['Opts'] and
                 'compression' in contents['Opts']):
             compression_val = str(contents['Opts']['compression'])
@@ -498,7 +495,7 @@ class VolumePlugin(object):
                 LOG.error(msg)
                 return json.dumps({u"Err": six.text_type(msg)})
 
-        vol_flash = DEFAULT_FLASH_CACHE
+        vol_flash = volume.DEFAULT_FLASH_CACHE
         if ('Opts' in contents and contents['Opts'] and
                 'flash-cache' in contents['Opts']):
             vol_flash = str(contents['Opts']['flash-cache'])
@@ -614,7 +611,7 @@ class VolumePlugin(object):
                 return response
 
             if ('Opts' in contents and contents['Opts'] and
-                        'size' in contents['Opts']):
+                    'size' in contents['Opts']):
                 size = int(contents['Opts']['size'])
             else:
                 size = src_vol['size']
@@ -650,7 +647,8 @@ class VolumePlugin(object):
                 return response
 
             except Exception as ex:
-                msg = (_('clone volume failed, error is: %s'), six.text_type(ex))
+                msg = (_('clone volume failed, error is: %s'),
+                       six.text_type(ex))
                 LOG.error(msg)
                 response = json.dumps({u"Err": six.text_type(ex)})
                 return response
@@ -659,9 +657,9 @@ class VolumePlugin(object):
             response = json.dumps({u"Err": ''})
             return response
         except Exception as ex:
-            msg = (_('unknown exception caught while cloning volume %(name)s - '
-                     'reason: %(reason)s',
-                      {'name': clone_name, 'reason': ex.message}))
+            msg = (_('unknown exception caught while cloning volume '
+                     '%(name)s - reason: %(reason)s',
+                     {'name': clone_name, 'reason': ex.message}))
             LOG.debug(msg)
             response = json.dumps({u"Err": ''})
             return response
@@ -718,12 +716,12 @@ class VolumePlugin(object):
 
         expiration_hrs = None
         if 'Opts' in contents and contents['Opts'] and \
-                        'expirationHours' in contents['Opts']:
+                'expirationHours' in contents['Opts']:
             expiration_hrs = int(contents['Opts']['expirationHours'])
 
         retention_hrs = None
         if 'Opts' in contents and contents['Opts'] and \
-                        'retentionHours' in contents['Opts']:
+                'retentionHours' in contents['Opts']:
             retention_hrs = int(contents['Opts']['retentionHours'])
 
         lock_acquired = False
@@ -747,8 +745,8 @@ class VolumePlugin(object):
                         'volume_name': src_vol_name,
                         'expirationHours': expiration_hrs,
                         'retentionHours': retention_hrs,
-                        'display_description': 'snapshot of volume %s' %src_vol_name}
-
+                        'display_description': 'snapshot of volume %s'
+                                               % src_vol_name}
             try:
                 self.hpeplugin_driver.create_snapshot(snapshot)
 
@@ -764,12 +762,13 @@ class VolumePlugin(object):
                     # TODO: Save volume name and uuid mapping in etcd as well
                     # This will make get_vol_byname more efficient
                     self._etcd.save_vol(vol)
-                    LOG.debug('snapshot: %(name)s was successfully saved to etcd',
-                              {'name': snapshot_name})
+                    LOG.debug('snapshot: %(name)s was successfully saved '
+                              'to etcd', {'name': snapshot_name})
                 except Exception as ex:
-                    # TODO: 3PAR clean up issue over here - snapshot got created
-                    # in the backend but since it could not be saved in etcd db
-                    # we are throwing an error saying operation failed.
+                    # TODO: 3PAR clean up issue over here - snapshot got
+                    # created in the backend but since it could not be saved
+                    # in ETCD db we are throwing an error saying operation
+                    # failed.
                     msg = (_('save volume to etcd failed, error is: %s'),
                            six.text_type(ex))
                     LOG.error(msg)
@@ -777,7 +776,8 @@ class VolumePlugin(object):
                 return response
 
             except Exception as ex:
-                msg = (_('create snapshot failed, error is: %s'), six.text_type(ex))
+                msg = (_('create snapshot failed, error is: %s'),
+                       six.text_type(ex))
                 LOG.error(msg)
                 return json.dumps({u"Err": six.text_type(ex)})
 
@@ -829,7 +829,7 @@ class VolumePlugin(object):
             LOG.error(msg)
             raise exception.HPEPluginMountException(reason=msg)
 
-        vol_mount = DEFAULT_MOUNT_VOLUME
+        vol_mount = volume.DEFAULT_MOUNT_VOLUME
         if ('Opts' in contents and contents['Opts'] and
                 'mount-volume' in contents['Opts']):
             vol_mount = str(contents['Opts']['mount-volume'])
@@ -886,7 +886,7 @@ class VolumePlugin(object):
                       {'path': path.path})
 
         # Determine if we need to mount the volume
-        if vol_mount is DEFAULT_MOUNT_VOLUME:
+        if vol_mount is volume.DEFAULT_MOUNT_VOLUME:
             # mkdir for mounting the filesystem
             mount_dir = fileutil.mkdir_for_mounting(device_info['path'])
             LOG.debug('Directory: %(mount_dir)s, '
@@ -1003,8 +1003,9 @@ class VolumePlugin(object):
         if snapname:
             snapshot, idx = self._get_snapshot_by_name(volinfo['snapshots'],
                                                        snapname)
-            settings = {"Settings": {'expirationHours': snapshot['expiration_hours'],
-                       'retentionHours': snapshot['retention_hours']}}
+            settings = {"Settings": {
+                'expirationHours': snapshot['expiration_hours'],
+                'retentionHours': snapshot['retention_hours']}}
             volume['Status'] = settings
         else:
             snapshots = volinfo.get('snapshots', None)

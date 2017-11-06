@@ -1039,8 +1039,8 @@ class HPE3PARCommon(object):
                 # check for valid provisioning type
                 prov_value = src_vref['provisioning']
                 if prov_value not in self.valid_prov_values:
-                    err = (_("Must specify a valid provisioning type %(valid)s, "
-                             "value '%(prov)s' is invalid.") %
+                    err = (_("Must specify a valid provisioning type "
+                             "%(valid)s, value '%(prov)s' is invalid.") %
                            {'valid': self.valid_prov_values,
                             'prov': prov_value})
                     LOG.error(err)
@@ -1068,21 +1068,22 @@ class HPE3PARCommon(object):
 
                 # make the 3PAR copy the contents.
                 # can't delete the original until the copy is done.
-                self._copy_volume(src_3par_vol_name, dst_3par_vol_name, cpg=cpg,
-                                  snap_cpg=snap_cpg,
-                                  tpvv=tpvv,
-                                  tdvv=tdvv,
+                self._copy_volume(src_3par_vol_name, dst_3par_vol_name,
+                                  cpg=cpg, snap_cpg=snap_cpg,
+                                  tpvv=tpvv, tdvv=tdvv,
                                   compression=compression)
 
                 # Check if flash cache needs to be enabled
-                flash_cache = self.get_flash_cache_policy(src_vref['flash_cache'])
+                flash_cache = \
+                    self.get_flash_cache_policy(src_vref['flash_cache'])
 
                 if flash_cache is not None:
                     try:
-                        self._add_volume_to_volume_set(dst_volume, src_3par_vol_name,
+                        self._add_volume_to_volume_set(dst_volume,
+                                                       src_3par_vol_name,
                                                        cpg, flash_cache)
                     except exception.InvalidInput as ex:
-                        # Delete the volume if unable to add it to the volume set
+                        # Delete volume if unable to add it to volume set
                         self.client.deleteVolume(dst_3par_vol_name)
                         LOG.error(_LE("Exception: %s"), ex)
                         raise exception.PluginException(ex)
@@ -1096,7 +1097,8 @@ class HPE3PARCommon(object):
                 model_update = self.create_volume(dst_volume)
 
                 optional = {'priority': 1}
-                body = self.client.copyVolume(src_3par_vol_name, dst_3par_vol_name, None,
+                body = self.client.copyVolume(src_3par_vol_name,
+                                              dst_3par_vol_name, None,
                                               optional=optional)
                 task_id = body['taskid']
 

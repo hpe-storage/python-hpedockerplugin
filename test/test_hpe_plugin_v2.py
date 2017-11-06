@@ -1,6 +1,7 @@
 import testtools
 import createvolume_tester
 import clonevolume_tester
+import createsnapshot_tester
 import removesnapshot_tester
 
 
@@ -9,7 +10,7 @@ import removesnapshot_tester
 class HpeDockerUnitTestsBase(object):
 
     """
-    CREATE VOLUME related TESTS 
+    CREATE VOLUME related tests
     """
     def test_create_volume_default(self):
         test = createvolume_tester.TestCreateVolumeDefault()
@@ -88,6 +89,18 @@ class HpeDockerUnitTestsBase(object):
 
     def test_clone_compressed_volume(self):
         test = clonevolume_tester.TestCloneCompressedVolume()
+        test.run_test(self)
+
+    """
+    CREATE SNAPSHOT related tests
+    """
+    def test_create_snapshot_default(self):
+        test = createsnapshot_tester.TestCreateSnapshotDefault()
+        test.run_test(self)
+
+    def test_create_snapshot_with_expiry_retention_times(self):
+        test = \
+            createsnapshot_tester.TestCreateSnapshotWithExpiryRetentionTimes()
         test.run_test(self)
 
     """

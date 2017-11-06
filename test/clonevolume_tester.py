@@ -1,6 +1,4 @@
-import mock
-import testtools
-
+# import mock
 import fake_3par_data as data
 import createvolume_tester as createvolume
 from hpe3parclient import exceptions
@@ -108,6 +106,7 @@ class TestCloneInvalidSourceVolume(CloneVolumeUnitTest):
 class TestCloneWithInvalidSize(CloneVolumeUnitTest):
     pass
 
+
 # Online copy with dedup
 class TestCloneDedupVolume(CloneVolumeUnitTest):
     def check_response(self, resp):
@@ -178,7 +177,8 @@ class TestCloneWithFlashCacheAddVVSetFails(CloneVolumeUnitTest):
         mock_3parclient.copyVolume.return_value = {'taskid': data.TASK_ID}
         mock_3parclient.getCPG.return_value = {}
         # Make addVolumeToVolumeSet fail by throwing exception
-        mock_3parclient.addVolumeToVolumeSet.side_effect = [exceptions.HTTPNotFound('fake')]
+        mock_3parclient.addVolumeToVolumeSet.side_effect = \
+            [exceptions.HTTPNotFound('fake')]
 
 
 # CHAP enabled makes Offline copy flow to execute
@@ -206,6 +206,7 @@ class TestCloneWithCHAP(CloneVolumeUnitTest):
         mock_3parclient.getCPG.return_value = {}
         mock_3parclient.getVolumeMetaData.return_value = {'value': True}
         mock_3parclient.getTask.return_value = {'status': data.TASK_DONE}
+
 
 # TODO: This is already covered in other tests above
 class TestCloneWithoutCHAP(CloneVolumeUnitTest):
@@ -243,7 +244,8 @@ class TestCloneCompressedVolume(CloneVolumeUnitTest):
 
     def get_request_params(self):
         return {"Name": "clone-vol-001",
-                "Opts": {"cloneOf": data.VOLUME_NAME}}
+                "Opts": {"cloneOf": data.VOLUME_NAME,
+                         "compression": 'true'}}
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
