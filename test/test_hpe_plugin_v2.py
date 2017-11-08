@@ -33,7 +33,7 @@ class HpeDockerUnitTestsBase(object):
         test.run_test(self)
 
     def test_create_compressed_volume(self):
-        test = createvolume_tester.TestCompressedVolume()
+        test = createvolume_tester.TestCreateCompressedVolume()
         test.run_test(self)
 
     """
@@ -81,10 +81,6 @@ class HpeDockerUnitTestsBase(object):
 
     def test_clone_without_CHAP(self):
         test = clonevolume_tester.TestCloneWithoutCHAP()
-        test.run_test(self)
-
-    def test_clone_unsupported_dedup_version(self):
-        test = clonevolume_tester.TestCloneUnsupportedDedupVersion()
         test.run_test(self)
 
     def test_clone_compressed_volume(self):

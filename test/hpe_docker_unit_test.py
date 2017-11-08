@@ -65,7 +65,12 @@ class HpeDockerUnitTestExecutor(object):
             # Allow child class to validate response
             self.check_response(resp)
         except Exception as ex:
-            self.handle_exception(ex)
+            # self.handle_exception(ex)
+            # Plugin will never throw exception. This exception is coming
+            # from check_response as some 3PAR API was not invoked
+            # Let it go to testtools framework so that it can report the
+            # test case as failed
+            raise ex
 
     def run_test(self, test_case):
         self._test_case = test_case

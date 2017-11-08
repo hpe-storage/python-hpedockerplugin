@@ -283,12 +283,12 @@ class HPE3PARCommon(object):
         return "dcv-%s" % volume_name
 
     def _get_3par_snap_name(self, snapshot_id):
-        """Get converted 3PAR volume name.
+        """Get converted 3PAR snapshot name.
 
-        Converts the openstack volume id from
+        Converts the docker snapshot id from
         ecffc30f-98cb-4cf5-85ee-d7309cc17cd2
         to
-        dcv-7P.DD5jLTPWF7tcwnMF80g
+        dcs-7P.DD5jLTPWF7tcwnMF80g
 
         We convert the 128 bits of the uuid into a 24character long
         base64 encoded string to ensure we don't exceed the maximum
@@ -1038,33 +1038,16 @@ class HPE3PARCommon(object):
 
                 # check for valid provisioning type
                 prov_value = src_vref['provisioning']
-                if prov_value not in self.valid_prov_values:
-                    err = (_("Must specify a valid provisioning type "
-                             "%(valid)s, value '%(prov)s' is invalid.") %
-                           {'valid': self.valid_prov_values,
-                            'prov': prov_value})
-                    LOG.error(err)
-                    raise exception.InvalidInput(reason=err)
-
                 prov_map = {"full": {"tpvv": False, "tdvv": False},
                             "thin": {"tpvv": True, "tdvv": False},
                             "dedup": {"tpvv": False, "tdvv": True}}
                 tpvv = prov_map[prov_value]['tpvv']
                 tdvv = prov_map[prov_value]['tdvv']
 
-                if tdvv and (self.API_VERSION < DEDUP_API_VERSION):
-                    err = (_("Dedup is a valid provisioning type, "
-                             "but requires WSAPI version '%(dedup_version)s' "
-                             "version '%(version)s' is installed.") %
-                           {'dedup_version': DEDUP_API_VERSION,
-                            'version': self.API_VERSION})
-                    LOG.error(err)
-                    raise exception.InvalidInput(reason=err)
-
                 compression_val = src_vref['compression']  # None/true/False
                 compression = None
                 if compression_val is not None:
-                    compression = self.get_compression_policy(compression_val)
+                    compression = (compression_val.lower() == 'true')
 
                 # make the 3PAR copy the contents.
                 # can't delete the original until the copy is done.
@@ -1080,7 +1063,7 @@ class HPE3PARCommon(object):
                 if flash_cache is not None:
                     try:
                         self._add_volume_to_volume_set(dst_volume,
-                                                       src_3par_vol_name,
+                                                       dst_3par_vol_name,
                                                        cpg, flash_cache)
                     except exception.InvalidInput as ex:
                         # Delete volume if unable to add it to volume set
@@ -1105,8 +1088,9 @@ class HPE3PARCommon(object):
                 task_status = self._wait_for_task_completion(task_id)
                 if task_status['status'] is not self.client.TASK_DONE:
                     dbg = {'status': task_status, 'id': dst_volume['id']}
-                    msg = _('Copy volume task failed: create_cloned_volume '
+                    msg = _('copy volume task failed: create_cloned_volume '
                             'id=%(id)s, status=%(status)s.') % dbg
+                    LOG.error(msg)
                     raise exception.PluginException(msg)
                 else:
                     LOG.debug('Copy volume completed: create_cloned_volume: '

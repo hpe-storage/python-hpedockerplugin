@@ -14,6 +14,10 @@ class TestCloneDefault(CloneVolumeUnitTest):
     def check_response(self, resp):
         self._test_case.assertEqual(resp, {u"Err": ''})
 
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.getWsApiVersion.assert_called()
+        mock_3parclient.copyVolume.assert_called()
+
     def get_request_params(self):
         return {"Name": "clone-vol-001",
                 "Opts": {"cloneOf": data.VOLUME_NAME}}
@@ -39,6 +43,7 @@ class TestCloneOfflineCopy(CloneVolumeUnitTest):
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.createVolume.assert_called()
         mock_3parclient.copyVolume.assert_called()
+        mock_3parclient.getTask.assert_called()
 
     def get_request_params(self):
         return {"Name": "clone-vol-001",
@@ -60,12 +65,16 @@ class TestCloneOfflineCopy(CloneVolumeUnitTest):
 # Make copyVolume operation fail
 class TestCloneOfflineCopyFails(CloneVolumeUnitTest):
     def check_response(self, resp):
-        self._test_case.assertEqual(resp, {u"Err": ''})
+        # Match error substring with returned error string
+        err_received = resp['Err']
+        err_expected = 'copy volume task failed: create_cloned_volume'
+        self._test_case.assertIn(err_expected, err_received)
 
-        # TODO: Check following were invoked
-        # self.client.createVolumeSet(vvs_name, domain)
-        # self._set_flash_cache_policy_in_vvs(flash_cache, vvs_name)
-        # self.client.addVolumeToVolumeSet(vvs_name, volume_name)
+        # Check following 3PAR APIs were invoked
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.createVolume.assert_called()
+        mock_3parclient.copyVolume.assert_called()
+        mock_3parclient.getTask.assert_called()
 
     def get_request_params(self):
         return {"Name": "clone-vol-001",
@@ -87,7 +96,8 @@ class TestCloneOfflineCopyFails(CloneVolumeUnitTest):
 
 class TestCloneInvalidSourceVolume(CloneVolumeUnitTest):
     def check_response(self, resp):
-        self._test_case.assertEqual(resp, {u"Err": ''})
+        expected_msg = "source volume: %s does not exist" % None
+        self._test_case.assertEqual(resp, {u"Err": expected_msg})
 
     def get_request_params(self):
         return {"Name": "clone-vol-001",
@@ -112,9 +122,15 @@ class TestCloneDedupVolume(CloneVolumeUnitTest):
     def check_response(self, resp):
         self._test_case.assertEqual(resp, {u"Err": ''})
 
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.getWsApiVersion.assert_called()
+        mock_3parclient.copyVolume.assert_called()
+
     def get_request_params(self):
         return {"Name": "clone-vol-001",
-                "Opts": {"cloneOf": data.VOLUME_NAME}}
+                "Opts": {"cloneOf": data.VOLUME_NAME,
+                         # Keep same size to invoke online copy
+                         "size": str(data.volume_dedup['size'])}}
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
@@ -158,6 +174,7 @@ class TestCloneWithFlashCacheAddVVSetFails(CloneVolumeUnitTest):
         # Check required WSAPI calls were made
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.createVolumeSet.assert_called()
+        mock_3parclient.modifyVolumeSet.assert_called()
         mock_3parclient.addVolumeToVolumeSet.assert_called()
         mock_3parclient.deleteVolumeSet.assert_called()
 
@@ -213,39 +230,19 @@ class TestCloneWithoutCHAP(CloneVolumeUnitTest):
     pass
 
 
-# Override WS-API-Version to have lower value
-class TestCloneUnsupportedDedupVersion(CloneVolumeUnitTest):
-    def check_response(self, resp):
-        self._test_case.assertEqual(resp, {u"Err": ''})
-
-    def get_request_params(self):
-        return {"Name": "clone-vol-001",
-                "Opts": {"cloneOf": data.VOLUME_NAME}}
-
-    def setup_mock_objects(self):
-        mock_etcd = self.mock_objects['mock_etcd']
-        mock_etcd.get_vol_byname.return_value = data.volume_dedup
-
-        mock_3parclient = self.mock_objects['mock_3parclient']
-        mock_3parclient.getWsApiVersion.return_value = \
-            {'major': 1,
-             # Setting it to lower version that doesn't support dedup
-             'build': 20301215,
-             'minor': 6,
-             'revision': 0}
-        mock_3parclient.copyVolume.return_value = {'taskid': data.TASK_ID}
-        mock_3parclient.getCPG.return_value = {}
-
-
 # TODO: Compression related TCs to be added later
 class TestCloneCompressedVolume(CloneVolumeUnitTest):
     def check_response(self, resp):
         self._test_case.assertEqual(resp, {u"Err": ''})
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.getWsApiVersion.assert_called()
+        mock_3parclient.copyVolume.assert_called()
 
     def get_request_params(self):
         return {"Name": "clone-vol-001",
                 "Opts": {"cloneOf": data.VOLUME_NAME,
-                         "compression": 'true'}}
+                         "compression": 'true',
+                         "size": '16'}}
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']

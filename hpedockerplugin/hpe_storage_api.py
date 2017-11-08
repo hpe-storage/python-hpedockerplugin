@@ -549,7 +549,7 @@ class VolumePlugin(object):
             try:
                 self._etcd.try_unlock_volname(volname)
             except Exception as ex:
-                LOG.debug('volume: %(name)s Unlock Volume Failed',
+                LOG.error('volume: %(name)s Unlock Volume Failed',
                           {'name': volname})
                 response = json.dumps({u"Err": six.text_type(ex)})
                 return response
@@ -574,7 +574,7 @@ class VolumePlugin(object):
         try:
             self._etcd.try_unlock_volname(volname)
         except Exception as ex:
-            LOG.debug('volume: %(name)s Unlock Volume Failed',
+            LOG.error('volume: %(name)s Unlock Volume Failed',
                       {'name': volname})
             response = json.dumps({u"Err": six.text_type(ex)})
             return response
@@ -660,7 +660,7 @@ class VolumePlugin(object):
             msg = (_('unknown exception caught while cloning volume '
                      '%(name)s - reason: %(reason)s',
                      {'name': clone_name, 'reason': ex.message}))
-            LOG.debug(msg)
+            LOG.error(msg)
             response = json.dumps({u"Err": ''})
             return response
 
@@ -782,7 +782,7 @@ class VolumePlugin(object):
                 return json.dumps({u"Err": six.text_type(ex)})
 
         except Exception:
-            LOG.debug('volume: %(name)s is locked',
+            LOG.error('volume: %(name)s is locked',
                       {'name': src_vol_name})
             response = json.dumps({u"Err": ''})
             return response
@@ -796,7 +796,7 @@ class VolumePlugin(object):
                 try:
                     self._etcd.try_unlock_volname(src_vol_name)
                 except Exception as ex:
-                    LOG.debug('volume: %(name)s Unlock Volume Failed',
+                    LOG.error('volume: %(name)s Unlock Volume Failed',
                               {'name': src_vol_name})
                     # response = json.dumps({u"Err": six.text_type(ex)})
                     # return response
