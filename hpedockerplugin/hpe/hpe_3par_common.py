@@ -658,8 +658,10 @@ class HPE3PARCommon(object):
 
             if len(self.config.hpe3par_snapcpg):
                 extras['snapCPG'] = self.config.hpe3par_snapcpg[0]
+            else:
+                extras['snapCPG'] = cpg
 
-            # Only set the dedup option if the backend supports it.
+                # Only set the dedup option if the backend supports it.
             if self.API_VERSION >= DEDUP_API_VERSION:
                 extras['tdvv'] = tdvv
 
@@ -969,7 +971,7 @@ class HPE3PARCommon(object):
         return host, hostname
 
     def create_snapshot(self, snapshot):
-        LOG.debug("Create Snapshot\n%s", json.dumps(snapshot, indent=2))
+        LOG.info("Create Snapshot\n%s", json.dumps(snapshot, indent=2))
 
         try:
             snap_name = self._get_3par_snap_name(snapshot['id'])
@@ -1006,6 +1008,7 @@ class HPE3PARCommon(object):
             raise exception.NotFound()
 
     def create_cloned_volume(self, dst_volume, src_vref):
+        LOG.info("Create clone of volume\n%s", json.dumps(src_vref, indent=2))
         try:
             dst_3par_vol_name = self._get_3par_vol_name(dst_volume['id'])
             src_3par_vol_name = self._get_3par_vol_name(src_vref['id'])
@@ -1029,7 +1032,7 @@ class HPE3PARCommon(object):
             # We can't resize a volume, while it's being copied.
             if dst_volume['size'] == src_vref['size'] and not \
                     (vol_chap_enabled):
-                LOG.debug("Creating a clone of volume, using online copy.")
+                LOG.info("Creating a clone of volume, using online copy.")
 
                 cpg = self.config.hpe3par_cpg[0]
                 snap_cpg = cpg
@@ -1109,7 +1112,7 @@ class HPE3PARCommon(object):
     def _copy_volume(self, src_name, dest_name, cpg, snap_cpg=None,
                      tpvv=True, tdvv=False, compression=None):
         # Virtual volume sets are not supported with the -online option
-        LOG.debug('Creating clone of a volume %(src)s to %(dest)s.',
+        LOG.info('Creating clone of a volume %(src)s to %(dest)s.',
                   {'src': src_name, 'dest': dest_name})
 
         optional = {'tpvv': tpvv, 'online': True}

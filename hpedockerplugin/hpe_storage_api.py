@@ -250,11 +250,11 @@ class VolumePlugin(object):
 
     def volumedriver_remove_snapshot(self, volname, snapname):
         try:
-            LOG.debug("volumedriver_remove_snapshot - locking volume %s"
+            LOG.info("volumedriver_remove_snapshot - locking volume %s"
                       % volname)
             self._etcd.try_lock_volname(volname)
 
-            LOG.debug("volumedriver_remove_snapshot - getting volume %s"
+            LOG.info("volumedriver_remove_snapshot - getting volume %s"
                       % volname)
 
             vol = self._etcd.get_vol_byname(volname)
@@ -266,16 +266,16 @@ class VolumePlugin(object):
 
             if snapname:
                 snapshots = vol['snapshots']
-                LOG.debug("Getting snapshot by name: %s" % snapname)
+                LOG.info("Getting snapshot by name: %s" % snapname)
                 snapshot, idx = self._get_snapshot_by_name(snapshots,
                                                            snapname)
 
                 if snapshot:
-                    LOG.debug("Found snapshot by name: %s" % snapname)
+                    LOG.info("Found snapshot by name: %s" % snapname)
                     # Does the snapshot have child snapshot(s)?
                     for s in snapshots:
-                        LOG.debug("Checking if snapshot has children: %s"
-                                  % snapname)
+                        LOG.info("Checking if snapshot has children: %s"
+                                 % snapname)
                         if s['parent_id'] == snapshot['id']:
                             msg = (_LE('snapshot %s has one or more child '
                                        'snapshots - it cannot be deleted!'
@@ -285,16 +285,16 @@ class VolumePlugin(object):
                             # reason=msg)
                             response = json.dumps({u"Err": msg})
                             return response
-                    LOG.debug("Deleting snapshot at backend: %s" % snapname)
+                    LOG.info("Deleting snapshot at backend: %s" % snapname)
                     self.hpeplugin_driver.delete_volume(snapshot,
                                                         is_snapshot=True)
 
-                    LOG.debug("Deleting snapshot in ETCD - %s" % snapname)
+                    LOG.info("Deleting snapshot in ETCD - %s" % snapname)
                     # Remove snapshot entry from list and save it back to
                     # ETCD DB
                     del snapshots[idx]
                     try:
-                        LOG.debug("Updating volume in ETCD after snapshot "
+                        LOG.info("Updating volume in ETCD after snapshot "
                                   "removal - vol-name: %s" % volname)
                         # For now just track volume to uuid mapping internally
                         # TODO: Save volume name and uuid mapping in etcd as
@@ -302,7 +302,7 @@ class VolumePlugin(object):
                         self._etcd.update_vol(vol['id'],
                                               'snapshots',
                                               snapshots)
-                        LOG.debug('snapshot: %(name)s was successfully '
+                        LOG.info('snapshot: %(name)s was successfully '
                                   'removed', {'name': snapname})
                         response = json.dumps({u"Err": ''})
                         return response
@@ -674,7 +674,7 @@ class VolumePlugin(object):
                 try:
                     self._etcd.try_unlock_volname(src_vol_name)
                 except Exception as ex:
-                    LOG.debug('volume: %(name)s Unlock Volume Failed',
+                    LOG.error('volume: %(name)s Unlock Volume Failed',
                               {'name': src_vol_name})
                     # response = json.dumps({u"Err": six.text_type(ex)})
                     # return response
@@ -682,7 +682,7 @@ class VolumePlugin(object):
                 try:
                     self._etcd.try_unlock_volname(clone_name)
                 except Exception as ex:
-                    LOG.debug('volume: %(name)s Unlock Volume Failed',
+                    LOG.error('volume: %(name)s Unlock Volume Failed',
                               {'name': clone_name})
                     # response = json.dumps({u"Err": six.text_type(ex)})
                     # return response
@@ -692,6 +692,9 @@ class VolumePlugin(object):
         # actual REST call for snapshot creation is added, this
         # function will have minimal impact
         contents = json.loads(name.content.getvalue())
+
+        LOG.info("creating snapshot:\n%s" % json.dumps(contents, indent=2))
+
         if 'Name' not in contents:
             msg = (_('create snapshot failed, error is: Name is required.'))
             LOG.error(msg)
