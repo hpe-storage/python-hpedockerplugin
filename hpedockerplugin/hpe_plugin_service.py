@@ -32,8 +32,8 @@ from i18n import _, _LI
 
 import exception
 import six
-import argparse
-import pdb
+# import argparse
+# import pdb
 
 from oslo_log import log as logging
 
@@ -119,7 +119,6 @@ class HpeFactory(object):
 
     def __init__(self, cfg):
         self._cfg = cfg
-        print cfg
 
     def start_service(self):
         hpedockerplugin = HPEDockerPluginService(self._cfg)
@@ -131,9 +130,9 @@ class HpeFactory(object):
         hpepluginservice.setServiceParent(top_service)
 
         # this variable has to be named 'application'
-        application = service.Application("hpedockerplugin")
+        # application = service.Application("hpedockerplugin")
 
         # this hooks the collection we made to the application
-        hpeplugin_service = top_service.setServiceParent(application)
+        # hpeplugin_service = top_service.setServiceParent(application)
 
         return top_service

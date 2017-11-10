@@ -36,6 +36,7 @@ LOG = logging.getLogger(__name__)
 MIN_CLIENT_VERSION = '4.0.0'
 DEDUP_API_VERSION = 30201120
 FLASH_CACHE_API_VERSION = 30201200
+COMPRESSION_API_VERSION = 30301215
 
 hpe3par_opts = [
     cfg.StrOpt('hpe3par_api_url',
@@ -101,10 +102,11 @@ class HPE3PARCommon(object):
         0.0.1 - Initial version of 3PAR common created.
         0.0.2 - Added the ability to choose volume provisionings.
         0.0.3 - Added support for flash cache.
+        0.0.4 - Added support for compression CRUD operation.
 
     """
 
-    VERSION = "0.0.3"
+    VERSION = "0.0.4"
 
     # TODO(Ramy): move these to the 3PAR Client
     VLUN_TYPE_EMPTY = 1
@@ -118,6 +120,9 @@ class HPE3PARCommon(object):
     CONVERT_TO_THIN = 1
     CONVERT_TO_FULL = 2
     CONVERT_TO_DEDUP = 3
+
+    # License values for reported capabilities
+    COMPRESSION_LIC = "Compression"
 
     # Valid values for volume type extra specs
     # The first value in the list is the default value
@@ -304,7 +309,7 @@ class HPE3PARCommon(object):
         try:
             location = None
             auto = True
-            
+
             if lun_id is not None:
                 auto = False
 
@@ -314,7 +319,7 @@ class HPE3PARCommon(object):
             else:
                 port = self.build_portPos(nsp)
                 location = self.client.createVLUN(volume, hostname=hostname,
-                                                  auto=auto, portPos=port, 
+                                                  auto=auto, portPos=port,
                                                   lun=lun_id)
 
             vlun_info = None
@@ -431,7 +436,7 @@ class HPE3PARCommon(object):
         # When deleting VLUNs, you simply need to remove the template VLUN
         # and any active VLUNs will be automatically removed.  The template
         # VLUN are marked as active: False
-      
+
         volume_vluns = []
 
         for vlun in vluns:
@@ -446,7 +451,6 @@ class HPE3PARCommon(object):
                     "host %(host)s"), {'name': volume_name, 'host': hostname})
             LOG.warning(msg)
             return
-
 
         # VLUN Type of MATCHED_SET 4 requires the port to be provided
         for vlun in volume_vluns:
@@ -503,6 +507,24 @@ class HPE3PARCommon(object):
         else:
             return default
 
+    def _check_license_enabled(self, valid_licenses, license_to_check,
+                               capability):
+        """Check a license against valid licenses on the array."""
+
+        LOG.info(_LI(" license_to_check and valid_licenses are"
+                     " '%(license_to_check)s' \n  '%(valid_licenses)s' "),
+                 {'license_to_check': license_to_check,
+                  'valid_licenses': valid_licenses})
+        if valid_licenses:
+            for license in valid_licenses:
+                if license_to_check in license.get('name'):
+                    return True
+            LOG.debug(("'%(capability)s' requires a '%(license)s' "
+                       "license which is not installed.") %
+                      {'capability': capability,
+                       'license': license_to_check})
+        return False
+
     def _get_keys_by_volume_type(self, volume_type):
         hpe3par_keys = {}
         specs = volume_type.get('extra_specs')
@@ -527,6 +549,35 @@ class HPE3PARCommon(object):
         vol = self.client.getVolume(volume_name)
         if 'comment' in vol:
             return vol['comment']
+        return None
+
+    def get_compression_policy(self, compression_val):
+        compression_support = False
+        info = self.client.getStorageSystemInfo()
+        if 'licenseInfo' in info:
+            if 'licenses' in info['licenseInfo']:
+                valid_licenses = info['licenseInfo']['licenses']
+                compression_support = self._check_license_enabled(
+                    valid_licenses, self.COMPRESSION_LIC, "Compression")
+            # here check the WSAPI version
+        if self.API_VERSION < COMPRESSION_API_VERSION:
+            err = (_("Compression policy requires "
+                     "WSAPI version '%(compression_version)s' "
+                     "version '%(version)s' is installed.") %
+                   {'compression_version': COMPRESSION_API_VERSION,
+                    'version': self.self.API_VERSION})
+            LOG.error(err)
+            raise exception.InvalidInput(reason=err)
+        else:
+            if compression_val.lower() == 'true':
+                if not compression_support:
+                    msg = _('Compression is not supported on '
+                            'underlying hardware')
+                    LOG.error(msg)
+                    raise exception.InvalidInput(reason=msg)
+                return True
+            else:
+                return False
         return None
 
     def create_volume(self, volume):
@@ -561,6 +612,8 @@ class HPE3PARCommon(object):
 
             tpvv = True
             tdvv = False
+            fullprovision = False
+            compression = None
 
             if prov_value == "full":
                 tpvv = False
@@ -585,6 +638,30 @@ class HPE3PARCommon(object):
                 extras['tdvv'] = tdvv
 
             capacity = self._capacity_from_size(volume['size'])
+
+            if (tpvv is False and tdvv is False):
+                fullprovision = True
+
+            compression_val = volume['compression']   # None/true/False
+            compression = None
+
+            if compression_val is not None:
+                compression = self.get_compression_policy(compression_val)
+
+            if compression is True:
+                if not fullprovision and capacity >= 16384:
+                    extras['compression'] = compression
+                else:
+                    err = (_("To create compression enabled volume, size of "
+                             "the volume should be atleast 16GB. Fully "
+                             "provisioned volume can not be compressed. "
+                             "Please re enter requested volume size or "
+                             "provisioning type. "))
+                    LOG.error(err)
+                    raise exception.InvalidInput(reason=err)
+            if compression is not None:
+                extras['compression'] = compression
+
             volume_name = self._get_3par_vol_name(volume['id'])
             self.client.createVolume(volume_name, cpg, capacity, extras)
 

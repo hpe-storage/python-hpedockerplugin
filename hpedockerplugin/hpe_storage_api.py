@@ -35,15 +35,15 @@ from hpe import volume
 from oslo_utils import importutils
 import etcdutil as util
 
-from twisted.internet import threads
 from oslo_log import log as logging
 
-import time
+# import time
 
 DEFAULT_SIZE = 100
 DEFAULT_PROV = "thin"
 DEFAULT_FLASH_CACHE = None
 DEFAULT_MOUNT_VOLUME = "True"
+DEFAULT_COMPRESSION_VAL = None
 
 LOG = logging.getLogger(__name__)
 
@@ -65,7 +65,7 @@ class VolumePlugin(object):
         self._reactor = reactor
         self._hpepluginconfig = hpepluginconfig
         hpeplugin_driver = hpepluginconfig.hpedockerplugin_driver
-    
+
         protocol = 'ISCSI'
 
         if 'HPE3PARFCDriver' in hpeplugin_driver:
@@ -101,11 +101,30 @@ class VolumePlugin(object):
         # TODO: make device_scan_attempts configurable
         # see nova/virt/libvirt/volume/iscsi.py
         root_helper = 'sudo'
-        self.use_multipath = self._hpepluginconfig.use_multipath
-        self.enforce_multipath = self._hpepluginconfig.enforce_multipath
+
+        # Override the settings of use_multipath, enforce_multipath
+        # This will be a workaround until Issue #50 is fixed.
+        msg = (_('Overriding the value of multipath flags to True'))
+        LOG.info(msg)
+        self.use_multipath = True
+        self.enforce_multipath = True
+
         self.connector = connector.InitiatorConnector.factory(
             protocol, root_helper, use_multipath=self.use_multipath,
             device_scan_attempts=5, transport='default')
+
+    def _get_connector(self):
+        root_helper = 'sudo'
+        return connector.InitiatorConnector.factory(
+            'ISCSI', root_helper, use_multipath=self.use_multipath,
+            device_scan_attempts=5, transport='default')
+
+    def _get_etcd_util(self):
+        return util.EtcdUtil(
+            self._hpepluginconfig.host_etcd_ip_address,
+            self._hpepluginconfig.host_etcd_port_number,
+            self._hpepluginconfig.host_etcd_client_cert,
+            self._hpepluginconfig.host_etcd_client_key)
 
     def disconnect_volume_callback(self, connector_info):
         LOG.info(_LI('In disconnect_volume_callback: connector info is %s'),
@@ -254,15 +273,15 @@ class VolumePlugin(object):
             # remove directory
             fileutil.remove_dir(mount_dir)
 
-        # We're deferring the execution of the disconnect_volume as it can take
-        # substantial
-        # time (over 2 minutes) to cleanup the iscsi files
+        # Changed asynchronous disconnect_volume to sync call
+        # since it causes a race condition between unmount and
+        # mount operation on the same volume. This scenario is
+        # more noticed in case of repeated mount & unmount
+        # operations on the same volume. Refer Issue #64
         if connection_info:
-            LOG.info(_LI('call os brick to disconnect volume'))
-            d = threads.deferToThread(self.connector.disconnect_volume,
-                                      connection_info['data'], None)
-            d.addCallbacks(self.disconnect_volume_callback,
-                           self.disconnect_volume_error_callback)
+            LOG.info(_LI('sync call os brick to disconnect volume'))
+            self.connector.disconnect_volume(connection_info['data'], None)
+            LOG.info(_LI('end of sync call to disconnect volume'))
 
         try:
             # Call driver to terminate the connection
@@ -312,8 +331,11 @@ class VolumePlugin(object):
         volname = contents['Name']
 
         # Verify valid Opts arguments.
-        valid_volume_create_opts = ['mount-volume',
+        valid_volume_create_opts = ['mount-volume', 'compression',
                                     'size', 'provisioning', 'flash-cache']
+
+        valid_compression_opts = ['true', 'false']
+
         if ('Opts' in contents and contents['Opts']):
             for key in contents['Opts']:
                 if key not in valid_volume_create_opts:
@@ -334,6 +356,20 @@ class VolumePlugin(object):
         if ('Opts' in contents and contents['Opts'] and
                 'provisioning' in contents['Opts']):
             vol_prov = str(contents['Opts']['provisioning'])
+
+        compression_val = DEFAULT_COMPRESSION_VAL
+        if ('Opts' in contents and contents['Opts'] and
+                'compression' in contents['Opts']):
+            compression_val = str(contents['Opts']['compression'])
+
+        if compression_val is not None:
+            if compression_val.lower() not in valid_compression_opts:
+                msg = (_('create volume failed, error is:'
+                         'passed compression parameterdo not have a valid '
+                         'value. Valid vaues are: %(valid)s') %
+                       {'valid': valid_compression_opts, })
+                LOG.error(msg)
+                return json.dumps({u"Err": six.text_type(msg)})
 
         vol_flash = DEFAULT_FLASH_CACHE
         if ('Opts' in contents and contents['Opts'] and
@@ -373,7 +409,8 @@ class VolumePlugin(object):
             return json.dumps({u"Err": ''})
 
         voluuid = str(uuid.uuid4())
-        vol = volume.createvol(volname, voluuid, vol_size, vol_prov, vol_flash)
+        vol = volume.createvol(volname, voluuid, vol_size, vol_prov,
+                               vol_flash, compression_val)
 
         try:
             self.hpeplugin_driver.create_volume(vol)
