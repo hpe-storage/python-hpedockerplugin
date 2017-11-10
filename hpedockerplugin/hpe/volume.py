@@ -4,26 +4,10 @@ DEFAULT_FLASH_CACHE = None
 DEFAULT_MOUNT_VOLUME = "True"
 DEFAULT_COMPRESSION_VAL = None
 
-volume = {}
-volume['id'] = ''
-volume['name'] = ''
-volume['host'] = ''
-volume['size'] = ''
-volume['availability_zone'] = ''
-volume['status'] = ''
-volume['attach_status'] = ''
-volume['display_name'] = ''
-volume['volume_id'] = ''
-volume['volume_type'] = ''
-volume['volume_attachment'] = ''
-volume['provisioning'] = ''
-volume['flash_cache'] = ''
-volume['compression'] = ''
-volume['snapshots'] = []
-
 
 def createvol(name, uuid, size=DEFAULT_SIZE, prov=DEFAULT_PROV,
               flash_cache=None, compression_val=None):
+    volume = {}
     volume['id'] = uuid
     volume['name'] = uuid
     volume['host'] = ''

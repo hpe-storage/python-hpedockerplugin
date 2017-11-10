@@ -462,6 +462,15 @@ class VolumePlugin(object):
                     LOG.error(msg)
                     return json.dumps({u"Err": six.text_type(msg)})
 
+        # snapshotOf and cloneOf are mutually exclusive
+        if ('Opts' in contents and contents['Opts'] and
+                'snapshotOf' in contents['Opts'] and
+                'cloneOf' in contents['Opts']):
+            msg = (_('both snapshoOf and cloneOf cannot be specified at the '
+                     'same time'))
+            LOG.error(msg)
+            return json.dumps({u"Err": six.text_type(msg)})
+
         if ('Opts' in contents and contents['Opts'] and
                 'snapshotOf' in contents['Opts']):
             return self.volumedriver_create_snapshot(name, opts)

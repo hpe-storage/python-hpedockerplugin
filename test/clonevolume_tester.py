@@ -33,7 +33,33 @@ class TestCloneDefault(CloneVolumeUnitTest):
 
 # TODO: Rollback is needed for created volume else unit test would fail
 class TestCloneDefaultEtcdSaveFails(CloneVolumeUnitTest):
-    pass
+    def get_request_params(self):
+        return {"Name": "clone-vol-001",
+                "Opts": {"cloneOf": data.VOLUME_NAME}}
+
+    def setup_mock_objects(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.return_value = data.volume
+        # Make save_vol fail with exception
+        mock_etcd.save_vol.side_effect = [Exception("I am dead")]
+
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.copyVolume.return_value = {'taskid': data.TASK_ID}
+        mock_3parclient.getCPG.return_value = {}
+
+    def check_response(self, resp):
+        self._test_case.assertEqual(resp, {u"Err": 'I am dead'})
+
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.getWsApiVersion.assert_called()
+        mock_3parclient.copyVolume.assert_called()
+        # TODO: TC will fail as this is not happening today
+        # Again for online copy, we may not be able to delete the
+        # volume immediately. We may have to wait for online copy
+        # to complete. Or we may just fire delete volume hoping
+        # 3PAR will take care of deletion after online copy
+        # and eat up exception return by deleteVolume
+        mock_3parclient.deleteVolume.assert_called()
 
 
 # Offline copy
@@ -104,7 +130,7 @@ class TestCloneInvalidSourceVolume(CloneVolumeUnitTest):
                 "Opts": {"cloneOf": data.VOLUME_NAME,
                          # Difference in size of source and cloned volume
                          # triggers offline copy. Src volume size is 2.
-                         "size": 20}}
+                         "size": '20'}}
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
@@ -114,7 +140,21 @@ class TestCloneInvalidSourceVolume(CloneVolumeUnitTest):
 
 # TODO: Make this fail and in validation compare error message
 class TestCloneWithInvalidSize(CloneVolumeUnitTest):
-    pass
+    def get_request_params(self):
+        return {"Name": "clone-vol-001",
+                "Opts": {"cloneOf": data.VOLUME_NAME,
+                         # Difference in size of source and cloned volume
+                         # triggers offline copy. Src volume size is 2.
+                         "size": '1'}}
+
+    def setup_mock_objects(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        # Source volume that is to be cloned
+        mock_etcd.get_vol_byname.return_value = data.volume
+
+    def check_response(self, resp):
+        expected_msg = "clone volume size 1 is less than source volume size 2"
+        self._test_case.assertEqual(resp, {u"Err": expected_msg})
 
 
 # Online copy with dedup
@@ -223,11 +263,6 @@ class TestCloneWithCHAP(CloneVolumeUnitTest):
         mock_3parclient.getCPG.return_value = {}
         mock_3parclient.getVolumeMetaData.return_value = {'value': True}
         mock_3parclient.getTask.return_value = {'status': data.TASK_DONE}
-
-
-# TODO: This is already covered in other tests above
-class TestCloneWithoutCHAP(CloneVolumeUnitTest):
-    pass
 
 
 # TODO: Compression related TCs to be added later
