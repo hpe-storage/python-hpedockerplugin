@@ -251,11 +251,11 @@ class VolumePlugin(object):
     def volumedriver_remove_snapshot(self, volname, snapname):
         try:
             LOG.info("volumedriver_remove_snapshot - locking volume %s"
-                      % volname)
+                     % volname)
             self._etcd.try_lock_volname(volname)
 
             LOG.info("volumedriver_remove_snapshot - getting volume %s"
-                      % volname)
+                     % volname)
 
             vol = self._etcd.get_vol_byname(volname)
             if vol is None:
@@ -295,7 +295,7 @@ class VolumePlugin(object):
                     del snapshots[idx]
                     try:
                         LOG.info("Updating volume in ETCD after snapshot "
-                                  "removal - vol-name: %s" % volname)
+                                 "removal - vol-name: %s" % volname)
                         # For now just track volume to uuid mapping internally
                         # TODO: Save volume name and uuid mapping in etcd as
                         # well. This will make get_vol_byname more efficient
@@ -303,7 +303,7 @@ class VolumePlugin(object):
                                               'snapshots',
                                               snapshots)
                         LOG.info('snapshot: %(name)s was successfully '
-                                  'removed', {'name': snapname})
+                                 'removed', {'name': snapname})
                         response = json.dumps({u"Err": ''})
                         return response
                     except Exception as ex:
