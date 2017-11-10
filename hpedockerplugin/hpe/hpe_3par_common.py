@@ -1113,7 +1113,7 @@ class HPE3PARCommon(object):
                      tpvv=True, tdvv=False, compression=None):
         # Virtual volume sets are not supported with the -online option
         LOG.info('Creating clone of a volume %(src)s to %(dest)s.',
-                  {'src': src_name, 'dest': dest_name})
+                 {'src': src_name, 'dest': dest_name})
 
         optional = {'tpvv': tpvv, 'online': True}
         if snap_cpg is not None:
