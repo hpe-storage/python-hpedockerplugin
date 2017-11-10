@@ -1,0 +1,38 @@
+# Valid values of os: ubuntu,rhel,centos
+platform:
+    os: ubuntu
+
+# Plugin with old_version is mandatory for plugin upgrade test case
+plugin:
+    latest_version: sandanar/hpedockerplugin:2.0.2
+    old_version: sandanar/hpedockerplugin:2.0.1
+    certs_source: /tmp/
+
+# Add etcd service details for secured/unsecured connection
+# Specify the name of the etcd container
+etcd:
+    host: localhost
+    port: 2379
+    client_cert:
+    client_key:
+    container: etcd
+
+# Change volume sizes in single inverted commas as per the availability of space in 3Par array
+# e.g. '5' will create a volume of 5 GB size in 3Par array
+volumes:
+    thin_size: '10'
+    full_size: '1'
+    dedup_size: '1'
+    compress_size: '16'
+
+# 3Par backend details to initialize WSAPI session
+backend:
+    3Par_api_url: https://10.50.3.9:8080/api/v1
+
+# Multipath configuration details
+# Mention the number of iSCSI ports present in hpe.conf
+# Mention the number of FC zones configured in Fabric
+multipath:
+    ports_zones: 2
+
+
