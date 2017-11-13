@@ -69,8 +69,8 @@ hpe-storage/python-hpedockerplugin   plugin_v2          9b540a18a9b2        4 we
 - Sample docker-compose.yml 
 ``` 
 hpedockerplugin:
-  image: sandanar/hpedockerplugin:2.0.2
-  container_name: legacy
+  image: hpe-storage/python-hpedockerplugin:plugin_v2
+  container_name: plugin_container
   net: host
   privileged: true
   volumes:
@@ -102,5 +102,6 @@ ln -s ../hpe.sock  hpe.sock
 - You should be able to do `docker volume` operations like `docker volume create -d hpe --name sample_vol -o size=1`
 
 ##Restarting the plugin
+
 IMPORTANT NOTE: The /run/docker/plugins/hpe/hpe.sock and /run/docker/plugins/hpe/hpe.sock.lock files are not automatically removed when you stop the container. Therefore, these files will need to be removed between each run of the plugin.
 
