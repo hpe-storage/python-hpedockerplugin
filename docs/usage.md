@@ -43,6 +43,35 @@ sudo docker volume ls
 sudo docker volume inspect <vol_name>
 ```
 
+#### Creating a clone of a volume
+
+```
+sudo docker volume create -d hpe --name <target_vol_name> -o cloneOf=<source_vol_name>
+```
+
+#### Creating a snapshot of a volume
+
+```
+sudo docker volume create -d hpe --name <snapshot_name> -o snapshotOf=<source_vol_name>
+```
+There are couple of optional parameters that can be used during snapshot creation:
+- expirationHours -- specifies the expiration time for snapshot in hours
+- retentionHours  -- specifies the retention time for snapshot in hours
+
+Note: If snapcpg is not configured in hpe.conf then cpg would be used for snapshot
+
+#### Inspect a snapshot
+
+```
+sudo docker volume inspect <parent_vol_name>/<snapshot_name>
+```
+
+#### Delete a snapshot
+
+```
+sudo docker volume rm <parent_vol_name>/<snapshot_name>
+```
+
 #### Mounting a volume
 
 Use the following command to mount a volume and start a bash prompt:

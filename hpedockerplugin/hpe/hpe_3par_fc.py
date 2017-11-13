@@ -105,10 +105,10 @@ class HPE3PARFCDriver(object):
         finally:
             self._logout(common)
 
-    def delete_volume(self, volume):
+    def delete_volume(self, volume, is_snapshot=False):
         common = self._login()
         try:
-            common.delete_volume(volume)
+            common.delete_volume(volume, is_snapshot)
         finally:
             self._logout(common)
 
@@ -378,3 +378,17 @@ class HPE3PARFCDriver(object):
                         # for other HTTP conflict
                         ctxt.reraise = True
             return hostname
+
+    def create_snapshot(self, snapshot):
+        common = self._login()
+        try:
+            common.create_snapshot(snapshot)
+        finally:
+            self._logout(common)
+
+    def create_cloned_volume(self, volume, src_vref):
+        common = self._login()
+        try:
+            return common.create_cloned_volume(volume, src_vref)
+        finally:
+            self._logout(common)

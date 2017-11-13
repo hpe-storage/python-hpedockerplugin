@@ -204,3 +204,7 @@ class HPEPluginFileSystemException(PluginException):
 
 class HPEPluginMakeEtcdRootException(PluginException):
     message = _("HPE Docker Volume Plugin Make Etcd Root error: %(reason)s")
+
+
+class HPEPluginEtcdException(PluginException):
+    message = _("Encountered Etcd exception: %(reason)s")
