@@ -1,14 +1,19 @@
 hpedockerplugin:
-  image: <plugin-image-name:tag>
+  image: <image-name>
   container_name: <container-name>
   net: host
   privileged: true
   volumes:
      - /dev:/dev
+     - /run/lock:/run/lock
+     - /var/lib:/var/lib
      - /var/run/docker/plugins:/var/run/docker/plugins:rw
+     - /etc:/etc
+     - /root/.ssh:/root/.ssh
+     - /sys:/sys
+     - /root/plugin/certs:/root/plugin/certs
+     - /sbin/iscsiadm:/sbin/ia
      - /lib/modules:/lib/modules
-     - /var/lib/docker/:/var/lib/docker
-     - /etc/hpedockerplugin/data:/etc/hpedockerplugin/data:shared
-     - /etc/iscsi/initiatorname.iscsi:/etc/iscsi/initiatorname.iscsi
-     - /etc/hpedockerplugin:/etc/hpedockerplugin
+     - /lib/x86_64-linux-gnu:/lib64
      - /var/run/docker.sock:/var/run/docker.sock
+     - /opt/hpe/data:/opt/hpe/data:shared
