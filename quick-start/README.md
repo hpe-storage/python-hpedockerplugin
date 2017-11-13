@@ -60,7 +60,7 @@ Observe the built container image by `docker images` command
 ```
 root@worker1:~/patch_201/python-hpedockerplugin# docker images
 REPOSITORY                           TAG                 IMAGE ID            CREATED             SIZE
-<repository_name>/hpedockerplugin   plugin_v2          9b540a18a9b2        4 weeks ago         239MB
+hpe-storage/python-hpedockerplugin   plugin_v2          9b540a18a9b2        4 weeks ago         239MB
 ```
 
 - Copy the file https://github.com/hpe-storage/python-hpedockerplugin/blob/plugin_v2/quick-start/docker-compose.yml.example as docker-compose.yml
