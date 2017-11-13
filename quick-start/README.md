@@ -90,6 +90,14 @@ hpedockerplugin:
   ```
 
 - Start the plugin container by `docker-compose docker-compose.yml`
+- create 2 symbolic links by using these steps
+```
+mkdir -p /run/docker/plugins/hpe
+cd /run/docker/plugins/hpe
+ln -s ../hpe.sock.lock  hpe.sock.lock
+ln -s ../hpe.sock  hpe.sock
+
+```
 
 - You should be able to do `docker volume` operations like `docker volume create -d hpe --name sample_vol -o size=1`
 
