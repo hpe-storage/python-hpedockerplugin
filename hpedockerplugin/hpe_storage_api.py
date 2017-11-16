@@ -260,7 +260,8 @@ class VolumePlugin(object):
             vol = self._etcd.get_vol_byname(volname)
             if vol is None:
                 # Just log an error, but don't fail the docker rm command
-                msg = (_LE('Volume remove name not found %s'), volname)
+                msg = (_LE('snapshot remove - parent volume name not found '
+                           '%s'), volname)
                 LOG.error(msg)
                 return json.dumps({u"Err": msg})
 
@@ -273,13 +274,13 @@ class VolumePlugin(object):
                 if snapshot:
                     LOG.info("Found snapshot by name: %s" % snapname)
                     # Does the snapshot have child snapshot(s)?
-                    for s in snapshots:
+                    for ss in snapshots:
                         LOG.info("Checking if snapshot has children: %s"
                                  % snapname)
-                        if s['parent_id'] == snapshot['id']:
-                            msg = (_LE('snapshot %s has one or more child '
+                        if ss['parent_id'] == snapshot['id']:
+                            msg = (_LE('snapshot %s/%s has one or more child '
                                        'snapshots - it cannot be deleted!'
-                                       % snapname))
+                                       % (volname, snapname)))
                             LOG.error(msg)
                             # raise exception.HPEPluginRemoveException(
                             # reason=msg)
@@ -898,7 +899,7 @@ class VolumePlugin(object):
                       {'path': path.path})
 
         # Determine if we need to mount the volume
-        if vol_mount is volume.DEFAULT_MOUNT_VOLUME:
+        if vol_mount == volume.DEFAULT_MOUNT_VOLUME:
             # mkdir for mounting the filesystem
             mount_dir = fileutil.mkdir_for_mounting(device_info['path'])
             LOG.debug('Directory: %(mount_dir)s, '

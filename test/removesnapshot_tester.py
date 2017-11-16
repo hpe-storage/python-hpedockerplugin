@@ -1,3 +1,4 @@
+import copy
 import fake_3par_data as data
 import hpe_docker_unit_test as hpedockerunittest
 
@@ -25,20 +26,21 @@ class TestRemoveSnapshot(RemoveSnapshotUnitTest):
 
     def get_request_params(self):
         parent_volume_name = data.volume_with_snapshots['name']
-        snapshot_name = data.volume_with_snapshots['snapshots'][0]['name']
+        snapshot_name = data.snapshot1['name']
         snapshot_path = '/'.join([parent_volume_name, snapshot_name])
         return {"Name": snapshot_path}
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
-        mock_etcd.get_vol_byname.return_value = data.volume_with_snapshots
+        mock_etcd.get_vol_byname.return_value = \
+            copy.deepcopy(data.volume_with_snapshots)
 
 
 # Tries to remove a snapshot present at the second level
 # This shouldn't even enter driver code
 class TestRemoveMultilevelSnapshot(RemoveSnapshotUnitTest):
     def get_request_params(self):
-        parent_volume_name = data.volume_with_snapshots['name']
+        parent_volume_name = data.volume_with_multilevel_snapshot['name']
         snapshot_name = 'snap01/snap02'
         self.snapshot_path = '/'.join([parent_volume_name, snapshot_name])
         return {"Name": self.snapshot_path}
@@ -46,7 +48,7 @@ class TestRemoveMultilevelSnapshot(RemoveSnapshotUnitTest):
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
         mock_etcd.get_vol_byname.return_value = \
-            data.volume_with_multilevel_snapshot
+            copy.deepcopy(data.volume_with_multilevel_snapshot)
 
     def check_response(self, resp):
         expected = {u"Err": 'invalid volume or snapshot name %s'
@@ -59,15 +61,15 @@ class TestRemoveMultilevelSnapshot(RemoveSnapshotUnitTest):
 # This would help in case it is supported in the future
 class TestRemoveSnapshotWithChildSnapshots(RemoveSnapshotUnitTest):
     def get_request_params(self):
-        parent_volume_name = data.volume_with_snapshots['name']
-        snapshot_name = data.volume_with_snapshots['snapshots'][0]['name']
+        parent_volume_name = data.volume_with_multilevel_snapshot['name']
+        snapshot_name = data.snapshot1['name']
         self.snapshot_path = '/'.join([parent_volume_name, snapshot_name])
         return {"Name": self.snapshot_path}
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
         mock_etcd.get_vol_byname.return_value = \
-            data.volume_with_multilevel_snapshot
+            copy.deepcopy(data.volume_with_multilevel_snapshot)
 
     def check_response(self, resp):
         expected = {u"Err": 'snapshot %s has one or more child snapshots - it'
@@ -86,7 +88,7 @@ class TestRemoveNonExistentSnapshot(RemoveSnapshotUnitTest):
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
         mock_etcd.get_vol_byname.return_value = \
-            data.volume_with_multilevel_snapshot
+            copy.deepcopy(data.volume_with_multilevel_snapshot)
 
     def check_response(self, resp):
         expected = {u'Err': u'snapshot %s does not exist!'

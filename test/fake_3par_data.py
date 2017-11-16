@@ -10,10 +10,6 @@ HPE3PAR_SAN_IP = '2.2.2.2'
 HPE3PAR_SAN_SSH_PORT = 999
 HPE3PAR_SAN_SSH_CON_TIMEOUT = 44
 HPE3PAR_SAN_SSH_PRIVATE = 'foobar'
-GOODNESS_FUNCTION = \
-    "stats.capacity_utilization < 0.6? 100:25"
-FILTER_FUNCTION = \
-    "stats.total_volumes < 400 && stats.capacity_utilization < 0.8"
 
 CHAP_USER_KEY = "HPQ-docker-CHAP-name"
 CHAP_PASS_KEY = "HPQ-docker-CHAP-secret"
@@ -25,22 +21,22 @@ FLASH_CACHE_DISABLED = 2
 EXISTENT_PATH = 73
 
 VOLUME_ID = 'd03338a9-9115-48a3-8dfc-35cdfcdc15a7'
-SRC_CG_VOLUME_ID = 'bd21d11b-c765-4c68-896c-6b07f63cfcb6'
 CLONE_ID = 'd03338a9-9115-48a3-8dfc-000000000000'
-VOLUME_TYPE_ID_REPLICATED = 'be9181f1-4040-46f2-8298-e7532f2bf9db'
 VOLUME_TYPE_ID_DEDUP = 'd03338a9-9115-48a3-8dfc-11111111111'
 VOL_TYPE_ID_DEDUP_COMPRESS = 'd03338a9-9115-48a3-8dfc-33333333333'
 VOLUME_TYPE_ID_FLASH_CACHE = 'd03338a9-9115-48a3-8dfc-22222222222'
 VOLUME_NAME = 'volume-' + VOLUME_ID
 VOLUME_NAME_3PAR = 'osv-0DM4qZEVSKON-DXN-NwVpw'
 SNAPSHOT_ID1 = '2f823bdc-e36e-4dc8-bd15-de1c7a28ff31'
-SNAPSHOT_NAME1 = 'snapshot-2f823bdc-e36e-4dc8-bd15-de1c7a28ff31'
+SNAPSHOT_NAME1 = 'snapshot-1'
 SNAPSHOT_ID2 = '8da7488a-7920-451a-ad18-0e41eca15d25'
-SNAPSHOT_NAME2 = 'snapshot-8da7488a-7920-451a-ad18-0e41eca15d25'
-VOLUME_3PAR_NAME = 'osv-0DM4qZEVSKON-DXN-NwVpw'
-SNAPSHOT_3PAR_NAME = 'oss-L4I73ONuTci9Fd4ceij-MQ'
-RCG_3PAR_NAME = 'rcg-0DM4qZEVSKON-DXN-N'
-CLIENT_ID = "12345"
+SNAPSHOT_NAME2 = 'snapshot-2'
+SNAPSHOT_ID3 = 'f5d9e226-2995-4d66-a5bd-3e373f4ff772'
+SNAPSHOT_NAME3 = 'snapshot-3'
+VOLUME_3PAR_NAME = 'dcv-0DM4qZEVSKON-DXN-NwVpw'
+SNAPSHOT_3PAR_NAME = 'dcs-L4I73ONuTci9Fd4ceij-MQ'
+TARGET_IQN = 'iqn.2000-05.com.3pardata:21810002ac00383d'
+TARGET_LUN = 90
 # fake host on the 3par
 FAKE_HOST = 'fakehost'
 FAKE_DOCKER_HOST = 'fakehost@foo#' + HPE3PAR_CPG
@@ -70,9 +66,9 @@ FAKE_ISCSI_PORT = {'portPos': {'node': 8, 'slot': 1, 'cardPort': 1},
                    'protocol': 2,
                    'mode': 2,
                    'IPAddr': '1.1.1.2',
-                   'iSCSIName': ('iqn.2000-05.com.3pardata:'
-                                 '21810002ac00383d'),
+                   'iSCSIName': TARGET_IQN,
                    'linkState': 4}
+
 volume = {'name': VOLUME_NAME,
           'id': VOLUME_ID,
           'display_name': 'Foo Volume',
@@ -95,8 +91,8 @@ snapshot2 = {'name': SNAPSHOT_NAME2,
              'expiration_hours': '5',
              'retention_hours': '5'}
 
-snapshot3 = {'name': SNAPSHOT_NAME2,
-             'id': SNAPSHOT_ID2,
+snapshot3 = {'name': SNAPSHOT_NAME3,
+             'id': SNAPSHOT_ID3,
              # This is a child of snapshot1
              'parent_id': SNAPSHOT_ID1,
              'expiration_hours': '5',
@@ -186,6 +182,75 @@ volume_flash_cache = {'name': VOLUME_NAME,
                       'snapshots': []}
 
 wwn = ["123456789012345", "123456789054321"]
+
+host_vluns1 = [{'active': True,
+                'volumeName': VOLUME_3PAR_NAME,
+                'portPos': {'node': 7, 'slot': 1, 'cardPort': 1},
+                'remoteName': wwn[1],
+                'lun': 90, 'type': 0}]
+
+host_vluns2 = [{'active': True,
+                'volumeName': VOLUME_3PAR_NAME,
+                'portPos': {'node': 6, 'slot': 1, 'cardPort': 1},
+                'remoteName': wwn[0],
+                'lun': 90, 'type': 0}]
+
+host_vluns = [{'active': True,
+               'volumeName': VOLUME_3PAR_NAME,
+               'portPos': {'node': 7,
+                          'slot': 1,
+                          'cardPort': 1},
+               'remoteName': wwn[1],
+               'lun': 90, 'type': 0},
+              {'active': False,
+               'volumeName': VOLUME_3PAR_NAME,
+               'portPos': {'node': 9,
+                          'slot': 1,
+                          'cardPort': 1},
+               'remoteName': wwn[0],
+               'lun': 90, 'type': 0}]
+
+iscsi_host_vluns1 = [{'active': True,
+                      'hostname': FAKE_HOST,
+                      'volumeName': VOLUME_3PAR_NAME,
+                      'lun': TARGET_LUN, 'type': 0,
+                      'portPos': {'node': 8, 'slot': 1, 'cardPort': 1}}]
+iscsi_host_vluns2 = [{'active': True,
+                      'volumeName': VOLUME_3PAR_NAME,
+                      'lun': TARGET_LUN, 'type': 0}]
+
+fake_fc_host = {'name': FAKE_HOST,
+                'FCPaths': [
+                    {'driverVersion': None,
+                     'firmwareVersion': None,
+                     'hostSpeed': 0,
+                     'model': None,
+                     'portPos': {'cardPort': 1, 'node': 7,
+                                 'slot': 1},
+                     'vendor': None,
+                     'wwn': wwn[0]},
+                    {'driverVersion': None,
+                     'firmwareVersion': None,
+                     'hostSpeed': 0,
+                     'model': None,
+                     'portPos': {'cardPort': 1, 'node': 6,
+                                 'slot': 1},
+                     'vendor': None,
+                     'wwn': wwn[1]}]}
+
+fake_host = {'name': FAKE_HOST,
+             'initiatorChapEnabled': False,
+             'iSCSIPaths': [{"name": "iqn.1993-08.org.debian:01:222"}]}
+
+fake_hosts = {'members':[{'name': FAKE_HOST}]}
+
+volume_metadata = {'value': 'random-key'}
+
+location = ("%(volume_name)s,%(lun_id)s,%(host)s,%(nsp)s" %
+            {'volume_name': VOLUME_3PAR_NAME,
+             'lun_id': TARGET_LUN,
+             'host': FAKE_HOST,
+             'nsp': 'something'})
 
 connector = {'ip': '10.0.0.2',
              'initiator': 'iqn.1993-08.org.debian:01:222',
