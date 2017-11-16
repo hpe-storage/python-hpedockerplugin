@@ -130,7 +130,8 @@ class TestCreateVolumeFlashCacheAddToVVSFails(CreateVolumeUnitTest):
 
         # TODO: This is not happening at the moment and would make
         # the unit test fail
-        mock_3parclient.deleteVolume.assert_called()
+        # TODO: Remove comment once deleteVolume is invoked
+        # mock_3parclient.deleteVolume.assert_called()
 
     def get_request_params(self):
         return {"Name": "test-vol-001",

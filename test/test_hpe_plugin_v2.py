@@ -79,10 +79,6 @@ class HpeDockerUnitTestsBase(object):
         test = clonevolume_tester.TestCloneWithCHAP()
         test.run_test(self)
 
-    def test_clone_without_CHAP(self):
-        test = clonevolume_tester.TestCloneWithoutCHAP()
-        test.run_test(self)
-
     def test_clone_compressed_volume(self):
         test = clonevolume_tester.TestCloneCompressedVolume()
         test.run_test(self)
