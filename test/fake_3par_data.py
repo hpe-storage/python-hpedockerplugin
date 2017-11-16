@@ -198,15 +198,15 @@ host_vluns2 = [{'active': True,
 host_vluns = [{'active': True,
                'volumeName': VOLUME_3PAR_NAME,
                'portPos': {'node': 7,
-                          'slot': 1,
-                          'cardPort': 1},
+                           'slot': 1,
+                           'cardPort': 1},
                'remoteName': wwn[1],
                'lun': 90, 'type': 0},
               {'active': False,
                'volumeName': VOLUME_3PAR_NAME,
                'portPos': {'node': 9,
-                          'slot': 1,
-                          'cardPort': 1},
+                           'slot': 1,
+                           'cardPort': 1},
                'remoteName': wwn[0],
                'lun': 90, 'type': 0}]
 
@@ -242,7 +242,7 @@ fake_host = {'name': FAKE_HOST,
              'initiatorChapEnabled': False,
              'iSCSIPaths': [{"name": "iqn.1993-08.org.debian:01:222"}]}
 
-fake_hosts = {'members':[{'name': FAKE_HOST}]}
+fake_hosts = {'members': [{'name': FAKE_HOST}]}
 
 volume_metadata = {'value': 'random-key'}
 
