@@ -138,7 +138,15 @@ class HpeDockerISCSIUnitTests(HpeDockerUnitTestsBase, testtools.TestCase):
         test.run_test(self)
 
     def test_mount_volume_iscsi_host(self):
-        test = mountvolume_tester.TestMountVolumeISCSIHost()
+        test = mountvolume_tester.TestMountVolumeISCSIHostNoVLUN()
+        test.run_test(self)
+
+    def test_mount_volume_existing_nsp(self):
+        test = mountvolume_tester.TestMountVolumeISCSIHostVLUNExist()
+        test.run_test(self)
+
+    def test_mount_volume_chap_on(self):
+        test = mountvolume_tester.TestMountVolumeISCSIHostChapOn()
         test.run_test(self)
 
 
