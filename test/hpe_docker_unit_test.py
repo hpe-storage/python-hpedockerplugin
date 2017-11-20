@@ -30,8 +30,34 @@ class HpeDockerUnitTestExecutor(object):
         req_body_str = json.dumps(request_dict)
         return RequestBody(req_body_str)
 
+    def _real_execute_api(self, plugin_api):
+        """
+        This is the method where all the action related to execution of
+        VolumePlugin API happen. This also has hooks for child class to
+        carry out the pre-requisites for the execution of VolumePlugin API
+        :param operation:
+            String containing VolumePlugin API name
+        :return: Nothing
+        """
+        import pdb
+        pdb.set_trace()
+        # Get API parameters from child class
+        req_body = self._get_request_body(self.get_request_params())
+
+        _api = api.VolumePlugin(reactor, self._config)
+        try:
+            resp = getattr(_api, plugin_api)(req_body)
+            resp = json.loads(resp)
+        except Exception as ex:
+            # self.handle_exception(ex)
+            # Plugin will never throw exception. This exception is coming
+            # from check_response as some 3PAR API was not invoked
+            # Let it go to testtools framework so that it can report the
+            # test case as failed
+            raise ex
+
     @setup_mock.mock_decorator
-    def _execute_api(self, mock_objects, plugin_api=''):
+    def _mock_execute_api(self, mock_objects, plugin_api=''):
         """
         This is the method where all the action related to execution of
         VolumePlugin API happen. This also has hooks for child class to
@@ -48,8 +74,9 @@ class HpeDockerUnitTestExecutor(object):
             String containing VolumePlugin API name
         :return: Nothing
         """
+#        import pdb
+#        pdb.set_trace()
         self.mock_objects = mock_objects
-        self._config = self._get_configuration()
 
         # Let the child class configure mock objects
         self.setup_mock_objects()
@@ -77,7 +104,11 @@ class HpeDockerUnitTestExecutor(object):
         # This is important to set as it is used by the mock decorator to
         # take decision which driver to instantiate
         self._protocol = test_case.protocol
-        self._execute_api(plugin_api=self._get_plugin_api())
+        self._config = self._get_configuration()
+        if not self._config.use_real_flow:
+            self._mock_execute_api(plugin_api=self._get_plugin_api())
+        else:
+            self._real_execute_api(plugin_api=self._get_plugin_api())
 
     def _get_configuration(self):
         # _protocol is set in the immediate child class
@@ -139,11 +170,12 @@ class HpeDockerUnitTestExecutor(object):
 def create_configuration(protocol):
     config = mock.Mock()
     config.ssh_hosts_key_file = "/root/.ssh/known_hosts"
+#    config.ssh_hosts_key_file = "/home/docker/.ssh/known_hosts"
     config.host_etcd_ip_address = "10.50.3.140"
-    config.host_etcd_port_number = "2379"
+    config.host_etcd_port_number = 2379
     config.logging = "DEBUG"
     config.hpe3par_debug = False
-    config.suppress_requests_ssl_warnings = False
+    config.suppress_requests_ssl_warnings = True
 
     if protocol == 'ISCSI':
         config.hpedockerplugin_driver = \
@@ -167,4 +199,9 @@ def create_configuration(protocol):
     config.enforce_multipath = True
     config.host_etcd_client_cert = None
     config.host_etcd_client_key = None
+
+    # This flag doesn't belong to hpe.conf. Has been added to allow
+    # framework to decide if ETCD is to be mocked or real
+    config.use_real_flow = False
+
     return config

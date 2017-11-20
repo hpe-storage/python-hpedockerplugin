@@ -450,7 +450,7 @@ class VolumePlugin(object):
         valid_volume_create_opts = ['mount-volume', 'compression',
                                     'size', 'provisioning', 'flash-cache',
                                     'cloneOf', 'snapshotOf', 'expirationHours',
-                                    'retentionHours']
+                                    'retentionHours', 'promote']
 
         if ('Opts' in contents and contents['Opts']):
             for key in contents['Opts']:
@@ -463,11 +463,16 @@ class VolumePlugin(object):
                     LOG.error(msg)
                     return json.dumps({u"Err": six.text_type(msg)})
 
+        # check for valid promoteSnap option and reurn the result
+        if ('Opts' in contents and contents['Opts'] and
+                'promote' in contents['Opts']):
+             return self.revert_to_snapshot(name, opts)
+
         # snapshotOf and cloneOf are mutually exclusive
         if ('Opts' in contents and contents['Opts'] and
                 'snapshotOf' in contents['Opts'] and
                 'cloneOf' in contents['Opts']):
-            msg = (_('both snapshoOf and cloneOf cannot be specified at the '
+            msg = (_('both snapshotOf and cloneOf cannot be specified at the '
                      'same time'))
             LOG.error(msg)
             return json.dumps({u"Err": six.text_type(msg)})
@@ -1071,3 +1076,50 @@ class VolumePlugin(object):
 
         response = json.dumps({u"Err": '', u"Volumes": volumelist})
         return response
+
+    def revert_to_snapshot(self, name, opts=None):
+        
+        contents = json.loads(name.content.getvalue())
+        if 'Name' not in contents:
+            msg = (_('revert snapshot failed, error is : Name is required'))
+            LOG.errpr(msg)
+            raise exception.HPEPluginCreateException(reason=msg)
+        snapname = contents['Name']
+        volumename = str(contents['Opts']['promote'])
+        lock_aquired = False
+        try:
+            self._etcd.try_lock_volname(volumename)
+            lock_aquired = True
+
+            volume = self._etcd.get_vol_byname(volumename)
+            if volume is None:
+                msg = (_LE('Volume: %s does not exist' % volumename))
+                LOG.info(msg)
+                response = json.dumps({u"Err": msg})
+                return response
+
+            snapshots = volume['snapshots']
+            LOG.info("Getting snapshot by name: %s" % snapname)
+            snapshot, idx = self._get_snapshot_by_name(snapshots, snapname)
+            if snapshot:
+                LOG.info("Found snapshot by name %s" % snapname)
+                self.hpeplugin_driver.revert_snap_to_vol(volume, snapshot)
+                response = json.dumps({u"Err": ''})
+                return response
+            else:
+                msg = (_LE('snapshot: %s does not exist!' % snapname))
+                LOG.info(msg)
+                response = json.dumps({u"Err": msg})
+                return response
+        except Exception:
+            LOG.info('volume: %(name)s is locked',
+                     {'name': volumename})
+            response = json.dumps({u"Err": ''})
+            return response
+        finally:
+            if lock_aquired:
+                try:
+                    self._etcd.try_unlock_volname(volumename)
+                except Exception:
+                    LOG.error('volume: %(name)s unlock volume Failed',
+                              {'name': volumename})
