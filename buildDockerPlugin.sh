@@ -44,7 +44,8 @@ mkdir v2plugin > /dev/null 2>&1
 rm -rf v2plugin/rootfs
 
 ./containerize.sh
-docker tag $REPO_NAME/python-hpedockerplugin:plugin_v2 $1
+#docker tag $REPO_NAME/python-hpedockerplugin:plugin_v2 $1
+docker tag $REPO_NAME/python-hpedockerplugin:promotesnap $1
 rc=$?
  if [[ $rc -ne 0 ]]; then
   echo "ERROR: failed"

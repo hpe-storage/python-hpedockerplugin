@@ -5,6 +5,7 @@ import createsnapshot_tester
 import removesnapshot_tester
 import mountvolume_tester
 import unmountvolume_tester
+import revertsnapshot_tester
 
 
 # TODO: Make this class abstract
@@ -79,6 +80,21 @@ class HpeDockerUnitTestsBase(object):
 
     def test_clone_compressed_volume(self):
         test = clonevolume_tester.TestCloneCompressedVolume()
+        test.run_test(self)
+
+    """
+    CREATE SNAPSHOT REVERT related tests
+    """
+    def test_snap_revert_volume_default(self):
+        test = revertsnapshot_tester.TestCreateSnapRevertVolume()
+        test.run_test(self)
+
+    def test_snap_revert_nonexist_volume(self):
+        test = revertsnapshot_tester.TestSnapRevertVolumeNotExist()
+        test.run_test(self)
+
+    def test_snap_revert_nonexist_snap(self):
+        test = revertsnapshot_tester.TestSnapRevertSnapNotExist()
         test.run_test(self)
 
     """

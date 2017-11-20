@@ -970,6 +970,24 @@ class HPE3PARCommon(object):
 
         return host, hostname
 
+    def revert_snap_to_vol(self, volume, snapshot):
+        try:
+            optional = {}
+            snapshot_name = self._get_3par_snap_name(snapshot['id'])
+            volume_name = self._get_3par_vol_name(volume['id'])
+            if self.client.isOnlinePhysicalCopy(volume_name):
+                LOG.info("Found an online copy for %(volume)s. ",
+                         {'volume': volume_name})
+                optional['online'] = True            
+            self.client.promoteVirtualCopy(snapshot_name, optional=optional)
+            LOG.info("Volume %(volume)s successfully reverted to"
+                     " %(snapname)s.", {'volume': volume_name,
+                                     'snapname': snapshot_name})
+        except Exception as ex:
+            LOG.error(_LE("Exception: %s"), ex)
+            raise exception.PluginException(ex)
+ 
+
     def create_snapshot(self, snapshot):
         LOG.info("Create Snapshot\n%s", json.dumps(snapshot, indent=2))
 
