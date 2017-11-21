@@ -210,6 +210,17 @@ host_vluns = [{'active': True,
                'remoteName': wwn[0],
                'lun': 90, 'type': 0}]
 
+iscsi_host_vluns = [{'active': True,
+                     'hostname': FAKE_HOST,
+                     'volumeName': VOLUME_3PAR_NAME,
+                     'lun': TARGET_LUN, 'type': 0,
+                     'portPos': {'node': 8, 'slot': 1, 'cardPort': 1}},
+                    {'active': False,
+                     'hostname': FAKE_HOST,
+                     'volumeName': VOLUME_3PAR_NAME,
+                     'lun': TARGET_LUN, 'type': 0,
+                     'portPos': {'node': 9, 'slot': 1, 'cardPort': 1}}]
+
 iscsi_host_vluns1 = [{'active': True,
                       'hostname': FAKE_HOST,
                       'volumeName': VOLUME_3PAR_NAME,

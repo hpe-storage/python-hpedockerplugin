@@ -149,18 +149,26 @@ class HpeDockerISCSIUnitTests(HpeDockerUnitTestsBase, testtools.TestCase):
         test = mountvolume_tester.TestMountVolumeISCSIHostChapOn()
         test.run_test(self)
 
+    def test_mount_volume_modify_iscsi_host_vlun_exists(self):
+        test = mountvolume_tester.TestMountVolumeModifyISCSIHostVLUNExists()
+        test.run_test(self)
+
+    def test_mount_volume_no_iscsi_host_no_vlun(self):
+        test = mountvolume_tester.TestMountVolumeNoISCSIHostNoVLUN()
+        test.run_test(self)
+
 
 class HpeDockerFCUnitTests(HpeDockerUnitTestsBase, testtools.TestCase):
     @property
     def protocol(self):
         return 'FC'
 
-    def test_mount_volume_mofify_host_vlun_exists(self):
+    def test_mount_volume_modify_host_vlun_exists(self):
         test = mountvolume_tester.TestMountVolumeModifyHostVLUNExists()
         test.run_test(self)
 
-    def test_mount_volume_fc_no_host_no_vlun(self):
-        test = mountvolume_tester.TestMountVolumeFCNoHostNoVLUN()
+    def test_mount_volume_no_fc_host_no_vlun(self):
+        test = mountvolume_tester.TestMountVolumeNoFCHostNoVLUN()
         test.run_test(self)
 
     def test_mount_volume_fc_host(self):
@@ -170,4 +178,3 @@ class HpeDockerFCUnitTests(HpeDockerUnitTestsBase, testtools.TestCase):
     def test_mount_volume_fc_host_vlun_exists(self):
         test = mountvolume_tester.TestMountVolumeFCHostVLUNExists()
         test.run_test(self)
-
