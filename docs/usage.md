@@ -72,6 +72,11 @@ sudo docker volume inspect <parent_vol_name>/<snapshot_name>
 sudo docker volume rm <parent_vol_name>/<snapshot_name>
 ```
 
+### Revert to a snapshot
+```
+sudo docker volume create --name <snapshot_name> -o promote=<vol_name>
+```
+
 #### Mounting a volume
 
 Use the following command to mount a volume and start a bash prompt:
