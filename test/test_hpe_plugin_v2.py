@@ -39,6 +39,14 @@ class HpeDockerUnitTestsBase(object):
         test = createvolume_tester.TestCreateCompressedVolume()
         test.run_test(self)
 
+    def test_create_compressed_volume_Negative_Size(self):
+        test = createvolume_tester.TestCreateCompressedVolumeNegativeSize()
+        test.run_test(self)
+
+    def test_create_compressed_volume_No_HW_Support(self):
+        test = createvolume_tester.TestCreateCompressedVolNoHardwareSupport()
+        test.run_test(self)
+
     """
     CLONE VOLUME related tests
     """
