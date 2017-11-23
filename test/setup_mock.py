@@ -40,25 +40,28 @@ def mock_decorator(func):
         mock_3parclient.getWsApiVersion.return_value = \
             data.wsapi_version_for_compression
 
-        mock_osbrick_connector = None
+        mock_protocol_connector = None
         if self._protocol == 'ISCSI':
-            mock_osbrick_connector = mock_iscsi_connector
+            mock_protocol_connector = mock_iscsi_connector
         elif self._protocol == 'FC':
-            mock_osbrick_connector = mock_fc_connector
+            mock_protocol_connector = mock_fc_connector
 
         with mock.patch.object(hpecommon.HPE3PARCommon, '_create_client') \
             as mock_create_client, \
             mock.patch.object(api.VolumePlugin, '_get_etcd_util') \
             as mock_get_etcd_util, \
             mock.patch.object(api.VolumePlugin, '_get_connector') \
-                as mock_get_connector:
+                as mock_get_connector, \
+                mock.patch('hpedockerplugin.hpe_storage_api.connector') \
+                as mock_osbricks_connector:
                 mock_create_client.return_value = mock_3parclient
                 mock_get_etcd_util.return_value = mock_etcd
-                mock_get_connector.return_value = mock_osbrick_connector
+                mock_get_connector.return_value = mock_protocol_connector
                 mock_objects = \
                     {'mock_3parclient': mock_3parclient,
                      'mock_fileutil': mock_fileutil,
-                     'mock_osbrick_connector': mock_osbrick_connector,
+                     'mock_osbricks_connector': mock_osbricks_connector,
+                     'mock_protocol_connector': mock_protocol_connector,
                      'mock_etcd': mock_etcd}
                 return func(self, mock_objects, *args, **kwargs)
     return setup_mock_wrapper

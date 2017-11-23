@@ -181,7 +181,7 @@ volume_flash_cache = {'name': VOLUME_NAME,
                       'compression': None,
                       'snapshots': []}
 
-wwn = ["123456789012345", "123456789054321"]
+wwn = ["123456789012345", "123456789054321", "unassigned-wwn1"]
 
 host_vluns1 = [{'active': True,
                 'volumeName': VOLUME_3PAR_NAME,
@@ -210,6 +210,17 @@ host_vluns = [{'active': True,
                'remoteName': wwn[0],
                'lun': 90, 'type': 0}]
 
+iscsi_host_vluns = [{'active': True,
+                     'hostname': FAKE_HOST,
+                     'volumeName': VOLUME_3PAR_NAME,
+                     'lun': TARGET_LUN, 'type': 0,
+                     'portPos': {'node': 8, 'slot': 1, 'cardPort': 1}},
+                    {'active': False,
+                     'hostname': FAKE_HOST,
+                     'volumeName': VOLUME_3PAR_NAME,
+                     'lun': TARGET_LUN, 'type': 0,
+                     'portPos': {'node': 9, 'slot': 1, 'cardPort': 1}}]
+
 iscsi_host_vluns1 = [{'active': True,
                       'hostname': FAKE_HOST,
                       'volumeName': VOLUME_3PAR_NAME,
@@ -236,7 +247,8 @@ fake_fc_host = {'name': FAKE_HOST,
                      'portPos': {'cardPort': 1, 'node': 6,
                                  'slot': 1},
                      'vendor': None,
-                     'wwn': wwn[1]}]}
+                     'wwn': wwn[1]},
+                ]}
 
 fake_host = {'name': FAKE_HOST,
              'initiatorChapEnabled': False,
@@ -262,7 +274,8 @@ connector = {'ip': '10.0.0.2',
 connector_multipath_enabled = {'ip': '10.0.0.2',
                                'initiator': ('iqn.1993-08.org'
                                              '.debian:01:222'),
-                               'wwpns': [wwn[0], wwn[1]],
+                               # Use wwn2 to allow modify-host call
+                               'wwpns': [wwn[0], wwn[1], wwn[2]],
                                'wwnns': ["223456789012345",
                                          "223456789054321"],
                                'host': FAKE_HOST,
