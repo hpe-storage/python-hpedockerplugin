@@ -4,7 +4,7 @@ The following are the currently supported actions that can be taken using the HP
 #### Creating an HPE volume
 
 ```
-sudo docker volume create -d hpe --name <vol_name>
+docker volume create -d hpe --name <vol_name>
 ```
 
 There are several optional parameters that can be used during volume creation:
@@ -19,7 +19,7 @@ must have the appropriate SSD setup configured, too.
 The following is an example call creating a full provisioned, 50 GB volume:
 
 ```
-sudo docker volume create -d hpe --name <vol_name> -o size=50 -o provisioning=full
+docker volume create -d hpe --name <vol_name> -o size=50 -o provisioning=full
 ```
 
 Note -- The dedup provisioning and flash-cache options are only supported by the
@@ -28,31 +28,31 @@ Note -- The dedup provisioning and flash-cache options are only supported by the
 #### Deleting a volume
 
 ```
-sudo docker volume rm <vol_name>
+docker volume rm <vol_name>
 ```
 
 #### List volumes
 
 ```
-sudo docker volume ls
+docker volume ls
 ```
 
 #### Inspect a volume
 
 ```
-sudo docker volume inspect <vol_name>
+docker volume inspect <vol_name>
 ```
 
 #### Creating a clone of a volume
 
 ```
-sudo docker volume create -d hpe --name <target_vol_name> -o cloneOf=<source_vol_name>
+docker volume create -d hpe --name <target_vol_name> -o cloneOf=<source_vol_name>
 ```
 
 #### Creating a snapshot of a volume
 
 ```
-sudo docker volume create -d hpe --name <snapshot_name> -o snapshotOf=<source_vol_name>
+docker volume create -d hpe --name <snapshot_name> -o snapshotOf=<source_vol_name>
 ```
 There are couple of optional parameters that can be used during snapshot creation:
 - expirationHours -- specifies the expiration time for snapshot in hours
@@ -63,18 +63,18 @@ Note: If snapcpg is not configured in hpe.conf then cpg would be used for snapsh
 #### Inspect a snapshot
 
 ```
-sudo docker volume inspect <parent_vol_name>/<snapshot_name>
+docker volume inspect <parent_vol_name>/<snapshot_name>
 ```
 
 #### Delete a snapshot
 
 ```
-sudo docker volume rm <parent_vol_name>/<snapshot_name>
+docker volume rm <parent_vol_name>/<snapshot_name>
 ```
 
 ### Revert to a snapshot
 ```
-sudo docker volume create --name <snapshot_name> -o promote=<vol_name>
+docker volume create --name <snapshot_name> -o promote=<vol_name>
 ```
 
 #### Mounting a volume
@@ -82,7 +82,7 @@ sudo docker volume create --name <snapshot_name> -o promote=<vol_name>
 Use the following command to mount a volume and start a bash prompt:
 
 ```
-sudo docker run -it -v <vol_name>:/<mount_point>/ --volume-driver hpe <image_name> bash
+docker run -it -v <vol_name>:/<mount_point>/ --volume-driver hpe <image_name> bash
 ```
 
 Note: If the volume does not exist it will be created.
@@ -104,23 +104,23 @@ The volume is still associated with a container at this point.
 Run the following command to get the container ID associated with the volume:
 
 ```
-sudo docker ps -a
+docker ps -a
 ```
 
 Then stop the container:
 
 ```
-sudo docker stop <container_id>
+docker stop <container_id>
 ```
 
 Next, delete the container:
 
 ```
-sudo docker rm <container_id>
+docker rm <container_id>
 ```
 
 Finally, remove the volume:
 
 ```
-sudo docker volume rm <vol_name>
+docker volume rm <vol_name>
 ```
