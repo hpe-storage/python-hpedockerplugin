@@ -983,10 +983,12 @@ class HPE3PARCommon(object):
             LOG.info("Volume %(volume)s successfully reverted to"
                      " %(snapname)s.", {'volume': volume_name,
                                      'snapname': snapshot_name})
-        except Exception as ex:
-            LOG.error(_LE("Exception: %s"), ex)
-            raise exception.PluginException(ex)
- 
+        except hpeexceptions.HTTPForbidden as ex:
+            LOG.error("Exception: %s", ex)
+            raise exception.RevertSnapshotException()
+        except hpeexceptions.HTTPConflict as ex:
+            LOG.error("Exception: %s", ex)
+            raise exception.RevertSnapshotException()
 
     def create_snapshot(self, snapshot):
         LOG.info("Create Snapshot\n%s", json.dumps(snapshot, indent=2))

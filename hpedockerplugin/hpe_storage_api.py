@@ -465,8 +465,15 @@ class VolumePlugin(object):
 
         # check for valid promoteSnap option and reurn the result
         if ('Opts' in contents and contents['Opts'] and
+                'promote' in contents['Opts'] and
+                len(contents['Opts']) == 1):
+            return self.revert_to_snapshot(name, opts)
+        elif ('Opts' in contents and contents['Opts'] and
                 'promote' in contents['Opts']):
-             return self.revert_to_snapshot(name, opts)
+            msg =(_('while reverting volume to snapshot status only valid '
+                    'option is promote=<vol_name>'))
+            LOG.error(msg)
+            return json.dumps({u"Err": six.text_type(msg)})
 
         # snapshotOf and cloneOf are mutually exclusive
         if ('Opts' in contents and contents['Opts'] and
@@ -1102,10 +1109,16 @@ class VolumePlugin(object):
             LOG.info("Getting snapshot by name: %s" % snapname)
             snapshot, idx = self._get_snapshot_by_name(snapshots, snapname)
             if snapshot:
-                LOG.info("Found snapshot by name %s" % snapname)
-                self.hpeplugin_driver.revert_snap_to_vol(volume, snapshot)
-                response = json.dumps({u"Err": ''})
-                return response
+                try:
+                    LOG.info("Found snapshot by name %s" % snapname)
+                    self.hpeplugin_driver.revert_snap_to_vol(volume, snapshot)
+                    response = json.dumps({u"Err": ''})
+                    return response
+                except Exception as ex:
+                    msg = (_('revert snapshot failed, error is: %s'),
+                           six.text_type(ex))
+                    LOG.error(msg)
+                    return json.dumps({u"Err": six.text_type(ex)})
             else:
                 msg = (_LE('snapshot: %s does not exist!' % snapname))
                 LOG.info(msg)

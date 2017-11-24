@@ -155,6 +155,10 @@ class NotAuthorized(PluginException):
     message = _("Not authorized.")
 
 
+class RevertSnapshotException(PluginException):
+    message = _("Exception during revering the snapshot")
+
+
 class VolumeBackendAPIException(PluginException):
     message = _("Bad or unexpected response from the storage volume "
                 "backend API: %(data)s")

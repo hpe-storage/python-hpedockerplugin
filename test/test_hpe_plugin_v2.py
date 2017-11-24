@@ -91,7 +91,7 @@ class HpeDockerUnitTestsBase(object):
         test.run_test(self)
 
     """
-    CREATE SNAPSHOT REVERT related tests
+    CREATE REVERT SNAPSHOT related tests
     """
     def test_snap_revert_volume_default(self):
         test = revertsnapshot_tester.TestCreateSnapRevertVolume()
