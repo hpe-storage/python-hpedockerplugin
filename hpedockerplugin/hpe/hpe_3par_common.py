@@ -109,10 +109,11 @@ class HPE3PARCommon(object):
         0.0.3 - Added support for flash cache.
         0.0.4 - Added support for compression CRUD operation.
         0.0.5 - Added support for snapshot and clone.
+        0.0.6 - Added support for reverting volume to snapshot state.
 
     """
 
-    VERSION = "0.0.5"
+    VERSION = "0.0.6"
 
     # TODO(Ramy): move these to the 3PAR Client
     VLUN_TYPE_EMPTY = 1
