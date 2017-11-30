@@ -2,7 +2,8 @@
 import fake_3par_data as data
 import hpe_docker_unit_test as hpedockerunittest
 from hpe3parclient import exceptions
-
+from oslo_config import cfg
+CONF = cfg.CONF
 
 class CreateVolumeUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):
     def _get_plugin_api(self):
@@ -88,6 +89,83 @@ class TestCreateDedupVolume(CreateVolumeUnitTest):
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.getWsApiVersion.return_value = \
             data.wsapi_version_for_dedup
+
+
+# qos-name=<vvset_name>
+class TestCreateVolumeWithQOS(CreateVolumeUnitTest):
+    def check_response(self, resp):
+        self._test_case.assertEqual(resp, {u"Err": ''})
+
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.createVolume.assert_called()
+        mock_3parclient.addVolumeToVolumeSet.assert_called()
+
+    def get_request_params(self):
+        return {"Name": "test-vol-001",
+                "Opts": {"qos-name": "vvk_vvset",
+                         "provisioning": "thin",
+                         "size": "2"}}
+
+    def setup_mock_objects(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.return_value = None
+
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.getCPG.return_value = {}
+
+
+# qos-name=<vvset_name>
+class TestCreateVolumeWithInvalidQOS(CreateVolumeUnitTest):
+    def check_response(self, resp):
+        self._test_case.assertEqual(resp,
+                                    {u"Err": 'Not found (HTTP 404) - fake'})
+
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.createVolume.assert_called()
+        mock_3parclient.addVolumeToVolumeSet.assert_called()
+        mock_3parclient.deleteVolume("test-vol-001")
+
+    def get_request_params(self):
+        return {"Name": "test-vol-001",
+                "Opts": {"qos-name": "soni_vvset",
+                         "provisioning": "thin",
+                         "size": "2"}}
+
+    def setup_mock_objects(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.return_value = None
+
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.getCPG.return_value = {}
+
+        # vvset does not exist
+        mock_3parclient.addVolumeToVolumeSet.side_effect = \
+            [exceptions.HTTPNotFound('fake')]
+
+
+# FlashCache = True and qos-name=<vvset_name>
+class TestCreateVolumeWithFlashCacheAndQOS(CreateVolumeUnitTest):
+    def check_response(self, resp):
+        self._test_case.assertEqual(resp, {u"Err": ''})
+
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.createVolume.assert_called()
+        mock_3parclient.modifyVolumeSet.assert_called()
+        mock_3parclient.addVolumeToVolumeSet.assert_called()
+
+    def get_request_params(self):
+        return {"Name": "test-vol-001",
+                "Opts": {"flash-cache": "true",
+                         "qos-name": "vvk_vvset",
+                         "provisioning": "thin",
+                         "size": "2"}}
+
+    def setup_mock_objects(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.return_value = None
+
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.getCPG.return_value = {}
 
 
 # FlashCache = True

@@ -450,7 +450,7 @@ class VolumePlugin(object):
         valid_volume_create_opts = ['mount-volume', 'compression',
                                     'size', 'provisioning', 'flash-cache',
                                     'cloneOf', 'snapshotOf', 'expirationHours',
-                                    'retentionHours']
+                                    'retentionHours', 'qos-name']
 
         if ('Opts' in contents and contents['Opts']):
             for key in contents['Opts']:
@@ -510,6 +510,11 @@ class VolumePlugin(object):
                 'flash-cache' in contents['Opts']):
             vol_flash = str(contents['Opts']['flash-cache'])
 
+        vol_qos = volume.DEFAULT_QOS
+        if ('Opts' in contents and contents['Opts'] and
+                'qos-name' in contents['Opts']):
+            vol_qos = str(contents['Opts']['qos-name'])
+
         LOG.debug('In volumedriver_create')
 
         # Grab lock for volume name. If lock is inuse, just return with no
@@ -544,7 +549,7 @@ class VolumePlugin(object):
 
         voluuid = str(uuid.uuid4())
         vol = volume.createvol(volname, voluuid, vol_size, vol_prov,
-                               vol_flash, compression_val)
+                               vol_flash, compression_val, vol_qos)
 
         try:
             self.hpeplugin_driver.create_volume(vol)

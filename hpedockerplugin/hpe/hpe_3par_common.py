@@ -693,13 +693,16 @@ class HPE3PARCommon(object):
             volume_name = self._get_3par_vol_name(volume['id'])
             self.client.createVolume(volume_name, cpg, capacity, extras)
 
+            # check for qos
+            vvs_name = volume.get('qos_name')
+
             # Check if flash cache needs to be enabled
             flash_cache = self.get_flash_cache_policy(volume['flash_cache'])
 
-            if flash_cache is not None:
+            if vvs_name or flash_cache is not None:
                 try:
                     self._add_volume_to_volume_set(volume, volume_name,
-                                                   cpg, flash_cache)
+                                                   cpg, flash_cache, vvs_name)
                 except exception.InvalidInput as ex:
                     # Delete the volume if unable to add it to the volume set
                     self.client.deleteVolume(volume_name)
@@ -938,18 +941,29 @@ class HPE3PARCommon(object):
                 exception.PluginException(ex)
 
     def _add_volume_to_volume_set(self, volume, volume_name,
-                                  cpg, flash_cache):
-        vvs_name = self._get_3par_vvs_name(volume['id'])
-        domain = self.get_domain(cpg)
-        self.client.createVolumeSet(vvs_name, domain)
-        try:
-            self._set_flash_cache_policy_in_vvs(flash_cache, vvs_name)
-            self.client.addVolumeToVolumeSet(vvs_name, volume_name)
-        except Exception as ex:
-            # Cleanup the volume set if unable to create the qos rule
-            # or flash cache policy or add the volume to the volume set
-            self.client.deleteVolumeSet(vvs_name)
-            raise exception.PluginException(ex)
+                                  cpg, flash_cache, vvs_name=None):
+        if vvs_name is not None:
+            try:
+                if flash_cache is not None:
+                    self._set_flash_cache_policy_in_vvs(flash_cache, vvs_name)
+                self.client.addVolumeToVolumeSet(vvs_name, volume_name)
+            except Exception as ex:
+                msg = _('VV Set %s does not exist.') % vvs_name
+                LOG.error(msg)
+                self.client.deleteVolume(volume_name)
+                raise exception.PluginException(ex)
+        else:
+            vvs_name = self._get_3par_vvs_name(volume['id'])
+            domain = self.get_domain(cpg)
+            self.client.createVolumeSet(vvs_name, domain)
+            try:
+                self._set_flash_cache_policy_in_vvs(flash_cache, vvs_name)
+                self.client.addVolumeToVolumeSet(vvs_name, volume_name)
+            except Exception as ex:
+                # Cleanup the volume set if unable to create the qos rule
+                # or flash cache policy or add the volume to the volume set
+                self.client.deleteVolumeSet(vvs_name)
+                raise exception.PluginException(ex)
 
     def _get_prioritized_host_on_3par(self, host, hosts, hostname):
         # Check whether host with wwn/iqn of initiator present on 3par
