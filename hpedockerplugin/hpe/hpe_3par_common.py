@@ -949,7 +949,8 @@ class HPE3PARCommon(object):
                     self._set_flash_cache_policy_in_vvs(flash_cache, vvs_name)
                 self.client.addVolumeToVolumeSet(vvs_name, volume_name)
             except Exception as ex:
-                msg = _('VV Set %s does not exist.') % vvs_name
+                msg = _("Failed to set flash-cache policy or add volume to"
+                        "VV set %s - %s.") % (vvs_name, ex)
                 LOG.error(msg)
                 self.client.deleteVolume(volume_name)
                 raise exception.PluginException(ex)
