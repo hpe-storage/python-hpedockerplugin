@@ -109,10 +109,11 @@ class HPE3PARCommon(object):
         0.0.3 - Added support for flash cache.
         0.0.4 - Added support for compression CRUD operation.
         0.0.5 - Added support for snapshot and clone.
+        0.0.6 - Added support for reverting volume to snapshot state.
 
     """
 
-    VERSION = "0.0.5"
+    VERSION = "0.0.6"
 
     # TODO(Ramy): move these to the 3PAR Client
     VLUN_TYPE_EMPTY = 1
@@ -983,6 +984,26 @@ class HPE3PARCommon(object):
                 return host, hostname
 
         return host, hostname
+
+    def revert_snap_to_vol(self, volume, snapshot):
+        try:
+            optional = {}
+            snapshot_name = self._get_3par_snap_name(snapshot['id'])
+            volume_name = self._get_3par_vol_name(volume['id'])
+            if self.client.isOnlinePhysicalCopy(volume_name):
+                LOG.info("Found an online copy for %(volume)s. ",
+                         {'volume': volume_name})
+                optional['online'] = True            
+            self.client.promoteVirtualCopy(snapshot_name, optional=optional)
+            LOG.info("Volume %(volume)s successfully reverted to"
+                     " %(snapname)s.", {'volume': volume_name,
+                                     'snapname': snapshot_name})
+        except hpeexceptions.HTTPForbidden as ex:
+            LOG.error("Exception: %s", ex)
+            raise exception.RevertSnapshotException()
+        except hpeexceptions.HTTPConflict as ex:
+            LOG.error("Exception: %s", ex)
+            raise exception.RevertSnapshotException()
 
     def create_snapshot(self, snapshot):
         LOG.info("Create Snapshot\n%s", json.dumps(snapshot, indent=2))

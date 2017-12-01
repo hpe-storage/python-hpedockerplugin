@@ -39,7 +39,8 @@ class HpeDockerUnitTestExecutor(object):
             String containing VolumePlugin API name
         :return: Nothing
         """
-
+        import pdb
+        pdb.set_trace()
         # Get API parameters from child class
         req_body = self._get_request_body(self.get_request_params())
 
@@ -73,6 +74,8 @@ class HpeDockerUnitTestExecutor(object):
             String containing VolumePlugin API name
         :return: Nothing
         """
+#        import pdb
+#        pdb.set_trace()
         self.mock_objects = mock_objects
 
         # Let the child class configure mock objects
@@ -166,12 +169,13 @@ class HpeDockerUnitTestExecutor(object):
 
 def create_configuration(protocol):
     config = mock.Mock()
-    config.ssh_hosts_key_file = "/home/docker/.ssh/known_hosts"
+    config.ssh_hosts_key_file = "/root/.ssh/known_hosts"
+#    config.ssh_hosts_key_file = "/home/docker/.ssh/known_hosts"
     config.host_etcd_ip_address = "10.50.3.140"
     config.host_etcd_port_number = 2379
     config.logging = "DEBUG"
     config.hpe3par_debug = False
-    config.suppress_requests_ssl_warnings = False
+    config.suppress_requests_ssl_warnings = True
 
     if protocol == 'ISCSI':
         config.hpedockerplugin_driver = \

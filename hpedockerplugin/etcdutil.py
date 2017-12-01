@@ -115,10 +115,14 @@ class EtcdUtil(object):
         return volval
 
     def try_lock_volname(self, volname):
+        LOG.debug("Try locking volume %s", volname)
         self.client.write(self.lockroot + volname, volname, prevExist=False)
+        LOG.debug("volume is locked : %s", volname)
 
     def try_unlock_volname(self, volname):
+        LOG.debug("Try unlocking volume %s", volname)
         self.client.delete(self.lockroot + volname)
+        LOG.debug("volume is unlocked : %s", volname)
 
     def get_vol_byname(self, volname):
         volumes = self.client.read(self.volumeroot, recursive=True)
