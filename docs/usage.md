@@ -25,6 +25,13 @@ docker volume create -d hpe --name <vol_name> -o size=50 -o provisioning=full
 Note -- The dedup provisioning and flash-cache options are only supported by the
 3PAR StoreServ driver currently.
 
+#### Creating a volume using existing QOS
+
+```
+docker volume create -d hpe --name <target_vol_name> -o qos-name=<vvset_name>
+```
+Note -- 'vvset_name' should be present in 3par
+
 #### Deleting a volume
 
 ```
