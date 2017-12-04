@@ -144,6 +144,29 @@ class TestCreateVolumeWithInvalidQOS(CreateVolumeUnitTest):
             [exceptions.HTTPNotFound('fake')]
 
 
+class TestCreateVolumeWithMutuallyExclusiveList(CreateVolumeUnitTest):
+    def check_response(self, resp):
+        self._test_case.assertEqual(
+            resp,
+            {"Err": "['snapshotOf', 'cloneOf', 'qos-name'] cannot be "
+             "specified at the same time"})
+
+    def get_request_params(self):
+        return {"Name": "test-vol-001",
+                "Opts": {"qos-name": "soni_vvset",
+                         "provisioning": "thin",
+                         "size": "2",
+                         "cloneOf": "clone_of",
+                         "qos-name": "qos_name"}}
+
+    def setup_mock_objects(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.return_value = None
+
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.getCPG.return_value = {}
+
+
 # FlashCache = True and qos-name=<vvset_name>
 class TestCreateVolumeWithFlashCacheAndQOS(CreateVolumeUnitTest):
     def check_response(self, resp):
