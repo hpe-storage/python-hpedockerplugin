@@ -495,7 +495,8 @@ class VolumePlugin(object):
                 return json.dumps({u"Err": six.text_type(msg)})
 
             # mutually exclusive options check
-            mutually_exclusive_list = ['snapshotOf', 'cloneOf', 'qos-name']
+            mutually_exclusive_list = ['snapshotOf', 'cloneOf', 'qos-name',
+                                       'promote']
             input_list = contents['Opts'].keys()
             if (len(list(set(input_list) &
                          set(mutually_exclusive_list))) >= 2):
