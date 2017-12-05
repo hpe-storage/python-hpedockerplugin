@@ -51,7 +51,7 @@ def retry_if_io_error(exception1):
 
 @retry(retry_on_exception=retry_if_io_error,
        stop_max_attempt_number=3,
-       wait_fixed=2000)
+       wait_fixed=20000)
 def create_filesystem(path):
     try:
         # Create filesystem without user intervention, -F
