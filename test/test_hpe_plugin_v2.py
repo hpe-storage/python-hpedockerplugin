@@ -27,6 +27,22 @@ class HpeDockerUnitTestsBase(object):
         test = createvolume_tester.TestCreateDedupVolume()
         test.run_test(self)
 
+    def test_create_volume_with_qos(self):
+        test = createvolume_tester.TestCreateVolumeWithQOS()
+        test.run_test(self)
+
+    def test_create_volume_with_invalid_qos(self):
+        test = createvolume_tester.TestCreateVolumeWithInvalidQOS()
+        test.run_test(self)
+
+    def test_create_volume_with_mutually_exclusive_list(self):
+        test = createvolume_tester.TestCreateVolumeWithMutuallyExclusiveList()
+        test.run_test(self)
+
+    def test_create_volume_with_flashcache_and_qos(self):
+        test = createvolume_tester.TestCreateVolumeWithFlashCacheAndQOS()
+        test.run_test(self)
+
     def test_create_volume_with_flashcache(self):
         test = createvolume_tester.TestCreateVolumeWithFlashCache()
         test.run_test(self)

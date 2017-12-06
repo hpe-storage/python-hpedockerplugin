@@ -445,12 +445,18 @@ class VolumePlugin(object):
             LOG.error(msg)
             raise exception.HPEPluginCreateException(reason=msg)
         volname = contents['Name']
+        vol_size = volume.DEFAULT_SIZE
+        vol_prov = volume.DEFAULT_PROV
+        vol_flash = volume.DEFAULT_FLASH_CACHE
+        vol_qos = volume.DEFAULT_QOS
+        compression_val = volume.DEFAULT_COMPRESSION_VAL
+        valid_compression_opts = ['true', 'false']
 
         # Verify valid Opts arguments.
         valid_volume_create_opts = ['mount-volume', 'compression',
                                     'size', 'provisioning', 'flash-cache',
                                     'cloneOf', 'snapshotOf', 'expirationHours',
-                                    'retentionHours', 'promote']
+                                    'retentionHours', 'promote', 'qos-name']
 
         if ('Opts' in contents and contents['Opts']):
             for key in contents['Opts']:
@@ -463,50 +469,46 @@ class VolumePlugin(object):
                     LOG.error(msg)
                     return json.dumps({u"Err": six.text_type(msg)})
 
-        # check for valid promoteSnap option and reurn the result
-        if ('Opts' in contents and contents['Opts'] and
-                'promote' in contents['Opts'] and
-                len(contents['Opts']) == 1):
-            return self.revert_to_snapshot(name, opts)
-        elif ('Opts' in contents and contents['Opts'] and
-                'promote' in contents['Opts']):
-            msg =(_('while reverting volume to snapshot status only valid '
-                    'option is promote=<vol_name>'))
-            LOG.error(msg)
-            return json.dumps({u"Err": six.text_type(msg)})
+            # Populating the values
+            if ('size' in contents['Opts']):
+                vol_size = int(contents['Opts']['size'])
 
-        # snapshotOf and cloneOf are mutually exclusive
-        if ('Opts' in contents and contents['Opts'] and
-                'snapshotOf' in contents['Opts'] and
-                'cloneOf' in contents['Opts']):
-            msg = (_('both snapshotOf and cloneOf cannot be specified at the '
-                     'same time'))
-            LOG.error(msg)
-            return json.dumps({u"Err": six.text_type(msg)})
+            if ('provisioning' in contents['Opts']):
+                vol_prov = str(contents['Opts']['provisioning'])
 
-        if ('Opts' in contents and contents['Opts'] and
-                'snapshotOf' in contents['Opts']):
-            return self.volumedriver_create_snapshot(name, opts)
-        elif ('Opts' in contents and contents['Opts'] and
-                'cloneOf' in contents['Opts']):
-            return self.volumedriver_clone_volume(name, opts)
+            if ('compression' in contents['Opts']):
+                compression_val = str(contents['Opts']['compression'])
 
-        vol_size = volume.DEFAULT_SIZE
-        if ('Opts' in contents and contents['Opts'] and
-                'size' in contents['Opts']):
-            vol_size = int(contents['Opts']['size'])
+            if ('flash-cache' in contents['Opts']):
+                vol_flash = str(contents['Opts']['flash-cache'])
 
-        vol_prov = volume.DEFAULT_PROV
-        if ('Opts' in contents and contents['Opts'] and
-                'provisioning' in contents['Opts']):
-            vol_prov = str(contents['Opts']['provisioning'])
+            if ('qos-name' in contents['Opts']):
+                vol_qos = str(contents['Opts']['qos-name'])
 
-        compression_val = volume.DEFAULT_COMPRESSION_VAL
-        if ('Opts' in contents and contents['Opts'] and
-                'compression' in contents['Opts']):
-            compression_val = str(contents['Opts']['compression'])
+            # check for valid promoteSnap option and return the result
+            if ('promote' in contents['Opts'] and len(contents['Opts']) == 1):
+                return self.revert_to_snapshot(name, opts)
+            elif ('promote' in contents['Opts']):
+                msg = (_('while reverting volume to snapshot status only '
+                         'valid option is promote=<vol_name>'))
+                LOG.error(msg)
+                return json.dumps({u"Err": six.text_type(msg)})
 
-        valid_compression_opts = ['true', 'false']
+            # mutually exclusive options check
+            mutually_exclusive_list = ['snapshotOf', 'cloneOf', 'qos-name',
+                                       'promote']
+            input_list = contents['Opts'].keys()
+            if (len(list(set(input_list) &
+                         set(mutually_exclusive_list))) >= 2):
+                msg = (_('%(exclusive)s cannot be specified at the same '
+                         'time') % {'exclusive': mutually_exclusive_list, })
+                LOG.error(msg)
+                return json.dumps({u"Err": six.text_type(msg)})
+
+            if ('snapshotOf' in contents['Opts']):
+                return self.volumedriver_create_snapshot(name, opts)
+            elif ('cloneOf' in contents['Opts']):
+                return self.volumedriver_clone_volume(name, opts)
 
         if compression_val is not None:
             if compression_val.lower() not in valid_compression_opts:
@@ -516,11 +518,6 @@ class VolumePlugin(object):
                        {'valid': valid_compression_opts, })
                 LOG.error(msg)
                 return json.dumps({u"Err": six.text_type(msg)})
-
-        vol_flash = volume.DEFAULT_FLASH_CACHE
-        if ('Opts' in contents and contents['Opts'] and
-                'flash-cache' in contents['Opts']):
-            vol_flash = str(contents['Opts']['flash-cache'])
 
         LOG.debug('In volumedriver_create')
 
@@ -556,7 +553,7 @@ class VolumePlugin(object):
 
         voluuid = str(uuid.uuid4())
         vol = volume.createvol(volname, voluuid, vol_size, vol_prov,
-                               vol_flash, compression_val)
+                               vol_flash, compression_val, vol_qos)
 
         try:
             self.hpeplugin_driver.create_volume(vol)
@@ -1085,7 +1082,6 @@ class VolumePlugin(object):
         return response
 
     def revert_to_snapshot(self, name, opts=None):
-        
         contents = json.loads(name.content.getvalue())
         if 'Name' not in contents:
             msg = (_('revert snapshot failed, error is : Name is required'))
