@@ -483,7 +483,7 @@ class VolumePlugin(object):
                 vol_flash = str(contents['Opts']['flash-cache'])
 
             if ('qos-name' in contents['Opts']):
-                vol_flash = str(contents['Opts']['qos-name'])
+                vol_qos = str(contents['Opts']['qos-name'])
 
             # check for valid promoteSnap option and return the result
             if ('promote' in contents['Opts'] and len(contents['Opts']) == 1):
