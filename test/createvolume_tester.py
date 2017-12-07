@@ -156,8 +156,7 @@ class TestCreateVolumeWithMutuallyExclusiveList(CreateVolumeUnitTest):
                 "Opts": {"qos-name": "soni_vvset",
                          "provisioning": "thin",
                          "size": "2",
-                         "cloneOf": "clone_of",
-                         "qos-name": "qos_name"}}
+                         "cloneOf": "clone_of"}}
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
