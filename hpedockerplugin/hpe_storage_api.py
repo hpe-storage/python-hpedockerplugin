@@ -201,6 +201,13 @@ class VolumePlugin(object):
                 LOG.error(msg)
                 # raise exception.HPEPluginRemoveException(reason=msg)
                 response = json.dumps({u"Err": msg})
+                try:
+                    self._etcd.try_unlock_volname(volname)
+                except Exception as ex:
+                    LOG.error('volume: %(name)s Unlock volume failed',
+                              {'name':volname})
+                    response = json.dumps({u"Err": six.text_type(ex)})
+                    return response
                 return response
             else:
                 self.hpeplugin_driver.delete_volume(vol)
@@ -219,7 +226,8 @@ class VolumePlugin(object):
                           {'name': volname})
                 response = json.dumps({u"Err": six.text_type(ex)})
                 return response
-            raise exception.HPEPluginRemoveException(reason=msg)
+#            raise exception.HPEPluginRemoveException(reason=msg)            
+            return json.dumps({u"Err": six.text_type(ex)})
 
         try:
             self._etcd.delete_vol(vol)
@@ -286,9 +294,24 @@ class VolumePlugin(object):
                             # reason=msg)
                             response = json.dumps({u"Err": msg})
                             return response
-                    LOG.info("Deleting snapshot at backend: %s" % snapname)
-                    self.hpeplugin_driver.delete_volume(snapshot,
-                                                        is_snapshot=True)
+                    try:
+                        LOG.info("Deleting snapshot at backend: %s" % snapname)
+                        self.hpeplugin_driver.delete_volume(snapshot,
+                                                            is_snapshot=True)
+                    except Exception as err:
+                        msg = (_LE('Failed to remove snapshot %s ,error is %s'),
+                               snapname, six.text_type(err))
+                        LOG.error(msg)
+                        response = json.dumps({u"Err": msg})
+                        try:
+                            self._etcd.try_unlock_volname(volname)
+                            lock_aquired = False
+                        except Exception as ex:
+                            LOG.error('volume: %(name)s Unlock Volume Failed',
+                                      {'name': volname})
+                            response = json.dumps({u"Err": six.text_type(ex)})
+                            return response
+                        return response
 
                     LOG.info("Deleting snapshot in ETCD - %s" % snapname)
                     # Remove snapshot entry from list and save it back to
@@ -329,7 +352,8 @@ class VolumePlugin(object):
             # Expand lock code inline as function based lock causes
             # unexpected behavior
             try:
-                self._etcd.try_unlock_volname(volname)
+                if lock_acquired:
+                    self._etcd.try_unlock_volname(volname)
             except Exception as ex:
 
                 LOG.error('volume: %(name)s Unlock Volume Failed',
