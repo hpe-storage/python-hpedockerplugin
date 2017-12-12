@@ -257,10 +257,12 @@ class VolumePlugin(object):
         return None, None
 
     def volumedriver_remove_snapshot(self, volname, snapname):
+        lock_acquired = False
         try:
             LOG.info("volumedriver_remove_snapshot - locking volume %s"
                      % volname)
             self._etcd.try_lock_volname(volname)
+            lock_acquired = True
 
             LOG.info("volumedriver_remove_snapshot - getting volume %s"
                      % volname)
@@ -299,13 +301,13 @@ class VolumePlugin(object):
                         self.hpeplugin_driver.delete_volume(snapshot,
                                                             is_snapshot=True)
                     except Exception as err:
-                        msg = (_LE('Failed to remove snapshot %s ,error is %s'),
-                               snapname, six.text_type(err))
+                        msg = (_LE('Failed to remove snapshot error is: %s'),
+                               six.text_type(err))
                         LOG.error(msg)
-                        response = json.dumps({u"Err": msg})
+                        response = json.dumps({u"Err": six.text_type(err)})
                         try:
                             self._etcd.try_unlock_volname(volname)
-                            lock_aquired = False
+                            lock_acquired = False
                         except Exception as ex:
                             LOG.error('volume: %(name)s Unlock Volume Failed',
                                       {'name': volname})
