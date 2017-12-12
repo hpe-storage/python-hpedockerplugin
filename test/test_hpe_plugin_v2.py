@@ -2,10 +2,11 @@ import testtools
 import createvolume_tester
 import clonevolume_tester
 import createsnapshot_tester
-import removesnapshot_tester
+import getsnapshot_tester
 import mountvolume_tester
-import unmountvolume_tester
+import removesnapshot_tester
 import revertsnapshot_tester
+import unmountvolume_tester
 
 
 # TODO: Make this class abstract
@@ -153,10 +154,6 @@ class HpeDockerUnitTestsBase(object):
         test.run_test(self)
 
     """
-    MOUNT VOLUME related tests
-    """
-
-    """
     UNMOUNT VOLUME related tests
     """
     def test_unmount_volume_remove_host(self):
@@ -165,6 +162,13 @@ class HpeDockerUnitTestsBase(object):
 
     def test_unmount_volume_keep_host(self):
         test = unmountvolume_tester.TestUnmountOneVolumeForHost()
+        test.run_test(self)
+
+    """
+    INSPECT SNAPSHOT related tests
+    """
+    def test_sync_snapshots(self):
+        test = getsnapshot_tester.TestSyncSnapshots()
         test.run_test(self)
 
 

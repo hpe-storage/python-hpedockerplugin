@@ -32,6 +32,7 @@ import fileutil
 
 from klein import Klein
 from hpe import volume
+from hpe import utils
 from oslo_utils import importutils
 import etcdutil as util
 
@@ -975,6 +976,27 @@ class VolumePlugin(object):
         response = json.dumps({u"Err": '', u"Mountpoint": path_name})
         return response
 
+    def _get_snapshots_to_be_deleted(self, db_snapshots, bkend_snapshots):
+        ss_list = []
+        for db_ss in db_snapshots:
+            found = False
+            bkend_ss_name = utils.get_3par_snap_name(db_ss['id'])
+            for bkend_ss in bkend_snapshots:
+                if bkend_ss_name == bkend_ss['name']:
+                    found = True
+                    break
+            if not found:
+                ss_list.append(db_ss)
+        return ss_list
+
+    def _sync_snapshots_from_array(self, vol_id, db_snapshots):
+        bkend_snapshots = \
+            self.hpeplugin_driver.get_snapshots_by_vol(vol_id)
+        ss_list_remove = self._get_snapshots_to_be_deleted(db_snapshots,
+                                                           bkend_snapshots)
+        for ss in ss_list_remove:
+            db_snapshots.remove(ss)
+
     @app.route("/VolumeDriver.Get", methods=["POST"])
     def volumedriver_get(self, name):
         """
@@ -1022,13 +1044,29 @@ class VolumePlugin(object):
                   'Mountpoint': mountdir,
                   'Devicename': devicename,
                   'Size': volinfo['size']}
+
+        if volinfo['snapshots']:
+            self._sync_snapshots_from_array(volinfo['id'],
+                                            volinfo['snapshots'])
+        # Is this request for snapshot inspect?
         if snapname:
-            snapshot, idx = self._get_snapshot_by_name(volinfo['snapshots'],
-                                                       snapname)
-            settings = {"Settings": {
-                'expirationHours': snapshot['expiration_hours'],
-                'retentionHours': snapshot['retention_hours']}}
-            volume['Status'] = settings
+            # Any snapshots left after synchronization with array?
+            if volinfo['snapshots']:
+                snapshot, idx = \
+                    self._get_snapshot_by_name(volinfo['snapshots'],
+                                               snapname)
+                settings = {"Settings": {
+                    'expirationHours': snapshot['expiration_hours'],
+                    'retentionHours': snapshot['retention_hours']}}
+                volume['Status'] = settings
+            else:
+                msg = (_LE('Snapshot Get: Snapshot name not found %s'),
+                       contents['Name'])
+                LOG.warning(msg)
+                # Should error be returned here or success?
+                response = json.dumps({u"Err": ""})
+                return response
+
         else:
             snapshots = volinfo.get('snapshots', None)
             if snapshots:

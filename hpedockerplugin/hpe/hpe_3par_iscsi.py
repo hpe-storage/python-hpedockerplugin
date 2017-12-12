@@ -636,3 +636,10 @@ class HPE3PARISCSIDriver(object):
             return common.create_cloned_volume(volume, src_vref)
         finally:
             self._logout(common)
+
+    def get_snapshots_by_vol(self, vol_id):
+        common = self._login()
+        try:
+            return common.get_snapshots_by_vol(vol_id)
+        finally:
+            self._logout(common)

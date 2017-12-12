@@ -14,7 +14,11 @@
 
 """Volume-related Utilities and helpers."""
 
+import uuid
+
 from Crypto.Random import random
+
+from oslo_serialization import base64
 
 # Default symbols to use for passwords. Avoids visually confusing characters.
 # ~6 bits per symbol
@@ -49,3 +53,59 @@ def generate_password(length=16, symbolgroups=DEFAULT_PASSWORD_SYMBOLS):
     random.shuffle(password)
 
     return ''.join(password)
+
+
+def _encode_name(name):
+    uuid_str = name.replace("-", "")
+    vol_uuid = uuid.UUID('urn:uuid:%s' % uuid_str)
+    vol_encoded = base64.encode_as_text(vol_uuid.bytes)
+
+    # 3par doesn't allow +, nor /
+    vol_encoded = vol_encoded.replace('+', '.')
+    vol_encoded = vol_encoded.replace('/', '-')
+    # strip off the == as 3par doesn't like those.
+    vol_encoded = vol_encoded.replace('=', '')
+    return vol_encoded
+
+
+def get_3par_vol_name(volume_id):
+    """Get converted 3PAR volume name.
+
+    Converts the openstack volume id from
+    ecffc30f-98cb-4cf5-85ee-d7309cc17cd2
+    to
+    dcv-7P.DD5jLTPWF7tcwnMF80g
+
+    We convert the 128 bits of the uuid into a 24character long
+    base64 encoded string to ensure we don't exceed the maximum
+    allowed 31 character name limit on 3Par
+
+    We strip the padding '=' and replace + with .
+    and / with -
+    """
+    volume_name = _encode_name(volume_id)
+    return "dcv-%s" % volume_name
+
+
+def get_3par_snap_name(snapshot_id):
+    """Get converted 3PAR snapshot name.
+
+    Converts the docker snapshot id from
+    ecffc30f-98cb-4cf5-85ee-d7309cc17cd2
+    to
+    dcs-7P.DD5jLTPWF7tcwnMF80g
+
+    We convert the 128 bits of the uuid into a 24character long
+    base64 encoded string to ensure we don't exceed the maximum
+    allowed 31 character name limit on 3Par
+
+    We strip the padding '=' and replace + with .
+    and / with -
+    """
+    snapshot_name = _encode_name(snapshot_id)
+    return "dcs-%s" % snapshot_name
+
+
+def get_3par_vvs_name(self, volume_id):
+    vvs_name = _encode_name(volume_id)
+    return "vvs-%s" % vvs_name
