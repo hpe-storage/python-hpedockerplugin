@@ -25,6 +25,7 @@ import exception
 import six
 
 from twisted.python.filepath import FilePath
+from retrying import retry
 
 LOG = logging.getLogger(__name__)
 
@@ -43,6 +44,14 @@ def has_filesystem(path):
     return True
 
 
+def retry_if_io_error(exception1):
+    LOG.info("Retry attempted on mkfs due to exception")
+    return isinstance(exception1, exception.HPEPluginFileSystemException)
+
+
+@retry(retry_on_exception=retry_if_io_error,
+       stop_max_attempt_number=3,
+       wait_fixed=20000)
 def create_filesystem(path):
     try:
         # Create filesystem without user intervention, -F
