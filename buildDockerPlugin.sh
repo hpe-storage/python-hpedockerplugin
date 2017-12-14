@@ -44,7 +44,8 @@ mkdir v2plugin > /dev/null 2>&1
 rm -rf v2plugin/rootfs
 
 ./containerize.sh
-docker tag $REPO_NAME/python-hpedockerplugin:plugin_v2 $1
+BRANCH_NAME=`git branch | grep "^*" | cut -d' ' -f2`
+docker tag $REPO_NAME/python-hpedockerplugin:$BRANCH_NAME $1
 rc=$?
  if [[ $rc -ne 0 ]]; then
   echo "ERROR: failed"

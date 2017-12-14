@@ -143,7 +143,7 @@ class HPEPLUGINTESTS(unittest.TestCase):
         bashcommand = "/usr/bin/twistd hpe_plugin_service"
         try:
             subprocess.check_output(['sh', '-c', bashcommand], cwd=TEST_DIR)
-        except:
+        except Exception:
             LOG.error("Test Setup Failed: Could not change dir")
             self.fail(msg='Test Failed')
 
