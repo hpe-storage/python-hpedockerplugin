@@ -206,6 +206,28 @@ class TestCloneWithFlashCache(CloneVolumeUnitTest):
         mock_3parclient.getCPG.return_value = {}
 
 
+# Online copy with qos flow
+class TestCloneWithQOS(CloneVolumeUnitTest):
+    def check_response(self, resp):
+        self._test_case.assertEqual(resp, {u"Err": ''})
+
+        # Check required WSAPI calls were made
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.addVolumeToVolumeSet.assert_called()
+
+    def get_request_params(self):
+        return {"Name": "clone-vol-001",
+                "Opts": {"cloneOf": data.VOLUME_NAME}}
+
+    def setup_mock_objects(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.return_value = data.volume_qos
+
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.copyVolume.return_value = {'taskid': data.TASK_ID}
+        mock_3parclient.getCPG.return_value = {}
+
+
 # Online copy with flash cache - add to vvset fails
 class TestCloneWithFlashCacheAddVVSetFails(CloneVolumeUnitTest):
     def check_response(self, resp):

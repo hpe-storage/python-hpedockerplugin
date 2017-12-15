@@ -647,7 +647,8 @@ class VolumePlugin(object):
             clone_vol = volume.createvol(clone_name, clone_vol_id, size,
                                          src_vol['provisioning'],
                                          src_vol['flash_cache'],
-                                         src_vol['compression'])
+                                         src_vol['compression'],
+                                         src_vol['qos_name'])
             try:
                 self.hpeplugin_driver.create_cloned_volume(clone_vol, src_vol)
 
