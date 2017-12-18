@@ -3,6 +3,7 @@ import mock
 from testtools import TestCase
 import time
 
+
 class TestFileSystemCreationFailureWithRetry(TestCase):
     def test_retry_on_create_filesystem(self):
         start_time = time.time()
@@ -14,7 +15,7 @@ class TestFileSystemCreationFailureWithRetry(TestCase):
         try:
             fileutil.create_filesystem("/dev/sde")
         except Exception as ex:
-            print ex.message
+            print ex
         finally:
             end_time = time.time()
             print 'Duration : %d ' % (end_time - start_time)
