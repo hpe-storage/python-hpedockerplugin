@@ -15,7 +15,7 @@ class TestFileSystemCreationFailureWithRetry(TestCase):
         try:
             fileutil.create_filesystem("/dev/sde")
         except Exception as ex:
-            print ex
+            print("Exception %s" % ex)
         finally:
             end_time = time.time()
             print 'Duration : %d ' % (end_time - start_time)
