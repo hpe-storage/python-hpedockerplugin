@@ -199,7 +199,6 @@ class VolumePlugin(object):
                            'snapshots - volume cannot be deleted!'
                            % volname))
                 LOG.error(msg)
-                # raise exception.HPEPluginRemoveException(reason=msg)
                 response = json.dumps({u"Err": msg})
                 try:
                     self._etcd.try_unlock_volname(volname)
@@ -207,7 +206,6 @@ class VolumePlugin(object):
                     LOG.error('volume: %(name)s Unlock volume failed',
                               {'name':volname})
                     response = json.dumps({u"Err": six.text_type(ex)})
-                    return response
                 return response
             else:
                 self.hpeplugin_driver.delete_volume(vol)
@@ -226,7 +224,6 @@ class VolumePlugin(object):
                           {'name': volname})
                 response = json.dumps({u"Err": six.text_type(ex)})
                 return response
-#            raise exception.HPEPluginRemoveException(reason=msg)            
             return json.dumps({u"Err": six.text_type(ex)})
 
         try:
@@ -312,7 +309,6 @@ class VolumePlugin(object):
                             LOG.error('volume: %(name)s Unlock Volume Failed',
                                       {'name': volname})
                             response = json.dumps({u"Err": six.text_type(ex)})
-                            return response
                         return response
 
                     LOG.info("Deleting snapshot in ETCD - %s" % snapname)
