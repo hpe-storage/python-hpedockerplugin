@@ -552,8 +552,7 @@ class VolumePlugin(object):
                 return response
             return json.dumps({u"Err": ''})
 
-        voluuid = str(uuid.uuid4())
-        vol = volume.createvol(volname, voluuid, vol_size, vol_prov,
+        vol = volume.createvol(volname, vol_size, vol_prov,
                                vol_flash, compression_val, vol_qos)
 
         try:
@@ -643,9 +642,8 @@ class VolumePlugin(object):
                 response = json.dumps({u"Err": msg})
                 return response
 
-            clone_vol_id = str(uuid.uuid4())
             # Create clone volume specification
-            clone_vol = volume.createvol(clone_name, clone_vol_id, size,
+            clone_vol = volume.createvol(clone_name, size,
                                          src_vol['provisioning'],
                                          src_vol['flash_cache'],
                                          src_vol['compression'])
@@ -982,7 +980,7 @@ class VolumePlugin(object):
             found = False
             bkend_ss_name = utils.get_3par_snap_name(db_ss['id'])
             for bkend_ss in bkend_snapshots:
-                if bkend_ss_name == bkend_ss['name']:
+                if bkend_ss_name == bkend_ss:
                     found = True
                     break
             if not found:
@@ -994,8 +992,11 @@ class VolumePlugin(object):
             self.hpeplugin_driver.get_snapshots_by_vol(vol_id)
         ss_list_remove = self._get_snapshots_to_be_deleted(db_snapshots,
                                                            bkend_snapshots)
-        for ss in ss_list_remove:
-            db_snapshots.remove(ss)
+        if ss_list_remove:
+            for ss in ss_list_remove:
+                db_snapshots.remove(ss)
+            self._etcd.update_vol(vol_id, 'snapshots',
+                                  db_snapshots)
 
     @app.route("/VolumeDriver.Get", methods=["POST"])
     def volumedriver_get(self, name):
