@@ -18,5 +18,5 @@ class TestFileSystemCreationFailureWithRetry(TestCase):
             print("Exception %s" % ex)
         finally:
             end_time = time.time()
-            print 'Duration : %d ' % (end_time - start_time)
+            print('Duration : %d' % (end_time - start_time))
             self.assertTrue((end_time - start_time) >= 40)
