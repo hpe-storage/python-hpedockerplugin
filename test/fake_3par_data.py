@@ -76,6 +76,7 @@ volume = {'name': VOLUME_NAME,
           'host': FAKE_DOCKER_HOST,
           'provisioning': THIN,
           'flash_cache': None,
+          'qos_name': None,
           'compression': None,
           'snapshots': []}
 
@@ -149,6 +150,7 @@ volume_compression = {'name': VOLUME_NAME,
                       'compression': 'true',
                       'provisioning': THIN,
                       'flash_cache': None,
+                      'qos_name': None,
                       'snapshots': []}
 
 volume_dedup = {'name': VOLUME_NAME,
@@ -158,6 +160,7 @@ volume_dedup = {'name': VOLUME_NAME,
                 'host': FAKE_DOCKER_HOST,
                 'provisioning': DEDUP,
                 'flash_cache': None,
+                'qos_name': None,
                 'compression': None,
                 'snapshots': []}
 
@@ -168,6 +171,7 @@ volume_qos = {'name': VOLUME_NAME,
               'host': FAKE_DOCKER_HOST,
               'provisioning': THIN,
               'flash_cache': None,
+              'qos_name': "vvk_vvset",
               'compression': None,
               'snapshots': []}
 
@@ -178,6 +182,7 @@ volume_flash_cache = {'name': VOLUME_NAME,
                       'host': FAKE_DOCKER_HOST,
                       'provisioning': THIN,
                       'flash_cache': 'true',
+                      'qos_name': None,
                       'compression': None,
                       'snapshots': []}
 

@@ -98,6 +98,10 @@ class HpeDockerUnitTestsBase(object):
         test = clonevolume_tester.TestCloneWithFlashCache()
         test.run_test(self)
 
+    def test_clone_with_qos(self):
+        test = clonevolume_tester.TestCloneWithQOS()
+        test.run_test(self)
+
     def test_clone_with_flashcache_add_to_vvset_fails(self):
         test = clonevolume_tester.TestCloneWithFlashCacheAddVVSetFails()
         test.run_test(self)

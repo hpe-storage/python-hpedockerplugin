@@ -1095,15 +1095,19 @@ class HPE3PARCommon(object):
                                   tpvv=tpvv, tdvv=tdvv,
                                   compression=compression)
 
+                # check for qos
+                vvs_name = src_vref.get('qos_name')
+
                 # Check if flash cache needs to be enabled
                 flash_cache = \
                     self.get_flash_cache_policy(src_vref['flash_cache'])
 
-                if flash_cache is not None:
+                if vvs_name or flash_cache is not None:
                     try:
                         self._add_volume_to_volume_set(dst_volume,
                                                        dst_3par_vol_name,
-                                                       cpg, flash_cache)
+                                                       cpg, flash_cache,
+                                                       vvs_name)
                     except exception.InvalidInput as ex:
                         # Delete volume if unable to add it to volume set
                         self.client.deleteVolume(dst_3par_vol_name)
