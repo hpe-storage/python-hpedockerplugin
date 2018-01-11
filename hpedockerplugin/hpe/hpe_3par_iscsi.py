@@ -350,7 +350,7 @@ class HPE3PARISCSIDriver(object):
 
         Ignore exceptions caused by the keys not being present on a volume.
         """
-        vol_name = common._get_3par_vol_name(volume['id'])
+        vol_name = volume_utils.get_3par_vol_name(volume['id'])
 
         try:
             common.client.removeVolumeMetaData(vol_name, CHAP_USER_KEY)
@@ -423,7 +423,7 @@ class HPE3PARISCSIDriver(object):
 
         # Get the CHAP secret if CHAP is enabled
         if self.configuration.hpe3par_iscsi_chap_enabled:
-            vol_name = common._get_3par_vol_name(volume['id'])
+            vol_name = volume_utils.get_3par_vol_name(volume['id'])
             username = common.client.getVolumeMetaData(
                 vol_name, CHAP_USER_KEY)['value']
             password = common.client.getVolumeMetaData(
@@ -529,7 +529,7 @@ class HPE3PARISCSIDriver(object):
                                 "Generating new CHAP key."))
 
         # Add CHAP credentials to the volume metadata
-        vol_name = common._get_3par_vol_name(volume['id'])
+        vol_name = volume_utils.get_3par_vol_name(volume['id'])
         common.client.setVolumeMetaData(
             vol_name, CHAP_USER_KEY, chap_username)
         common.client.setVolumeMetaData(

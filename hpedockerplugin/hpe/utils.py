@@ -106,6 +106,6 @@ def get_3par_snap_name(snapshot_id):
     return "dcs-%s" % snapshot_name
 
 
-def get_3par_vvs_name(self, volume_id):
+def get_3par_vvs_name(volume_id):
     vvs_name = _encode_name(volume_id)
     return "vvs-%s" % vvs_name

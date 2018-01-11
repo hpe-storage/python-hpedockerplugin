@@ -2,7 +2,6 @@ import copy
 
 import fake_3par_data as data
 import hpe_docker_unit_test as hpedockerunittest
-from hpe3parclient import exceptions
 from oslo_config import cfg
 CONF = cfg.CONF
 

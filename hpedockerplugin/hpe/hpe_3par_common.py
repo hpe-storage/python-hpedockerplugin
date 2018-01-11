@@ -711,7 +711,7 @@ class HPE3PARCommon(object):
                         # We have a single volume per volume set, so
                         # remove the volume set.
                         self.client.deleteVolumeSet(
-                            self._get_3par_vvs_name(volume['id']))
+                            utils.get_3par_vvs_name(volume['id']))
                     elif vvset_name is not None:
                         # We have a pre-defined volume set just remove the
                         # volume and leave the volume set.
@@ -903,7 +903,7 @@ class HPE3PARCommon(object):
                 self.client.deleteVolume(volume_name)
                 raise exception.PluginException(ex)
         else:
-            vvs_name = self._get_3par_vvs_name(volume['id'])
+            vvs_name = utils.get_3par_vvs_name(volume['id'])
             domain = self.get_domain(cpg)
             self.client.createVolumeSet(vvs_name, domain)
             try:
