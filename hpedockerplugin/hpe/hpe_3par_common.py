@@ -16,7 +16,6 @@ import json
 import math
 import uuid
 
-from oslo_serialization import base64
 from oslo_utils import importutils
 from oslo_config import cfg
 from oslo_log import log as logging
@@ -24,13 +23,14 @@ from oslo_service import loopingcall
 from oslo_utils import units
 
 from hpedockerplugin import exception
-
 from hpedockerplugin.i18n import _, _LE, _LI, _LW
 
 hpe3parclient = importutils.try_import("hpe3parclient")
 if hpe3parclient:
     from hpe3parclient import client
     from hpe3parclient import exceptions as hpeexceptions
+
+from hpedockerplugin.hpe import utils
 
 LOG = logging.getLogger(__name__)
 
@@ -265,58 +265,6 @@ class HPE3PARCommon(object):
             return cpg['domain']
         return None
 
-    def _get_3par_vol_name(self, volume_id):
-        """Get converted 3PAR volume name.
-
-        Converts the openstack volume id from
-        ecffc30f-98cb-4cf5-85ee-d7309cc17cd2
-        to
-        dcv-7P.DD5jLTPWF7tcwnMF80g
-
-        We convert the 128 bits of the uuid into a 24character long
-        base64 encoded string to ensure we don't exceed the maximum
-        allowed 31 character name limit on 3Par
-
-        We strip the padding '=' and replace + with .
-        and / with -
-        """
-        volume_name = self._encode_name(volume_id)
-        return "dcv-%s" % volume_name
-
-    def _get_3par_snap_name(self, snapshot_id):
-        """Get converted 3PAR snapshot name.
-
-        Converts the docker snapshot id from
-        ecffc30f-98cb-4cf5-85ee-d7309cc17cd2
-        to
-        dcs-7P.DD5jLTPWF7tcwnMF80g
-
-        We convert the 128 bits of the uuid into a 24character long
-        base64 encoded string to ensure we don't exceed the maximum
-        allowed 31 character name limit on 3Par
-
-        We strip the padding '=' and replace + with .
-        and / with -
-        """
-        snapshot_name = self._encode_name(snapshot_id)
-        return "dcs-%s" % snapshot_name
-
-    def _get_3par_vvs_name(self, volume_id):
-        vvs_name = self._encode_name(volume_id)
-        return "vvs-%s" % vvs_name
-
-    def _encode_name(self, name):
-        uuid_str = name.replace("-", "")
-        vol_uuid = uuid.UUID('urn:uuid:%s' % uuid_str)
-        vol_encoded = base64.encode_as_text(vol_uuid.bytes)
-
-        # 3par doesn't allow +, nor /
-        vol_encoded = vol_encoded.replace('+', '.')
-        vol_encoded = vol_encoded.replace('/', '-')
-        # strip off the == as 3par doesn't like those.
-        vol_encoded = vol_encoded.replace('=', '')
-        return vol_encoded
-
     def _capacity_from_size(self, vol_size):
         # because 3PAR volume sizes are in Mebibytes.
         if int(vol_size) == 0:
@@ -446,7 +394,7 @@ class HPE3PARCommon(object):
 
         In order to export a volume on a 3PAR box, we have to create a VLUN.
         """
-        volume_name = self._get_3par_vol_name(volume['id'])
+        volume_name = utils.get_3par_vol_name(volume['id'])
         vlun_info = self._create_3par_vlun(volume_name, host['name'], nsp,
                                            lun_id=lun_id)
         return self._get_vlun(volume_name,
@@ -455,7 +403,7 @@ class HPE3PARCommon(object):
                               nsp)
 
     def delete_vlun(self, volume, hostname):
-        volume_name = self._get_3par_vol_name(volume['id'])
+        volume_name = utils.get_3par_vol_name(volume['id'])
         vluns = self.client.getHostVLUNs(hostname)
 
         # When deleting VLUNs, you simply need to remove the template VLUN
@@ -562,7 +510,7 @@ class HPE3PARCommon(object):
         return hpe3par_keys
 
     def get_cpg(self, volume, allowSnap=False):
-        volume_name = self._get_3par_vol_name(volume['id'])
+        volume_name = utils.get_3par_vol_name(volume['id'])
         vol = self.client.getVolume(volume_name)
         if 'userCPG' in vol:
             return vol['userCPG']
@@ -610,7 +558,7 @@ class HPE3PARCommon(object):
                   '%(host)s)',
                   {'disp_name': volume['display_name'],
                    'vol_name': volume['name'],
-                   'id': self._get_3par_vol_name(volume['id']),
+                   'id': utils.get_3par_vol_name(volume['id']),
                    'host': volume['host']})
         try:
             comments = {'volume_id': volume['id'],
@@ -691,7 +639,7 @@ class HPE3PARCommon(object):
             if compression is not None:
                 extras['compression'] = compression
 
-            volume_name = self._get_3par_vol_name(volume['id'])
+            volume_name = utils.get_3par_vol_name(volume['id'])
             self.client.createVolume(volume_name, cpg, capacity, extras)
 
             # check for qos
@@ -729,9 +677,9 @@ class HPE3PARCommon(object):
     def delete_volume(self, volume, is_snapshot=False):
         try:
             if is_snapshot:
-                volume_name = self._get_3par_snap_name(volume['id'])
+                volume_name = utils.get_3par_snap_name(volume['id'])
             else:
-                volume_name = self._get_3par_vol_name(volume['id'])
+                volume_name = utils.get_3par_vol_name(volume['id'])
             # Try and delete the volume, it might fail here because
             # the volume is part of a volume set which will have the
             # volume set name in the error.
@@ -763,7 +711,7 @@ class HPE3PARCommon(object):
                         # We have a single volume per volume set, so
                         # remove the volume set.
                         self.client.deleteVolumeSet(
-                            self._get_3par_vvs_name(volume['id']))
+                            utils.get_3par_vvs_name(volume['id']))
                     elif vvset_name is not None:
                         # We have a pre-defined volume set just remove the
                         # volume and leave the volume set.
@@ -875,7 +823,7 @@ class HPE3PARCommon(object):
         """
         existing_vlun = None
         try:
-            vol_name = self._get_3par_vol_name(volume['id'])
+            vol_name = utils.get_3par_vol_name(volume['id'])
             host_vluns = self.client.getHostVLUNs(host['name'])
 
             # The first existing VLUN found will be returned.
@@ -895,7 +843,7 @@ class HPE3PARCommon(object):
     def find_existing_vluns(self, volume, host):
         existing_vluns = []
         try:
-            vol_name = self._get_3par_vol_name(volume['id'])
+            vol_name = utils.get_3par_vol_name(volume['id'])
             host_vluns = self.client.getHostVLUNs(host['name'])
 
             for vlun in host_vluns:
@@ -955,7 +903,7 @@ class HPE3PARCommon(object):
                 self.client.deleteVolume(volume_name)
                 raise exception.PluginException(ex)
         else:
-            vvs_name = self._get_3par_vvs_name(volume['id'])
+            vvs_name = utils.get_3par_vvs_name(volume['id'])
             domain = self.get_domain(cpg)
             self.client.createVolumeSet(vvs_name, domain)
             try:
@@ -989,8 +937,8 @@ class HPE3PARCommon(object):
     def revert_snap_to_vol(self, volume, snapshot):
         try:
             optional = {}
-            snapshot_name = self._get_3par_snap_name(snapshot['id'])
-            volume_name = self._get_3par_vol_name(volume['id'])
+            snapshot_name = utils.get_3par_snap_name(snapshot['id'])
+            volume_name = utils.get_3par_vol_name(volume['id'])
             if self.client.isOnlinePhysicalCopy(volume_name):
                 LOG.info("Found an online copy for %(volume)s. ",
                          {'volume': volume_name})
@@ -1010,8 +958,8 @@ class HPE3PARCommon(object):
         LOG.info("Create Snapshot\n%s", json.dumps(snapshot, indent=2))
 
         try:
-            snap_name = self._get_3par_snap_name(snapshot['id'])
-            vol_name = self._get_3par_vol_name(snapshot['volume_id'])
+            snap_name = utils.get_3par_snap_name(snapshot['id'])
+            vol_name = utils.get_3par_vol_name(snapshot['volume_id'])
 
             extra = {'volume_name': snapshot['volume_name']}
             vol_id = snapshot.get('volume_id', None)
@@ -1046,8 +994,8 @@ class HPE3PARCommon(object):
     def create_cloned_volume(self, dst_volume, src_vref):
         LOG.info("Create clone of volume\n%s", json.dumps(src_vref, indent=2))
         try:
-            dst_3par_vol_name = self._get_3par_vol_name(dst_volume['id'])
-            src_3par_vol_name = self._get_3par_vol_name(src_vref['id'])
+            dst_3par_vol_name = utils.get_3par_vol_name(dst_volume['id'])
+            src_3par_vol_name = utils.get_3par_vol_name(src_vref['id'])
             # back_up_process = False
             vol_chap_enabled = False
 
@@ -1190,3 +1138,7 @@ class HPE3PARCommon(object):
         timer.start(interval=1).wait()
 
         return self._task_status
+
+    def get_snapshots_by_vol(self, vol_id):
+        bkend_vol_name = utils.get_3par_vol_name(vol_id)
+        return self.client.getVolumeSnapshots(bkend_vol_name)

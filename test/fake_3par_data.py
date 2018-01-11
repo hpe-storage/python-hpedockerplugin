@@ -26,8 +26,8 @@ VOLUME_TYPE_ID_DEDUP = 'd03338a9-9115-48a3-8dfc-11111111111'
 VOL_TYPE_ID_DEDUP_COMPRESS = 'd03338a9-9115-48a3-8dfc-33333333333'
 VOLUME_TYPE_ID_FLASH_CACHE = 'd03338a9-9115-48a3-8dfc-22222222222'
 VOLUME_NAME = 'volume-' + VOLUME_ID
-VOLUME_NAME_3PAR = 'osv-0DM4qZEVSKON-DXN-NwVpw'
 SNAPSHOT_ID1 = '2f823bdc-e36e-4dc8-bd15-de1c7a28ff31'
+SNAP1_3PAR_NAME = 'dcs-L4I73ONuTci9Fd4ceij-MQ'
 SNAPSHOT_NAME1 = 'snapshot-1'
 SNAPSHOT_ID2 = '8da7488a-7920-451a-ad18-0e41eca15d25'
 SNAPSHOT_NAME2 = 'snapshot-2'
@@ -98,6 +98,8 @@ snapshot3 = {'name': SNAPSHOT_NAME3,
              'parent_id': SNAPSHOT_ID1,
              'expiration_hours': '5',
              'retention_hours': '5'}
+
+bkend_snapshots = [{'name': SNAPSHOT_3PAR_NAME}]
 
 volume_with_snapshots = {
     'name': VOLUME_NAME,
