@@ -1003,7 +1003,7 @@ class VolumePlugin(object):
             found = False
             bkend_ss_name = utils.get_3par_snap_name(db_ss['id'])
             for bkend_ss in bkend_snapshots:
-                if bkend_ss_name == bkend_ss['name']:
+                if bkend_ss_name == bkend_ss:
                     found = True
                     break
             if not found:
