@@ -1,3 +1,5 @@
+import uuid
+
 DEFAULT_SIZE = 100
 DEFAULT_PROV = "thin"
 DEFAULT_FLASH_CACHE = None
@@ -6,11 +8,11 @@ DEFAULT_MOUNT_VOLUME = "True"
 DEFAULT_COMPRESSION_VAL = None
 
 
-def createvol(name, uuid, size=DEFAULT_SIZE, prov=DEFAULT_PROV,
+def createvol(name, size=DEFAULT_SIZE, prov=DEFAULT_PROV,
               flash_cache=None, compression_val=None, qos=None):
     volume = {}
-    volume['id'] = uuid
-    volume['name'] = uuid
+    volume['id'] = str(uuid.uuid4())
+    volume['name'] = volume['id']
     volume['host'] = ''
     volume['size'] = size
     volume['availability_zone'] = ''

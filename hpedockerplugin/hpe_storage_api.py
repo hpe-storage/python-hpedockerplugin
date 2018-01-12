@@ -32,6 +32,7 @@ import fileutil
 
 from klein import Klein
 from hpe import volume
+from hpe import utils
 from oslo_utils import importutils
 import etcdutil as util
 
@@ -199,8 +200,13 @@ class VolumePlugin(object):
                            'snapshots - volume cannot be deleted!'
                            % volname))
                 LOG.error(msg)
-                # raise exception.HPEPluginRemoveException(reason=msg)
                 response = json.dumps({u"Err": msg})
+                try:
+                    self._etcd.try_unlock_volname(volname)
+                except Exception as ex:
+                    LOG.error('volume: %(name)s Unlock volume failed',
+                              {'name':volname})
+                    response = json.dumps({u"Err": six.text_type(ex)})
                 return response
             else:
                 self.hpeplugin_driver.delete_volume(vol)
@@ -219,7 +225,7 @@ class VolumePlugin(object):
                           {'name': volname})
                 response = json.dumps({u"Err": six.text_type(ex)})
                 return response
-            raise exception.HPEPluginRemoveException(reason=msg)
+            return json.dumps({u"Err": six.text_type(ex)})
 
         try:
             self._etcd.delete_vol(vol)
@@ -249,10 +255,12 @@ class VolumePlugin(object):
         return None, None
 
     def volumedriver_remove_snapshot(self, volname, snapname):
+        lock_acquired = False
         try:
             LOG.info("volumedriver_remove_snapshot - locking volume %s"
                      % volname)
             self._etcd.try_lock_volname(volname)
+            lock_acquired = True
 
             LOG.info("volumedriver_remove_snapshot - getting volume %s"
                      % volname)
@@ -286,9 +294,23 @@ class VolumePlugin(object):
                             # reason=msg)
                             response = json.dumps({u"Err": msg})
                             return response
-                    LOG.info("Deleting snapshot at backend: %s" % snapname)
-                    self.hpeplugin_driver.delete_volume(snapshot,
-                                                        is_snapshot=True)
+                    try:
+                        LOG.info("Deleting snapshot at backend: %s" % snapname)
+                        self.hpeplugin_driver.delete_volume(snapshot,
+                                                            is_snapshot=True)
+                    except Exception as err:
+                        msg = (_LE('Failed to remove snapshot error is: %s'),
+                               six.text_type(err))
+                        LOG.error(msg)
+                        response = json.dumps({u"Err": six.text_type(err)})
+                        try:
+                            self._etcd.try_unlock_volname(volname)
+                            lock_acquired = False
+                        except Exception as ex:
+                            LOG.error('volume: %(name)s Unlock Volume Failed',
+                                      {'name': volname})
+                            response = json.dumps({u"Err": six.text_type(ex)})
+                        return response
 
                     LOG.info("Deleting snapshot in ETCD - %s" % snapname)
                     # Remove snapshot entry from list and save it back to
@@ -329,7 +351,8 @@ class VolumePlugin(object):
             # Expand lock code inline as function based lock causes
             # unexpected behavior
             try:
-                self._etcd.try_unlock_volname(volname)
+                if lock_acquired:
+                    self._etcd.try_unlock_volname(volname)
             except Exception as ex:
 
                 LOG.error('volume: %(name)s Unlock Volume Failed',
@@ -551,8 +574,7 @@ class VolumePlugin(object):
                 return response
             return json.dumps({u"Err": ''})
 
-        voluuid = str(uuid.uuid4())
-        vol = volume.createvol(volname, voluuid, vol_size, vol_prov,
+        vol = volume.createvol(volname, vol_size, vol_prov,
                                vol_flash, compression_val, vol_qos)
 
         try:
@@ -642,9 +664,8 @@ class VolumePlugin(object):
                 response = json.dumps({u"Err": msg})
                 return response
 
-            clone_vol_id = str(uuid.uuid4())
             # Create clone volume specification
-            clone_vol = volume.createvol(clone_name, clone_vol_id, size,
+            clone_vol = volume.createvol(clone_name, size,
                                          src_vol['provisioning'],
                                          src_vol['flash_cache'],
                                          src_vol['compression'],
@@ -976,6 +997,30 @@ class VolumePlugin(object):
         response = json.dumps({u"Err": '', u"Mountpoint": path_name})
         return response
 
+    def _get_snapshots_to_be_deleted(self, db_snapshots, bkend_snapshots):
+        ss_list = []
+        for db_ss in db_snapshots:
+            found = False
+            bkend_ss_name = utils.get_3par_snap_name(db_ss['id'])
+            for bkend_ss in bkend_snapshots:
+                if bkend_ss_name == bkend_ss['name']:
+                    found = True
+                    break
+            if not found:
+                ss_list.append(db_ss)
+        return ss_list
+
+    def _sync_snapshots_from_array(self, vol_id, db_snapshots):
+        bkend_snapshots = \
+            self.hpeplugin_driver.get_snapshots_by_vol(vol_id)
+        ss_list_remove = self._get_snapshots_to_be_deleted(db_snapshots,
+                                                           bkend_snapshots)
+        if ss_list_remove:
+            for ss in ss_list_remove:
+                db_snapshots.remove(ss)
+            self._etcd.update_vol(vol_id, 'snapshots',
+                                  db_snapshots)
+
     @app.route("/VolumeDriver.Get", methods=["POST"])
     def volumedriver_get(self, name):
         """
@@ -1023,13 +1068,29 @@ class VolumePlugin(object):
                   'Mountpoint': mountdir,
                   'Devicename': devicename,
                   'Size': volinfo['size']}
+
+        if volinfo['snapshots']:
+            self._sync_snapshots_from_array(volinfo['id'],
+                                            volinfo['snapshots'])
+        # Is this request for snapshot inspect?
         if snapname:
-            snapshot, idx = self._get_snapshot_by_name(volinfo['snapshots'],
-                                                       snapname)
-            settings = {"Settings": {
-                'expirationHours': snapshot['expiration_hours'],
-                'retentionHours': snapshot['retention_hours']}}
-            volume['Status'] = settings
+            # Any snapshots left after synchronization with array?
+            if volinfo['snapshots']:
+                snapshot, idx = \
+                    self._get_snapshot_by_name(volinfo['snapshots'],
+                                               snapname)
+                settings = {"Settings": {
+                    'expirationHours': snapshot['expiration_hours'],
+                    'retentionHours': snapshot['retention_hours']}}
+                volume['Status'] = settings
+            else:
+                msg = (_LE('Snapshot Get: Snapshot name not found %s'),
+                       contents['Name'])
+                LOG.warning(msg)
+                # Should error be returned here or success?
+                response = json.dumps({u"Err": ""})
+                return response
+
         else:
             snapshots = volinfo.get('snapshots', None)
             if snapshots:
