@@ -99,7 +99,7 @@ snapshot3 = {'name': SNAPSHOT_NAME3,
              'expiration_hours': '5',
              'retention_hours': '5'}
 
-bkend_snapshots = [{'name': SNAPSHOT_3PAR_NAME}]
+bkend_snapshots = [SNAPSHOT_3PAR_NAME]
 
 volume_with_snapshots = {
     'name': VOLUME_NAME,
