@@ -175,14 +175,6 @@ class HpeDockerUnitTestsBase(object):
         test = getsnapshot_tester.TestSyncSnapshots()
         test.run_test(self)
 
-    def test_qos_vol(self):
-        test = getsnapshot_tester.TestQosVolume()
-        test.run_test(self)
-
-    def test_clone_vol(self):
-        test = getsnapshot_tester.TestCloneVolume()
-        test.run_test(self)
-
 
 class HpeDockerISCSIUnitTests(HpeDockerUnitTestsBase, testtools.TestCase):
     @property

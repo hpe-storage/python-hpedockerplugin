@@ -333,13 +333,6 @@ class HPE3PARCommon(object):
     def get_ports(self):
         return self.client.getPorts()
 
-    def get_qos_detail(self, vvset):
-        return self.client.queryQoSRule(vvset)
-
-    def get_volume_detail(self, volume_id):
-        volume_name = utils.get_3par_vol_name(volume_id)
-        return self.client.getVolume(volume_name)
-
     def get_active_target_ports(self):
         ports = self.get_ports()
         target_ports = []

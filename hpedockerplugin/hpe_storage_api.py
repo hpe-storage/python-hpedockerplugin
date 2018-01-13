@@ -669,7 +669,7 @@ class VolumePlugin(object):
                                          src_vol['provisioning'],
                                          src_vol['flash_cache'],
                                          src_vol['compression'],
-                                         src_vol['qos_name'], isclone=True)
+                                         src_vol['qos_name'])
             try:
                 self.hpeplugin_driver.create_cloned_volume(clone_vol, src_vol)
 
@@ -1002,7 +1002,6 @@ class VolumePlugin(object):
         for db_ss in db_snapshots:
             found = False
             bkend_ss_name = utils.get_3par_snap_name(db_ss['id'])
-
             for bkend_ss in bkend_snapshots:
                 if bkend_ss_name == bkend_ss:
                     found = True
@@ -1022,50 +1021,6 @@ class VolumePlugin(object):
             self._etcd.update_vol(vol_id, 'snapshots',
                                   db_snapshots)
 
-    def get_required_qos_field(self, qos_detail):
-        qos_filter = {}
-
-        msg = (_LI('get_required_qos_field: %(qos_detail)s'), {'qos_detail':qos_detail})
-        LOG.info(msg)
-
-        qos_filter['enabled'] = qos_detail.get('enabled')
-
-        if qos_detail.get('bwMaxLimitKB'):
-            qos_filter['maxBWS'] = str(qos_detail.get('bwMaxLimitKB')/1024) + " MB/sec"
-
-        if qos_detail.get('bwMinGoalKB'):
-            qos_filter['minBWS'] = str(qos_detail.get('bwMinGoalKB')/1024) + " MB/sec"
-
-        if qos_detail.get('ioMaxLimit'):
-            qos_filter['maxIOPS'] = str(qos_detail.get('ioMaxLimit')) + " IOs/sec"
-
-        if qos_detail.get('ioMinGoal'):
-            qos_filter['minIOPS'] = str(qos_detail.get('ioMinGoal')) + " IOs/sec"
-
-        if qos_detail.get('latencyGoal'):
-            qos_filter['Latency'] = str(qos_detail.get('latencyGoal')) + "sec"
-
-        if qos_detail.get('priority'):
-            qos_filter['priority'] = volume.QOS_PRIORITY[qos_detail.get('priority')]
-
-        return qos_filter
-
-    def get_required_vol_field(self, vol_detail, isclone=False):
-        vol_filter = {}
-
-        msg = (_LI('get_required_vol_field: %(vol_detail)s'), {'vol_detail':vol_detail})
-        LOG.info(msg)
-
-        if isclone:
-            vol_filter['compressionState'] = volume.VOL_COMPRESSION_STATE[vol_detail.get('compressionState')]
-            vol_filter['copyType'] = volume.VOL_COPY_TYPE[vol_detail.get('copyType')]
-            vol_filter['deduplicationState'] = volume.VOL_DEDUPLICATION_STATE[vol_detail.get('deduplicationState')]
-
-        vol_filter['provisioning'] = volume.VOL_PROV_TYPE[vol_detail.get('provisioningType')]
-        vol_filter['size'] = str(vol_detail.get('sizeMiB')) + " MiB"
-
-        return vol_filter
-
     @app.route("/VolumeDriver.Get", methods=["POST"])
     def volumedriver_get(self, name):
         """
@@ -1075,9 +1030,6 @@ class VolumePlugin(object):
 
         :return: Result indicating success.
         """
-        err = ''
-        mountdir = ''
-        devicename = ''
         contents = json.loads(name.content.getvalue())
         volname = contents['Name']
         tokens = volname.split('/')
@@ -1096,7 +1048,7 @@ class VolumePlugin(object):
             snapname = tokens[1]
 
         volinfo = self._etcd.get_vol_byname(volname)
-
+        err = ''
         if volinfo is None:
             msg = (_LE('Volume Get: Volume name not found %s'), volname)
             LOG.warning(msg)
@@ -1107,13 +1059,15 @@ class VolumePlugin(object):
         if path_info is not None:
             mountdir = path_info['mount_dir']
             devicename = path_info['path']
+        else:
+            mountdir = ''
+            devicename = ''
 
         # use volinfo as volname could be partial match
         volume = {'Name': contents['Name'],
                   'Mountpoint': mountdir,
                   'Devicename': devicename,
-                  'Size': volinfo['size'],
-                  'Status': {}}
+                  'Size': volinfo['size']}
 
         if volinfo['snapshots']:
             self._sync_snapshots_from_array(volinfo['id'],
@@ -1128,7 +1082,7 @@ class VolumePlugin(object):
                 settings = {"Settings": {
                     'expirationHours': snapshot['expiration_hours'],
                     'retentionHours': snapshot['retention_hours']}}
-                volume['Status'].update(settings)
+                volume['Status'] = settings
             else:
                 msg = (_LE('Snapshot Get: Snapshot name not found %s'),
                        contents['Name'])
@@ -1145,18 +1099,9 @@ class VolumePlugin(object):
                     snapshot = {'Name': s['name'],
                                 'ParentName': volname}
                     ss_list_to_show.append(snapshot)
-                volume['Status'].update({'Snapshots': ss_list_to_show})
-
-        qos_name = volinfo.get('qos_name')
-        if qos_name is not None:
-            qos_detail = self.hpeplugin_driver.get_qos_detail(qos_name)
-            qos_filter = self.get_required_qos_field(qos_detail)
-            volume['Status'].update({'qos_detail': qos_filter})
-
-        isclone = volinfo.get('isclone')
-        vol_detail = self.hpeplugin_driver.get_volume_detail(volinfo['id'])
-        vol_filter = self.get_required_vol_field(vol_detail, isclone=isclone)
-        volume['Status'].update({'volume_detail': vol_filter})
+                volume['Status'] = {'Snapshots': ss_list_to_show}
+            else:
+                volume['Status'] = {}
 
         response = json.dumps({u"Err": err, u"Volume": volume})
         LOG.debug("Get volume/snapshot: \n%s" % str(response))
