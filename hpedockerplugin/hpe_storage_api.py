@@ -782,6 +782,17 @@ class VolumePlugin(object):
                 response = json.dumps({u"Err": msg})
                 return response
 
+            if vol['snapshots']:
+                ss_list = vol['snapshots']
+                for ss in ss_list:
+                    if snapshot_name == ss['name']:
+                        msg = (_('Snapshot create failed. Error '
+                                 'is: %(snap_name)s is already created. '
+                                 'Please enter a new snapshot name.') %
+                               {'snap_name': snapshot_name})
+                        LOG.error(msg)
+                        return json.dumps({u"Err": six.text_type(msg)})
+
             snapshot_id = str(uuid.uuid4())
             snapshot = {'id': snapshot_id,
                         'display_name': snapshot_name,
@@ -1002,6 +1013,7 @@ class VolumePlugin(object):
         for db_ss in db_snapshots:
             found = False
             bkend_ss_name = utils.get_3par_snap_name(db_ss['id'])
+
             for bkend_ss in bkend_snapshots:
                 if bkend_ss_name == bkend_ss:
                     found = True
@@ -1021,6 +1033,34 @@ class VolumePlugin(object):
             self._etcd.update_vol(vol_id, 'snapshots',
                                   db_snapshots)
 
+    def get_required_qos_field(self, qos_detail):
+        qos_filter = {}
+
+        msg = (_LI('get_required_qos_field: %(qos_detail)s'), {'qos_detail':qos_detail})
+        LOG.info(msg)
+
+        qos_filter['enabled'] = qos_detail.get('enabled')
+
+        if qos_detail.get('bwMaxLimitKB'):
+            qos_filter['maxBWS'] = str(qos_detail.get('bwMaxLimitKB')/1024) + " MB/sec"
+
+        if qos_detail.get('bwMinGoalKB'):
+            qos_filter['minBWS'] = str(qos_detail.get('bwMinGoalKB')/1024) + " MB/sec"
+
+        if qos_detail.get('ioMaxLimit'):
+            qos_filter['maxIOPS'] = str(qos_detail.get('ioMaxLimit')) + " IOs/sec"
+
+        if qos_detail.get('ioMinGoal'):
+            qos_filter['minIOPS'] = str(qos_detail.get('ioMinGoal')) + " IOs/sec"
+
+        if qos_detail.get('latencyGoal'):
+            qos_filter['Latency'] = str(qos_detail.get('latencyGoal')) + " sec"
+
+        if qos_detail.get('priority'):
+            qos_filter['priority'] = volume.QOS_PRIORITY[qos_detail.get('priority')]
+
+        return qos_filter
+
     @app.route("/VolumeDriver.Get", methods=["POST"])
     def volumedriver_get(self, name):
         """
@@ -1030,6 +1070,9 @@ class VolumePlugin(object):
 
         :return: Result indicating success.
         """
+        err = ''
+        mountdir = ''
+        devicename = ''
         contents = json.loads(name.content.getvalue())
         volname = contents['Name']
         tokens = volname.split('/')
@@ -1048,7 +1091,7 @@ class VolumePlugin(object):
             snapname = tokens[1]
 
         volinfo = self._etcd.get_vol_byname(volname)
-        err = ''
+
         if volinfo is None:
             msg = (_LE('Volume Get: Volume name not found %s'), volname)
             LOG.warning(msg)
@@ -1059,15 +1102,12 @@ class VolumePlugin(object):
         if path_info is not None:
             mountdir = path_info['mount_dir']
             devicename = path_info['path']
-        else:
-            mountdir = ''
-            devicename = ''
 
         # use volinfo as volname could be partial match
         volume = {'Name': contents['Name'],
                   'Mountpoint': mountdir,
                   'Devicename': devicename,
-                  'Size': volinfo['size']}
+                  'Status': {}}
 
         if volinfo['snapshots']:
             self._sync_snapshots_from_array(volinfo['id'],
@@ -1082,7 +1122,7 @@ class VolumePlugin(object):
                 settings = {"Settings": {
                     'expirationHours': snapshot['expiration_hours'],
                     'retentionHours': snapshot['retention_hours']}}
-                volume['Status'] = settings
+                volume['Status'].update(settings)
             else:
                 msg = (_LE('Snapshot Get: Snapshot name not found %s'),
                        contents['Name'])
@@ -1099,9 +1139,26 @@ class VolumePlugin(object):
                     snapshot = {'Name': s['name'],
                                 'ParentName': volname}
                     ss_list_to_show.append(snapshot)
-                volume['Status'] = {'Snapshots': ss_list_to_show}
-            else:
-                volume['Status'] = {}
+                volume['Status'].update({'Snapshots': ss_list_to_show})
+
+        qos_name = volinfo.get('qos_name')
+        if qos_name is not None:
+            try:
+                qos_detail = self.hpeplugin_driver.get_qos_detail(qos_name)
+                qos_filter = self.get_required_qos_field(qos_detail)
+                volume['Status'].update({'qos_detail': qos_filter})
+            except Exception as ex:
+                msg = (_('unable to get/filter qos from 3par, error is: %s'),
+                       six.text_type(ex))
+                LOG.error(msg)
+                return json.dumps({u"Err": six.text_type(ex)})
+
+        vol_detail = {}
+        vol_detail['size'] = volinfo.get('size')
+        vol_detail['flash_cache'] = volinfo.get('flash_cache')
+        vol_detail['compression'] = volinfo.get('compression')
+        vol_detail['provisioning'] = volinfo.get('provisioning')
+        volume['Status'].update({'volume_detail': vol_detail})
 
         response = json.dumps({u"Err": err, u"Volume": volume})
         LOG.debug("Get volume/snapshot: \n%s" % str(response))

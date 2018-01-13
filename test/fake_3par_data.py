@@ -101,6 +101,17 @@ snapshot3 = {'name': SNAPSHOT_NAME3,
 
 bkend_snapshots = [SNAPSHOT_3PAR_NAME]
 
+# this is the qos we get from wsapi
+qos_from_3par_wsapi = {
+    'bwMaxLimitKB': 40960,
+    'bwMinGoalKB': 30720,
+    'ioMaxLimit': 2000000,
+    'ioMinGoal': 10000,
+    'latencyGoal': 10,
+    'priority': 2,
+    'name': 'vvk_vvset'
+}
+
 volume_with_snapshots = {
     'name': VOLUME_NAME,
     'id': VOLUME_ID,

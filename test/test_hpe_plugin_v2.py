@@ -2,7 +2,7 @@ import testtools
 import createvolume_tester
 import clonevolume_tester
 import createsnapshot_tester
-import getsnapshot_tester
+import getvolume_tester
 import mountvolume_tester
 import removesnapshot_tester
 import revertsnapshot_tester
@@ -172,7 +172,15 @@ class HpeDockerUnitTestsBase(object):
     INSPECT SNAPSHOT related tests
     """
     def test_sync_snapshots(self):
-        test = getsnapshot_tester.TestSyncSnapshots()
+        test = getvolume_tester.TestSyncSnapshots()
+        test.run_test(self)
+
+    def test_qos_vol(self):
+        test = getvolume_tester.TestQosVolume()
+        test.run_test(self)
+
+    def test_clone_vol(self):
+        test = getvolume_tester.TestCloneVolume()
         test.run_test(self)
 
 
