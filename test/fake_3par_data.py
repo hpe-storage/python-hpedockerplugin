@@ -101,6 +101,27 @@ snapshot3 = {'name': SNAPSHOT_NAME3,
 
 bkend_snapshots = [SNAPSHOT_3PAR_NAME]
 
+# this is the qos we get from wsapi
+qos_from_3par_wsapi = {
+    'bwMaxLimitKB': 40960,
+    'bwMinGoalKB': 30720,
+    'ioMaxLimit': 2000000,
+    'ioMinGoal': 10000,
+    'latencyGoal': 10,
+    'priority': 2,
+    'name': 'vvk_vvset'
+}
+
+# this is the volume we get from wsapi
+volume_from_3par_wsapi = {
+    'name': VOLUME_NAME,
+    'id': VOLUME_ID,
+    'compressionState': 2,
+    'copyType': 2,
+    'deduplicationState': 2,
+    'provisioningType': 2,
+    'sizeMiB': 102400}
+
 volume_with_snapshots = {
     'name': VOLUME_NAME,
     'id': VOLUME_ID,
@@ -176,6 +197,18 @@ volume_qos = {'name': VOLUME_NAME,
               'qos_name': "vvk_vvset",
               'compression': None,
               'snapshots': []}
+
+volume_clone = {'name': VOLUME_NAME,
+                'id': VOLUME_ID,
+                'display_name': 'Foo Volume',
+                'size': 2,
+                'host': FAKE_DOCKER_HOST,
+                'provisioning': THIN,
+                'flash_cache': None,
+                'isclone': True,
+                'qos_name': None,
+                'compression': None,
+                'snapshots': []}
 
 volume_flash_cache = {'name': VOLUME_NAME,
                       'id': VOLUME_ID,
