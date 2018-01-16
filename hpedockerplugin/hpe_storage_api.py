@@ -782,6 +782,17 @@ class VolumePlugin(object):
                 response = json.dumps({u"Err": msg})
                 return response
 
+            if vol['snapshots']:
+                ss_list = vol['snapshots']
+                for ss in ss_list:
+                    if snapshot_name == ss['name']:
+                        msg = (_('Snapshot create failed. Error '
+                                 'is: %(snap_name)s is already created. '
+                                 'Please enter a new snapshot name.') %
+                               {'snap_name': snapshot_name})
+                        LOG.error(msg)
+                        return json.dumps({u"Err": six.text_type(msg)})
+
             snapshot_id = str(uuid.uuid4())
             snapshot = {'id': snapshot_id,
                         'display_name': snapshot_name,
