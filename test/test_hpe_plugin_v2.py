@@ -138,6 +138,10 @@ class HpeDockerUnitTestsBase(object):
             createsnapshot_tester.TestCreateSnapshotWithExpiryRetentionTimes()
         test.run_test(self)
 
+    def test_create_snapshot_with_duplicate_name(self):
+        test = createsnapshot_tester.TestCreateSnapshotDuplicateName()
+        test.run_test(self)
+
     """
     REMOVE VOLUME related tests
     """
