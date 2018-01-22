@@ -1,6 +1,7 @@
 # import mock
 import createvolume_tester as createvolume
 import fake_3par_data as data
+import copy
 
 
 # Derives all the functionality from CreteVolumeUnitTest itself
@@ -16,7 +17,7 @@ class TestCreateSnapshotDefault(CreateSnapshotUnitTest):
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
-        mock_etcd.get_vol_byname.return_value = data.volume
+        mock_etcd.get_vol_byname.return_value = copy.deepcopy(data.volume)
 
     def check_response(self, resp):
         self._test_case.assertEqual(resp, {u"Err": ''})
@@ -35,7 +36,7 @@ class TestCreateSnapshotWithExpiryRetentionTimes(CreateSnapshotUnitTest):
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
-        mock_etcd.get_vol_byname.return_value = data.volume
+        mock_etcd.get_vol_byname.return_value = copy.deepcopy(data.volume)
 
     def check_response(self, resp):
         self._test_case.assertEqual(resp, {u"Err": ''})
@@ -43,6 +44,23 @@ class TestCreateSnapshotWithExpiryRetentionTimes(CreateSnapshotUnitTest):
         # Ensure that createSnapshot was called on 3PAR Client
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.createSnapshot.assert_called()
+
+
+# Tries to create a snapshot with a duplicate name
+class TestCreateSnapshotDuplicateName(CreateSnapshotUnitTest):
+    def get_request_params(self):
+        return {"Name": data.SNAPSHOT_NAME1,
+                "Opts": {"snapshotOf": data.VOLUME_NAME}}
+
+    def setup_mock_objects(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.return_value = data.volume_with_snapshots
+
+    def check_response(self, resp):
+        self._test_case.assertEqual(resp, {u"Err": 'Snapshot create failed.'
+                                           ' Error is: snapshot-1 is '
+                                           'already created. Please enter '
+                                           'a new snapshot name.'})
 
 
 # Tries to create snapshot with retention time > expiry time. This should fail.
