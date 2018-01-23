@@ -333,6 +333,9 @@ class HPE3PARCommon(object):
     def get_ports(self):
         return self.client.getPorts()
 
+    def get_qos_detail(self, vvset):
+        return self.client.queryQoSRule(vvset)
+
     def get_active_target_ports(self):
         ports = self.get_ports()
         target_ports = []

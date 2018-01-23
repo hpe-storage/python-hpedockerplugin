@@ -406,3 +406,10 @@ class HPE3PARFCDriver(object):
             return common.get_snapshots_by_vol(vol_id)
         finally:
             self._logout(common)
+
+    def get_qos_detail(self, vvset):
+        common = self._login()
+        try:
+            return common.get_qos_detail(vvset)
+        finally:
+            self._logout(common)
