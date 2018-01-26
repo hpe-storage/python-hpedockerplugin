@@ -212,3 +212,47 @@ class HPEPluginMakeEtcdRootException(PluginException):
 
 class HPEPluginEtcdException(PluginException):
     message = _("Encountered Etcd exception: %(reason)s")
+
+
+class HPEPluginSaveFailed(HPEPluginEtcdException):
+    message = _("ETCD data save failed: %(obj)s")
+
+
+class HPEPluginLockFailed(HPEPluginEtcdException):
+    message = _("ETCD lock failed: %(obj)s")
+
+
+class HPEPluginUnlockFailed(PluginException):
+    message = _("ETCD unlock failed: %(obj)s")
+
+
+class HPEDriverException(PluginException):
+    pass
+
+
+class HPEDriverInvalidInput(HPEDriverException):
+    message = ""
+
+
+class HPEDriverInvalidSizeForCompressedVolume(HPEDriverException):
+    message = ""
+
+
+class HPEDriverInvalidDedupVersion(HPEDriverException):
+    message = ""
+
+
+class HPEDriverCreateVolumeWithQosFailed(HPEDriverException):
+    message = ""
+
+
+class HPEDriverCreateVolumeWithFlashCacheFailed(HPEDriverException):
+    message = ""
+
+
+class HPEDriverVolumeAlreadyExists(HPEDriverException):
+    message = ""
+
+
+class HPEDriverAddVolumeToVvsFailed(HPEDriverException):
+    message = ""
