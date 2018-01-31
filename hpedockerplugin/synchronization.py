@@ -19,21 +19,26 @@ def synchronized(lock_name):
             try:
                 plugin._etcd.try_lock_volname(lck_name)
                 lock_acquired = True
-                LOG.info("Lock acquired: [lock-name=%s]" % lck_name)
+                LOG.info('Lock acquired: [caller=%s, lock-name=%s]'
+                         % (f.__name__, lck_name))
                 return f(*a, **k)
             except exception.HPEPluginLockFailed:
-                LOG.exception('Failed to acquire lock: [lock-name=%(name)s]',
-                             {'name': lck_name})
+                LOG.exception('Lock acquire failed: [caller=%(caller)s, '
+                              'lock-name=%(name)s]',
+                             {'caller': f.__name__,
+                              'name': lck_name})
                 response = json.dumps({u"Err": ''})
                 return response
             finally:
                 if lock_acquired:
                     try:
                         plugin._etcd.try_unlock_volname(lck_name)
-                        LOG.info("Released lock: [lock-name=%s]" % lck_name)
+                        LOG.info('Lock released: [caller=%s, lock-name=%s]' %
+                                 (f.__name__,lck_name))
                     except exception.HPEPluginUnlockFailed:
-                        LOG.exception('Release lock failed: '
-                                      '[lock-name=%(name)s]',
-                                      {'name': lck_name})
+                        LOG.exception('Lock release failed: '
+                                      '[caller=%(caller)s, lock-name=%(name)s]',
+                                      {'caller': f.__name__,
+                                       'name': lck_name})
         return _wrapped
     return _synchronized
