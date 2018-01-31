@@ -36,7 +36,8 @@ class TestSyncSnapshots(GetSnapshotUnitTest):
         mock_etcd.get_vol_path_info.return_value = None
 
         mock_3parclient = self.mock_objects['mock_3parclient']
-        mock_3parclient.getVolumeSnapshots.return_value = data.bkend_snapshots
+        mock_3parclient.getSnapshotsOfVolume.return_value = \
+            data.bkend_snapshots
 
     def check_response(self, resp):
         expected = {u'Volume':
@@ -57,7 +58,7 @@ class TestSyncSnapshots(GetSnapshotUnitTest):
         # in the flow or not
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.getWsApiVersion.assert_called()
-        mock_3parclient.getVolumeSnapshots.assert_called()
+        mock_3parclient.getSnapshotsOfVolume.assert_called()
 
 
 class TestQosVolume(GetVolumeUnitTest):
