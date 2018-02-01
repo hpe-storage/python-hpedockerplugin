@@ -63,7 +63,7 @@ pycrypto==2.6.1
 pyinotify==0.9.6
 PyNaCl==1.1.2
 pyparsing==2.2.0
-python-3parclient==4.2.4
+python-3parclient==4.2.5
 python-dateutil==2.6.1
 python-etcd==0.4.5
 python-lefthandclient==2.1.0
