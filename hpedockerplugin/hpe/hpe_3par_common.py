@@ -1145,6 +1145,8 @@ class HPE3PARCommon(object):
     def get_snapshots_by_vol(self, vol_id):
         bkend_vol_name = utils.get_3par_vol_name(vol_id)
         cpg_name = self.config.hpe3par_cpg[0]
+        if len(self.config.hpe3par_snapcpg):
+            cpg_name = self.config.hpe3par_snapcpg[0]
         LOG.debug("Querying snapshots for %s in %s cpg "
                    %(bkend_vol_name,cpg_name))
         return self.client.getSnapshotsOfVolume(cpg_name, bkend_vol_name)
