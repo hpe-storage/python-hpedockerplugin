@@ -23,14 +23,13 @@ from oslo_service import loopingcall
 from oslo_utils import units
 
 from hpedockerplugin import exception
+from hpedockerplugin.hpe import utils
 from hpedockerplugin.i18n import _, _LE, _LI, _LW
 
 hpe3parclient = importutils.try_import("hpe3parclient")
 if hpe3parclient:
     from hpe3parclient import client
     from hpe3parclient import exceptions as hpeexceptions
-
-from hpedockerplugin.hpe import utils
 
 LOG = logging.getLogger(__name__)
 
@@ -945,11 +944,11 @@ class HPE3PARCommon(object):
             if self.client.isOnlinePhysicalCopy(volume_name):
                 LOG.info("Found an online copy for %(volume)s. ",
                          {'volume': volume_name})
-                optional['online'] = True            
+                optional['online'] = True
             self.client.promoteVirtualCopy(snapshot_name, optional=optional)
             LOG.info("Volume %(volume)s successfully reverted to"
                      " %(snapname)s.", {'volume': volume_name,
-                                     'snapname': snapshot_name})
+                                        'snapname': snapshot_name})
         except hpeexceptions.HTTPForbidden as ex:
             LOG.error("Exception: %s", ex)
             raise exception.RevertSnapshotException()
