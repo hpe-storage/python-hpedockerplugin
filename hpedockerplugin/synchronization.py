@@ -15,9 +15,9 @@ def synchronized(lock_name):
             call_args['f_name'] = f.__name__
             lck_name = lock_name.format(**call_args)
             lock_acquired = False
-            plugin = a[0]
+            self = call_args['self']
             try:
-                plugin._etcd.try_lock_volname(lck_name)
+                self._etcd.try_lock_volname(lck_name)
                 lock_acquired = True
                 LOG.info('Lock acquired: [caller=%s, lock-name=%s]'
                          % (f.__name__, lck_name))
@@ -32,7 +32,7 @@ def synchronized(lock_name):
             finally:
                 if lock_acquired:
                     try:
-                        plugin._etcd.try_unlock_volname(lck_name)
+                        self._etcd.try_unlock_volname(lck_name)
                         LOG.info('Lock released: [caller=%s, lock-name=%s]' %
                                  (f.__name__, lck_name))
                     except exception.HPEPluginUnlockFailed:
