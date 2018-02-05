@@ -115,14 +115,25 @@ class EtcdUtil(object):
         return volval
 
     def try_lock_volname(self, volname):
-        LOG.debug("Try locking volume %s", volname)
-        self.client.write(self.lockroot + volname, volname, prevExist=False)
-        LOG.debug("volume is locked : %s", volname)
+        try:
+            LOG.debug("Try locking volume %s", volname)
+            self.client.write(self.lockroot + volname, volname,
+                              prevExist=False)
+            LOG.debug("Volume is locked : %s", volname)
+        except Exception as ex:
+            msg = 'Volume: %(name)s is already locked' % {'name': volname}
+            LOG.exception(msg)
+            raise exception.HPEPluginLockFailed(obj=volname)
 
     def try_unlock_volname(self, volname):
-        LOG.debug("Try unlocking volume %s", volname)
-        self.client.delete(self.lockroot + volname)
-        LOG.debug("volume is unlocked : %s", volname)
+        try:
+            LOG.debug("Try unlocking volume %s", volname)
+            self.client.delete(self.lockroot + volname)
+            LOG.debug("Volume is unlocked : %s", volname)
+        except Exception as ex:
+            msg = 'Volume: %(name)s unlock failed' % {'name': volname}
+            LOG.exception(msg)
+            raise exception.HPEPluginUnlockFailed(obj=volname)
 
     def get_vol_byname(self, volname):
         volumes = self.client.read(self.volumeroot, recursive=True)
