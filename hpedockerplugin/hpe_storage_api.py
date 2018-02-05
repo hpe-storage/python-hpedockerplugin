@@ -873,6 +873,9 @@ class VolumePlugin(object):
 
         qos_filter['enabled'] = qos_detail.get('enabled')
 
+        if qos_detail.get('name'):
+            qos_filter['vvset_name'] = qos_detail.get('name')
+
         if qos_detail.get('bwMaxLimitKB'):
             qos_filter['maxBWS'] = str(qos_detail.get('bwMaxLimitKB')/1024) + " MB/sec"
 
@@ -973,24 +976,24 @@ class VolumePlugin(object):
                     ss_list_to_show.append(snapshot)
                 volume['Status'].update({'Snapshots': ss_list_to_show})
 
-        qos_name = volinfo.get('qos_name')
-        if qos_name is not None:
-            try:
-                qos_detail = self.hpeplugin_driver.get_qos_detail(qos_name)
-                qos_filter = self.get_required_qos_field(qos_detail)
-                volume['Status'].update({'qos_detail': qos_filter})
-            except Exception as ex:
-                msg = (_('unable to get/filter qos from 3par, error is: %s'),
-                       six.text_type(ex))
-                LOG.error(msg)
-                return json.dumps({u"Err": six.text_type(ex)})
+            qos_name = volinfo.get('qos_name')
+            if qos_name is not None:
+                try:
+                    qos_detail = self.hpeplugin_driver.get_qos_detail(qos_name)
+                    qos_filter = self.get_required_qos_field(qos_detail)
+                    volume['Status'].update({'qos_detail': qos_filter})
+                except Exception as ex:
+                    msg = (_('unable to get/filter qos from 3par, error is: %s'),
+                           six.text_type(ex))
+                    LOG.error(msg)
+                    return json.dumps({u"Err": six.text_type(ex)})
 
-        vol_detail = {}
-        vol_detail['size'] = volinfo.get('size')
-        vol_detail['flash_cache'] = volinfo.get('flash_cache')
-        vol_detail['compression'] = volinfo.get('compression')
-        vol_detail['provisioning'] = volinfo.get('provisioning')
-        volume['Status'].update({'volume_detail': vol_detail})
+            vol_detail = {}
+            vol_detail['size'] = volinfo.get('size')
+            vol_detail['flash_cache'] = volinfo.get('flash_cache')
+            vol_detail['compression'] = volinfo.get('compression')
+            vol_detail['provisioning'] = volinfo.get('provisioning')
+            volume['Status'].update({'volume_detail': vol_detail})
 
         response = json.dumps({u"Err": err, u"Volume": volume})
         LOG.debug("Get volume/snapshot: \n%s" % str(response))
