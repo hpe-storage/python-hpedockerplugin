@@ -868,7 +868,8 @@ class VolumePlugin(object):
     def get_required_qos_field(self, qos_detail):
         qos_filter = {}
 
-        msg = (_LI('get_required_qos_field: %(qos_detail)s'), {'qos_detail':qos_detail})
+        msg = (_LI('get_required_qos_field: %(qos_detail)s'),
+               {'qos_detail': qos_detail})
         LOG.info(msg)
 
         qos_filter['enabled'] = qos_detail.get('enabled')
@@ -876,23 +877,29 @@ class VolumePlugin(object):
         if qos_detail.get('name'):
             qos_filter['vvset_name'] = qos_detail.get('name')
 
-        if qos_detail.get('bwMaxLimitKB'):
-            qos_filter['maxBWS'] = str(qos_detail.get('bwMaxLimitKB')/1024) + " MB/sec"
+        bwMaxLimitKB = qos_detail.get('bwMaxLimitKB')
+        if bwMaxLimitKB:
+            qos_filter['maxBWS'] = str(bwMaxLimitKB / 1024) + " MB/sec"
 
-        if qos_detail.get('bwMinGoalKB'):
-            qos_filter['minBWS'] = str(qos_detail.get('bwMinGoalKB')/1024) + " MB/sec"
+        bwMinGoalKB = qos_detail.get('bwMinGoalKB')
+        if bwMinGoalKB:
+            qos_filter['minBWS'] = str(bwMinGoalKB / 1024) + " MB/sec"
 
-        if qos_detail.get('ioMaxLimit'):
-            qos_filter['maxIOPS'] = str(qos_detail.get('ioMaxLimit')) + " IOs/sec"
+        ioMaxLimit = qos_detail.get('ioMaxLimit')
+        if ioMaxLimit:
+            qos_filter['maxIOPS'] = str(ioMaxLimit) + " IOs/sec"
 
-        if qos_detail.get('ioMinGoal'):
-            qos_filter['minIOPS'] = str(qos_detail.get('ioMinGoal')) + " IOs/sec"
+        ioMinGoal = qos_detail.get('ioMinGoal')
+        if ioMinGoal:
+            qos_filter['minIOPS'] = str(ioMinGoal) + " IOs/sec"
 
-        if qos_detail.get('latencyGoal'):
-            qos_filter['Latency'] = str(qos_detail.get('latencyGoal')) + " sec"
+        latencyGoal = qos_detail.get('latencyGoal')
+        if latencyGoal:
+            qos_filter['Latency'] = str(latencyGoal) + " sec"
 
-        if qos_detail.get('priority'):
-            qos_filter['priority'] = volume.QOS_PRIORITY[qos_detail.get('priority')]
+        priority = qos_detail.get('priority')
+        if priority:
+            qos_filter['priority'] = volume.QOS_PRIORITY[priority]
 
         return qos_filter
 

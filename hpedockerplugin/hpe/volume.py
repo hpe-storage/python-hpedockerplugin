@@ -7,7 +7,8 @@ DEFAULT_QOS = None
 DEFAULT_MOUNT_VOLUME = "True"
 DEFAULT_COMPRESSION_VAL = None
 
-QOS_PRIORITY = {1 : 'Low', 2 : 'Normal', 3 : 'High'}
+QOS_PRIORITY = {1: 'Low', 2: 'Normal', 3: 'High'}
+
 
 def createvol(name, size=DEFAULT_SIZE, prov=DEFAULT_PROV,
               flash_cache=None, compression_val=None, qos=None):
