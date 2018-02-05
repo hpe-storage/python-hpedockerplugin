@@ -246,8 +246,8 @@ class HPEDriverCreateVolumeWithQosFailed(HPEDriverException):
     message = ""
 
 
-class HPEDriverCreateVolumeWithFlashCacheFailed(HPEDriverException):
-    message = ""
+class HPEDriverSetFlashCacheOnVvsFailed(HPEDriverException):
+    message = _("%(reason)s")
 
 
 class HPEDriverVolumeAlreadyExists(HPEDriverException):

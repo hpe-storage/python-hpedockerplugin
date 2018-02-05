@@ -33,7 +33,7 @@ class VolumeManager(object):
         vol = volume.createvol(volname, vol_size, vol_prov,
                                vol_flash, compression_val, vol_qos)
         try:
-            bkend_vol_name = self._create_volume(vol, undo_steps)
+            self._create_volume(vol, undo_steps)
             self._apply_volume_specs(vol, undo_steps)
 
             # For now just track volume to uuid mapping internally
@@ -269,8 +269,7 @@ class VolumeManager(object):
                                      src_vol['compression'],
                                      src_vol['qos_name'])
         try:
-            bkend_vol_name = self.__clone_volume__(src_vol, clone_vol,
-                                                   undo_steps)
+            self.__clone_volume__(src_vol, clone_vol, undo_steps)
             self._apply_volume_specs(clone_vol, undo_steps)
 
             # For now just track volume to uuid mapping internally
@@ -541,27 +540,34 @@ class VolumeManager(object):
     def _get_required_qos_field(qos_detail):
         qos_filter = {}
 
-        msg = (_LI('get_required_qos_field: %(qos_detail)s'), {'qos_detail':qos_detail})
+        msg = (_LI('get_required_qos_field: %(qos_detail)s'),
+               {'qos_detail': qos_detail})
         LOG.info(msg)
 
         qos_filter['enabled'] = qos_detail.get('enabled')
 
-        if qos_detail.get('bwMaxLimitKB'):
-            qos_filter['maxBWS'] = str(qos_detail.get('bwMaxLimitKB')/1024) + " MB/sec"
+        bwMaxLimitKB = qos_detail.get('bwMaxLimitKB')
+        if bwMaxLimitKB:
+            qos_filter['maxBWS'] = str(bwMaxLimitKB / 1024) + " MB/sec"
 
-        if qos_detail.get('bwMinGoalKB'):
-            qos_filter['minBWS'] = str(qos_detail.get('bwMinGoalKB')/1024) + " MB/sec"
+        bwMinGoalKB = qos_detail.get('bwMinGoalKB')
+        if bwMinGoalKB:
+            qos_filter['minBWS'] = str(bwMinGoalKB / 1024) + " MB/sec"
 
-        if qos_detail.get('ioMaxLimit'):
-            qos_filter['maxIOPS'] = str(qos_detail.get('ioMaxLimit')) + " IOs/sec"
+        ioMaxLimit = qos_detail.get('ioMaxLimit')
+        if ioMaxLimit:
+            qos_filter['maxIOPS'] = str(ioMaxLimit) + " IOs/sec"
 
-        if qos_detail.get('ioMinGoal'):
-            qos_filter['minIOPS'] = str(qos_detail.get('ioMinGoal')) + " IOs/sec"
+        ioMinGoal = qos_detail.get('ioMinGoal')
+        if ioMinGoal:
+            qos_filter['minIOPS'] = str(ioMinGoal) + " IOs/sec"
 
-        if qos_detail.get('latencyGoal'):
-            qos_filter['Latency'] = str(qos_detail.get('latencyGoal')) + " sec"
+        latencyGoal = qos_detail.get('latencyGoal')
+        if latencyGoal:
+            qos_filter['Latency'] = str(latencyGoal) + " sec"
 
-        if qos_detail.get('priority'):
-            qos_filter['priority'] = volume.QOS_PRIORITY[qos_detail.get('priority')]
+        priority = qos_detail.get('priority')
+        if priority:
+            qos_filter['priority'] = volume.QOS_PRIORITY[priority]
 
         return qos_filter

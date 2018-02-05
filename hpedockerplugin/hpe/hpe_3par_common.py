@@ -609,8 +609,8 @@ class HPE3PARCommon(object):
         if prov_value not in self.valid_prov_values:
             err = ("Must specify a valid provisioning type %(valid)s, "
                    "value '%(prov)s' is invalid.") %\
-                  {'valid': self.valid_prov_values,
-                   'prov': prov_value}
+                {'valid': self.valid_prov_values,
+                 'prov': prov_value}
             LOG.error(err)
             raise exception.HPEDriverInvalidInput(reason=err)
 
@@ -689,7 +689,7 @@ class HPE3PARCommon(object):
                 message=msg)
         except hpeexceptions.HTTPBadRequest as ex:
             # LOG.error("Exception: %s", ex)
-            raise exception.HPEDriverInvalid(ex.get_description())
+            raise exception.HPEDriverInvalidInput(reason=ex.get_description())
         # except exception.InvalidInput as ex:
         #     LOG.error("Exception: %s", ex)
         #     raise
@@ -915,9 +915,10 @@ class HPE3PARCommon(object):
                 LOG.info(_LI("Flash Cache policy set to %s"),
                          flash_cache_policy)
             except Exception as ex:
-                LOG.error(_LE("Error setting Flash Cache policy "
-                              "to %s - exception"), flash_cache)
-                raise exception.HPEDriverSetFlashCacheOnVvsFailed(ex)
+                msg = "Driver: Failed to set flash cache policy - %s" % \
+                      ex
+                LOG.error(_LE(msg))
+                raise exception.HPEDriverSetFlashCacheOnVvsFailed(reason=msg)
 
     def add_volume_to_volume_set(self, vol, vvs_name):
         volume_name = utils.get_3par_vol_name(vol['id'])
@@ -927,7 +928,7 @@ class HPE3PARCommon(object):
                 return volume_name
             except Exception as ex:
                 msg = _("Failed to add volume to VV set %s - %s.") %\
-                      (vvs_name, ex)
+                       (vvs_name, ex)
                 LOG.error(msg)
                 raise exception.HPEDriverAddVvToVvSetFailed(ex)
 
@@ -1149,4 +1150,3 @@ class HPE3PARCommon(object):
     def delete_vvset(self, id):
         vvset_name = utils.get_3par_vvs_name(id)
         self.client.deleteVolumeSet(vvset_name)
-

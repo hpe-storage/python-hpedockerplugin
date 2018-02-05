@@ -27,7 +27,7 @@ from twisted.python.filepath import FilePath
 
 import exception
 import fileutil
-from i18n import _, _LE, _LI, _LW
+from i18n import _, _LE, _LI
 from klein import Klein
 from hpe import volume
 from oslo_utils import importutils

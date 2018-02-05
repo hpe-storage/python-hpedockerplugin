@@ -401,6 +401,38 @@ class TestCreateVolWithFlashCacheEtcdSaveFails(CreateVolumeUnitTest):
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.getCPG.return_value = {}
 
+
+class TestCreateVolSetFlashCacheFails(CreateVolumeUnitTest):
+    def check_response(self, resp):
+        "Error setting Flash Cache policy to %s"
+        expected = "Driver: Failed to set flash cache policy"
+        self._test_case.assertIn(expected, resp["Err"])
+
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.createVolume.assert_called()
+        mock_3parclient.createVolumeSet.assert_called()
+        # mock_3parclient.modifyVolumeSet.assert_called()
+
+        # Rollback steps validation
+        mock_3parclient.deleteVolumeSet.assert_called()
+        mock_3parclient.deleteVolume.assert_called()
+
+    def get_request_params(self):
+        return {"Name": "test-vol-001",
+                "Opts": {"flash-cache": "true",
+                         "provisioning": "thin",
+                         "size": "2"}}
+
+    def setup_mock_objects(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.return_value = None
+
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.getCPG.return_value = {}
+        mock_3parclient.modifyVolumeSet.side_effect = [
+            exceptions.HTTPInternalServerError("Internal server error")
+        ]
+
 # More cases of flash cache
 # 1.
 # if flash_cache:
