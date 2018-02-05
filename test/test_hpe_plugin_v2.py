@@ -74,6 +74,10 @@ class HpeDockerUnitTestsBase(object):
             TestCreateVolWithFlashCacheEtcdSaveFails()
         test.run_test(self)
 
+    def test_create_vol_set_flash_cache_fails(self):
+        test = createvolume_tester.TestCreateVolSetFlashCacheFails()
+        test.run_test(self)
+
     """
     CLONE VOLUME related tests
     """
