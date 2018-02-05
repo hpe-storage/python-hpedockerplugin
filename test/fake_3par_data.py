@@ -199,6 +199,18 @@ volume_flash_cache = {'name': VOLUME_NAME,
                       'compression': None,
                       'snapshots': []}
 
+volume_flash_cache_and_qos = {
+    'name': VOLUME_NAME,
+    'id': VOLUME_ID,
+    'display_name': 'Foo Volume',
+    'size': 2,
+    'host': FAKE_DOCKER_HOST,
+    'provisioning': THIN,
+    'flash_cache': 'true',
+    'qos_name': 'vvk_vvset',
+    'compression': None,
+    'snapshots': []}
+
 wwn = ["123456789012345", "123456789054321", "unassigned-wwn1"]
 
 host_vluns1 = [{'active': True,

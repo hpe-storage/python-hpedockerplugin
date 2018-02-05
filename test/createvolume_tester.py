@@ -411,7 +411,7 @@ class TestCreateVolSetFlashCacheFails(CreateVolumeUnitTest):
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.createVolume.assert_called()
         mock_3parclient.createVolumeSet.assert_called()
-        # mock_3parclient.modifyVolumeSet.assert_called()
+        mock_3parclient.modifyVolumeSet.assert_called()
 
         # Rollback steps validation
         mock_3parclient.deleteVolumeSet.assert_called()
