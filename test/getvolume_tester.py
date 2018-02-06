@@ -43,11 +43,7 @@ class TestSyncSnapshots(GetSnapshotUnitTest):
         expected = {u'Volume':
                     {u'Devicename': u'', u'Status':
                      {u'Settings': {u'expirationHours': u'10',
-                                    u'retentionHours': u'10'},
-                      u'volume_detail': {u'compression': None,
-                                         u'flash_cache': None,
-                                         u'provisioning': u'thin',
-                                         u'size': 2}},
+                                    u'retentionHours': u'10'}},
                      u'Name': u'volume-d03338a9-9115-48a3-8dfc-'
                               u'35cdfcdc15a7/snapshot-1',
                      u'Mountpoint': u''}, u'Err': u''}
@@ -85,7 +81,8 @@ class TestQosVolume(GetVolumeUnitTest):
                                       u'maxIOPS': u'2000000 IOs/sec',
                                       u'minBWS': u'30 MB/sec',
                                       u'minIOPS': u'10000 IOs/sec',
-                                      u'priority': u'Normal'},
+                                      u'priority': u'Normal',
+                                      u'vvset_name': u'vvk_vvset'},
                       u'volume_detail': {u'compression': None,
                                          u'flash_cache': None,
                                          u'provisioning': u'thin',
