@@ -168,6 +168,10 @@ class HpeDockerUnitTestsBase(object):
         test = createsnapshot_tester.TestCreateSnapshotDuplicateName()
         test.run_test(self)
 
+    def test_create_snapshot_etcd_save_fails(self):
+        test = createsnapshot_tester.TestCreateSnapshotEtcdSaveFails()
+        test.run_test(self)
+
     """
     REMOVE VOLUME related tests
     """
