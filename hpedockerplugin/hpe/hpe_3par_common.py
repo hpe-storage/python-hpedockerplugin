@@ -1147,5 +1147,5 @@ class HPE3PARCommon(object):
         if len(self.config.hpe3par_snapcpg):
             cpg_name = self.config.hpe3par_snapcpg[0]
         LOG.debug("Querying snapshots for %s in %s cpg "
-                   %(bkend_vol_name,cpg_name))
+                  % (bkend_vol_name, cpg_name))
         return self.client.getSnapshotsOfVolume(cpg_name, bkend_vol_name)
