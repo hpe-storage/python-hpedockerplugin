@@ -990,8 +990,8 @@ class VolumePlugin(object):
                     qos_filter = self.get_required_qos_field(qos_detail)
                     volume['Status'].update({'qos_detail': qos_filter})
                 except Exception as ex:
-                    msg = (_('unable to get/filter qos from 3par, error is: %s'),
-                           six.text_type(ex))
+                    msg = (_('unable to get/filter qos from 3par,\
+                             error is: %s'), six.text_type(ex))
                     LOG.error(msg)
                     return json.dumps({u"Err": six.text_type(ex)})
 
