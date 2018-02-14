@@ -19,6 +19,7 @@ See https://github.com/docker/docker/tree/master/docs/extend for details.
 """
 import json
 import six
+import re
 
 from os_brick.initiator import connector
 from oslo_log import log as logging
@@ -270,6 +271,14 @@ class VolumePlugin(object):
             LOG.error(msg)
             raise exception.HPEPluginCreateException(reason=msg)
         volname = contents['Name']
+
+        is_valid_name = re.match("^[A-Za-z0-9]+[A-Za-z0-9_-]+$", volname)
+        if not is_valid_name:
+            msg = 'Invalid volume name: %s is passed.' % volname
+            LOG.debug(msg)
+            response = json.dumps({u"Err": msg})
+            return response
+
         vol_size = volume.DEFAULT_SIZE
         vol_prov = volume.DEFAULT_PROV
         vol_flash = volume.DEFAULT_FLASH_CACHE
@@ -553,6 +562,12 @@ class VolumePlugin(object):
                                    u"Mountpoint": ""})
             return response
         return self._manager.get_path(volname)
+
+    @app.route("/VolumeDriver.Capabilities", methods=["POST"])
+    def volumedriver_getCapabilities(self, body):
+        capability = {"Capabilities": {"Scope": "global"}}
+        response = json.dumps(capability)
+        return response
 
     @app.route("/VolumeDriver.Get", methods=["POST"])
     def volumedriver_get(self, name):
