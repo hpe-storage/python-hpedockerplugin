@@ -315,6 +315,56 @@ class VolumePlugin(object):
             vol_mount = str(contents['Opts']['mount-volume'])
 
         path_info = self._etcd.get_vol_path_info(volname)
+
+        host_name = utils.get_host_name()
+        node_id = host_name
+        mount_id = contents['ID']
+
+         
+
+        ######
+        # Start of volume fencing changes
+        LOG.debug('WILLIAM %s ' % (vol))
+        if 'node_mount_info' in vol:
+           if node_id in vol['node_mount_info']:
+               #vol['node_mount_info'].pop(node_id)
+               #LOG.debug('WILLIAM %s %s %s' % (vol['node_mount_info'], node_id,type(json.load(vol['node_mount_info']))))
+               LOG.debug("WILLIAM node_id in vol mount info")
+               mount_id_list = json.loads(vol['node_mount_info'])[node_id]
+
+               LOG.debug(" mount_id_list %s ", mount_id_list)
+
+               i = 0
+               tmp_list = list(mount_id_list)
+               for m in tmp_list:
+                  if m == mount_id:
+                      del tmp_list[i]
+                  else:
+                      i = i + 1
+
+               #vol['node_mount_info'][node_id] = mount_id_list
+               node_mount_info =  json.loads(vol['node_mount_info'])
+               node_mount_info[node_id] = tmp_list
+
+               # Update the mount_id list in etcd
+               self._etcd.update_vol(volid,'node_mount_info',
+                                     json.dumps(node_mount_info))
+               
+               if len(tmp_list) > 0:
+                  # Don't proceed with unmount
+                  LOG.info("WILLIAM.. no unmount done")
+                  return json.dumps({u"Err": ''})
+               else:
+                  # delete the node_id key from node_mount_info
+                  LOG.info("WILLIAM : deleting key entry %s ",node_id)
+                  tmp_vol = json.loads(vol['node_mount_info'])
+                  del tmp_vol[node_id]
+                  LOG.info("WILLIAM tmp_vol %s ",tmp_vol)
+                  self._etcd.update_vol(volid,'node_mount_info',
+                                     json.dumps(tmp_vol))
+                  
+
+
         if path_info:
             path_name = path_info['path']
             connection_info = path_info['connection_info']
@@ -721,6 +771,82 @@ class VolumePlugin(object):
                 'mount-volume' in contents['Opts']):
             vol_mount = str(contents['Opts']['mount-volume'])
 
+
+        # volume fencing check 
+        #
+        host_name = utils.get_host_name()
+
+        # TODO: for now hard coding
+        node_id = host_name 
+        mount_id = contents['ID']
+
+        LOG.info("WILLIAM : node_id %s , mount_id = %s " % (node_id, mount_id))
+
+        if 'node_mount_info' in vol:
+            if node_id in vol['node_mount_info']:
+                # signifies the volume is already mounted on this node
+                # and this is an additional mount
+                LOG.info("WILLIAM node_id is part of node_mount_info")
+                mount_dir = json.loads(vol['path_info'])['mount_dir']
+                path = FilePath(json.loads(vol['path_info'])['device_info']['path']).realpath()
+                tmp1 = json.loads(vol['node_mount_info'])[node_id]
+                tmp1.append(mount_id)
+
+                node_mount_info = json.loads(vol['node_mount_info'])
+                node_mount_info[node_id] = tmp1
+                LOG.debug("WILLIAM : tmp1 : %s ", node_mount_info)
+
+             
+                self._etcd.update_vol(volid,
+                              'node_mount_info',json.dumps(node_mount_info))
+                response = json.dumps({u"Err": '', u"Name": volname,
+                               u"Mountpoint": mount_dir,
+                               u"Devicename": path.path})
+                return response
+            else:
+                LOG.info("WILLIAM: Creating new node_mount_info1")
+                vol['node_mount_info'] = {}
+                vol['node_mount_info'][node_id] = [ mount_id ]
+        else:
+            # Get the count of nodes in the map "node_mount_info"
+            count_of_nodes = 0
+            if 'node_mount_info' in vol:
+                count_of_nodes = len(vol['node_mount_info'].keys())
+            
+
+            LOG.debug("WILLIAM : count %d" , count_of_nodes)
+
+            if count_of_nodes >= 1:
+                # TODO: handle the case where the volume is already
+                #       mounted on a different node and is being tried
+                #       to be mounted on a new node
+            
+                # Step 1:
+                # Introduce sleep pointed by mountconflictdelay
+                #
+                # Step 2:
+                # cleanup lun for the volume where it was mounted on a
+                # different node
+
+                # Step 3:
+                # Remove the key associated with old node from 
+                # node_mount_info
+                LOG.debug("WILLIAM: append mount_id for same node %s", node_id)
+                vol['node_mount_info'][node_id].append(mount_id)
+            else:
+                # NO information is present in the node_mount_info
+                # 
+                LOG.info("WILLIAM: Creating new node_mount_info")
+                vol['node_mount_info'] = {} 
+                vol['node_mount_info'][node_id] = [ mount_id ]
+         
+        self._etcd.update_vol(volid,
+                              'node_mount_info', 
+                              json.dumps(vol['node_mount_info']))
+
+
+
+
         # Get connector info from OS Brick
         # TODO: retrieve use_multipath and enforce_multipath from config file
         root_helper = 'sudo'
@@ -991,7 +1117,8 @@ class VolumePlugin(object):
                     volume['Status'].update({'qos_detail': qos_filter})
                 except Exception as ex:
                     msg = (_('unable to get/filter qos from 3par,\
-                             error is: %s'), six.text_type(ex))
+                             error is: %s'),\
+                           six.text_type(ex))
                     LOG.error(msg)
                     return json.dumps({u"Err": six.text_type(ex)})
 
