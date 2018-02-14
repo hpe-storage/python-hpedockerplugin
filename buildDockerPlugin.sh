@@ -44,7 +44,7 @@ mkdir v2plugin > /dev/null 2>&1
 rm -rf v2plugin/rootfs
 
 ./containerize.sh
-BRANCH_NAME=`git branch | grep "^*" | cut -d' ' -f2`
+BRANCH_NAME=`git branch | grep "^*" | cut -d' ' -f2 | tr '[:upper:]' '[:lower:]'`
 docker tag $REPO_NAME/python-hpedockerplugin:$BRANCH_NAME $1
 rc=$?
  if [[ $rc -ne 0 ]]; then
