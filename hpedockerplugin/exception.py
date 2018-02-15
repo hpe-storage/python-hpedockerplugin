@@ -231,28 +231,28 @@ class HPEDriverException(PluginException):
 
 
 class HPEDriverInvalidInput(HPEDriverException):
-    message = ""
+    message = _("Invalid input received: %(reason)")
 
 
 class HPEDriverInvalidSizeForCompressedVolume(HPEDriverException):
-    message = ""
+    message = _("Invalid input received: %(reason)s")
 
 
 class HPEDriverInvalidDedupVersion(HPEDriverException):
-    message = ""
+    message = _("Invalid input received: %(reason)s")
 
 
 class HPEDriverCreateVolumeWithQosFailed(HPEDriverException):
     message = ""
 
 
-class HPEDriverCreateVolumeWithFlashCacheFailed(HPEDriverException):
-    message = ""
+class HPEDriverSetFlashCacheOnVvsFailed(HPEDriverException):
+    message = _("%(reason)s")
 
 
 class HPEDriverVolumeAlreadyExists(HPEDriverException):
     message = ""
 
 
-class HPEDriverAddVolumeToVvsFailed(HPEDriverException):
+class HPEDriverAddVvToVvSetFailed(HPEDriverException):
     message = ""

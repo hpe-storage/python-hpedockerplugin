@@ -555,123 +555,147 @@ class HPE3PARCommon(object):
                 return False
         return None
 
+    def create_vvs(self, id):
+        vvs_name = utils.get_3par_vvs_name(id)
+
+        # TODO(leeantho): Choose the first CPG for now. In the future
+        # support selecting different CPGs if multiple are provided.
+        cpg = self.config.hpe3par_cpg[0]
+        domain = self.get_domain(cpg)
+        try:
+            self.client.createVolumeSet(vvs_name, domain)
+            return vvs_name
+        except Exception as ex:
+            raise exception.HpeCreateVvsException(ex)
+
     def create_volume(self, volume):
+        """
+
+        :param volume:
+        :return:
+        :raises:
+            HPEDriverInvalidInput: This is raised when supplied provision
+                type is not valid
+            HPEDriverInvalidSizeForCompressedVolume: Size specified is less
+                than 16GB
+            HPEDriverInvalidDedupVersion: This is raised when the API version
+                doesn't support de-duplication and user has supplied tdvv
+                option
+            HPEDriverCreateVolumeWithQosFailed:
+            HPEDriverCreateVolumeWithFlashCacheFailed:
+            HPEDriverVolumeAlreadyExists:
+            HPEPluginException:
+        """
         LOG.debug('CREATE VOLUME (%(disp_name)s: %(vol_name)s %(id)s on '
                   '%(host)s)',
                   {'disp_name': volume['display_name'],
                    'vol_name': volume['name'],
                    'id': utils.get_3par_vol_name(volume['id']),
                    'host': volume['host']})
-        try:
-            comments = {'volume_id': volume['id'],
-                        'name': volume['name'],
-                        'type': 'Docker'}
+        comments = {'volume_id': volume['id'],
+                    'name': volume['name'],
+                    'type': 'Docker'}
 
-            name = volume.get('display_name', None)
-            if name:
-                comments['display_name'] = name
+        name = volume.get('display_name', None)
+        if name:
+            comments['display_name'] = name
 
-            # TODO(leeantho): Choose the first CPG for now. In the future
-            # support selecting different CPGs if multiple are provided.
-            cpg = self.config.hpe3par_cpg[0]
+        # TODO(leeantho): Choose the first CPG for now. In the future
+        # support selecting different CPGs if multiple are provided.
+        cpg = self.config.hpe3par_cpg[0]
 
-            # check for valid provisioning type
-            prov_value = volume['provisioning']
-            if prov_value not in self.valid_prov_values:
-                err = (_("Must specify a valid provisioning type %(valid)s, "
-                         "value '%(prov)s' is invalid.") %
-                       {'valid': self.valid_prov_values,
-                        'prov': prov_value})
-                LOG.error(err)
-                raise exception.InvalidInput(reason=err)
+        # check for valid provisioning type
+        prov_value = volume['provisioning']
+        if prov_value not in self.valid_prov_values:
+            err = ("Must specify a valid provisioning type %(valid)s, "
+                   "value '%(prov)s' is invalid.") %\
+                {'valid': self.valid_prov_values,
+                 'prov': prov_value}
+            LOG.error(err)
+            raise exception.HPEDriverInvalidInput(reason=err)
 
-            tpvv = True
-            tdvv = False
-            fullprovision = False
+        tpvv = True
+        tdvv = False
+        fullprovision = False
 
-            if prov_value == "full":
-                tpvv = False
-            elif prov_value == "dedup":
-                tpvv = False
-                tdvv = True
+        if prov_value == "full":
+            tpvv = False
+        elif prov_value == "dedup":
+            tpvv = False
+            tdvv = True
 
-            if tdvv and (self.API_VERSION < DEDUP_API_VERSION):
-                err = (_("Dedup is a valid provisioning type, "
-                         "but requires WSAPI version '%(dedup_version)s' "
-                         "version '%(version)s' is installed.") %
-                       {'dedup_version': DEDUP_API_VERSION,
-                        'version': self.API_VERSION})
-                LOG.error(err)
-                raise exception.InvalidInput(reason=err)
+        if tdvv and (self.API_VERSION < DEDUP_API_VERSION):
+            err = (_("Dedup is a valid provisioning type, "
+                     "but requires WSAPI version '%(dedup_version)s' "
+                     "version '%(version)s' is installed.") %
+                   {'dedup_version': DEDUP_API_VERSION,
+                    'version': self.API_VERSION})
+            # LOG.error(err)
+            # Error message can be formatted within exception class itself
+            raise exception.HPEDriverInvalidDedupVersion(
+                dedup_version=DEDUP_API_VERSION,
+                version=self.API_VERSION,
+                reason=err)
 
-            extras = {'comment': json.dumps(comments),
-                      'tpvv': tpvv, }
+        extras = {'comment': json.dumps(comments),
+                  'tpvv': tpvv, }
 
-            if len(self.config.hpe3par_snapcpg):
-                extras['snapCPG'] = self.config.hpe3par_snapcpg[0]
-            else:
-                extras['snapCPG'] = cpg
+        if len(self.config.hpe3par_snapcpg):
+            extras['snapCPG'] = self.config.hpe3par_snapcpg[0]
+        else:
+            extras['snapCPG'] = cpg
 
-                # Only set the dedup option if the backend supports it.
-            if self.API_VERSION >= DEDUP_API_VERSION:
-                extras['tdvv'] = tdvv
+            # Only set the dedup option if the backend supports it.
+        if self.API_VERSION >= DEDUP_API_VERSION:
+            extras['tdvv'] = tdvv
 
-            capacity = self._capacity_from_size(volume['size'])
+        capacity = self._capacity_from_size(volume['size'])
 
-            if (tpvv is False and tdvv is False):
-                fullprovision = True
+        if (tpvv is False and tdvv is False):
+            fullprovision = True
 
-            compression_val = volume['compression']   # None/true/False
-            compression = None
+        compression_val = volume['compression']   # None/true/False
+        compression = None
 
-            if compression_val is not None:
-                compression = self.get_compression_policy(compression_val)
+        if compression_val is not None:
+            compression = self.get_compression_policy(compression_val)
 
-            if compression is True:
-                if not fullprovision and capacity >= 16384:
-                    extras['compression'] = compression
-                else:
-                    err = (_("To create compression enabled volume, size of "
-                             "the volume should be atleast 16GB. Fully "
-                             "provisioned volume can not be compressed. "
-                             "Please re enter requested volume size or "
-                             "provisioning type. "))
-                    LOG.error(err)
-                    raise exception.InvalidInput(reason=err)
-            if compression is not None:
+        if compression is True:
+            if not fullprovision and capacity >= 16384:
                 extras['compression'] = compression
+            else:
+                err = (_("To create compression enabled volume, size of "
+                         "the volume should be atleast 16GB. Fully "
+                         "provisioned volume can not be compressed. "
+                         "Please re enter requested volume size or "
+                         "provisioning type. "))
+                # LOG.error(err)
+                raise exception.HPEDriverInvalidSizeForCompressedVolume(
+                    size=capacity,
+                    reason=err)
+        if compression is not None:
+            extras['compression'] = compression
 
-            volume_name = utils.get_3par_vol_name(volume['id'])
+        volume_name = utils.get_3par_vol_name(volume['id'])
+
+        try:
             self.client.createVolume(volume_name, cpg, capacity, extras)
-
-            # check for qos
-            vvs_name = volume.get('qos_name')
-
-            # Check if flash cache needs to be enabled
-            flash_cache = self.get_flash_cache_policy(volume['flash_cache'])
-
-            if vvs_name or flash_cache is not None:
-                try:
-                    self._add_volume_to_volume_set(volume, volume_name,
-                                                   cpg, flash_cache, vvs_name)
-                except exception.InvalidInput as ex:
-                    # Delete the volume if unable to add it to the volume set
-                    self.client.deleteVolume(volume_name)
-                    LOG.error(_LE("Exception: %s"), ex)
-                    raise exception.PluginException(ex)
+            return volume_name
         except hpeexceptions.HTTPConflict:
             msg = _("Volume (%s) already exists on array") % volume_name
-            LOG.error(msg)
-            raise exception.Duplicate(msg)
+            # LOG.error(msg)
+            raise exception.HPEDriverVolumeAlreadyExists(
+                volume_name=volume_name,
+                message=msg)
         except hpeexceptions.HTTPBadRequest as ex:
-            LOG.error(_LE("Exception: %s"), ex)
-            raise exception.Invalid(ex.get_description())
-        except exception.InvalidInput as ex:
-            LOG.error(_LE("Exception: %s"), ex)
-            raise
-        except exception.PluginException as ex:
-            LOG.error(_LE("Exception: %s"), ex)
-            raise
+            # LOG.error("Exception: %s", ex)
+            raise exception.HPEDriverInvalidInput(reason=ex.get_description())
+        # except exception.InvalidInput as ex:
+        #     LOG.error("Exception: %s", ex)
+        #     raise
+        # except exception.PluginException as ex:
+        #     LOG.error("Exception: %s", ex)
+        #     raise
         except Exception as ex:
             LOG.error(_LE("Exception: %s"), ex)
             raise exception.PluginException(ex)
@@ -879,43 +903,38 @@ class HPE3PARCommon(object):
 
         return None
 
-    def _set_flash_cache_policy_in_vvs(self, flash_cache, vvs_name):
+    def set_flash_cache_policy_on_vvs(self, flash_cache, vvs_name):
+        flash_cache_policy = \
+            self.get_flash_cache_policy(flash_cache)
         # Update virtual volume set
-        if flash_cache:
+        if flash_cache_policy:
             try:
-                self.client.modifyVolumeSet(vvs_name,
-                                            flashCachePolicy=flash_cache)
-                LOG.info(_LI("Flash Cache policy set to %s"), flash_cache)
+                self.client.modifyVolumeSet(
+                    vvs_name,
+                    flashCachePolicy=flash_cache_policy)
+                LOG.info(_LI("Flash Cache policy set to %s"),
+                         flash_cache_policy)
             except Exception as ex:
-                LOG.error(_LE("Error setting Flash Cache policy "
-                              "to %s - exception"), flash_cache)
-                exception.PluginException(ex)
+                msg = "Driver: Failed to set flash cache policy - %s" % \
+                      ex
+                LOG.error(_LE(msg))
+                raise exception.HPEDriverSetFlashCacheOnVvsFailed(reason=msg)
 
-    def _add_volume_to_volume_set(self, volume, volume_name,
-                                  cpg, flash_cache, vvs_name=None):
+    def add_volume_to_volume_set(self, vol, vvs_name):
+        volume_name = utils.get_3par_vol_name(vol['id'])
         if vvs_name is not None:
             try:
-                if flash_cache is not None:
-                    self._set_flash_cache_policy_in_vvs(flash_cache, vvs_name)
                 self.client.addVolumeToVolumeSet(vvs_name, volume_name)
+                return volume_name
             except Exception as ex:
-                msg = _("Failed to set flash-cache policy or add volume to"
-                        "VV set %s - %s.") % (vvs_name, ex)
+                msg = _("Failed to add volume to VV set %s - %s.") %\
+                       (vvs_name, ex)
                 LOG.error(msg)
-                self.client.deleteVolume(volume_name)
-                raise exception.PluginException(ex)
-        else:
-            vvs_name = utils.get_3par_vvs_name(volume['id'])
-            domain = self.get_domain(cpg)
-            self.client.createVolumeSet(vvs_name, domain)
-            try:
-                self._set_flash_cache_policy_in_vvs(flash_cache, vvs_name)
-                self.client.addVolumeToVolumeSet(vvs_name, volume_name)
-            except Exception as ex:
-                # Cleanup the volume set if unable to create the qos rule
-                # or flash cache policy or add the volume to the volume set
-                self.client.deleteVolumeSet(vvs_name)
-                raise exception.PluginException(ex)
+                raise exception.HPEDriverAddVvToVvSetFailed(ex)
+
+    def remove_volume_from_volume_set(self, vol_name, vvs_name):
+        # TODO: Exception handling might be required here
+        self.client.removeVolumeFromVolumeSet(vvs_name, vol_name)
 
     def _get_prioritized_host_on_3par(self, host, hosts, hostname):
         # Check whether host with wwn/iqn of initiator present on 3par
@@ -986,6 +1005,7 @@ class HPE3PARCommon(object):
                 optional['retentionHours'] = snapshot['retentionHours']
 
             self.client.createSnapshot(snap_name, vol_name, optional)
+            return snap_name
         except hpeexceptions.HTTPForbidden as ex:
             LOG.error("Exception: %s", ex)
             raise exception.NotAuthorized()
@@ -1044,25 +1064,7 @@ class HPE3PARCommon(object):
                                   cpg=cpg, snap_cpg=snap_cpg,
                                   tpvv=tpvv, tdvv=tdvv,
                                   compression=compression)
-
-                # check for qos
-                vvs_name = src_vref.get('qos_name')
-
-                # Check if flash cache needs to be enabled
-                flash_cache = \
-                    self.get_flash_cache_policy(src_vref['flash_cache'])
-
-                if vvs_name or flash_cache is not None:
-                    try:
-                        self._add_volume_to_volume_set(dst_volume,
-                                                       dst_3par_vol_name,
-                                                       cpg, flash_cache,
-                                                       vvs_name)
-                    except exception.InvalidInput as ex:
-                        # Delete volume if unable to add it to volume set
-                        self.client.deleteVolume(dst_3par_vol_name)
-                        LOG.error(_LE("Exception: %s"), ex)
-                        raise exception.PluginException(ex)
+                return dst_3par_vol_name
             else:
                 # The size of the new volume is different, so we have to
                 # copy the volume and wait.  Do the resize after the copy
@@ -1070,7 +1072,7 @@ class HPE3PARCommon(object):
                 LOG.debug("Creating a clone of volume, using offline copy.")
 
                 # we first have to create the destination volume
-                model_update = self.create_volume(dst_volume)
+                self.create_volume(dst_volume)
 
                 optional = {'priority': 1}
                 body = self.client.copyVolume(src_3par_vol_name,
@@ -1089,7 +1091,7 @@ class HPE3PARCommon(object):
                     LOG.debug('Copy volume completed: create_cloned_volume: '
                               'id=%s.', dst_volume['id'])
 
-                return model_update
+                return dst_3par_vol_name
 
         except hpeexceptions.HTTPForbidden:
             raise exception.NotAuthorized()
@@ -1149,3 +1151,7 @@ class HPE3PARCommon(object):
         LOG.debug("Querying snapshots for %s in %s cpg "
                   % (bkend_vol_name, cpg_name))
         return self.client.getSnapshotsOfVolume(cpg_name, bkend_vol_name)
+
+    def delete_vvset(self, id):
+        vvset_name = utils.get_3par_vvs_name(id)
+        self.client.deleteVolumeSet(vvset_name)

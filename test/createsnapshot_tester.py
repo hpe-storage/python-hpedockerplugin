@@ -1,7 +1,9 @@
 # import mock
+import copy
+
 import createvolume_tester as createvolume
 import fake_3par_data as data
-import copy
+from hpedockerplugin import exception as hpe_exc
 
 
 # Derives all the functionality from CreteVolumeUnitTest itself
@@ -93,6 +95,28 @@ class TestCreateSnapshotForNonExistentVolume(CreateSnapshotUnitTest):
                    'i_do_not_exist_volume'
         self._test_case.assertEqual(resp, {u"Err": expected})
 
+
+class TestCreateSnapshotEtcdSaveFails(CreateSnapshotUnitTest):
+    def get_request_params(self):
+        return {"Name": "snap-001",
+                "Opts": {"snapshotOf": data.VOLUME_NAME}}
+
+    def setup_mock_objects(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.return_value = copy.deepcopy(data.volume)
+        mock_etcd.save_vol.side_effect = \
+            [hpe_exc.HPEPluginSaveFailed(obj='snap-001')]
+
+    def check_response(self, resp):
+        expected = "ETCD data save failed: snap-001"
+        self._test_case.assertEqual(resp, {u"Err": expected})
+
+        # Ensure that createSnapshot was called on 3PAR Client
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.createSnapshot.assert_called()
+
+        # Rollback
+        mock_3parclient.deleteVolume.assert_called()
 
 # class TestCreateSnapshotUnauthorized(CreateSnapshotUnitTest):
 #     pass

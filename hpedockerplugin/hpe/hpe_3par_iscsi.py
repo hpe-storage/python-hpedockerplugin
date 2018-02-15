@@ -650,3 +650,39 @@ class HPE3PARISCSIDriver(object):
             return common.get_qos_detail(vvset)
         finally:
             self._logout(common)
+
+    def create_vvs(self, id):
+        common = self._login()
+        try:
+            return common.create_vvs(id)
+        finally:
+            self._logout(common)
+
+    def delete_vvset(self, id):
+        common = self._login()
+        try:
+            return common.delete_vvset(id)
+        finally:
+            self._logout(common)
+
+    def add_volume_to_volume_set(self, vol, vvs_name):
+        common = self._login()
+        try:
+            return common.add_volume_to_volume_set(vol, vvs_name)
+        finally:
+            self._logout(common)
+
+    def remove_volume_from_volume_set(self, vol_name, vvs_name):
+        common = self._login()
+        try:
+            return common.remove_volume_from_volume_set(vol_name, vvs_name)
+        finally:
+            self._logout(common)
+
+    def set_flash_cache_policy_on_vvs(self, flash_cache, vvs_name):
+        common = self._login()
+        try:
+            return common.set_flash_cache_policy_on_vvs(flash_cache,
+                                                        vvs_name)
+        finally:
+            self._logout(common)

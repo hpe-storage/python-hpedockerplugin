@@ -64,6 +64,20 @@ class HpeDockerUnitTestsBase(object):
         test = createvolume_tester.TestCreateCompressedVolNoHardwareSupport()
         test.run_test(self)
 
+    def test_create_vol_with_qos_and_flash_cache_etcd_save_fails(self):
+        test = createvolume_tester.\
+            TestCreateVolWithQosAndFlashCacheEtcdSaveFails()
+        test.run_test(self)
+
+    def test_create_vol_with_flash_cache_etcd_save_fails(self):
+        test = createvolume_tester.\
+            TestCreateVolWithFlashCacheEtcdSaveFails()
+        test.run_test(self)
+
+    def test_create_vol_set_flash_cache_fails(self):
+        test = createvolume_tester.TestCreateVolSetFlashCacheFails()
+        test.run_test(self)
+
     """
     CLONE VOLUME related tests
     """
@@ -111,6 +125,18 @@ class HpeDockerUnitTestsBase(object):
         test = clonevolume_tester.TestCloneCompressedVolume()
         test.run_test(self)
 
+    def test_clone_set_flashcache_fails(self):
+        test = clonevolume_tester.TestCloneSetFlashCacheFails()
+        test.run_test(self)
+
+    def test_clone_with_flashcache_etcd_save_fails(self):
+        test = clonevolume_tester.TestCloneWithFlashCacheEtcdSaveFails()
+        test.run_test(self)
+
+    def test_clone_with_flashcache_and_qos_etcd_save_fails(self):
+        test = clonevolume_tester.TestCloneWithFlashCacheAndQOSEtcdSaveFails()
+        test.run_test(self)
+
     """
     CREATE REVERT SNAPSHOT related tests
     """
@@ -140,6 +166,10 @@ class HpeDockerUnitTestsBase(object):
 
     def test_create_snapshot_with_duplicate_name(self):
         test = createsnapshot_tester.TestCreateSnapshotDuplicateName()
+        test.run_test(self)
+
+    def test_create_snapshot_etcd_save_fails(self):
+        test = createsnapshot_tester.TestCreateSnapshotEtcdSaveFails()
         test.run_test(self)
 
     """
