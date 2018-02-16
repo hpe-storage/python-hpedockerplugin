@@ -570,4 +570,6 @@ class VolumeManager(object):
         if priority:
             qos_filter['priority'] = volume.QOS_PRIORITY[priority]
 
+        qos_filter['vvset_name'] = qos_detail['name']
+
         return qos_filter
