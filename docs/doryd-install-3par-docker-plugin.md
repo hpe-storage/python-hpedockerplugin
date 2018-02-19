@@ -29,6 +29,7 @@ kubectl apply -f https://raw.githubusercontent.com/hpe-storage/dory/master/examp
 kubectl describe ds/doryd
 ```
 More details refer this [blog](https://developer.hpe.com/blog/doryd-a-dynamic-provisioner-for-docker-volume-plugins)
+Note: Please start from section "Kubekuddle this!" , since other pre-requisites are taken care of already.
 
 ### Reload the kubelet service
 ```
