@@ -20,6 +20,10 @@ class HpeDockerUnitTestsBase(object):
         test = createvolume_tester.TestCreateVolumeDefault()
         test.run_test(self)
 
+    def test_create_volume_with_invalid_name(self):
+        test = createvolume_tester.TestCreateVolumeInvalidName()
+        test.run_test(self)
+
     def test_create_thick_volume(self):
         test = createvolume_tester.TestCreateThickVolume()
         test.run_test(self)
