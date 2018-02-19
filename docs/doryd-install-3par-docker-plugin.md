@@ -61,7 +61,7 @@ created above.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: example-claim
+  name: example-claim1
 spec:
   accessModes:
     - ReadWriteOnce
@@ -70,7 +70,13 @@ spec:
       storage: 16Gi
   storageClassName: from-production
 ```
+```
+kubectl create -f pvc-example.yml
+```
+
 ### Confirmation on the docker volume plugin
+Confirm the volume name in the pvc claim with that of the `docker volume ls` listing.
+
 ```
 [root@csimbe13-b05 examples]# docker volume ls
 DRIVER              VOLUME NAME
