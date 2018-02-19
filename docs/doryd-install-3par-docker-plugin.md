@@ -23,6 +23,13 @@ cp <path>/dory .
 }
 ```
 
+### Installing the doryd 
+```
+kubectl apply -f https://raw.githubusercontent.com/hpe-storage/dory/master/examples/ds-doryd.yaml
+kubectl describe ds/doryd
+```
+More details refer this [blog](https://developer.hpe.com/blog/doryd-a-dynamic-provisioner-for-docker-volume-plugins)
+
 ### Reload the kubelet service
 ```
 systemctl daemon-reload
