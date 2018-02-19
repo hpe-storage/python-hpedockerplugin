@@ -28,3 +28,56 @@ cp <path>/dory .
 systemctl daemon-reload
 systemctl restart kubelet
 ```
+### Confirming if the flexvolume driver started successfully.
+```
+tail -f /var/log/dory.log
+```
+
+```
+Info : 2018/01/04 23:42:05 dory.go:52: [19723] entry  : Driver=hpe Version=1.0.0-4adcc622 Socket=/run/docker/plugins/hpe.sock Overridden=true
+Info : 2018/01/04 23:42:05 dory.go:55: [19723] request: init []
+Info : 2018/01/04 23:42:05 dory.go:58: [19723] reply  : init []: {"status":"Success"}
+Info : 2018/01/04 23:42:12 dory.go:52: [19788] entry  : Driver=hpe Version=1.0.0-4adcc622 Socket=/run/docker/plugins/hpe.sock Overridden=true
+```
+
+### Create a StorageClass with the flexvolumedriver
+Create a file (sc-example.yml) containing the StorageClass definition 
+```
+---
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: from-production
+provisioner: dev.hpe.com/hpe
+```
+```
+kubectl create -f sc-example.yml
+```
+### Create a PersistentVolumeClaim for the above StorageClass
+Create a file (pvc-example.yml) containing reference to the StorageClass 
+created above.
+```
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: example-claim
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 16Gi
+  storageClassName: from-production
+```
+### Confirmation on the docker volume plugin
+```
+[root@csimbe13-b05 examples]# docker volume ls
+DRIVER              VOLUME NAME
+hpe                 eric
+hpe                 test_vol1
+hpe                 transactionaldb-484f3213-1559-11e8-acd9-ecb1d7a4aa90
+[root@csimbe13-b05 examples]# kubectl get pvc
+NAME             STATUS    VOLUME                                                 CAPACITY   ACCESSMODES   STORAGECLASS      AGE
+example-claim1   Bound     transactionaldb-484f3213-1559-11e8-acd9-ecb1d7a4aa90   16Gi       RWO           transactionaldb   3h
+```
