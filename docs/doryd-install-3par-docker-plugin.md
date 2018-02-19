@@ -5,7 +5,7 @@
 ```
 cd /usr/libexec/kubernetes/kubelet-plugins/volume/exec/
 mkdir dev.hpe.com~hpe
-cd dev.hpe.com~/hpe
+cd dev.hpe.com~hpe
 cp <path>/dory .
 # create a file called hpe.json in this folder
 ```
