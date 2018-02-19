@@ -76,7 +76,7 @@ spec:
   resources:
     requests:
       storage: 16Gi
-  storageClassName: from-production
+  storageClassName: transactionaldb
 ```
 ```
 kubectl create -f pvc-example.yml
