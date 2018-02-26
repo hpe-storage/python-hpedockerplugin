@@ -9,7 +9,8 @@ class UnmountVolumeUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):
         return 'volumedriver_unmount'
 
     def get_request_params(self):
-        return {"Name": "test-vol-001"}
+        return {"Name": "test-vol-001",
+                "ID": "Fake-Mount-ID"}
 
     def setup_mock_objects(self):
         # Call child class functions to configure mock objects

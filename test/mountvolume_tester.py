@@ -10,6 +10,7 @@ class MountVolumeUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):
 
     def get_request_params(self):
         return {"Name": "test-vol-001",
+                "ID": "Fake-Mount-ID",
                 "Opts": {'mount-volume': 'True'}}
 
     def setup_mock_objects(self):
