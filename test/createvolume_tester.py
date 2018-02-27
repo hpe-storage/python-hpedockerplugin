@@ -41,6 +41,20 @@ class TestCreateVolumeDefault(CreateVolumeUnitTest):
         mock_etcd.get_vol_byname.return_value = None
 
 
+class TestCreateVolumeInvalidName(CreateVolumeUnitTest):
+    def check_response(self, resp):
+        self._test_case.assertEqual(resp, {u"Err": 'Invalid volume '
+                                           'name: test@vol@001 is passed.'})
+
+    def get_request_params(self):
+        return {"Name": "test@vol@001",
+                "Opts": {}}
+
+    def setup_mock_objects(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.return_value = None
+
+
 # Provisioning = Full
 class TestCreateThickVolume(CreateVolumeUnitTest):
     def check_response(self, resp):
