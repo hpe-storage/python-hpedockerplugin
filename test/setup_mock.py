@@ -54,10 +54,13 @@ def mock_decorator(func):
             mock.patch.object(mgr.VolumeManager, '_get_connector') \
                 as mock_get_connector, \
                 mock.patch('hpedockerplugin.volume_manager.connector') \
-                as mock_osbricks_connector:
+                as mock_osbricks_connector, \
+                mock.patch.object(mgr.VolumeManager, '_get_node_id') \
+                as mock_get_node_id:
                 mock_create_client.return_value = mock_3parclient
                 mock_get_etcd_util.return_value = mock_etcd
                 mock_get_connector.return_value = mock_protocol_connector
+                mock_get_node_id.return_value = data.FAKE_NODE_ID
                 mock_objects = \
                     {'mock_3parclient': mock_3parclient,
                      'mock_fileutil': mock_fileutil,
