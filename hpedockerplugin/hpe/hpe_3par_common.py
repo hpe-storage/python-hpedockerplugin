@@ -440,12 +440,12 @@ class HPE3PARCommon(object):
                                              port_pos['cardPort']))
                     cmd.append('\r')
                     try:
-                        LOG.debug("Removing VLUN forcibly - Cmd: %s..." % cmd)
+                        LOG.info("Removing VLUN forcibly - Cmd: %s..." % cmd)
                         resp = self.client._run(cmd)
-                        LOG.debug("Removed VLUN forcibly - Cmd: %s..." % cmd)
-                        LOG.debug("Removed VLUN - Cmd Response: %s..." % resp)
+                        LOG.info("Removed VLUN forcibly - Cmd: %s..." % cmd)
+                        LOG.info("Removed VLUN - Cmd Response: %s..." % resp)
                     except hpeexceptions.SSHException as ex:
-                        LOG.debug("Failed to remove VLUN - Cmd: %s..." % cmd)
+                        LOG.error("Failed to remove VLUN - Cmd: %s..." % cmd)
                         LOG.error(ex)
                         raise exception.HPEDriverForceRemoveVLUNFailed(reason=ex)
 

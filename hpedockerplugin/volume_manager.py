@@ -527,18 +527,20 @@ class VolumeManager(object):
         return self._node_id in node_mount_info
 
     def _update_mount_id_list(self, vol, mount_id):
-        LOG.debug("NODE_MOUNT_INFO - NOT first mount ID - APPENDING "
-                  "%s" % mount_id)
+        LOG.info("Adding new mount-id %s to node_mount_info..."
+                 % mount_id)
         node_mount_info = vol['node_mount_info']
         node_mount_info[self._node_id].append(mount_id)
-        LOG.debug("NODE_MOUNT_INFO - NOT first mount ID - UPDATING "
-                  "ETCD %s" % mount_id)
+        LOG.info("Updating etcd with modified node_mount_info: %s..."
+                 % node_mount_info)
         self._etcd.update_vol(vol['id'],
                               'node_mount_info',
                               node_mount_info)
+        LOG.info("Updated etcd with modified node_mount_info: %s!"
+                 % node_mount_info)
 
     def _get_success_response(self, vol):
-        path_info = self._etcd.get_vol_path_info(vol['display_name'])
+        path_info = json.loads(vol['path_info'])
         path = FilePath(path_info['device_info']['path']).realpath()
         response = json.dumps({"Err": '', "Name": vol['display_name'],
                                "Mountpoint": path_info['mount_dir'],
@@ -549,20 +551,20 @@ class VolumeManager(object):
         unmounted = False
         for checks in range(0, self._hpepluginconfig.mount_conflict_delay):
             time.sleep(1)
-            LOG.debug("Checking if volume %s got unmounted #%s..."
-                      % (volname, checks))
+            LOG.info("Checking if volume %s got unmounted #%s..."
+                     % (volname, checks))
             vol = self._etcd.get_vol_byname(volname)
 
             # Check if unmount that was in progress has cleared the
             # node entry from ETCD database
             if 'node_mount_info' not in vol:
-                LOG.debug("Volume %s got unmounted after %s "
-                          "checks!!!" % (volname, checks))
+                LOG.info("Volume %s got unmounted after %s "
+                         "checks!!!" % (volname, checks))
                 unmounted = True
                 break
 
-            LOG.debug("Volume %s still unmounting #%s..."
-                      % (volname, checks))
+            LOG.info("Volume %s still unmounting #%s..."
+                     % (volname, checks))
         return unmounted
 
     def _force_remove_vlun(self, vol):
@@ -588,18 +590,15 @@ class VolumeManager(object):
 
         volid = vol['id']
 
-        # Volume fencing check
-        #
-
         # Initialize node-mount-info if volume is being mounted
         # for the first time
         if self._is_vol_not_mounted(vol):
-            LOG.debug("Initializing NODE_MOUNT_INFOadding first mount ID %s"
-                      % mount_id)
+            LOG.info("Initializing node_mount_info... adding first "
+                     "mount ID %s" % mount_id)
             node_mount_info = {self._node_id: [mount_id]}
             vol['node_mount_info'] = node_mount_info
         else:
-            # Volume is in mounted state
+            # Volume is in mounted state - Volume fencing logic begins here
             node_mount_info = vol['node_mount_info']
 
             # If mounted on this node itself then just append mount-id
@@ -611,13 +610,19 @@ class VolumeManager(object):
                 # Forced VLUN cleanup from array to happen only in case
                 # mount_conflict_delay is defined in hpe.conf
                 if self._hpepluginconfig.mount_conflict_delay > 0:
-                    LOG.debug("NODE_MOUNT_INFO - NOT first mount ID - "
-                              "DIFFERENT NODE %s" % mount_id)
+                    LOG.info("Volume mounted on a different node."
+                             "Since mount_conflict_delay is defined, waiting "
+                             "for other node to gracefully unmount the "
+                             "volume!")
 
                     unmounted = self._wait_for_graceful_vol_unmount(volname)
 
                     if not unmounted:
+                        LOG.info("Volume not gracefully unmounted by other "
+                                 "node. Removing VLUNs forcefully from the "
+                                 "backend...")
                         self._force_remove_vlun(vol)
+                        LOG.info("VLUNs forcefully removed from the backend!")
 
                     self._replace_node_mount_info(node_mount_info, mount_id)
                 else:
@@ -626,11 +631,14 @@ class VolumeManager(object):
                     LOG.info(msg)
                     raise exception.HPEPluginMountException(reason=msg)
 
-        LOG.debug("NODE_MOUNT_INFO - UPDATING ETCD for mount ID "
-                  "%s" % mount_id)
+        LOG.info("Updating node_mount_info in etcd with mount_id %s..."
+                 % mount_id)
         self._etcd.update_vol(volid,
                               'node_mount_info',
                               node_mount_info)
+        LOG.info("node_mount_info updated successfully in etcd with mount_id "
+                 "%s..." % mount_id)
+
         root_helper = 'sudo'
         connector_info = connector.get_connector_properties(
             root_helper, self._my_ip, multipath=self._use_multipath,
@@ -729,41 +737,45 @@ class VolumeManager(object):
 
         volid = vol['id']
 
-        ######
-        # Start of volume fencing changes
-        LOG.debug('WILLIAM %s ' % (vol))
+        # Start of volume fencing
+        LOG.info('Unmounting volume: %s' % vol)
         if 'node_mount_info' in vol:
             node_mount_info = vol['node_mount_info']
             if self._node_id in node_mount_info:
-                # vol['node_mount_info'].pop(node_id)
-                # LOG.debug('WILLIAM %s %s %s' % (vol['node_mount_info'],
-                # node_id,type(json.load(vol['node_mount_info']))))
-                LOG.debug("WILLIAM node_id in vol mount info")
+                LOG.info("node_id '%s' present in vol mount info"
+                         % self._node_id)
 
                 mount_id_list = node_mount_info[self._node_id]
 
-                LOG.debug(" mount_id_list %s ", mount_id_list)
+                LOG.info("Current mount_id_list %s " % mount_id_list)
 
                 try:
                     mount_id_list.remove(mount_id)
                 except ValueError as ex:
                     pass
 
+                LOG.info("Updating node_mount_info '%s' in etcd..."
+                         % node_mount_info)
                 # Update the mount_id list in etcd
                 self._etcd.update_vol(volid, 'node_mount_info',
                                       node_mount_info)
 
+                LOG.info("Updated node_mount_info '%s' in etcd!"
+                         % node_mount_info)
+
                 if len(mount_id_list) > 0:
                     # Don't proceed with unmount
-                    LOG.info("WILLIAM.. no unmount done")
+                    LOG.info("Volume still in use by %s containers... "
+                             "no unmounting done!" % len(mount_id_list))
                     return json.dumps({u"Err": ''})
                 else:
                     # delete the node_id key from node_mount_info
-                    LOG.info("WILLIAM : deleting node_mount_info %s ",
-                             vol['node_mount_info'])
+                    LOG.info("Removing node_mount_info %s",
+                             node_mount_info)
                     vol.pop('node_mount_info')
-                    LOG.info("WILLIAM vol %s ", vol)
+                    LOG.info("Saving volume to etcd: %s..." % vol)
                     self._etcd.save_vol(vol)
+                    LOG.info("Volume saved to etcd: %s!" % vol)
 
         # TODO: Requirement #5 will bring the flow here but the below flow
         # may result into exception. Need to ensure it doesn't happen
