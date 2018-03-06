@@ -60,7 +60,7 @@ def mock_decorator(func):
                 mock_create_client.return_value = mock_3parclient
                 mock_get_etcd_util.return_value = mock_etcd
                 mock_get_connector.return_value = mock_protocol_connector
-                mock_get_node_id.return_value = data.FAKE_NODE_ID
+                mock_get_node_id.return_value = data.THIS_NODE_ID
                 mock_objects = \
                     {'mock_3parclient': mock_3parclient,
                      'mock_fileutil': mock_fileutil,
