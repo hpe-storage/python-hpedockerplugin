@@ -144,11 +144,9 @@ On RHEL and CentOS, issue ``journalctl -f -u docker.service`` to get the plugin 
 - Shared volume support is not present. Shared volume support implies using a single volume across multiple containers either on the same docker node (or) across node(s) in a swarm cluster. Also, backup and restore support is not present yet.
 
 
-# Deploying the HPE Docker Volume Plugin as a Docker Container (Deprecated -- Please use the Managed plugin only)
+# Deploying the HPE Docker Volume Plugin as a Docker Container 
 
-Starting from release v1.1.0 to v1.12 the plugin can be deployed as a Docker Container. 
-
-NOTE: Manual deployment is NOT supported with releases v1.1.0 and beyond.
+For running the Docker Volume Plugin under Openshift 3.7 / Kubernetes 1.7 please follow these steps
 
 ## Single node etcd setup - Install etcd
 These steps are for a single node setup only. If you plan to run a container orchestration service (such as Docker UCP or Kubernetes) in a cluster of systems then refer to the etcd cluster setup below. These orchestration services typically already have setup instructions for an etcd cluster, so there is no need to create a separate etcd cluster in these cases. The plugin can safely share access to the same etcd cluster being used by the orchestration technology.
@@ -200,26 +198,20 @@ Copy the edited configs into **/etc/hpedockerplugin/hpe.conf**.
 
 ## Running the hpedockerplugin with Docker Compose:
 
-You can now start the hpedockerplugin using docker compose. Just do one of the following:
+Configure the docker system service to use 
+- MountFlags=shared (default is slave) in file  /usr/lib/systemd/system/docker.service 
+- restart the docker daemon using
+```
+systemctl daemon-reload
+systemctl restart docker.service
+```
 
-## Build and run the container image from source
-1. git clone git@github.com:hpe-storage/python-hpedockerplugin.git
-2. cd python-hpedockerplugin
-3. run ./containerize.sh
-4. tag the image (e.g. docker tag <image-id> myhpedockerplugin:latest
-5. Create an hpe.conf file and place it in the directory /etc/hpedockerplugin
-6. copy and edit the docker-compose.yml.example as appropriate to your env
-7. docker-compose up -d
-
-## Run the container using an existing hpedockerplugin container image
-1. Create an hpe.conf file and place it in the directory /etc/hpedockerplugin
-2. copy and edit the docker-compose.yml.example as appropriate to your env (with appropriate image name)
-3. docker-compose up -d
-
-You should now have a containerized version of the hpedockerplugin running.
+Follow the instructions in this [README.md](https://github.com/hpe-storage/python-hpedockerplugin/blob/plugin_v2/quick-start/README.md#building-the-container-image)
 
 ## Restarting the plugin
-IMPORTANT NOTE: The /run/docker/plugins/hpe/hpe.sock and /run/docker/plugins/hpe/hpe.sock.lock files are not automatically removed when you stop the container. Therefore, these files will need to be removed manually between each run of the plugin.
+- IMPORTANT NOTE: The /run/docker/plugins/hpe/hpe.sock and /run/docker/plugins/hpe/hpe.sock.lock files are not automatically removed when you stop the container. Therefore, these files will need to be removed manually between each run of the plugin.
+
+- 
 
 ## Running the hpedockerplugin on different linux distros:
 
