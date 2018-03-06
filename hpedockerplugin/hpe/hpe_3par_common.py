@@ -1042,8 +1042,7 @@ class HPE3PARCommon(object):
             except AttributeError:
                 pass
 
-            optional = {'comment': json.dumps(extra),
-                        'readOnly': True}
+            optional = {'comment': json.dumps(extra)}
             if snapshot['expirationHours']:
                 optional['expirationHours'] = snapshot['expirationHours']
             if snapshot['retentionHours']:
