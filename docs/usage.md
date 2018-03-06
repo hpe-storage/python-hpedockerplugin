@@ -55,6 +55,12 @@ docker volume inspect <vol_name>
 ```
 docker volume create -d hpe --name <target_vol_name> -o cloneOf=<source_vol_name>
 ```
+#### Creating compressed volume
+
+```
+docker volume create -d hpe --name <target_vol_name> -o compression=true
+```
+
 
 #### Creating a snapshot of a volume
 
