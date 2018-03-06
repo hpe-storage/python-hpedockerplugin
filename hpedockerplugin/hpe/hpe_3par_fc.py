@@ -449,3 +449,10 @@ class HPE3PARFCDriver(object):
                                                         vvs_name)
         finally:
             self._logout(common)
+
+    def force_remove_volume_vlun(self, vol_name):
+        common = self._login()
+        try:
+            return common.force_remove_volume_vlun(vol_name)
+        finally:
+            self._logout(common)

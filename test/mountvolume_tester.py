@@ -1,4 +1,6 @@
 # import mock
+import copy
+
 import fake_3par_data as data
 import hpe_docker_unit_test as hpedockerunittest
 from hpe3parclient import exceptions
@@ -10,6 +12,7 @@ class MountVolumeUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):
 
     def get_request_params(self):
         return {"Name": "test-vol-001",
+                "ID": "Fake-Mount-ID",
                 "Opts": {'mount-volume': 'True'}}
 
     def setup_mock_objects(self):
@@ -19,7 +22,7 @@ class MountVolumeUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):
 
         def _setup_mock_etcd():
             mock_etcd = self.mock_objects['mock_etcd']
-            mock_etcd.get_vol_byname.return_value = data.volume
+            mock_etcd.get_vol_byname.return_value = copy.deepcopy(data.volume)
             # Allow child class to make changes
             self.setup_mock_etcd()
 

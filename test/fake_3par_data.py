@@ -1,5 +1,6 @@
 import mock
 
+FAKE_NODE_ID = "Fake-Node-Id"
 KNOWN_HOSTS_FILE = 'dummy'
 HPE3PAR_CPG = 'DockerCPG'
 HPE3PAR_CPG2 = 'fakepool'

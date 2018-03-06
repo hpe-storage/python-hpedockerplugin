@@ -194,7 +194,7 @@ class HPE3PARCommon(object):
             LOG.error(msg)
             raise exception.InvalidInput(reason=msg)
 
-        known_hosts_file = CONF.ssh_hosts_key_file
+        known_hosts_file = self.config.ssh_hosts_key_file
         policy = "AutoAddPolicy"
         if CONF.strict_ssh_host_key_policy:
             policy = "RejectPolicy"
@@ -403,6 +403,51 @@ class HPE3PARCommon(object):
                               host['name'],
                               vlun_info['lun_id'],
                               nsp)
+
+    def force_remove_volume_vlun(self, vol_name):
+        # Assuming that a volume for a given host would have at most
+        # two VLUNs if multipath is enabled. If we support shared volume
+        # in future, this function would need to be modified to delete
+        # VLUN for the desired host only
+        attempts = 2
+        for i in range(0, attempts):
+            try:
+                LOG.debug("Getting VLUN for volume %s..." % vol_name)
+                # Get single VLUN for the given volume so as to get
+                # hold of hostname
+                vol_vlun = self.client.getVLUN(vol_name)
+                LOG.debug("VLUN found for volume %s..." % vol_name)
+            except hpeexceptions.HTTPNotFound:
+                LOG.debug("VLUN not found for volume %s..." % vol_name)
+                return
+
+            hostname = vol_vlun['hostname']
+
+            # Now get all the VLUNs for this host
+            vluns = self.client.getHostVLUNs(hostname)
+
+            for vlun in vluns:
+                # Filter vluns by volume-name
+                if not vlun['active'] and vlun['volumeName'] == vol_name:
+                    port_pos = vlun['portPos']
+
+                    cmd = ['removevlun', '-f']
+                    cmd.append(vol_name)
+                    cmd.append(str(vlun['lun']))
+                    cmd.append(hostname)
+                    cmd.append('%s:%s:%s' % (port_pos['node'],
+                                             port_pos['slot'],
+                                             port_pos['cardPort']))
+                    cmd.append('\r')
+                    try:
+                        LOG.info("Removing VLUN forcibly - Cmd: %s..." % cmd)
+                        resp = self.client._run(cmd)
+                        LOG.info("Removed VLUN forcibly - Cmd: %s..." % cmd)
+                        LOG.info("Removed VLUN - Cmd Response: %s..." % resp)
+                    except hpeexceptions.SSHException as ex:
+                        LOG.error("Failed to remove VLUN - Cmd: %s..." % cmd)
+                        LOG.error(ex)
+                        raise exception.HPEDriverForceRemoveVLUNFailed(reason=ex)
 
     def delete_vlun(self, volume, hostname):
         volume_name = utils.get_3par_vol_name(volume['id'])
@@ -997,8 +1042,7 @@ class HPE3PARCommon(object):
             except AttributeError:
                 pass
 
-            optional = {'comment': json.dumps(extra),
-                        'readOnly': True}
+            optional = {'comment': json.dumps(extra)}
             if snapshot['expirationHours']:
                 optional['expirationHours'] = snapshot['expirationHours']
             if snapshot['retentionHours']:

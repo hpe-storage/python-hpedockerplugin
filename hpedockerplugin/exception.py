@@ -256,3 +256,7 @@ class HPEDriverVolumeAlreadyExists(HPEDriverException):
 
 class HPEDriverAddVvToVvSetFailed(HPEDriverException):
     message = ""
+
+
+class HPEDriverForceRemoveVLUNFailed(HPEDriverException):
+    message = "Forced removal of VLUN failed: %(reason)"

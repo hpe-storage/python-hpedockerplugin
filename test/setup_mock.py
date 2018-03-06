@@ -3,6 +3,7 @@ import mock
 import fake_3par_data as data
 from hpedockerplugin.hpe import hpe_3par_common as hpecommon
 from hpedockerplugin import hpe_storage_api as api
+from hpedockerplugin import volume_manager as mgr
 from oslo_config import cfg
 
 CONF = cfg.CONF
@@ -10,19 +11,19 @@ CONF = cfg.CONF
 
 def mock_decorator(func):
     @mock.patch(
-        'hpedockerplugin.hpe_storage_api.connector.FibreChannelConnector',
+        'hpedockerplugin.volume_manager.connector.FibreChannelConnector',
         spec=True
     )
     @mock.patch(
-        'hpedockerplugin.hpe_storage_api.connector.ISCSIConnector',
+        'hpedockerplugin.volume_manager.connector.ISCSIConnector',
         spec=True
     )
     @mock.patch(
-        'hpedockerplugin.hpe_storage_api.fileutil',
+        'hpedockerplugin.volume_manager.fileutil',
         spec=True
     )
     @mock.patch(
-        'hpedockerplugin.hpe_storage_api.util.EtcdUtil',
+        'hpedockerplugin.volume_manager.util.EtcdUtil',
         spec=True
     )
     @mock.patch(
@@ -48,15 +49,18 @@ def mock_decorator(func):
 
         with mock.patch.object(hpecommon.HPE3PARCommon, '_create_client') \
             as mock_create_client, \
-            mock.patch.object(api.VolumePlugin, '_get_etcd_util') \
+            mock.patch.object(mgr.VolumeManager, '_get_etcd_util') \
             as mock_get_etcd_util, \
-            mock.patch.object(api.VolumePlugin, '_get_connector') \
+            mock.patch.object(mgr.VolumeManager, '_get_connector') \
                 as mock_get_connector, \
-                mock.patch('hpedockerplugin.hpe_storage_api.connector') \
-                as mock_osbricks_connector:
+                mock.patch('hpedockerplugin.volume_manager.connector') \
+                as mock_osbricks_connector, \
+                mock.patch.object(mgr.VolumeManager, '_get_node_id') \
+                as mock_get_node_id:
                 mock_create_client.return_value = mock_3parclient
                 mock_get_etcd_util.return_value = mock_etcd
                 mock_get_connector.return_value = mock_protocol_connector
+                mock_get_node_id.return_value = data.FAKE_NODE_ID
                 mock_objects = \
                     {'mock_3parclient': mock_3parclient,
                      'mock_fileutil': mock_fileutil,

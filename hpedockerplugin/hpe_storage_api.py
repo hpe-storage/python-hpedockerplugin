@@ -21,18 +21,12 @@ import json
 import six
 import re
 
-from os_brick.initiator import connector
 from oslo_log import log as logging
-from oslo_utils import netutils
-from twisted.python.filepath import FilePath
 
 import exception
-import fileutil
 from i18n import _, _LE, _LI
 from klein import Klein
 from hpe import volume
-from oslo_utils import importutils
-import etcdutil as util
 import volume_manager as mgr
 
 LOG = logging.getLogger(__name__)
@@ -53,63 +47,10 @@ class VolumePlugin(object):
         LOG.info(_LI('Initialize Volume Plugin'))
 
         self._reactor = reactor
-        self._hpepluginconfig = hpepluginconfig
-        hpeplugin_driver = hpepluginconfig.hpedockerplugin_driver
-
-        protocol = 'ISCSI'
-
-        if 'HPE3PARFCDriver' in hpeplugin_driver:
-            protocol = 'FIBRE_CHANNEL'
-
-        self.hpeplugin_driver = \
-            importutils.import_object(hpeplugin_driver, self._hpepluginconfig)
-
-        if self.hpeplugin_driver is None:
-            msg = (_('hpeplugin_driver import driver failed'))
-            LOG.error(msg)
-            raise exception.HPEPluginNotInitializedException(reason=msg)
-
-        try:
-            self.hpeplugin_driver.do_setup()
-            self.hpeplugin_driver.check_for_setup_error()
-        except Exception as ex:
-            msg = (_('hpeplugin_driver do_setup failed, error is: %s'),
-                   six.text_type(ex))
-            LOG.error(msg)
-            raise exception.HPEPluginNotInitializedException(reason=msg)
-
-        self._voltracker = {}
-        self._path_info = []
-        self._my_ip = netutils.get_my_ipv4()
-
-        self._etcd = self._get_etcd_util()
 
         # TODO: make device_scan_attempts configurable
         # see nova/virt/libvirt/volume/iscsi.py
-
-        # Override the settings of use_multipath, enforce_multipath
-        # This will be a workaround until Issue #50 is fixed.
-        msg = (_('Overriding the value of multipath flags to True'))
-        LOG.info(msg)
-        self.use_multipath = True
-        self.enforce_multipath = True
-
-        self.connector = self._get_connector(protocol)
-        self._manager = mgr.VolumeManager(self.hpeplugin_driver,
-                                          self._etcd)
-
-    def _get_connector(self, protocol):
-        root_helper = 'sudo'
-        return connector.InitiatorConnector.factory(
-            protocol, root_helper, use_multipath=self.use_multipath,
-            device_scan_attempts=5, transport='default')
-
-    def _get_etcd_util(self):
-        return util.EtcdUtil(
-            self._hpepluginconfig.host_etcd_ip_address,
-            self._hpepluginconfig.host_etcd_port_number,
-            self._hpepluginconfig.host_etcd_client_cert,
-            self._hpepluginconfig.host_etcd_client_key)
+        self._manager = mgr.VolumeManager(hpepluginconfig)
 
     def disconnect_volume_callback(self, connector_info):
         LOG.info(_LI('In disconnect_volume_callback: connector info is %s'),
@@ -177,79 +118,14 @@ class VolumePlugin(object):
         LOG.info(_LI('In volumedriver_unmount'))
         contents = json.loads(name.content.getvalue())
         volname = contents['Name']
-        vol = self._etcd.get_vol_byname(volname)
-        if vol is not None:
-            volid = vol['id']
-        else:
-            msg = (_LE('Volume unmount name not found %s'), volname)
-            LOG.error(msg)
-            raise exception.HPEPluginUMountException(reason=msg)
 
         vol_mount = volume.DEFAULT_MOUNT_VOLUME
         if ('Opts' in contents and contents['Opts'] and
                 'mount-volume' in contents['Opts']):
             vol_mount = str(contents['Opts']['mount-volume'])
 
-        path_info = self._etcd.get_vol_path_info(volname)
-        if path_info:
-            path_name = path_info['path']
-            connection_info = path_info['connection_info']
-            mount_dir = path_info['mount_dir']
-        else:
-            msg = (_LE('Volume unmount path info not found %s'), volname)
-            LOG.error(msg)
-            raise exception.HPEPluginUMountException(reason=msg)
-
-        # Get connector info from OS Brick
-        # TODO: retrieve use_multipath and enforce_multipath from config file
-        root_helper = 'sudo'
-
-        connector_info = connector.get_connector_properties(
-            root_helper, self._my_ip, multipath=self.use_multipath,
-            enforce_multipath=self.enforce_multipath)
-
-        # Determine if we need to unmount a previously mounted volume
-        if vol_mount is volume.DEFAULT_MOUNT_VOLUME:
-            # unmount directory
-            fileutil.umount_dir(mount_dir)
-            # remove directory
-            fileutil.remove_dir(mount_dir)
-
-        # Changed asynchronous disconnect_volume to sync call
-        # since it causes a race condition between unmount and
-        # mount operation on the same volume. This scenario is
-        # more noticed in case of repeated mount & unmount
-        # operations on the same volume. Refer Issue #64
-        if connection_info:
-            LOG.info(_LI('sync call os brick to disconnect volume'))
-            self.connector.disconnect_volume(connection_info['data'], None)
-            LOG.info(_LI('end of sync call to disconnect volume'))
-
-        try:
-            # Call driver to terminate the connection
-            self.hpeplugin_driver.terminate_connection(vol, connector_info)
-            LOG.info(_LI('connection_info: %(connection_info)s, '
-                         'was successfully terminated'),
-                     {'connection_info': json.dumps(connection_info)})
-        except Exception as ex:
-            msg = (_LE('connection info termination failed %s'),
-                   six.text_type(ex))
-            LOG.error(msg)
-            # Not much we can do here, so just continue on with unmount
-            # We need to ensure we update etcd path_info so the stale
-            # path does not stay around
-            # raise exception.HPEPluginUMountException(reason=msg)
-
-        # TODO: Create path_info list as we can mount the volume to multiple
-        # hosts at the same time.
-        self._etcd.update_vol(volid, 'path_info', None)
-
-        LOG.info(_LI('path for volume: %(name)s, was successfully removed: '
-                     '%(path_name)s'), {'name': volname,
-                                        'path_name': path_name})
-
-        response = json.dumps({u"Err": ''})
-        return response
+        mount_id = contents['ID']
+        return self._manager.unmount_volume(volname, vol_mount, mount_id)
 
     @app.route("/VolumeDriver.Create", methods=["POST"])
     def volumedriver_create(self, name, opts=None):
@@ -439,109 +315,14 @@ class VolumePlugin(object):
         # TODO: use persistent storage to lookup volume for deletion
         contents = json.loads(name.content.getvalue())
         volname = contents['Name']
-        vol = self._etcd.get_vol_byname(volname)
-        if vol is not None:
-            volid = vol['id']
-        else:
-            msg = (_LE('Volume mount name not found %s'), volname)
-            LOG.error(msg)
-            raise exception.HPEPluginMountException(reason=msg)
 
         vol_mount = volume.DEFAULT_MOUNT_VOLUME
         if ('Opts' in contents and contents['Opts'] and
                 'mount-volume' in contents['Opts']):
             vol_mount = str(contents['Opts']['mount-volume'])
 
-        # Get connector info from OS Brick
-        # TODO: retrieve use_multipath and enforce_multipath from config file
-        root_helper = 'sudo'
-
-        connector_info = connector.get_connector_properties(
-            root_helper, self._my_ip, multipath=self.use_multipath,
-            enforce_multipath=self.enforce_multipath)
-
-        try:
-            # Call driver to initialize the connection
-            self.hpeplugin_driver.create_export(vol, connector_info)
-            connection_info = \
-                self.hpeplugin_driver.initialize_connection(
-                    vol, connector_info)
-            LOG.debug('connection_info: %(connection_info)s, '
-                      'was successfully retrieved',
-                      {'connection_info': json.dumps(connection_info)})
-        except Exception as ex:
-            msg = (_('connection info retrieval failed, error is: %s'),
-                   six.text_type(ex))
-            LOG.error(msg)
-            raise exception.HPEPluginMountException(reason=msg)
-
-        # Call OS Brick to connect volume
-        try:
-            device_info = self.connector.\
-                connect_volume(connection_info['data'])
-        except Exception as ex:
-            msg = (_('OS Brick connect volume failed, error is: %s'),
-                   six.text_type(ex))
-            LOG.error(msg)
-            raise exception.HPEPluginMountException(reason=msg)
-
-        # Make sure the path exists
-        path = FilePath(device_info['path']).realpath()
-        if path.exists is False:
-            msg = (_('path: %s,  does not exist'), path)
-            LOG.error(msg)
-            raise exception.HPEPluginMountException(reason=msg)
-
-        LOG.debug('path for volume: %(name)s, was successfully created: '
-                  '%(device)s realpath is: %(realpath)s',
-                  {'name': volname, 'device': device_info['path'],
-                   'realpath': path.path})
-
-        # Create filesystem on the new device
-        if fileutil.has_filesystem(path.path) is False:
-            fileutil.create_filesystem(path.path)
-            LOG.debug('filesystem successfully created on : %(path)s',
-                      {'path': path.path})
-
-        # Determine if we need to mount the volume
-        if vol_mount == volume.DEFAULT_MOUNT_VOLUME:
-            # mkdir for mounting the filesystem
-            mount_dir = fileutil.mkdir_for_mounting(device_info['path'])
-            LOG.debug('Directory: %(mount_dir)s, '
-                      'successfully created to mount: '
-                      '%(mount)s',
-                      {'mount_dir': mount_dir, 'mount': device_info['path']})
-
-            # mount the directory
-            fileutil.mount_dir(path.path, mount_dir)
-            LOG.debug('Device: %(path) successfully mounted on %(mount)s',
-                      {'path': path.path, 'mount': mount_dir})
-
-            # TODO: find out how to invoke mkfs so that it creates the
-            # filesystem without the lost+found directory
-            # KLUDGE!!!!!
-            lostfound = mount_dir + '/lost+found'
-            lfdir = FilePath(lostfound)
-            if lfdir.exists and fileutil.remove_dir(lostfound):
-                LOG.debug('Successfully removed : '
-                          '%(lost)s from mount: %(mount)s',
-                          {'lost': lostfound, 'mount': mount_dir})
-        else:
-            mount_dir = ''
-
-        path_info = {}
-        path_info['name'] = volname
-        path_info['path'] = path.path
-        path_info['device_info'] = device_info
-        path_info['connection_info'] = connection_info
-        path_info['mount_dir'] = mount_dir
-
-        self._etcd.update_vol(volid, 'path_info', json.dumps(path_info))
-
-        response = json.dumps({u"Err": '', u"Name": volname,
-                               u"Mountpoint": mount_dir,
-                               u"Devicename": path.path})
-        return response
+        mount_id = contents['ID']
+        return self._manager.mount_volume(volname, vol_mount, mount_id)
 
     @app.route("/VolumeDriver.Path", methods=["POST"])
     def volumedriver_path(self, name):
@@ -554,13 +335,6 @@ class VolumePlugin(object):
         """
         contents = json.loads(name.content.getvalue())
         volname = contents['Name']
-        volinfo = self._etcd.get_vol_byname(volname)
-        if volinfo is None:
-            msg = (_LE('Volume Path: Volume name not found %s'), volname)
-            LOG.warning(msg)
-            response = json.dumps({u"Err": "No Mount Point",
-                                   u"Mountpoint": ""})
-            return response
         return self._manager.get_path(volname)
 
     @app.route("/VolumeDriver.Capabilities", methods=["POST"])
