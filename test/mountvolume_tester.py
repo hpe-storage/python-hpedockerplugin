@@ -654,6 +654,152 @@ class TestMountVolumeModifyISCSIHostVLUNExists(MountVolumeUnitTest):
         mock_3parclient.getHostVLUNs.assert_called()
 
 
+# Volume mounted on this node
+# Another mount request comes in to mount on this node only
+class TestVolFencingMountTwiceSameNode(MountVolumeUnitTest):
+    def setup_mock_etcd(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.return_value = copy.deepcopy(
+            data.vol_mounted_on_this_node)
+        mock_etcd.get_vol_path_info.return_value = copy.deepcopy(
+            data.path_info)
+        # Allow child class to make changes
+
+    def check_response(self, resp):
+        # resp -> {"Mountpoint": "/tmp", "Name": "test-vol-001",
+        # "Err": "", "Devicename": "/tmp"}
+        expected_keys = ["Mountpoint", "Name", "Err", "Devicename"]
+        for key in expected_keys:
+            self._test_case.assertIn(key, resp)
+
+        self._test_case.assertEqual(resp['Mountpoint'],
+                                    data.path_info['mount_dir'])
+        self._test_case.assertEqual(resp['Name'],
+                                    data.path_info['name'])
+        self._test_case.assertEqual(resp['Err'], u'')
+        self._test_case.assertEqual(resp['Devicename'],
+                                    data.path_info['device_info']['path'])
+
+        # Check that there are zero calls to 3PAR Client
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.getWsApiVersion.assert_called()
+        mock_3parclient.getCPG.assert_called()
+        mock_3parclient.getPorts.assert_called()
+        mock_3parclient.getVolume.assert_not_called()
+        mock_3parclient.getHost.assert_not_called()
+        mock_3parclient.queryHost.assert_not_called()
+        mock_3parclient.modifyHost.assert_not_called()
+        mock_3parclient.getHostVLUNs.assert_not_called()
+
+
+# Volume mounted on different node
+# This node waits for un-mounting of volume from other node
+# Other node un-mounts before mount-conflict-delay period ends
+class TestVolFencingGracefulUnmount(MountVolumeUnitTest):
+    def setup_mock_etcd(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.side_effect = [
+            copy.deepcopy(data.vol_mounted_on_other_node),
+            copy.deepcopy(data.vol_mounted_on_other_node),
+            copy.deepcopy(data.volume)
+        ]
+        mock_etcd.get_vol_path_info.return_value = copy.deepcopy(
+            data.path_info)
+
+    def setup_mock_3parclient(self):
+        mock_client = self.mock_objects['mock_3parclient']
+        mock_client.getVolume.return_value = {'userCPG': data.HPE3PAR_CPG}
+        mock_client.getHostVLUNs.return_value = data.iscsi_host_vluns
+
+        mock_client.getHost.return_value = data.fake_host
+        mock_client.queryHost.return_value = None
+        # mock_client.getVolumeMetaData.return_value = data.volume_metadata
+        mock_client.getCPG.return_value = {}
+        mock_client.getiSCSIPorts.return_value = [data.FAKE_ISCSI_PORT]
+
+    def setup_mock_fileutil(self):
+        mock_fileutil = self.mock_objects['mock_fileutil']
+        mock_fileutil.mkdir_for_mounting.return_value = '/tmp'
+
+    def check_response(self, resp):
+        # resp -> {"Mountpoint": "/tmp", "Name": "test-vol-001",
+        # "Err": "", "Devicename": "/tmp"}
+        expected_keys = ["Mountpoint", "Name", "Err", "Devicename"]
+        for key in expected_keys:
+            self._test_case.assertIn(key, resp)
+
+        self._test_case.assertEqual(resp['Mountpoint'], u'/tmp')
+        self._test_case.assertEqual(resp['Name'], u'test-vol-001')
+        self._test_case.assertEqual(resp['Err'], u'')
+        self._test_case.assertEqual(resp['Devicename'], u'/tmp')
+
+        # Check if these functions were actually invoked
+        # in the flow or not
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.getWsApiVersion.assert_called()
+        mock_3parclient.getVolume.assert_called()
+        mock_3parclient.getCPG.assert_called()
+        mock_3parclient.getHost.assert_called()
+        # mock_3parclient.queryHost.assert_called()
+        # Important check for this TC
+        # mock_3parclient.modifyHost.assert_called()
+        mock_3parclient.getPorts.assert_called()
+        mock_3parclient.getHostVLUNs.assert_called()
+
+
+# Volume Fencing
+# Add the new mount ID to the mount-id-list and return
+# connection-info
+class TestVolFencingForcedUnmount(MountVolumeUnitTest):
+    def setup_mock_etcd(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.return_value = copy.deepcopy(
+            data.vol_mounted_on_other_node)
+        mock_etcd.get_vol_path_info.return_value = copy.deepcopy(
+            data.path_info)
+        # Allow child class to make changes
+
+    def setup_mock_3parclient(self):
+        mock_client = self.mock_objects['mock_3parclient']
+        mock_client.getVolume.return_value = {'userCPG': data.HPE3PAR_CPG}
+        mock_client.getHostVLUNs.return_value = data.iscsi_host_vluns
+
+        mock_client.getHost.return_value = data.fake_host
+        mock_client.queryHost.return_value = None
+        # mock_client.getVolumeMetaData.return_value = data.volume_metadata
+        mock_client.getCPG.return_value = {}
+        mock_client.getiSCSIPorts.return_value = [data.FAKE_ISCSI_PORT]
+
+    def setup_mock_fileutil(self):
+        mock_fileutil = self.mock_objects['mock_fileutil']
+        mock_fileutil.mkdir_for_mounting.return_value = '/tmp'
+
+    def check_response(self, resp):
+        # resp -> {"Mountpoint": "/tmp", "Name": "test-vol-001",
+        # "Err": "", "Devicename": "/tmp"}
+        expected_keys = ["Mountpoint", "Name", "Err", "Devicename"]
+        for key in expected_keys:
+            self._test_case.assertIn(key, resp)
+
+        self._test_case.assertEqual(resp['Mountpoint'], u'/tmp')
+        self._test_case.assertEqual(resp['Name'], u'test-vol-001')
+        self._test_case.assertEqual(resp['Err'], u'')
+        self._test_case.assertEqual(resp['Devicename'], u'/tmp')
+
+        # Check if these functions were actually invoked
+        # in the flow or not
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.getWsApiVersion.assert_called()
+        mock_3parclient.getVolume.assert_called()
+        mock_3parclient.getCPG.assert_called()
+        mock_3parclient.getHost.assert_called()
+        # mock_3parclient.queryHost.assert_called()
+        # Important check for this TC
+        # mock_3parclient.modifyHost.assert_called()
+        mock_3parclient.getPorts.assert_called()
+        mock_3parclient.getHostVLUNs.assert_called()
+
+
 # class TestMountVolumeWithChap(MountVolumeUnitTest):
 #     def setup_mock_objects(self):
 #         mock_etcd = self.mock_objects['mock_etcd']
