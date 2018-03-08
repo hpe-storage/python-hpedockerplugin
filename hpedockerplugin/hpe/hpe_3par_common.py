@@ -447,7 +447,8 @@ class HPE3PARCommon(object):
                     except hpeexceptions.SSHException as ex:
                         LOG.error("Failed to remove VLUN - Cmd: %s..." % cmd)
                         LOG.error(ex)
-                        raise exception.HPEDriverForceRemoveVLUNFailed(reason=ex)
+                        raise exception.HPEDriverForceRemoveVLUNFailed(
+                            reason=ex)
 
     def delete_vlun(self, volume, hostname):
         volume_name = utils.get_3par_vol_name(volume['id'])
