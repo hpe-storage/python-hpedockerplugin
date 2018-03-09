@@ -1,6 +1,8 @@
+import json
 import mock
 
-FAKE_NODE_ID = "Fake-Node-Id"
+THIS_NODE_ID = "This-Node-Id"
+OTHER_NODE_ID = "Other-Node-Id"
 KNOWN_HOSTS_FILE = 'dummy'
 HPE3PAR_CPG = 'DockerCPG'
 HPE3PAR_CPG2 = 'fakepool'
@@ -27,6 +29,7 @@ VOLUME_TYPE_ID_DEDUP = 'd03338a9-9115-48a3-8dfc-11111111111'
 VOL_TYPE_ID_DEDUP_COMPRESS = 'd03338a9-9115-48a3-8dfc-33333333333'
 VOLUME_TYPE_ID_FLASH_CACHE = 'd03338a9-9115-48a3-8dfc-22222222222'
 VOLUME_NAME = 'volume-' + VOLUME_ID
+VOL_DISP_NAME = 'test-vol-001'
 SNAPSHOT_ID1 = '2f823bdc-e36e-4dc8-bd15-de1c7a28ff31'
 SNAP1_3PAR_NAME = 'dcs-L4I73ONuTci9Fd4ceij-MQ'
 SNAPSHOT_NAME1 = 'snapshot-1'
@@ -72,7 +75,7 @@ FAKE_ISCSI_PORT = {'portPos': {'node': 8, 'slot': 1, 'cardPort': 1},
 
 volume = {'name': VOLUME_NAME,
           'id': VOLUME_ID,
-          'display_name': 'Foo Volume',
+          'display_name': VOL_DISP_NAME,
           'size': 2,
           'host': FAKE_DOCKER_HOST,
           'provisioning': THIN,
@@ -80,6 +83,52 @@ volume = {'name': VOLUME_NAME,
           'qos_name': None,
           'compression': None,
           'snapshots': []}
+
+json_path_info = \
+    '{"connection_info": {"driver_volume_type": "iscsi", ' \
+    '"data": {"target_luns": [3, 3], "target_iqns": ' \
+    '["iqn.2000-05.com.3pardata:22210002ac019d52", ' \
+    '"iqn.2000-05.com.3pardata:23210002ac019d52"], ' \
+    '"target_discovered": true, "encrypted": false, ' \
+    '"target_portals": ["10.50.3.59:3260", "10.50.3.60:3260"], ' \
+    '"auth_password": "aTYvRmaEihE4eK2X", "auth_username": ' \
+    '"csimbe06-b01", "auth_method": "CHAP"}}, "path": "/dev/dm-2", ' \
+    '"device_info": {"path": "/dev/disk/by-id/dm-uuid-mpath-360002a' \
+    'c00000000001008f9900019d52", "scsi_wwn": "360002ac000000000010' \
+    '08f9900019d52", "type": "block", "multipath_id": "360002ac0000' \
+    '0000001008f9900019d52"}, "name": "test-vol-001", "mount_dir": "/opt' \
+    '/hpe/data/hpedocker-dm-uuid-mpath-360002ac00000000001008f99000' \
+    '19d52"}'
+
+path_info = json.loads(json_path_info)
+
+vol_mounted_on_this_node = {
+    'name': VOLUME_NAME,
+    'id': VOLUME_ID,
+    'display_name': VOL_DISP_NAME,
+    'size': 2,
+    'host': FAKE_DOCKER_HOST,
+    'provisioning': THIN,
+    'flash_cache': None,
+    'qos_name': None,
+    'compression': None,
+    'snapshots': [],
+    'node_mount_info': {THIS_NODE_ID: ['Fake_Mount_id']},
+    'path_info': json_path_info}
+
+vol_mounted_on_other_node = {
+    'name': VOLUME_NAME,
+    'id': VOLUME_ID,
+    'display_name': VOL_DISP_NAME,
+    'size': 2,
+    'host': FAKE_DOCKER_HOST,
+    'provisioning': THIN,
+    'flash_cache': None,
+    'qos_name': None,
+    'compression': None,
+    'snapshots': [],
+    'node_mount_info': {OTHER_NODE_ID: ['Fake_Mount_id']},
+    'path_info': path_info}
 
 snapshot1 = {'name': SNAPSHOT_NAME1,
              'id': SNAPSHOT_ID1,
@@ -116,7 +165,7 @@ qos_from_3par_wsapi = {
 volume_with_snapshots = {
     'name': VOLUME_NAME,
     'id': VOLUME_ID,
-    'display_name': 'Foo Volume',
+    'display_name': VOL_DISP_NAME,
     'size': 2,
     'host': FAKE_DOCKER_HOST,
     'provisioning': THIN,
@@ -128,7 +177,7 @@ volume_with_snapshots = {
 volume_with_multilevel_snapshot = {
     'name': VOLUME_NAME,
     'id': VOLUME_ID,
-    'display_name': 'Foo Volume',
+    'display_name': VOL_DISP_NAME,
     'size': 2,
     'host': FAKE_DOCKER_HOST,
     'provisioning': THIN,
@@ -138,7 +187,7 @@ volume_with_multilevel_snapshot = {
 
 volume_encrypted = {'name': VOLUME_NAME,
                     'id': VOLUME_ID,
-                    'display_name': 'Foo Volume',
+                    'display_name': VOL_DISP_NAME,
                     'size': 2,
                     'host': FAKE_DOCKER_HOST,
                     'encryption_key_id': 'fake_key',
@@ -148,7 +197,7 @@ volume_encrypted = {'name': VOLUME_NAME,
 
 volume_dedup_compression = {'name': VOLUME_NAME,
                             'id': VOLUME_ID,
-                            'display_name': 'Foo Volume',
+                            'display_name': VOL_DISP_NAME,
                             'size': 16,
                             'host': FAKE_DOCKER_HOST,
                             'compression': None,
@@ -158,7 +207,7 @@ volume_dedup_compression = {'name': VOLUME_NAME,
 
 volume_compression = {'name': VOLUME_NAME,
                       'id': VOLUME_ID,
-                      'display_name': 'Foo Volume',
+                      'display_name': VOL_DISP_NAME,
                       'size': 16,
                       'host': FAKE_DOCKER_HOST,
                       'compression': 'true',
@@ -169,7 +218,7 @@ volume_compression = {'name': VOLUME_NAME,
 
 volume_dedup = {'name': VOLUME_NAME,
                 'id': VOLUME_ID,
-                'display_name': 'Foo Volume',
+                'display_name': VOL_DISP_NAME,
                 'size': 2,
                 'host': FAKE_DOCKER_HOST,
                 'provisioning': DEDUP,
@@ -180,7 +229,7 @@ volume_dedup = {'name': VOLUME_NAME,
 
 volume_qos = {'name': VOLUME_NAME,
               'id': VOLUME_ID,
-              'display_name': 'Foo Volume',
+              'display_name': VOL_DISP_NAME,
               'size': 2,
               'host': FAKE_DOCKER_HOST,
               'provisioning': THIN,
@@ -191,7 +240,7 @@ volume_qos = {'name': VOLUME_NAME,
 
 volume_flash_cache = {'name': VOLUME_NAME,
                       'id': VOLUME_ID,
-                      'display_name': 'Foo Volume',
+                      'display_name': VOL_DISP_NAME,
                       'size': 2,
                       'host': FAKE_DOCKER_HOST,
                       'provisioning': THIN,
@@ -203,7 +252,7 @@ volume_flash_cache = {'name': VOLUME_NAME,
 volume_flash_cache_and_qos = {
     'name': VOLUME_NAME,
     'id': VOLUME_ID,
-    'display_name': 'Foo Volume',
+    'display_name': VOL_DISP_NAME,
     'size': 2,
     'host': FAKE_DOCKER_HOST,
     'provisioning': THIN,
