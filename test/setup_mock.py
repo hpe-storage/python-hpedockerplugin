@@ -2,7 +2,6 @@ import mock
 
 import fake_3par_data as data
 from hpedockerplugin.hpe import hpe_3par_common as hpecommon
-from hpedockerplugin import hpe_storage_api as api
 from hpedockerplugin import volume_manager as mgr
 from oslo_config import cfg
 
