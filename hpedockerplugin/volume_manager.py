@@ -92,7 +92,8 @@ class VolumeManager(object):
 
     @synchronization.synchronized('{volname}')
     def create_volume(self, volname, vol_size, vol_prov,
-                      vol_flash, compression_val, vol_qos):
+                      vol_flash, compression_val, vol_qos,
+                      mount_conflict_delay):
         LOG.debug('In _volumedriver_create')
 
         # NOTE: Since Docker passes user supplied names and not a unique
@@ -103,7 +104,8 @@ class VolumeManager(object):
 
         undo_steps = []
         vol = volume.createvol(volname, vol_size, vol_prov,
-                               vol_flash, compression_val, vol_qos)
+                               vol_flash, compression_val, vol_qos,
+                               mount_conflict_delay)
         try:
             self._create_volume(vol, undo_steps)
             self._apply_volume_specs(vol, undo_steps)
@@ -339,7 +341,8 @@ class VolumeManager(object):
                                      src_vol['provisioning'],
                                      src_vol['flash_cache'],
                                      src_vol['compression'],
-                                     src_vol['qos_name'])
+                                     src_vol['qos_name'],
+                                     src_vol['mount_conflict_delay'])
         try:
             self.__clone_volume__(src_vol, clone_vol, undo_steps)
             self._apply_volume_specs(clone_vol, undo_steps)
@@ -547,13 +550,16 @@ class VolumeManager(object):
                                "Devicename": path.path})
         return response
 
-    def _wait_for_graceful_vol_unmount(self, volname):
+    def _wait_for_graceful_vol_unmount(self, vol):
         unmounted = False
-        for checks in range(0, self._hpepluginconfig.mount_conflict_delay):
+        vol_id = vol['id']
+        volname = vol['display_name']
+        mount_conflict_delay = vol['mount_conflict_delay']
+        for checks in range(0, mount_conflict_delay):
             time.sleep(1)
             LOG.info("Checking if volume %s got unmounted #%s..."
                      % (volname, checks))
-            vol = self._etcd.get_vol_byname(volname)
+            vol = self._etcd.get_vol_by_id(vol_id)
 
             # Check if unmount that was in progress has cleared the
             # node entry from ETCD database
@@ -607,29 +613,19 @@ class VolumeManager(object):
                 return self._get_success_response(vol)
             else:
                 # Volume mounted on different node
-                # Forced VLUN cleanup from array to happen only in case
-                # mount_conflict_delay is defined in hpe.conf
-                if self._hpepluginconfig.mount_conflict_delay > 0:
-                    LOG.info("Volume mounted on a different node."
-                             "Since mount_conflict_delay is defined, waiting "
-                             "for other node to gracefully unmount the "
-                             "volume!")
+                LOG.info("Volume mounted on a different node. Waiting for "
+                         "other node to gracefully unmount the volume...")
 
-                    unmounted = self._wait_for_graceful_vol_unmount(volname)
+                unmounted = self._wait_for_graceful_vol_unmount(vol)
 
-                    if not unmounted:
-                        LOG.info("Volume not gracefully unmounted by other "
-                                 "node. Removing VLUNs forcefully from the "
-                                 "backend...")
-                        self._force_remove_vlun(vol)
-                        LOG.info("VLUNs forcefully removed from the backend!")
+                if not unmounted:
+                    LOG.info("Volume not gracefully unmounted by other "
+                             "node. Removing VLUNs forcefully from the "
+                             "backend...")
+                    self._force_remove_vlun(vol)
+                    LOG.info("VLUNs forcefully removed from the backend!")
 
-                    self._replace_node_mount_info(node_mount_info, mount_id)
-                else:
-                    msg = "Volume %s is already mounted on some other node"\
-                          % volname
-                    LOG.info(msg)
-                    raise exception.HPEPluginMountException(reason=msg)
+                self._replace_node_mount_info(node_mount_info, mount_id)
 
         LOG.info("Updating node_mount_info in etcd with mount_id %s..."
                  % mount_id)
@@ -637,7 +633,7 @@ class VolumeManager(object):
                               'node_mount_info',
                               node_mount_info)
         LOG.info("node_mount_info updated successfully in etcd with mount_id "
-                 "%s..." % mount_id)
+                 "%s" % mount_id)
 
         root_helper = 'sudo'
         connector_info = connector.get_connector_properties(
@@ -699,7 +695,7 @@ class VolumeManager(object):
 
             # mount the directory
             fileutil.mount_dir(path.path, mount_dir)
-            LOG.debug('Device: %(path) successfully mounted on %(mount)s',
+            LOG.debug('Device: %(path)s successfully mounted on %(mount)s',
                       {'path': path.path, 'mount': mount_dir})
 
             # TODO: find out how to invoke mkfs so that it creates the

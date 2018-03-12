@@ -753,8 +753,10 @@ class TestVolFencingGracefulUnmount(MountVolumeUnitTest):
 class TestVolFencingForcedUnmount(MountVolumeUnitTest):
     def setup_mock_etcd(self):
         mock_etcd = self.mock_objects['mock_etcd']
-        mock_etcd.get_vol_byname.return_value = copy.deepcopy(
+        vol_mounted_on_other_node = copy.deepcopy(
             data.vol_mounted_on_other_node)
+        mock_etcd.get_vol_byname.return_value = vol_mounted_on_other_node
+        mock_etcd.get_vol_by_id.return_value = vol_mounted_on_other_node
         mock_etcd.get_vol_path_info.return_value = copy.deepcopy(
             data.path_info)
         # Allow child class to make changes
@@ -769,6 +771,9 @@ class TestVolFencingForcedUnmount(MountVolumeUnitTest):
         # mock_client.getVolumeMetaData.return_value = data.volume_metadata
         mock_client.getCPG.return_value = {}
         mock_client.getiSCSIPorts.return_value = [data.FAKE_ISCSI_PORT]
+        mock_client.getVLUN.return_value = {'hostname': 'FakeHostName'}
+        mock_client.getHostVLUNs.return_value = data.iscsi_host_vluns
+        mock_client.getiSCSIPorts.return_value = data.FAKE_ISCSI_PORTS
 
     def setup_mock_fileutil(self):
         mock_fileutil = self.mock_objects['mock_fileutil']

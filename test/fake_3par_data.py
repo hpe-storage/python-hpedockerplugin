@@ -69,9 +69,14 @@ DEDUP = 'dedup'
 FAKE_ISCSI_PORT = {'portPos': {'node': 8, 'slot': 1, 'cardPort': 1},
                    'protocol': 2,
                    'mode': 2,
-                   'IPAddr': '1.1.1.2',
+                   'IPAddr': '10.50.3.59',
                    'iSCSIName': TARGET_IQN,
                    'linkState': 4}
+
+FAKE_ISCSI_PORTS = [{
+    'IPAddr': '1.1.1.2',
+    'iSCSIName': TARGET_IQN,
+}]
 
 volume = {'name': VOLUME_NAME,
           'id': VOLUME_ID,
@@ -82,7 +87,8 @@ volume = {'name': VOLUME_NAME,
           'flash_cache': None,
           'qos_name': None,
           'compression': None,
-          'snapshots': []}
+          'snapshots': [],
+          'mount_conflict_delay': 3}
 
 json_path_info = \
     '{"connection_info": {"driver_volume_type": "iscsi", ' \
@@ -114,7 +120,8 @@ vol_mounted_on_this_node = {
     'compression': None,
     'snapshots': [],
     'node_mount_info': {THIS_NODE_ID: ['Fake_Mount_id']},
-    'path_info': json_path_info}
+    'path_info': json_path_info,
+    'mount_conflict_delay': 3}
 
 vol_mounted_on_other_node = {
     'name': VOLUME_NAME,
@@ -128,7 +135,8 @@ vol_mounted_on_other_node = {
     'compression': None,
     'snapshots': [],
     'node_mount_info': {OTHER_NODE_ID: ['Fake_Mount_id']},
-    'path_info': path_info}
+    'path_info': path_info,
+    'mount_conflict_delay': 3}
 
 snapshot1 = {'name': SNAPSHOT_NAME1,
              'id': SNAPSHOT_ID1,
@@ -171,7 +179,8 @@ volume_with_snapshots = {
     'provisioning': THIN,
     'flash_cache': None,
     'compression': None,
-    'snapshots': [snapshot1, snapshot2]}
+    'snapshots': [snapshot1, snapshot2],
+    'mount_conflict_delay': 3}
 
 
 volume_with_multilevel_snapshot = {
@@ -183,7 +192,8 @@ volume_with_multilevel_snapshot = {
     'provisioning': THIN,
     'flash_cache': None,
     'compression': None,
-    'snapshots': [snapshot1, snapshot2, snapshot3]}
+    'snapshots': [snapshot1, snapshot2, snapshot3],
+    'mount_conflict_delay': 3}
 
 volume_encrypted = {'name': VOLUME_NAME,
                     'id': VOLUME_ID,
@@ -193,7 +203,8 @@ volume_encrypted = {'name': VOLUME_NAME,
                     'encryption_key_id': 'fake_key',
                     'provisioning': THIN,
                     'flash_cache': None,
-                    'snapshots': []}
+                    'snapshots': [],
+                    'mount_conflict_delay': 3}
 
 volume_dedup_compression = {'name': VOLUME_NAME,
                             'id': VOLUME_ID,
@@ -203,7 +214,8 @@ volume_dedup_compression = {'name': VOLUME_NAME,
                             'compression': None,
                             'flash_cache': None,
                             'provisioning': DEDUP,
-                            'snapshots': []}
+                            'snapshots': [],
+                            'mount_conflict_delay': 3}
 
 volume_compression = {'name': VOLUME_NAME,
                       'id': VOLUME_ID,
@@ -214,7 +226,8 @@ volume_compression = {'name': VOLUME_NAME,
                       'provisioning': THIN,
                       'flash_cache': None,
                       'qos_name': None,
-                      'snapshots': []}
+                      'snapshots': [],
+                      'mount_conflict_delay': 3}
 
 volume_dedup = {'name': VOLUME_NAME,
                 'id': VOLUME_ID,
@@ -225,7 +238,8 @@ volume_dedup = {'name': VOLUME_NAME,
                 'flash_cache': None,
                 'qos_name': None,
                 'compression': None,
-                'snapshots': []}
+                'snapshots': [],
+                'mount_conflict_delay': 3}
 
 volume_qos = {'name': VOLUME_NAME,
               'id': VOLUME_ID,
@@ -236,7 +250,8 @@ volume_qos = {'name': VOLUME_NAME,
               'flash_cache': None,
               'qos_name': "vvk_vvset",
               'compression': None,
-              'snapshots': []}
+              'snapshots': [],
+              'mount_conflict_delay': 3}
 
 volume_flash_cache = {'name': VOLUME_NAME,
                       'id': VOLUME_ID,
@@ -247,7 +262,8 @@ volume_flash_cache = {'name': VOLUME_NAME,
                       'flash_cache': 'true',
                       'qos_name': None,
                       'compression': None,
-                      'snapshots': []}
+                      'snapshots': [],
+                      'mount_conflict_delay': 3}
 
 volume_flash_cache_and_qos = {
     'name': VOLUME_NAME,
@@ -259,7 +275,8 @@ volume_flash_cache_and_qos = {
     'flash_cache': 'true',
     'qos_name': 'vvk_vvset',
     'compression': None,
-    'snapshots': []}
+    'snapshots': [],
+    'mount_conflict_delay': 3}
 
 wwn = ["123456789012345", "123456789054321", "unassigned-wwn1"]
 
@@ -373,62 +390,6 @@ volume_type = {'name': 'gold',
                                'qos:priority': 'low'},
                'deleted_at': None,
                'id': 'gold'}
-
-volume_type_dedup_compression = {'name': 'dedup',
-                                 'deleted': False,
-                                 'updated_at': None,
-                                 'extra_specs': {'cpg': HPE3PAR_CPG2,
-                                                 'provisioning': 'dedup',
-                                                 'compression': 'true'},
-                                 'deleted_at': None,
-                                 'id': VOL_TYPE_ID_DEDUP_COMPRESS}
-
-volume_type_dedup = {'name': 'dedup',
-                     'deleted': False,
-                     'updated_at': None,
-                     'extra_specs': {'cpg': HPE3PAR_CPG2,
-                                     'provisioning': 'dedup'},
-                     'deleted_at': None,
-                     'id': VOLUME_TYPE_ID_DEDUP}
-
-volume_type_flash_cache = {'name': 'flash-cache-on',
-                           'deleted': False,
-                           'updated_at': None,
-                           'extra_specs': {'cpg': HPE3PAR_CPG2,
-                                           'hpe3par:flash_cache': 'true'},
-                           'deleted_at': None,
-                           'id': VOLUME_TYPE_ID_FLASH_CACHE}
-
-flash_cache_3par_keys = {'flash_cache': 'true'}
-
-cpgs = [
-    {'SAGrowth': {'LDLayout': {'diskPatterns': [{'diskType': 2}]},
-                  'incrementMiB': 8192},
-     'SAUsage': {'rawTotalMiB': 24576,
-                 'rawUsedMiB': 768,
-                 'totalMiB': 8192,
-                 'usedMiB': 256},
-     'SDGrowth': {'LDLayout': {'RAIDType': 4,
-                               'diskPatterns': [{'diskType': 2}]},
-                  'incrementMiB': 32768},
-     'SDUsage': {'rawTotalMiB': 49152,
-                 'rawUsedMiB': 1023,
-                 'totalMiB': 36864,
-                 'usedMiB': 1024 * 1},
-     'UsrUsage': {'rawTotalMiB': 57344,
-                  'rawUsedMiB': 43349,
-                  'totalMiB': 43008,
-                  'usedMiB': 1024 * 20},
-     'additionalStates': [],
-     'degradedStates': [],
-     'failedStates': [],
-     'id': 5,
-     'name': HPE3PAR_CPG,
-     'numFPVVs': 2,
-     'numTPVVs': 0,
-     'numTDVVs': 1,
-     'state': 1,
-     'uuid': '29c214aa-62b9-41c8-b198-543f6cf24edf'}]
 
 TASK_ID = '123456789'
 TASK_DONE = 1
