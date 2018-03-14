@@ -78,31 +78,33 @@ class VolumePlugin(object):
         :return: Result indicating success.
         """
         contents = json.loads(name.content.getvalue())
-        obj_to_remove = contents['Name']
-        tokens = obj_to_remove.split('/')
-        token_cnt = len(tokens)
-        LOG.debug("volumedriver_remove - obj_to_remove: %s" %
-                  obj_to_remove)
-        if token_cnt > 2:
-            msg = (_LE("invalid volume or snapshot name %s"
-                       % obj_to_remove))
-            LOG.error(msg)
-            response = json.dumps({u"Err": msg})
-            return response
-
-        if token_cnt == 2:
-            volname = tokens[0]
-            snapname = tokens[1]
+        volname = contents['Name']
+#        tokens = obj_to_remove.split('/')
+#        token_cnt = len(tokens)
+#        LOG.debug("volumedriver_remove - obj_to_remove: %s" %
+#                  obj_to_remove)
+#        if token_cnt > 2:
+#            msg = (_LE("invalid volume or snapshot name %s"
+#                       % obj_to_remove))
+#            LOG.error(msg)
+#            response = json.dumps({u"Err": msg})
+#            return response
+#
+#        if token_cnt == 2:
+#            volname = tokens[0]
+#            snapname = tokens[1]
             # We don't want to insert remove-snapshot code within
             # remove-volume code for two reasons:
             # 1. We want to avoid regression in existing remove-volume
             # 2. In the future, if docker engine provides snapshot
             #    support, this code should have minimum impact
-            return self._manager.remove_snapshot(volname, snapname)
-        else:
-            volname = tokens[0]
-
-        return self._manager.remove_volume(volname)
+#            return self._manager.remove_snapshot(volname, snapname)
+#        else:
+#            volname = tokens[0]
+        is_snap_opr, par_name, resp = self._manager.is_snap_record(volname)
+        if resp is not None:
+            return resp
+        return self._manager.remove_volume(volname, is_snap_opr, par_name)
 
     @app.route("/VolumeDriver.Unmount", methods=["POST"])
     def volumedriver_unmount(self, name):
@@ -159,6 +161,7 @@ class VolumePlugin(object):
         vol_prov = volume.DEFAULT_PROV
         vol_flash = volume.DEFAULT_FLASH_CACHE
         vol_qos = volume.DEFAULT_QOS
+        is_snap = volume.DEFAULT_TO_SNAP_TYPE
         compression_val = volume.DEFAULT_COMPRESSION_VAL
         valid_compression_opts = ['true', 'false']
         mount_conflict_delay = volume.DEFAULT_MOUNT_CONFLICT_DELAY
@@ -166,8 +169,9 @@ class VolumePlugin(object):
         # Verify valid Opts arguments.
         valid_volume_create_opts = ['mount-volume', 'compression',
                                     'size', 'provisioning', 'flash-cache',
-                                    'cloneOf', 'snapshotOf', 'expirationHours',
-                                    'retentionHours', 'promote', 'qos-name',
+                                    'cloneOf', 'virtualcopyOf',
+                                    'expirationHours', 'retentionHours',
+                                    'promote', 'qos-name',
                                     'mountConflictDelay']
 
         if ('Opts' in contents and contents['Opts']):
@@ -218,7 +222,7 @@ class VolumePlugin(object):
                 return json.dumps({u"Err": six.text_type(msg)})
 
             # mutually exclusive options check
-            mutually_exclusive_list = ['snapshotOf', 'cloneOf', 'qos-name',
+            mutually_exclusive_list = ['virtualcopyOf', 'cloneOf', 'qos-name',
                                        'promote']
             input_list = contents['Opts'].keys()
             if (len(list(set(input_list) &
@@ -228,8 +232,9 @@ class VolumePlugin(object):
                 LOG.error(msg)
                 return json.dumps({u"Err": six.text_type(msg)})
 
-            if ('snapshotOf' in contents['Opts']):
-                return self.volumedriver_create_snapshot(name, opts)
+            if ('virtualcopyOf' in contents['Opts']):
+                is_snap = True
+                return self.volumedriver_create_snapshot(name, is_snap, opts)
             elif ('cloneOf' in contents['Opts']):
                 return self.volumedriver_clone_volume(name, opts)
 
@@ -266,7 +271,7 @@ class VolumePlugin(object):
         clone_name = contents['Name']
         return self._manager.clone_volume(src_vol_name, clone_name, size)
 
-    def volumedriver_create_snapshot(self, name, opts=None):
+    def volumedriver_create_snapshot(self, name, is_snap, opts=None):
         # Repeating the validation here in anticipation that when
         # actual REST call for snapshot creation is added, this
         # function will have minimal impact
@@ -279,11 +284,11 @@ class VolumePlugin(object):
             LOG.error(msg)
             raise exception.HPEPluginCreateException(reason=msg)
 
-        src_vol_name = str(contents['Opts']['snapshotOf'])
+        src_vol_name = str(contents['Opts']['virtualcopyOf'])
         snapshot_name = contents['Name']
 
         # Verify valid Opts arguments.
-        valid_volume_create_opts = ['snapshotOf', 'expirationHours',
+        valid_volume_create_opts = ['virtualcopyOf', 'expirationHours',
                                     'retentionHours']
         if 'Opts' in contents and contents['Opts']:
             for key in contents['Opts']:
@@ -308,7 +313,7 @@ class VolumePlugin(object):
         return self._manager.create_snapshot(src_vol_name,
                                              snapshot_name,
                                              expiration_hrs,
-                                             retention_hrs)
+                                             retention_hrs, is_snap)
 
     @app.route("/VolumeDriver.Mount", methods=["POST"])
     def volumedriver_mount(self, name):
