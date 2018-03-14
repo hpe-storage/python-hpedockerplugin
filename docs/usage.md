@@ -12,7 +12,11 @@ There are several optional parameters that can be used during volume creation:
 - size -- specifies the desired size in GB of the volume.
 - provisioning -- specifies the type of provisioning to use (thin, full, dedup).
 - flash-cache -- specifies whether flash cache should be used or not (True, False).
-
+- mountConflictDelay -- specifies period in seconds. This parameter is used to wait for a
+mounted volume to gracefully unmount from some node before it can be mounted on the current
+node. If graceful unmount doesn't happen within mountConflictDelay seconds then a forced
+cleanup of VLUN from the backend is performed so that volume can be mounted on the current
+node.
 Note: Setting flash-cache to True does not gurantee flash-cache will be used. The backend system
 must have the appropriate SSD setup configured, too.
 

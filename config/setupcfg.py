@@ -44,11 +44,6 @@ host_opts = [
     cfg.BoolOpt('enforce_multipath',
                default=False,
                help='Toggle enforcing of multipath for volume attachments.'),
-    cfg.IntOpt('mount_conflict_delay',
-               default=0,
-               help='Time in seconds to wait for another node to unmount '
-                    'volume before it could be mounted on the current '
-                    'node.'),
 ]
 
 CONF = cfg.CONF

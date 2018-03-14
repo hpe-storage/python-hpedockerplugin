@@ -150,6 +150,11 @@ class EtcdUtil(object):
                     return volmember
         return None
 
+    def get_vol_by_id(self, volid):
+        volkey = self.volumeroot + volid
+        result = self.client.read(volkey)
+        return json.loads(result.value)
+
     def get_all_vols(self):
         volumes = self.client.read(self.volumeroot, recursive=True)
         return volumes

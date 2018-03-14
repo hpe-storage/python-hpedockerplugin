@@ -161,12 +161,14 @@ class VolumePlugin(object):
         vol_qos = volume.DEFAULT_QOS
         compression_val = volume.DEFAULT_COMPRESSION_VAL
         valid_compression_opts = ['true', 'false']
+        mount_conflict_delay = volume.DEFAULT_MOUNT_CONFLICT_DELAY
 
         # Verify valid Opts arguments.
         valid_volume_create_opts = ['mount-volume', 'compression',
                                     'size', 'provisioning', 'flash-cache',
                                     'cloneOf', 'snapshotOf', 'expirationHours',
-                                    'retentionHours', 'promote', 'qos-name']
+                                    'retentionHours', 'promote', 'qos-name',
+                                    'mountConflictDelay']
 
         if ('Opts' in contents and contents['Opts']):
             for key in contents['Opts']:
@@ -194,6 +196,17 @@ class VolumePlugin(object):
 
             if ('qos-name' in contents['Opts']):
                 vol_qos = str(contents['Opts']['qos-name'])
+
+            if ('mountConflictDelay' in contents['Opts']):
+                mount_conflict_delay_str = str(contents['Opts']
+                                               ['mountConflictDelay'])
+                try:
+                    mount_conflict_delay = int(mount_conflict_delay_str)
+                except ValueError as ex:
+                    return json.dumps({'Err': "Invalid value '%s' specified "
+                                              "for mountConflictDelay. Please"
+                                              "specify an integer value." %
+                                              mount_conflict_delay_str})
 
             # check for valid promoteSnap option and return the result
             if ('promote' in contents['Opts'] and len(contents['Opts']) == 1):
@@ -231,7 +244,8 @@ class VolumePlugin(object):
 
         return self._manager.create_volume(volname, vol_size,
                                            vol_prov, vol_flash,
-                                           compression_val, vol_qos)
+                                           compression_val, vol_qos,
+                                           mount_conflict_delay)
 
     def volumedriver_clone_volume(self, name, opts=None):
         # Repeating the validation here in anticipation that when

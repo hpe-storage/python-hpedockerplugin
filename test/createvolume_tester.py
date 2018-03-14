@@ -292,6 +292,35 @@ class TestCreateCompressedVolume(CreateVolumeUnitTest):
             {'licenseInfo': {'licenses': [{'name': 'Compression'}]}}
 
 
+class TestCreateCompressedVolumeWithMountConflictDelay(CreateVolumeUnitTest):
+    def get_request_params(self):
+        return {"Name": "test-vol-001",
+                "Opts": {"compression": 'true',
+                         "size": '20',
+                         "provisioning": 'thin',
+                         "mountConflictDelay": '5'}}
+
+    def setup_mock_objects(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.return_value = None
+
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.getWsApiVersion.return_value = \
+            data.wsapi_version_for_compression
+        mock_3parclient.getCPG.return_value = {}
+        mock_3parclient.getStorageSystemInfo.return_value = \
+            {'licenseInfo': {'licenses': [{'name': 'Compression'}]}}
+
+    def check_response(self, resp):
+        self._test_case.assertEqual(resp, {u"Err": ''})
+
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.getWsApiVersion.assert_called()
+        mock_3parclient.getCPG.assert_called()
+        mock_3parclient.getStorageSystemInfo.assert_called()
+        mock_3parclient.createVolume.assert_called()
+
+
 class TestCreateCompressedVolumeNegativeSize(CreateVolumeUnitTest):
     def check_response(self, resp):
         expected_msg = 'Invalid input received: To create compression '\
