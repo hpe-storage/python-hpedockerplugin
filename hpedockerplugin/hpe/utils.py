@@ -87,6 +87,14 @@ def get_3par_vol_name(volume_id):
     return "dcv-%s" % volume_name
 
 
+def get_3par_name(volume_id, is_snap):
+    volume_name = _encode_name(volume_id)
+    if is_snap:
+        return "dcs-%s" % volume_name
+    else:
+        return "dcv-%s" % volume_name
+
+
 def get_3par_snap_name(snapshot_id):
     """Get converted 3PAR snapshot name.
 

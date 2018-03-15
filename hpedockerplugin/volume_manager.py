@@ -145,6 +145,14 @@ class VolumeManager(object):
             LOG.debug(msg)
             response = json.dumps({u"Err": msg})
             return response
+
+        if src_vol['is_snap']:
+             msg = 'cloning a snapshot %s is not allowed ' \
+                   % (src_vol_name)
+            LOG.debug(msg)
+            response = json.dumps({u"Err": msg})
+            return response
+
         return self._clone_volume(clone_name, src_vol, size)
 
     @synchronization.synchronized('{snapshot_name}')
@@ -170,9 +178,15 @@ class VolumeManager(object):
             response = json.dumps({u"Err": msg})
             return response
 
+        volid = vol['id']
+
+        if 'is_snap' not in vol.keys():
+            vol_snap_flag = volume.DEFAULT_TO_SNAP_TYPE
+            self._etcd.update_vol(volid, 'is_snap', vol_snap_flag)
+
         if 'is_snap' in vol.keys() and vol['is_snap']:
             msg = 'source volume: %s is a snapshot, creating hierarchy ' \
-                  'of snapshots is not allowed.' %(src_vol_name)
+                  'of snapshots is not allowed.' % src_vol_name
             LOG.debug(msg)
             response = json.dumps({u"Err": msg})
             return response
@@ -182,9 +196,11 @@ class VolumeManager(object):
         snap_flash = vol['flash_cache']
         snap_compression = vol['compression']
         snap_qos = volume.DEFAULT_QOS
+        mount_cononflict_delay = vol['mount_conflict_delay']
 
-        snap_vol = volume.createvol(snapshot_name, is_snap, snap_size, snap_prov,
-                                    snap_flash, snap_compression, snap_qos)
+        snap_vol = volume.createvol(snapshot_name, snap_size, snap_prov,
+                                    snap_flash, snap_compression, snap_qos,
+                                    mount_cononflict_delay, is_snap)
 
         if vol['snapshots']:
             ss_list = vol['snapshots']
@@ -674,9 +690,9 @@ class VolumeManager(object):
                      % (volname, checks))
         return unmounted
 
-    def _force_remove_vlun(self, vol):
+    def _force_remove_vlun(self, vol, is_snap):
         # Force remove VLUNs for volume from the array
-        bkend_vol_name = utils.get_3par_vol_name(vol['id'])
+        bkend_vol_name = utils.get_3par_name(vol['id'], is_snap)
         self._hpeplugin_driver.force_remove_volume_vlun(
             bkend_vol_name)
 
@@ -696,6 +712,13 @@ class VolumeManager(object):
             raise exception.HPEPluginMountException(reason=msg)
 
         volid = vol['id']
+        is_snap = False
+        if 'is_snap' not in vol.keys():
+            vol['is_snap'] = volume.DEFAULT_TO_SNAP_TYPE
+            self._etcd.update_vol(volid, 'is_snap', is_snap)
+        elif vol['is_snap']:
+            is_snap = vol['is_snap']
+#            self._etcd.update_vol(volid, 'is_snap', is_snap)
 
         # Initialize node-mount-info if volume is being mounted
         # for the first time
@@ -704,6 +727,12 @@ class VolumeManager(object):
                      "mount ID %s" % mount_id)
             node_mount_info = {self._node_id: [mount_id]}
             vol['node_mount_info'] = node_mount_info
+
+            if 'mount_conflict_delay' not in vol.keys():
+                m_conf_delay = volume.DEFAULT_MOUNT_CONFLICT_DELAY
+                vol['mount_conflict_delay'] = m_conf_delay
+                self._etcd.update_vol(volid, 'mount_conflict_delay',
+                                      m_conf_delay)
         else:
             # Volume is in mounted state - Volume fencing logic begins here
             node_mount_info = vol['node_mount_info']
@@ -723,7 +752,7 @@ class VolumeManager(object):
                     LOG.info("Volume not gracefully unmounted by other "
                              "node. Removing VLUNs forcefully from the "
                              "backend...")
-                    self._force_remove_vlun(vol)
+                    self._force_remove_vlun(vol, is_snap)
                     LOG.info("VLUNs forcefully removed from the backend!")
 
                 self._replace_node_mount_info(node_mount_info, mount_id)
@@ -743,10 +772,10 @@ class VolumeManager(object):
 
         try:
             # Call driver to initialize the connection
-            self._hpeplugin_driver.create_export(vol, connector_info)
+            self._hpeplugin_driver.create_export(vol, connector_info, is_snap)
             connection_info = \
                 self._hpeplugin_driver.initialize_connection(
-                    vol, connector_info)
+                    vol, connector_info, is_snap)
             LOG.debug('connection_info: %(connection_info)s, '
                       'was successfully retrieved',
                       {'connection_info': json.dumps(connection_info)})
@@ -833,6 +862,7 @@ class VolumeManager(object):
             raise exception.HPEPluginUMountException(reason=msg)
 
         volid = vol['id']
+        is_snap = vol['is_snap']
 
         # Start of volume fencing
         LOG.info('Unmounting volume: %s' % vol)
@@ -914,7 +944,8 @@ class VolumeManager(object):
 
         try:
             # Call driver to terminate the connection
-            self._hpeplugin_driver.terminate_connection(vol, connector_info)
+            self._hpeplugin_driver.terminate_connection(vol, connector_info,
+                                                        is_snap)
             LOG.info(_LI('connection_info: %(connection_info)s, '
                          'was successfully terminated'),
                      {'connection_info': json.dumps(connection_info)})

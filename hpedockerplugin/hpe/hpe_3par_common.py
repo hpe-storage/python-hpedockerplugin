@@ -391,12 +391,12 @@ class HPE3PARCommon(object):
                      {'name': volume_name, 'host': hostname})
         return found_vlun
 
-    def create_vlun(self, volume, host, nsp=None, lun_id=None):
+    def create_vlun(self, volume, host, is_snap, nsp=None, lun_id=None):
         """Create a VLUN.
 
         In order to export a volume on a 3PAR box, we have to create a VLUN.
         """
-        volume_name = utils.get_3par_vol_name(volume['id'])
+        volume_name = utils.get_3par_name(volume['id'], is_snap)
         vlun_info = self._create_3par_vlun(volume_name, host['name'], nsp,
                                            lun_id=lun_id)
         return self._get_vlun(volume_name,
@@ -450,8 +450,8 @@ class HPE3PARCommon(object):
                         raise exception.HPEDriverForceRemoveVLUNFailed(
                             reason=ex)
 
-    def delete_vlun(self, volume, hostname):
-        volume_name = utils.get_3par_vol_name(volume['id'])
+    def delete_vlun(self, volume, hostname, is_snap):
+        volume_name = utils.get_3par_name(volume['id'], is_snap)
         vluns = self.client.getHostVLUNs(hostname)
 
         # When deleting VLUNs, you simply need to remove the template VLUN
@@ -557,8 +557,8 @@ class HPE3PARCommon(object):
                 hpe3par_keys[key] = value
         return hpe3par_keys
 
-    def get_cpg(self, volume, allowSnap=False):
-        volume_name = utils.get_3par_vol_name(volume['id'])
+    def get_cpg(self, volume, is_snap, allowSnap=False):
+        volume_name = utils.get_3par_name(volume['id'], is_snap)
         vol = self.client.getVolume(volume_name)
         if 'userCPG' in vol:
             return vol['userCPG']
@@ -840,7 +840,8 @@ class HPE3PARCommon(object):
                         if wwn == fc['wwn']:
                             return host['name']
 
-    def terminate_connection(self, volume, hostname, wwn=None, iqn=None):
+    def terminate_connection(self, volume, hostname, is_snap, wwn=None,
+                             iqn=None):
         """Driver entry point to unattach a volume from an instance."""
         # does 3par know this host by a different name?
         hosts = None
@@ -853,7 +854,7 @@ class HPE3PARCommon(object):
             hostname = hosts['members'][0]['name']
 
         try:
-            self.delete_vlun(volume, hostname)
+            self.delete_vlun(volume, hostname, is_snap)
             return
         except hpeexceptions.HTTPNotFound as e:
             if 'host does not exist' in e.get_description():
@@ -869,7 +870,7 @@ class HPE3PARCommon(object):
                 raise
 
         # try again with name retrieved from 3par
-        self.delete_vlun(volume, hostname)
+        self.delete_vlun(volume, hostname, is_snap)
 
     def build_nsp(self, portPos):
         return '%s:%s:%s' % (portPos['node'],
@@ -884,7 +885,7 @@ class HPE3PARCommon(object):
         portPos['cardPort'] = int(split[2])
         return portPos
 
-    def find_existing_vlun(self, volume, host):
+    def find_existing_vlun(self, volume, host, is_snap):
         """Finds an existing VLUN for a volume on a host.
 
         Returns an existing VLUN's information. If no existing VLUN is found,
@@ -895,7 +896,7 @@ class HPE3PARCommon(object):
         """
         existing_vlun = None
         try:
-            vol_name = utils.get_3par_vol_name(volume['id'])
+            vol_name = utils.get_3par_name(volume['id'], is_snap)
             host_vluns = self.client.getHostVLUNs(host['name'])
 
             # The first existing VLUN found will be returned.
@@ -912,10 +913,10 @@ class HPE3PARCommon(object):
             pass
         return existing_vlun
 
-    def find_existing_vluns(self, volume, host):
+    def find_existing_vluns(self, volume, host, is_snap):
         existing_vluns = []
         try:
-            vol_name = utils.get_3par_vol_name(volume['id'])
+            vol_name = utils.get_3par_name(volume['id'], is_snap)
             host_vluns = self.client.getHostVLUNs(host['name'])
 
             for vlun in host_vluns:
