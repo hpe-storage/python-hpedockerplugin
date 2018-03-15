@@ -146,9 +146,9 @@ class VolumeManager(object):
             response = json.dumps({u"Err": msg})
             return response
 
-        if src_vol['is_snap']:
-             msg = 'cloning a snapshot %s is not allowed ' \
-                   % (src_vol_name)
+        if 'is_snap' in src_vol.keys() and src_vol['is_snap']:
+            msg = 'cloning a snapshot %s is not allowed ' \
+                  % (src_vol_name)
             LOG.debug(msg)
             response = json.dumps({u"Err": msg})
             return response
@@ -164,7 +164,7 @@ class VolumeManager(object):
         except Exception as ex:
             msg = (_('save snapshot to etcd faied, error is: %s'),
                    six.text_type(ex))
-            response = json.dumps({u"Err": six.text_type(ex)})
+            response = json.dumps({u"Err": six.text_type(msg)})
             return response
 
     @synchronization.synchronized('{src_vol_name}')
@@ -254,9 +254,8 @@ class VolumeManager(object):
             msg = (_('save snapshot to etcd failed, error is: %s'),
                    six.text_type(ex))
             LOG.error(msg)
-            response = json.dumps({u"Err": six.text_type(ex)})
+            response = json.dumps({u"Err": six.text_type(msg)})
             return response
-        
         try:
             # For now just track volume to uuid mapping internally
             # TODO: Save volume name and uuid mapping in etcd as well
@@ -460,7 +459,7 @@ class VolumeManager(object):
             devicename = path_info['path']
 
         # use volinfo as volname could be partial match
-        snapshot = {'Name': qualified_name,
+        snapshot = {'Name': snapname,
                     'Mountpoint': mountdir,
                     'Devicename': devicename,
                     'Status': {}}
@@ -484,7 +483,7 @@ class VolumeManager(object):
     def _get_snapshot_etcd_record(self, parent_volname, snapname):
         volumeinfo = self._etcd.get_vol_byname(parent_volname)
 
-        snapshosts = volumeinfo.get('snapshots', None)
+        snapshots = volumeinfo.get('snapshots', None)
         if snapshots:
             self._sync_snapshots_from_array(volumeinfo['id'],
                                             volumeinfo['snapshots'])
@@ -495,10 +494,10 @@ class VolumeManager(object):
                 LOG.debug(msg)
                 response = json.dumps({u"Err": msg})
                 return response
-            return self._get_snapshot_response(snapinfo)
+            return self._get_snapshot_response(snapinfo, snapname)
         else:
             msg = (_LE('Snapshot_get: snapname not found after sync %s'),
-                       snapname)
+                   snapname)
             LOG.debug(msg)
             response = json.dumps({u"Err": msg})
             return response
@@ -511,7 +510,7 @@ class VolumeManager(object):
             LOG.warning(msg)
             response = json.dumps({u"Err": ""})
             return response
-        if 'is_snap' in volinfo.keys() and vol['is_snap']:
+        if 'is_snap' in volinfo.keys() and volinfo['is_snap']:
             snap_metadata = volinfo['snap_metadata']
             parent_volname = snap_metadata['parent_name']
             snapname = snap_metadata['name']

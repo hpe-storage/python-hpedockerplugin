@@ -282,7 +282,8 @@ class HPE3PARISCSIDriver(object):
                 least_used_nsp = None
 
                 # check if a VLUN already exists for this host
-                existing_vlun = common.find_existing_vlun(volume, host, is_snap)
+                existing_vlun = common.find_existing_vlun(volume, host,
+                                                          is_snap)
 
                 if existing_vlun:
                     # We override the nsp here on purpose to force the

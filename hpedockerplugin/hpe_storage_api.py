@@ -79,28 +79,6 @@ class VolumePlugin(object):
         """
         contents = json.loads(name.content.getvalue())
         volname = contents['Name']
-#        tokens = obj_to_remove.split('/')
-#        token_cnt = len(tokens)
-#        LOG.debug("volumedriver_remove - obj_to_remove: %s" %
-#                  obj_to_remove)
-#        if token_cnt > 2:
-#            msg = (_LE("invalid volume or snapshot name %s"
-#                       % obj_to_remove))
-#            LOG.error(msg)
-#            response = json.dumps({u"Err": msg})
-#            return response
-#
-#        if token_cnt == 2:
-#            volname = tokens[0]
-#            snapname = tokens[1]
-            # We don't want to insert remove-snapshot code within
-            # remove-volume code for two reasons:
-            # 1. We want to avoid regression in existing remove-volume
-            # 2. In the future, if docker engine provides snapshot
-            #    support, this code should have minimum impact
-#            return self._manager.remove_snapshot(volname, snapname)
-#        else:
-#            volname = tokens[0]
         is_snap_opr, par_name, resp = self._manager.is_snap_record(volname)
         if resp is not None:
             return resp
