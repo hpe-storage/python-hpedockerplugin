@@ -147,7 +147,7 @@ class VolumePlugin(object):
         # Verify valid Opts arguments.
         valid_volume_create_opts = ['mount-volume', 'compression',
                                     'size', 'provisioning', 'flash-cache',
-                                    'cloneOf', 'virtualcopyOf',
+                                    'cloneOf', 'virtualCopyOf',
                                     'expirationHours', 'retentionHours',
                                     'promote', 'qos-name',
                                     'mountConflictDelay']
@@ -200,7 +200,7 @@ class VolumePlugin(object):
                 return json.dumps({u"Err": six.text_type(msg)})
 
             # mutually exclusive options check
-            mutually_exclusive_list = ['virtualcopyOf', 'cloneOf', 'qos-name',
+            mutually_exclusive_list = ['virtualCopyOf', 'cloneOf', 'qos-name',
                                        'promote']
             input_list = contents['Opts'].keys()
             if (len(list(set(input_list) &
@@ -210,7 +210,7 @@ class VolumePlugin(object):
                 LOG.error(msg)
                 return json.dumps({u"Err": six.text_type(msg)})
 
-            if ('virtualcopyOf' in contents['Opts']):
+            if ('virtualCopyOf' in contents['Opts']):
                 is_snap = True
                 return self.volumedriver_create_snapshot(name, is_snap, opts)
             elif ('cloneOf' in contents['Opts']):
@@ -262,11 +262,11 @@ class VolumePlugin(object):
             LOG.error(msg)
             raise exception.HPEPluginCreateException(reason=msg)
 
-        src_vol_name = str(contents['Opts']['virtualcopyOf'])
+        src_vol_name = str(contents['Opts']['virtualCopyOf'])
         snapshot_name = contents['Name']
 
         # Verify valid Opts arguments.
-        valid_volume_create_opts = ['virtualcopyOf', 'expirationHours',
+        valid_volume_create_opts = ['virtualCopyOf', 'expirationHours',
                                     'retentionHours']
         if 'Opts' in contents and contents['Opts']:
             for key in contents['Opts']:
