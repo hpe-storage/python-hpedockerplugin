@@ -454,6 +454,7 @@ class VolumeManager(object):
         mountdir = ''
         devicename = ''
         path_info = self._etcd.get_vol_path_info(snapname)
+        LOG.debug('Value of path info in snapshot response is %s', path_info)
         if path_info is not None:
             mountdir = path_info['mount_dir']
             devicename = path_info['path']
@@ -476,7 +477,7 @@ class VolumeManager(object):
         snap_detail['parent_id'] = parent_id
         snapshot['Status'].update({'snap_detail': snap_detail})
 
-        response = json.dumps({u"Err": err, u"Snapshot": snapshot})
+        response = json.dumps({u"Err": err, u"Volume": snapshot})
         LOG.debug("Get volume/snapshot: \n%s" % str(response))
         return response
 
@@ -488,6 +489,7 @@ class VolumeManager(object):
             self._sync_snapshots_from_array(volumeinfo['id'],
                                             volumeinfo['snapshots'])
             snapinfo = self._etcd.get_vol_byname(snapname)
+            LOG.debug('value of snapinfo from etcd read is %s', snapinfo)
             if snapinfo is None:
                 msg = (_LE('Snapshot_get: snapname not found after sync %s'),
                        snapname)
@@ -502,6 +504,19 @@ class VolumeManager(object):
             response = json.dumps({u"Err": msg})
             return response
 
+    def is_snap_record(self, volname):
+        volumeinfo = self._etcd.get_vol_byname(volname)
+        if volumeinfo is None:
+            msg = (_LE('Volume Get: Volume name not found %s'), volname)
+            LOG.warning(msg)
+            response = json.dumps({u"Err": ""})
+            return None, None, response
+        if 'is_snap' in volumeinfo.keys() and volumeinfo['is_snap']:
+            parent_name = volumeinfo['snap_metadata']['parent_name']
+            return True, parent_name, None
+        else:
+            return False, None, None    
+
     def get_volume_snap_details(self, volname, snapname, qualified_name):
 
         volinfo = self._etcd.get_vol_byname(volname)
@@ -511,6 +526,7 @@ class VolumeManager(object):
             response = json.dumps({u"Err": ""})
             return response
         if 'is_snap' in volinfo.keys() and volinfo['is_snap']:
+            LOG.debug('type of is_snap is %s', type(volinfo['is_snap']))
             snap_metadata = volinfo['snap_metadata']
             parent_volname = snap_metadata['parent_name']
             snapname = snap_metadata['name']
