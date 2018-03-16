@@ -467,6 +467,9 @@ class VolumeManager(object):
         metadata = snapinfo['snap_metadata']
         parent_name = metadata['parent_name']
         parent_id = metadata['parent_id']
+        expiration_hours = metadata['expiration_hours']
+        retention_hours = metadata['retention_hours']
+
         snap_detail = {}
         snap_detail['size'] = snapinfo.get('size')
         snap_detail['flash_cache'] = snapinfo.get('flash_cache')
@@ -475,6 +478,9 @@ class VolumeManager(object):
         snap_detail['is_snap'] = snapinfo.get('is_snap')
         snap_detail['parent_volume'] = parent_name
         snap_detail['parent_id'] = parent_id
+        snap_detail['expiration_hours'] = expiration_hours
+        snap_detail['retention_hours'] = retention_hours
+
         snapshot['Status'].update({'snap_detail': snap_detail})
 
         response = json.dumps({u"Err": err, u"Volume": snapshot})
