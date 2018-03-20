@@ -79,10 +79,7 @@ class VolumePlugin(object):
         """
         contents = json.loads(name.content.getvalue())
         volname = contents['Name']
-        is_snap_opr, par_name, resp = self._manager.is_snap_record(volname)
-        if resp is not None:
-            return resp
-        return self._manager.remove_volume(volname, is_snap_opr, par_name)
+        return self._manager.remove_volume(volname)
 
     @app.route("/VolumeDriver.Unmount", methods=["POST"])
     def volumedriver_unmount(self, name):
@@ -139,7 +136,6 @@ class VolumePlugin(object):
         vol_prov = volume.DEFAULT_PROV
         vol_flash = volume.DEFAULT_FLASH_CACHE
         vol_qos = volume.DEFAULT_QOS
-        is_snap = volume.DEFAULT_TO_SNAP_TYPE
         compression_val = volume.DEFAULT_COMPRESSION_VAL
         valid_compression_opts = ['true', 'false']
         mount_conflict_delay = volume.DEFAULT_MOUNT_CONFLICT_DELAY
@@ -149,7 +145,7 @@ class VolumePlugin(object):
                                     'size', 'provisioning', 'flash-cache',
                                     'cloneOf', 'virtualCopyOf',
                                     'expirationHours', 'retentionHours',
-                                    'promote', 'qos-name',
+                                    'qos-name',
                                     'mountConflictDelay']
 
         if ('Opts' in contents and contents['Opts']):
@@ -190,18 +186,8 @@ class VolumePlugin(object):
                                               "specify an integer value." %
                                               mount_conflict_delay_str})
 
-            # check for valid promoteSnap option and return the result
-            if ('promote' in contents['Opts'] and len(contents['Opts']) == 1):
-                return self.revert_to_snapshot(name, opts)
-            elif ('promote' in contents['Opts']):
-                msg = (_('while reverting volume to snapshot status only '
-                         'valid option is promote=<vol_name>'))
-                LOG.error(msg)
-                return json.dumps({u"Err": six.text_type(msg)})
-
             # mutually exclusive options check
-            mutually_exclusive_list = ['virtualCopyOf', 'cloneOf', 'qos-name',
-                                       'promote']
+            mutually_exclusive_list = ['virtualCopyOf', 'cloneOf', 'qos-name']
             input_list = contents['Opts'].keys()
             if (len(list(set(input_list) &
                          set(mutually_exclusive_list))) >= 2):
@@ -211,8 +197,7 @@ class VolumePlugin(object):
                 return json.dumps({u"Err": six.text_type(msg)})
 
             if ('virtualCopyOf' in contents['Opts']):
-                is_snap = True
-                return self.volumedriver_create_snapshot(name, is_snap, opts)
+                return self.volumedriver_create_snapshot(name, opts)
             elif ('cloneOf' in contents['Opts']):
                 return self.volumedriver_clone_volume(name, opts)
 
@@ -249,7 +234,7 @@ class VolumePlugin(object):
         clone_name = contents['Name']
         return self._manager.clone_volume(src_vol_name, clone_name, size)
 
-    def volumedriver_create_snapshot(self, name, is_snap, opts=None):
+    def volumedriver_create_snapshot(self, name, opts=None):
         # Repeating the validation here in anticipation that when
         # actual REST call for snapshot creation is added, this
         # function will have minimal impact
@@ -291,7 +276,7 @@ class VolumePlugin(object):
         return self._manager.create_snapshot(src_vol_name,
                                              snapshot_name,
                                              expiration_hrs,
-                                             retention_hrs, is_snap)
+                                             retention_hrs)
 
     @app.route("/VolumeDriver.Mount", methods=["POST"])
     def volumedriver_mount(self, name):
@@ -379,13 +364,3 @@ class VolumePlugin(object):
         :return: Result indicating success.
         """
         return self._manager.list_volumes()
-
-    def revert_to_snapshot(self, name, opts=None):
-        contents = json.loads(name.content.getvalue())
-        if 'Name' not in contents:
-            msg = (_('revert snapshot failed, error is : Name is required'))
-            LOG.errpr(msg)
-            raise exception.HPEPluginCreateException(reason=msg)
-        snapname = contents['Name']
-        volumename = str(contents['Opts']['promote'])
-        return self._manager.revert_to_snapshot(volumename, snapname)

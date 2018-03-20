@@ -146,7 +146,7 @@ class VolumeManager(object):
             response = json.dumps({u"Err": msg})
             return response
 
-        if 'is_snap' in src_vol.keys() and src_vol['is_snap']:
+        if 'is_snap' in src_vol and src_vol['is_snap']:
             msg = 'cloning a snapshot %s is not allowed ' \
                   % (src_vol_name)
             LOG.debug(msg)
@@ -156,7 +156,22 @@ class VolumeManager(object):
         return self._clone_volume(clone_name, src_vol, size)
 
     @synchronization.synchronized('{snapshot_name}')
-    def _create_snapshot_record(self, snap_vol, snapshot_name):
+    def _create_snapshot_record(self, snap_vol, snapshot_name, snapshot):
+        undo_steps = []
+        try:
+            bkend_snap_name = self._hpeplugin_driver.create_snapshot(snapshot)
+            undo_steps.append(
+                {'undo_func': self._hpeplugin_driver.delete_volume,
+                 'params': {'volume': snapshot,
+                            'is_snapshot': True},
+                 'msg': 'Cleaning up backend snapshot: %s...'
+                        % bkend_snap_name})
+        except Exception as ex:
+            msg = (_('create snapshot failed, error is: %s'),
+                   six.text_type(ex))
+            LOG.error(msg)
+            return json.dumps({u"Err": six.text_type(msg)})
+
         try:
             self._etcd.save_vol(snap_vol)
             LOG.debug('snapshot: %(name)s was successfully saved'
@@ -164,13 +179,18 @@ class VolumeManager(object):
         except Exception as ex:
             msg = (_('save snapshot to etcd faied, error is: %s'),
                    six.text_type(ex))
+            LOG.err(msg)
+            self._rollback(undo_steps)
             response = json.dumps({u"Err": six.text_type(msg)})
             return response
+        response = None
+        return response
 
     @synchronization.synchronized('{src_vol_name}')
     def create_snapshot(self, src_vol_name, snapshot_name,
-                        expiration_hrs, retention_hrs, is_snap):
+                        expiration_hrs, retention_hrs):
         # Check if volume is present in database
+        is_snap = True
         vol = self._etcd.get_vol_byname(src_vol_name)
         if vol is None:
             msg = 'source volume: %s does not exist' % src_vol_name
@@ -180,11 +200,11 @@ class VolumeManager(object):
 
         volid = vol['id']
 
-        if 'is_snap' not in vol.keys():
+        if 'is_snap' not in vol:
             vol_snap_flag = volume.DEFAULT_TO_SNAP_TYPE
             self._etcd.update_vol(volid, 'is_snap', vol_snap_flag)
 
-        if 'is_snap' in vol.keys() and vol['is_snap']:
+        if 'is_snap' in vol and vol['is_snap']:
             msg = 'source volume: %s is a snapshot, creating hierarchy ' \
                   'of snapshots is not allowed.' % src_vol_name
             LOG.debug(msg)
@@ -213,7 +233,6 @@ class VolumeManager(object):
                     LOG.error(msg)
                     return json.dumps({u"Err": six.text_type(msg)})
 
-        undo_steps = []
         snapshot_id = snap_vol['id']
         snapshot = {'id': snapshot_id,
                     'display_name': snapshot_name,
@@ -223,21 +242,6 @@ class VolumeManager(object):
                     'retentionHours': retention_hrs,
                     'display_description': 'snapshot of volume %s'
                                            % src_vol_name}
-        try:
-            bkend_snap_name = self._hpeplugin_driver.create_snapshot(snapshot)
-            undo_steps.append(
-                {'undo_func': self._hpeplugin_driver.delete_volume,
-                 'params': {'volume': snapshot,
-                            'is_snapshot': True},
-                 'msg': 'Cleaning up backend snapshot: %s...'
-                        % bkend_snap_name})
-        except Exception as ex:
-            msg = (_('create snapshot failed, error is: %s'),
-                   six.text_type(ex))
-            LOG.error(msg)
-            return json.dumps({u"Err": six.text_type(ex)})
-
-        response = json.dumps({u"Err": ''})
         db_snapshot = {'name': snapshot_name,
                        'id': snapshot_id,
                        'parent_name': src_vol_name,
@@ -248,13 +252,9 @@ class VolumeManager(object):
 
         snap_vol['snap_metadata'] = db_snapshot
 
-        try:
-            self._create_snapshot_record(snap_vol, snapshot_name)
-        except Exception as ex:
-            msg = (_('save snapshot to etcd failed, error is: %s'),
-                   six.text_type(ex))
-            LOG.error(msg)
-            response = json.dumps({u"Err": six.text_type(msg)})
+        response = self._create_snapshot_record(snap_vol, snapshot_name,
+                                                snapshot)
+        if response is not None:
             return response
         try:
             # For now just track volume to uuid mapping internally
@@ -272,12 +272,13 @@ class VolumeManager(object):
             msg = (_('save volume to etcd failed, error is: %s'),
                    six.text_type(ex))
             LOG.error(msg)
-            self._rollback(undo_steps)
+            # self._rollback(undo_steps)
             response = json.dumps({u"Err": six.text_type(ex)})
+        response = json.dumps({u"Err": ''})
         return response
 
     @synchronization.synchronized('{volname}')
-    def remove_volume(self, volname, is_snap, parent_name):
+    def remove_volume(self, volname):
         # Only 1 node in a multinode cluster can try to remove the volume.
         # Grab lock for volume name. If lock is inuse, just return with no
         # error.
@@ -289,6 +290,11 @@ class VolumeManager(object):
             msg = (_LE('Volume remove name not found %s'), volname)
             LOG.error(msg)
             return json.dumps({u"Err": ''})
+        parent_name = None
+        is_snap = False
+        if 'is_snap' in vol and vol['is_snap']:
+            is_snap = True
+            parent_name = vol['snap_metadata']['parent_name']
         if is_snap:
             self.remove_snapshot(parent_name, volname)
 
@@ -510,19 +516,6 @@ class VolumeManager(object):
             response = json.dumps({u"Err": msg})
             return response
 
-    def is_snap_record(self, volname):
-        volumeinfo = self._etcd.get_vol_byname(volname)
-        if volumeinfo is None:
-            msg = (_LE('Volume Get: Volume name not found %s'), volname)
-            LOG.warning(msg)
-            response = json.dumps({u"Err": ""})
-            return None, None, response
-        if 'is_snap' in volumeinfo.keys() and volumeinfo['is_snap']:
-            parent_name = volumeinfo['snap_metadata']['parent_name']
-            return True, parent_name, None
-        else:
-            return False, None, None    
-
     def get_volume_snap_details(self, volname, snapname, qualified_name):
 
         volinfo = self._etcd.get_vol_byname(volname)
@@ -531,7 +524,7 @@ class VolumeManager(object):
             LOG.warning(msg)
             response = json.dumps({u"Err": ""})
             return response
-        if 'is_snap' in volinfo.keys() and volinfo['is_snap']:
+        if 'is_snap' in volinfo and volinfo['is_snap']:
             LOG.debug('type of is_snap is %s', type(volinfo['is_snap']))
             snap_metadata = volinfo['snap_metadata']
             parent_volname = snap_metadata['parent_name']
@@ -734,12 +727,11 @@ class VolumeManager(object):
 
         volid = vol['id']
         is_snap = False
-        if 'is_snap' not in vol.keys():
+        if 'is_snap' not in vol:
             vol['is_snap'] = volume.DEFAULT_TO_SNAP_TYPE
             self._etcd.update_vol(volid, 'is_snap', is_snap)
         elif vol['is_snap']:
             is_snap = vol['is_snap']
-#            self._etcd.update_vol(volid, 'is_snap', is_snap)
 
         # Initialize node-mount-info if volume is being mounted
         # for the first time
@@ -749,7 +741,7 @@ class VolumeManager(object):
             node_mount_info = {self._node_id: [mount_id]}
             vol['node_mount_info'] = node_mount_info
 
-            if 'mount_conflict_delay' not in vol.keys():
+            if 'mount_conflict_delay' not in vol:
                 m_conf_delay = volume.DEFAULT_MOUNT_CONFLICT_DELAY
                 vol['mount_conflict_delay'] = m_conf_delay
                 self._etcd.update_vol(volid, 'mount_conflict_delay',
