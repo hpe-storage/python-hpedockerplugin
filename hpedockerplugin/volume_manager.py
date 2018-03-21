@@ -346,28 +346,6 @@ class VolumeManager(object):
 
             if snapshot:
                 LOG.info("Found snapshot by name: %s" % snapname)
-                # Does the snapshot have child snapshot(s)?
-#                for ss in snapshots:
-#                    LOG.info("Checking if snapshot has children: %s"
-#                             % snapname)
-#                    if ss['parent_id'] == snapshot['id']:
-#                        msg = (_LE('snapshot %s/%s has one or more child '
-#                                   'snapshots - it cannot be deleted!'
-#                                   % (volname, snapname)))
-#                        LOG.error(msg)
-#                        response = json.dumps({u"Err": msg})
-#                        return response
-#                try:
-#                    LOG.info("Deleting snapshot at backend: %s" % snapname)
-#                    self._hpeplugin_driver.delete_volume(snapshot,
-#                                                         is_snapshot=True)
-#                except Exception as err:
-#                    msg = (_LE('Failed to remove snapshot error is: %s'),
-#                           six.text_type(err))
-#                    LOG.error(msg)
-#                    response = json.dumps({u"Err": six.text_type(err)})
-#                    return response
-#
                 LOG.info("Deleting snapshot in ETCD - %s" % snapname)
                 # Remove snapshot entry from list and save it back to
                 # ETCD DB
