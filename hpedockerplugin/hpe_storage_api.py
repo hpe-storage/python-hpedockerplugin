@@ -78,30 +78,7 @@ class VolumePlugin(object):
         :return: Result indicating success.
         """
         contents = json.loads(name.content.getvalue())
-        obj_to_remove = contents['Name']
-        tokens = obj_to_remove.split('/')
-        token_cnt = len(tokens)
-        LOG.debug("volumedriver_remove - obj_to_remove: %s" %
-                  obj_to_remove)
-        if token_cnt > 2:
-            msg = (_LE("invalid volume or snapshot name %s"
-                       % obj_to_remove))
-            LOG.error(msg)
-            response = json.dumps({u"Err": msg})
-            return response
-
-        if token_cnt == 2:
-            volname = tokens[0]
-            snapname = tokens[1]
-            # We don't want to insert remove-snapshot code within
-            # remove-volume code for two reasons:
-            # 1. We want to avoid regression in existing remove-volume
-            # 2. In the future, if docker engine provides snapshot
-            #    support, this code should have minimum impact
-            return self._manager.remove_snapshot(volname, snapname)
-        else:
-            volname = tokens[0]
-
+        volname = contents['Name']
         return self._manager.remove_volume(volname)
 
     @app.route("/VolumeDriver.Unmount", methods=["POST"])
@@ -166,8 +143,9 @@ class VolumePlugin(object):
         # Verify valid Opts arguments.
         valid_volume_create_opts = ['mount-volume', 'compression',
                                     'size', 'provisioning', 'flash-cache',
-                                    'cloneOf', 'snapshotOf', 'expirationHours',
-                                    'retentionHours', 'promote', 'qos-name',
+                                    'cloneOf', 'virtualCopyOf',
+                                    'expirationHours', 'retentionHours',
+                                    'qos-name',
                                     'mountConflictDelay']
 
         if ('Opts' in contents and contents['Opts']):
@@ -208,18 +186,8 @@ class VolumePlugin(object):
                                               "specify an integer value." %
                                               mount_conflict_delay_str})
 
-            # check for valid promoteSnap option and return the result
-            if ('promote' in contents['Opts'] and len(contents['Opts']) == 1):
-                return self.revert_to_snapshot(name, opts)
-            elif ('promote' in contents['Opts']):
-                msg = (_('while reverting volume to snapshot status only '
-                         'valid option is promote=<vol_name>'))
-                LOG.error(msg)
-                return json.dumps({u"Err": six.text_type(msg)})
-
             # mutually exclusive options check
-            mutually_exclusive_list = ['snapshotOf', 'cloneOf', 'qos-name',
-                                       'promote']
+            mutually_exclusive_list = ['virtualCopyOf', 'cloneOf', 'qos-name']
             input_list = contents['Opts'].keys()
             if (len(list(set(input_list) &
                          set(mutually_exclusive_list))) >= 2):
@@ -228,7 +196,7 @@ class VolumePlugin(object):
                 LOG.error(msg)
                 return json.dumps({u"Err": six.text_type(msg)})
 
-            if ('snapshotOf' in contents['Opts']):
+            if ('virtualCopyOf' in contents['Opts']):
                 return self.volumedriver_create_snapshot(name, opts)
             elif ('cloneOf' in contents['Opts']):
                 return self.volumedriver_clone_volume(name, opts)
@@ -279,11 +247,11 @@ class VolumePlugin(object):
             LOG.error(msg)
             raise exception.HPEPluginCreateException(reason=msg)
 
-        src_vol_name = str(contents['Opts']['snapshotOf'])
+        src_vol_name = str(contents['Opts']['virtualCopyOf'])
         snapshot_name = contents['Name']
 
         # Verify valid Opts arguments.
-        valid_volume_create_opts = ['snapshotOf', 'expirationHours',
+        valid_volume_create_opts = ['virtualCopyOf', 'expirationHours',
                                     'retentionHours']
         if 'Opts' in contents and contents['Opts']:
             for key in contents['Opts']:
@@ -396,13 +364,3 @@ class VolumePlugin(object):
         :return: Result indicating success.
         """
         return self._manager.list_volumes()
-
-    def revert_to_snapshot(self, name, opts=None):
-        contents = json.loads(name.content.getvalue())
-        if 'Name' not in contents:
-            msg = (_('revert snapshot failed, error is : Name is required'))
-            LOG.errpr(msg)
-            raise exception.HPEPluginCreateException(reason=msg)
-        snapname = contents['Name']
-        volumename = str(contents['Opts']['promote'])
-        return self._manager.revert_to_snapshot(volumename, snapname)

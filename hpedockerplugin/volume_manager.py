@@ -145,40 +145,19 @@ class VolumeManager(object):
             LOG.debug(msg)
             response = json.dumps({u"Err": msg})
             return response
-        return self._clone_volume(clone_name, src_vol, size)
 
-    @synchronization.synchronized('{src_vol_name}')
-    def create_snapshot(self, src_vol_name, snapshot_name,
-                        expiration_hrs, retention_hrs):
-        # Check if volume is present in database
-        vol = self._etcd.get_vol_byname(src_vol_name)
-        if vol is None:
-            msg = 'source volume: %s does not exist' % src_vol_name
+        if 'is_snap' in src_vol and src_vol['is_snap']:
+            msg = 'cloning a snapshot %s is not allowed ' \
+                  % (src_vol_name)
             LOG.debug(msg)
             response = json.dumps({u"Err": msg})
             return response
 
-        if vol['snapshots']:
-            ss_list = vol['snapshots']
-            for ss in ss_list:
-                if snapshot_name == ss['name']:
-                    msg = (_('Snapshot create failed. Error '
-                             'is: %(snap_name)s is already created. '
-                             'Please enter a new snapshot name.') %
-                           {'snap_name': snapshot_name})
-                    LOG.error(msg)
-                    return json.dumps({u"Err": six.text_type(msg)})
+        return self._clone_volume(clone_name, src_vol, size)
 
+    @synchronization.synchronized('{snapshot_name}')
+    def _create_snapshot_record(self, snap_vol, snapshot_name, snapshot):
         undo_steps = []
-        snapshot_id = str(uuid.uuid4())
-        snapshot = {'id': snapshot_id,
-                    'display_name': snapshot_name,
-                    'volume_id': vol['id'],
-                    'volume_name': src_vol_name,
-                    'expirationHours': expiration_hrs,
-                    'retentionHours': retention_hrs,
-                    'display_description': 'snapshot of volume %s'
-                                           % src_vol_name}
         try:
             bkend_snap_name = self._hpeplugin_driver.create_snapshot(snapshot)
             undo_steps.append(
@@ -191,15 +170,92 @@ class VolumeManager(object):
             msg = (_('create snapshot failed, error is: %s'),
                    six.text_type(ex))
             LOG.error(msg)
-            return json.dumps({u"Err": six.text_type(ex)})
+            return json.dumps({u"Err": six.text_type(msg)})
 
-        response = json.dumps({u"Err": ''})
+        try:
+            self._etcd.save_vol(snap_vol)
+            LOG.debug('snapshot: %(name)s was successfully saved'
+                      ' to etcd', {'name': snapshot_name})
+        except Exception as ex:
+            msg = (_('save snapshot to etcd faied, error is: %s'),
+                   six.text_type(ex))
+            LOG.err(msg)
+            self._rollback(undo_steps)
+            response = json.dumps({u"Err": six.text_type(msg)})
+            return response
+        response = None
+        return response
+
+    @synchronization.synchronized('{src_vol_name}')
+    def create_snapshot(self, src_vol_name, snapshot_name,
+                        expiration_hrs, retention_hrs):
+        # Check if volume is present in database
+        is_snap = True
+        vol = self._etcd.get_vol_byname(src_vol_name)
+        if vol is None:
+            msg = 'source volume: %s does not exist' % src_vol_name
+            LOG.debug(msg)
+            response = json.dumps({u"Err": msg})
+            return response
+
+        volid = vol['id']
+
+        if 'is_snap' not in vol:
+            vol_snap_flag = volume.DEFAULT_TO_SNAP_TYPE
+            self._etcd.update_vol(volid, 'is_snap', vol_snap_flag)
+
+        if 'is_snap' in vol and vol['is_snap']:
+            msg = 'source volume: %s is a snapshot, creating hierarchy ' \
+                  'of snapshots is not allowed.' % src_vol_name
+            LOG.debug(msg)
+            response = json.dumps({u"Err": msg})
+            return response
+
+        snap_size = vol['size']
+        snap_prov = vol['provisioning']
+        snap_flash = vol['flash_cache']
+        snap_compression = vol['compression']
+        snap_qos = volume.DEFAULT_QOS
+        mount_cononflict_delay = vol['mount_conflict_delay']
+
+        snap_vol = volume.createvol(snapshot_name, snap_size, snap_prov,
+                                    snap_flash, snap_compression, snap_qos,
+                                    mount_cononflict_delay, is_snap)
+
+        if vol['snapshots']:
+            ss_list = vol['snapshots']
+            for ss in ss_list:
+                if snapshot_name == ss['name']:
+                    msg = (_('Snapshot create failed. Error '
+                             'is: %(snap_name)s is already created. '
+                             'Please enter a new snapshot name.') %
+                           {'snap_name': snapshot_name})
+                    LOG.error(msg)
+                    return json.dumps({u"Err": six.text_type(msg)})
+
+        snapshot_id = snap_vol['id']
+        snapshot = {'id': snapshot_id,
+                    'display_name': snapshot_name,
+                    'volume_id': vol['id'],
+                    'volume_name': src_vol_name,
+                    'expirationHours': expiration_hrs,
+                    'retentionHours': retention_hrs,
+                    'display_description': 'snapshot of volume %s'
+                                           % src_vol_name}
         db_snapshot = {'name': snapshot_name,
                        'id': snapshot_id,
+                       'parent_name': src_vol_name,
                        'parent_id': vol['id'],
                        'expiration_hours': expiration_hrs,
                        'retention_hours': retention_hrs}
         vol['snapshots'].append(db_snapshot)
+
+        snap_vol['snap_metadata'] = db_snapshot
+
+        response = self._create_snapshot_record(snap_vol, snapshot_name,
+                                                snapshot)
+        if response is not None:
+            return response
         try:
             # For now just track volume to uuid mapping internally
             # TODO: Save volume name and uuid mapping in etcd as well
@@ -216,8 +272,9 @@ class VolumeManager(object):
             msg = (_('save volume to etcd failed, error is: %s'),
                    six.text_type(ex))
             LOG.error(msg)
-            self._rollback(undo_steps)
+            # self._rollback(undo_steps)
             response = json.dumps({u"Err": six.text_type(ex)})
+        response = json.dumps({u"Err": ''})
         return response
 
     @synchronization.synchronized('{volname}')
@@ -233,6 +290,13 @@ class VolumeManager(object):
             msg = (_LE('Volume remove name not found %s'), volname)
             LOG.error(msg)
             return json.dumps({u"Err": ''})
+        parent_name = None
+        is_snap = False
+        if 'is_snap' in vol and vol['is_snap']:
+            is_snap = True
+            parent_name = vol['snap_metadata']['parent_name']
+        if is_snap:
+            self.remove_snapshot(parent_name, volname)
 
         try:
             if vol['snapshots']:
@@ -243,7 +307,7 @@ class VolumeManager(object):
                 response = json.dumps({u"Err": msg})
                 return response
             else:
-                self._hpeplugin_driver.delete_volume(vol)
+                self._hpeplugin_driver.delete_volume(vol, is_snap)
                 LOG.info(_LI('volume: %(name)s,' 'was successfully deleted'),
                          {'name': volname})
         except Exception as ex:
@@ -282,28 +346,6 @@ class VolumeManager(object):
 
             if snapshot:
                 LOG.info("Found snapshot by name: %s" % snapname)
-                # Does the snapshot have child snapshot(s)?
-                for ss in snapshots:
-                    LOG.info("Checking if snapshot has children: %s"
-                             % snapname)
-                    if ss['parent_id'] == snapshot['id']:
-                        msg = (_LE('snapshot %s/%s has one or more child '
-                                   'snapshots - it cannot be deleted!'
-                                   % (volname, snapname)))
-                        LOG.error(msg)
-                        response = json.dumps({u"Err": msg})
-                        return response
-                try:
-                    LOG.info("Deleting snapshot at backend: %s" % snapname)
-                    self._hpeplugin_driver.delete_volume(snapshot,
-                                                         is_snapshot=True)
-                except Exception as err:
-                    msg = (_LE('Failed to remove snapshot error is: %s'),
-                           six.text_type(err))
-                    LOG.error(msg)
-                    response = json.dumps({u"Err": six.text_type(err)})
-                    return response
-
                 LOG.info("Deleting snapshot in ETCD - %s" % snapname)
                 # Remove snapshot entry from list and save it back to
                 # ETCD DB
@@ -391,6 +433,67 @@ class VolumeManager(object):
             response = json.dumps({u"Err": msg})
             return response
 
+    def _get_snapshot_response(self, snapinfo, snapname):
+        err = ''
+        mountdir = ''
+        devicename = ''
+        path_info = self._etcd.get_vol_path_info(snapname)
+        LOG.debug('Value of path info in snapshot response is %s', path_info)
+        if path_info is not None:
+            mountdir = path_info['mount_dir']
+            devicename = path_info['path']
+
+        # use volinfo as volname could be partial match
+        snapshot = {'Name': snapname,
+                    'Mountpoint': mountdir,
+                    'Devicename': devicename,
+                    'Status': {}}
+        metadata = snapinfo['snap_metadata']
+        parent_name = metadata['parent_name']
+        parent_id = metadata['parent_id']
+        expiration_hours = metadata['expiration_hours']
+        retention_hours = metadata['retention_hours']
+
+        snap_detail = {}
+        snap_detail['size'] = snapinfo.get('size')
+        snap_detail['flash_cache'] = snapinfo.get('flash_cache')
+        snap_detail['compression'] = snapinfo.get('compression')
+        snap_detail['provisioning'] = snapinfo.get('provisioning')
+        snap_detail['is_snap'] = snapinfo.get('is_snap')
+        snap_detail['parent_volume'] = parent_name
+        snap_detail['parent_id'] = parent_id
+        snap_detail['expiration_hours'] = expiration_hours
+        snap_detail['retention_hours'] = retention_hours
+
+        snapshot['Status'].update({'snap_detail': snap_detail})
+
+        response = json.dumps({u"Err": err, u"Volume": snapshot})
+        LOG.debug("Get volume/snapshot: \n%s" % str(response))
+        return response
+
+    def _get_snapshot_etcd_record(self, parent_volname, snapname):
+        volumeinfo = self._etcd.get_vol_byname(parent_volname)
+
+        snapshots = volumeinfo.get('snapshots', None)
+        if snapshots:
+            self._sync_snapshots_from_array(volumeinfo['id'],
+                                            volumeinfo['snapshots'])
+            snapinfo = self._etcd.get_vol_byname(snapname)
+            LOG.debug('value of snapinfo from etcd read is %s', snapinfo)
+            if snapinfo is None:
+                msg = (_LE('Snapshot_get: snapname not found after sync %s'),
+                       snapname)
+                LOG.debug(msg)
+                response = json.dumps({u"Err": msg})
+                return response
+            return self._get_snapshot_response(snapinfo, snapname)
+        else:
+            msg = (_LE('Snapshot_get: snapname not found after sync %s'),
+                   snapname)
+            LOG.debug(msg)
+            response = json.dumps({u"Err": msg})
+            return response
+
     def get_volume_snap_details(self, volname, snapname, qualified_name):
 
         volinfo = self._etcd.get_vol_byname(volname)
@@ -399,6 +502,12 @@ class VolumeManager(object):
             LOG.warning(msg)
             response = json.dumps({u"Err": ""})
             return response
+        if 'is_snap' in volinfo and volinfo['is_snap']:
+            LOG.debug('type of is_snap is %s', type(volinfo['is_snap']))
+            snap_metadata = volinfo['snap_metadata']
+            parent_volname = snap_metadata['parent_name']
+            snapname = snap_metadata['name']
+            return self._get_snapshot_etcd_record(parent_volname, snapname)
 
         err = ''
         mountdir = ''
@@ -573,9 +682,9 @@ class VolumeManager(object):
                      % (volname, checks))
         return unmounted
 
-    def _force_remove_vlun(self, vol):
+    def _force_remove_vlun(self, vol, is_snap):
         # Force remove VLUNs for volume from the array
-        bkend_vol_name = utils.get_3par_vol_name(vol['id'])
+        bkend_vol_name = utils.get_3par_name(vol['id'], is_snap)
         self._hpeplugin_driver.force_remove_volume_vlun(
             bkend_vol_name)
 
@@ -595,6 +704,12 @@ class VolumeManager(object):
             raise exception.HPEPluginMountException(reason=msg)
 
         volid = vol['id']
+        is_snap = False
+        if 'is_snap' not in vol:
+            vol['is_snap'] = volume.DEFAULT_TO_SNAP_TYPE
+            self._etcd.update_vol(volid, 'is_snap', is_snap)
+        elif vol['is_snap']:
+            is_snap = vol['is_snap']
 
         # Initialize node-mount-info if volume is being mounted
         # for the first time
@@ -603,6 +718,12 @@ class VolumeManager(object):
                      "mount ID %s" % mount_id)
             node_mount_info = {self._node_id: [mount_id]}
             vol['node_mount_info'] = node_mount_info
+
+            if 'mount_conflict_delay' not in vol:
+                m_conf_delay = volume.DEFAULT_MOUNT_CONFLICT_DELAY
+                vol['mount_conflict_delay'] = m_conf_delay
+                self._etcd.update_vol(volid, 'mount_conflict_delay',
+                                      m_conf_delay)
         else:
             # Volume is in mounted state - Volume fencing logic begins here
             node_mount_info = vol['node_mount_info']
@@ -622,7 +743,7 @@ class VolumeManager(object):
                     LOG.info("Volume not gracefully unmounted by other "
                              "node. Removing VLUNs forcefully from the "
                              "backend...")
-                    self._force_remove_vlun(vol)
+                    self._force_remove_vlun(vol, is_snap)
                     LOG.info("VLUNs forcefully removed from the backend!")
 
                 self._replace_node_mount_info(node_mount_info, mount_id)
@@ -642,10 +763,10 @@ class VolumeManager(object):
 
         try:
             # Call driver to initialize the connection
-            self._hpeplugin_driver.create_export(vol, connector_info)
+            self._hpeplugin_driver.create_export(vol, connector_info, is_snap)
             connection_info = \
                 self._hpeplugin_driver.initialize_connection(
-                    vol, connector_info)
+                    vol, connector_info, is_snap)
             LOG.debug('connection_info: %(connection_info)s, '
                       'was successfully retrieved',
                       {'connection_info': json.dumps(connection_info)})
@@ -732,6 +853,7 @@ class VolumeManager(object):
             raise exception.HPEPluginUMountException(reason=msg)
 
         volid = vol['id']
+        is_snap = vol['is_snap']
 
         # Start of volume fencing
         LOG.info('Unmounting volume: %s' % vol)
@@ -813,7 +935,8 @@ class VolumeManager(object):
 
         try:
             # Call driver to terminate the connection
-            self._hpeplugin_driver.terminate_connection(vol, connector_info)
+            self._hpeplugin_driver.terminate_connection(vol, connector_info,
+                                                        is_snap)
             LOG.info(_LI('connection_info: %(connection_info)s, '
                          'was successfully terminated'),
                      {'connection_info': json.dumps(connection_info)})
@@ -888,6 +1011,10 @@ class VolumeManager(object):
              'msg': 'Cleaning up VVS: %s...' % vvs_name})
         return vvs_name
 
+    def _remove_snap_record(self, snap_name):
+        snap_info = self._etcd.get_vol_byname(snap_name)
+        self._etcd.delete_vol(snap_info)
+
     def _set_flash_cache_for_volume(self, vvs_name, flash_cache):
         self._hpeplugin_driver.set_flash_cache_policy_on_vvs(
             flash_cache,
@@ -935,6 +1062,7 @@ class VolumeManager(object):
         if ss_list_remove:
             for ss in ss_list_remove:
                 db_snapshots.remove(ss)
+                self._remove_snap_record(ss['name'])
             self._etcd.update_vol(vol_id, 'snapshots',
                                   db_snapshots)
 
