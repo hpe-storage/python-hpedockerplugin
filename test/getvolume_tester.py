@@ -18,45 +18,6 @@ class GetVolumeUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):
         pass
 
 
-class GetSnapshotUnitTest(GetVolumeUnitTest):
-    pass
-
-
-class TestSyncSnapshots(GetSnapshotUnitTest):
-    def get_request_params(self):
-        snap_path = '/'.join([data.VOLUME_NAME,
-                              data.SNAPSHOT_NAME1])
-        return {"Name": snap_path,
-                "Opts": {}}
-
-    def setup_mock_objects(self):
-        mock_etcd = self.mock_objects['mock_etcd']
-        mock_etcd.get_vol_byname.return_value = \
-            copy.deepcopy(data.volume_with_snapshots)
-        mock_etcd.get_vol_path_info.return_value = None
-
-        mock_3parclient = self.mock_objects['mock_3parclient']
-        mock_3parclient.getSnapshotsOfVolume.return_value = \
-            data.bkend_snapshots
-
-    def check_response(self, resp):
-        expected = {u'Volume':
-                    {u'Devicename': u'', u'Status':
-                     {u'Settings': {u'expirationHours': u'10',
-                                    u'retentionHours': u'10'}},
-                     u'Name': u'volume-d03338a9-9115-48a3-8dfc-'
-                              u'35cdfcdc15a7/snapshot-1',
-                     u'Mountpoint': u''}, u'Err': u''}
-
-        self._test_case.assertEqual(resp, expected)
-
-        # Check if these functions were actually invoked
-        # in the flow or not
-        mock_3parclient = self.mock_objects['mock_3parclient']
-        mock_3parclient.getWsApiVersion.assert_called()
-        mock_3parclient.getSnapshotsOfVolume.assert_called()
-
-
 class TestQosVolume(GetVolumeUnitTest):
     def get_request_params(self):
         return {"Name": data.VOLUME_NAME,
@@ -127,3 +88,66 @@ class TestCloneVolume(GetVolumeUnitTest):
         # in the flow or not
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.getWsApiVersion.assert_called()
+
+
+class GetSnapshotUnitTest(GetVolumeUnitTest):
+    pass
+
+
+class TestSyncSnapshots(GetSnapshotUnitTest):
+    def __init__(self, **kwargs):
+        super(type(self), self).__init__(**kwargs)
+        self._snap1 = copy.deepcopy(data.snap1)
+        self._snap2 = copy.deepcopy(data.snap2)
+        self._vol_with_snaps = copy.deepcopy(data.volume_with_snapshots)
+
+    def get_request_params(self):
+        return {"Name": data.SNAPSHOT_NAME1,
+                "Opts": {}}
+
+    def setup_mock_objects(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.side_effect = [
+            self._snap1,
+            self._vol_with_snaps,
+            self._snap2,
+            self._snap1,
+        ]
+        mock_etcd.get_vol_path_info.return_value = None
+
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.getSnapshotsOfVolume.return_value = \
+            data.bkend_snapshots
+
+    def check_response(self, resp):
+        snap_detail = {
+            u'compression': None,
+            u'flash_cache': None,
+            u'is_snap': True,
+            u'parent_id': data.VOLUME_ID,
+            u'parent_volume': data.VOLUME_NAME,
+            u'provisioning': None,
+            u'size': 2,
+            u'expiration_hours': '10',
+            u'retention_hours': '10'
+        }
+
+        expected = {
+            u'Err': u'',
+            u'Volume': {
+                u'Devicename': u'',
+                u'Mountpoint': u'',
+                u'Name': u'snapshot-1',
+                u'Status': {
+                    u'snap_detail': snap_detail
+                }
+            }
+        }
+
+        self._test_case.assertEqual(expected, resp)
+
+        # Check if these functions were actually invoked
+        # in the flow or not
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.getWsApiVersion.assert_called()
+        mock_3parclient.getSnapshotsOfVolume.assert_called()

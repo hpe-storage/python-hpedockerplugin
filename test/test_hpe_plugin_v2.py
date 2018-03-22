@@ -7,7 +7,7 @@ import createsnapshot_tester
 import getvolume_tester
 import mountvolume_tester
 import removesnapshot_tester
-import revertsnapshot_tester
+# import revertsnapshot_tester
 import unmountvolume_tester
 
 logger = logging.getLogger('hpedockerplugin')
@@ -197,20 +197,20 @@ class HpeDockerUnitTestsBase(object):
     """
     CREATE REVERT SNAPSHOT related tests
     """
-    @tc_banner_decorator
-    def test_snap_revert_volume_default(self):
-        test = revertsnapshot_tester.TestCreateSnapRevertVolume()
-        test.run_test(self)
-
-    @tc_banner_decorator
-    def test_snap_revert_nonexist_volume(self):
-        test = revertsnapshot_tester.TestSnapRevertVolumeNotExist()
-        test.run_test(self)
-
-    @tc_banner_decorator
-    def test_snap_revert_nonexist_snap(self):
-        test = revertsnapshot_tester.TestSnapRevertSnapNotExist()
-        test.run_test(self)
+    # @tc_banner_decorator
+    # def test_snap_revert_volume_default(self):
+    #     test = revertsnapshot_tester.TestCreateSnapRevertVolume()
+    #     test.run_test(self)
+    #
+    # @tc_banner_decorator
+    # def test_snap_revert_nonexist_volume(self):
+    #     test = revertsnapshot_tester.TestSnapRevertVolumeNotExist()
+    #     test.run_test(self)
+    #
+    # @tc_banner_decorator
+    # def test_snap_revert_nonexist_snap(self):
+    #     test = revertsnapshot_tester.TestSnapRevertSnapNotExist()
+    #     test.run_test(self)
 
     """
     CREATE SNAPSHOT related tests
@@ -244,15 +244,15 @@ class HpeDockerUnitTestsBase(object):
         test = removesnapshot_tester.TestRemoveSnapshot()
         test.run_test(self)
 
-    @tc_banner_decorator
-    def test_remove_multilevel_snapshot(self):
-        test = removesnapshot_tester.TestRemoveMultilevelSnapshot()
-        test.run_test(self)
+    # @tc_banner_decorator
+    # def test_remove_multilevel_snapshot(self):
+    #     test = removesnapshot_tester.TestRemoveMultilevelSnapshot()
+    #     test.run_test(self)
 
-    @tc_banner_decorator
-    def test_remove_snapshot_with_child_snapshots(self):
-        test = removesnapshot_tester.TestRemoveSnapshotWithChildSnapshots()
-        test.run_test(self)
+    # @tc_banner_decorator
+    # def test_remove_snapshot_with_child_snapshots(self):
+    #     test = removesnapshot_tester.TestRemoveSnapshotWithChildSnapshots()
+    #     test.run_test(self)
 
     @tc_banner_decorator
     def test_remove_non_existing_snapshot(self):
@@ -268,8 +268,57 @@ class HpeDockerUnitTestsBase(object):
         test.run_test(self)
 
     @tc_banner_decorator
+    def test_unmount_snap_remove_host(self):
+        test = unmountvolume_tester.TestUnmountLastVolumeForHost(is_snap=True)
+        test.run_test(self)
+
+    @tc_banner_decorator
     def test_unmount_volume_keep_host(self):
         test = unmountvolume_tester.TestUnmountOneVolumeForHost()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_unmount_snap_keep_host(self):
+        test = unmountvolume_tester.TestUnmountOneVolumeForHost(is_snap=True)
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_unmount_vol_once_mounted_twice_on_this_node(self):
+        test = unmountvolume_tester.TestUnmountVolOnceMountedTwiceOnThisNode()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_unmount_snap_once_mounted_twice_on_this_node(self):
+        test = unmountvolume_tester.TestUnmountVolOnceMountedTwiceOnThisNode(
+            is_snap=True)
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_unmount_vol_mounted_twice_on_this_node(self):
+        # This is a special test case which makes use of the same tester
+        # to execute this TC twice. The idea
+        # is to start with a volume which has two mount-ids i.e. it has been
+        # mounted twice. This TC tries to unmount it twice and checks if
+        # node_mount_info got removed from the volume object
+        test = unmountvolume_tester.TestUnmountVolMountedTwiceOnThisNode(
+            tc_run_cnt=2)
+        # This will not un-mount the volume - just removes one mount-id
+        test.run_test(self)
+        # This will un-mount the volume as the last mount-id gets removed
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_unmount_snap_mounted_twice_on_this_node(self):
+        # This is a special test case which makes use of the same tester
+        # to execute this TC twice. The idea
+        # is to start with a volume which has two mount-ids i.e. it has been
+        # mounted twice. This TC tries to unmount it twice and checks if
+        # node_mount_info got removed from the volume object
+        test = unmountvolume_tester.TestUnmountVolMountedTwiceOnThisNode(
+            tc_run_cnt=2, is_snap=True)
+        # This will not un-mount the volume - just removes one mount-id
+        test.run_test(self)
+        # This will un-mount the volume as the last mount-id gets removed
         test.run_test(self)
 
     """
@@ -307,8 +356,19 @@ class HpeDockerISCSIUnitTests(HpeDockerUnitTestsBase, testtools.TestCase):
         test.run_test(self)
 
     @tc_banner_decorator
+    def test_mount_snap_iscsi_host(self):
+        test = mountvolume_tester.TestMountVolumeISCSIHostNoVLUN(is_snap=True)
+        test.run_test(self)
+
+    @tc_banner_decorator
     def test_mount_volume_existing_nsp(self):
         test = mountvolume_tester.TestMountVolumeISCSIHostVLUNExist()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_mount_snap_existing_nsp(self):
+        test = mountvolume_tester.TestMountVolumeISCSIHostVLUNExist(
+            is_snap=True)
         test.run_test(self)
 
     @tc_banner_decorator
@@ -317,8 +377,19 @@ class HpeDockerISCSIUnitTests(HpeDockerUnitTestsBase, testtools.TestCase):
         test.run_test(self)
 
     @tc_banner_decorator
+    def test_mount_snap_chap_on(self):
+        test = mountvolume_tester.TestMountVolumeISCSIHostChapOn(is_snap=True)
+        test.run_test(self)
+
+    @tc_banner_decorator
     def test_mount_volume_modify_iscsi_host_vlun_exists(self):
         test = mountvolume_tester.TestMountVolumeModifyISCSIHostVLUNExists()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_mount_snap_modify_iscsi_host_vlun_exists(self):
+        test = mountvolume_tester.TestMountVolumeModifyISCSIHostVLUNExists(
+            is_snap=True)
         test.run_test(self)
 
     @tc_banner_decorator
@@ -327,8 +398,19 @@ class HpeDockerISCSIUnitTests(HpeDockerUnitTestsBase, testtools.TestCase):
         test.run_test(self)
 
     @tc_banner_decorator
+    def test_mount_snap_no_iscsi_host_no_vlun(self):
+        test = mountvolume_tester.TestMountVolumeNoISCSIHostNoVLUN(
+            is_snap=True)
+        test.run_test(self)
+
+    @tc_banner_decorator
     def test_vol_fencing_forced_unmount(self):
         test = mountvolume_tester.TestVolFencingForcedUnmount()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_snap_fencing_forced_unmount(self):
+        test = mountvolume_tester.TestVolFencingForcedUnmount(is_snap=True)
         test.run_test(self)
 
     @tc_banner_decorator
@@ -337,8 +419,19 @@ class HpeDockerISCSIUnitTests(HpeDockerUnitTestsBase, testtools.TestCase):
         test.run_test(self)
 
     @tc_banner_decorator
+    def test_snap_fencing_graceful_unmount(self):
+        test = mountvolume_tester.TestVolFencingGracefulUnmount(is_snap=True)
+        test.run_test(self)
+
+    @tc_banner_decorator
     def test_vol_fencing_mount_twice_same_node(self):
         test = mountvolume_tester.TestVolFencingMountTwiceSameNode()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_snap_fencing_mount_twice_same_node(self):
+        test = mountvolume_tester.TestVolFencingMountTwiceSameNode(
+            is_snap=True)
         test.run_test(self)
 
 
@@ -353,8 +446,20 @@ class HpeDockerFCUnitTests(HpeDockerUnitTestsBase, testtools.TestCase):
         test.run_test(self)
 
     @tc_banner_decorator
+    def test_mount_snap_modify_host_vlun_exists(self):
+        test = mountvolume_tester.TestMountVolumeModifyHostVLUNExists(
+            is_snap=True)
+        test.run_test(self)
+
+    @tc_banner_decorator
     def test_mount_volume_no_fc_host_no_vlun(self):
         test = mountvolume_tester.TestMountVolumeNoFCHostNoVLUN()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_mount_snap_no_fc_host_no_vlun(self):
+        test = mountvolume_tester.TestMountVolumeNoFCHostNoVLUN(
+            is_snap=True)
         test.run_test(self)
 
     @tc_banner_decorator
@@ -363,6 +468,16 @@ class HpeDockerFCUnitTests(HpeDockerUnitTestsBase, testtools.TestCase):
         test.run_test(self)
 
     @tc_banner_decorator
+    def test_mount_snap_fc_host(self):
+        test = mountvolume_tester.TestMountVolumeFCHost(is_snap=True)
+        test.run_test(self)
+
+    @tc_banner_decorator
     def test_mount_volume_fc_host_vlun_exists(self):
         test = mountvolume_tester.TestMountVolumeFCHostVLUNExists()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_mount_snap_fc_host_vlun_exists(self):
+        test = mountvolume_tester.TestMountVolumeFCHostVLUNExists(is_snap=True)
         test.run_test(self)

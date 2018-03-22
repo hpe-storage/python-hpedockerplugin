@@ -78,17 +78,20 @@ FAKE_ISCSI_PORTS = [{
     'iSCSIName': TARGET_IQN,
 }]
 
-volume = {'name': VOLUME_NAME,
-          'id': VOLUME_ID,
-          'display_name': VOL_DISP_NAME,
-          'size': 2,
-          'host': FAKE_DOCKER_HOST,
-          'provisioning': THIN,
-          'flash_cache': None,
-          'qos_name': None,
-          'compression': None,
-          'snapshots': [],
-          'mount_conflict_delay': 3}
+volume = {
+    'name': VOLUME_NAME,
+    'id': VOLUME_ID,
+    'display_name': VOL_DISP_NAME,
+    'size': 2,
+    'host': FAKE_DOCKER_HOST,
+    'provisioning': THIN,
+    'flash_cache': None,
+    'qos_name': None,
+    'compression': None,
+    'snapshots': [],
+    'mount_conflict_delay': 3,
+    'is_snap': False
+}
 
 json_path_info = \
     '{"connection_info": {"driver_volume_type": "iscsi", ' \
@@ -119,9 +122,11 @@ vol_mounted_on_this_node = {
     'qos_name': None,
     'compression': None,
     'snapshots': [],
-    'node_mount_info': {THIS_NODE_ID: ['Fake_Mount_id']},
+    'node_mount_info': {THIS_NODE_ID: ['Fake-Mount-ID']},
     'path_info': json_path_info,
-    'mount_conflict_delay': 3}
+    'mount_conflict_delay': 3,
+    'is_snap': False
+}
 
 vol_mounted_on_other_node = {
     'name': VOLUME_NAME,
@@ -134,28 +139,119 @@ vol_mounted_on_other_node = {
     'qos_name': None,
     'compression': None,
     'snapshots': [],
-    'node_mount_info': {OTHER_NODE_ID: ['Fake_Mount_id']},
+    'node_mount_info': {OTHER_NODE_ID: ['Fake-Mount-ID']},
     'path_info': path_info,
-    'mount_conflict_delay': 3}
+    'mount_conflict_delay': 3,
+    'is_snap': False
+}
 
-snapshot1 = {'name': SNAPSHOT_NAME1,
-             'id': SNAPSHOT_ID1,
-             'parent_id': VOLUME_ID,
-             'expiration_hours': '10',
-             'retention_hours': '10'}
+volume_mounted_twice_on_this_node = {
+    'name': VOLUME_NAME,
+    'id': VOLUME_ID,
+    'display_name': VOL_DISP_NAME,
+    'size': 2,
+    'host': FAKE_DOCKER_HOST,
+    'provisioning': THIN,
+    'flash_cache': None,
+    'qos_name': None,
+    'compression': None,
+    'snapshots': [],
+    'node_mount_info': {THIS_NODE_ID: ['Fake-Mount-ID', 'Fake-Mount-ID']},
+    'path_info': path_info,
+    'mount_conflict_delay': 3,
+    'is_snap': False
+}
 
-snapshot2 = {'name': SNAPSHOT_NAME2,
-             'id': SNAPSHOT_ID2,
-             'parent_id': VOLUME_ID,
-             'expiration_hours': '5',
-             'retention_hours': '5'}
+snap1_metadata = {
+    'name': SNAPSHOT_NAME1,
+    'id': SNAPSHOT_ID1,
+    'parent_name': VOLUME_NAME,
+    'parent_id': VOLUME_ID,
+    'expiration_hours': '10',
+    'retention_hours': '10'
+}
 
-snapshot3 = {'name': SNAPSHOT_NAME3,
-             'id': SNAPSHOT_ID3,
-             # This is a child of snapshot1
-             'parent_id': SNAPSHOT_ID1,
-             'expiration_hours': '5',
-             'retention_hours': '5'}
+snap1 = {
+    'name': SNAPSHOT_NAME1,
+    'id': SNAPSHOT_ID1,
+    'display_name': SNAPSHOT_NAME1,
+    'parent_id': VOLUME_ID,
+    'ParentName': VOLUME_NAME,
+    'expiration_hours': '10',
+    'retention_hours': '10',
+    'is_snap': True,
+    'size': 2,
+    'snap_metadata': snap1_metadata,
+    'snapshots': []
+}
+
+snap2_metadata = {
+    'name': SNAPSHOT_NAME2,
+    'id': SNAPSHOT_ID2,
+    'parent_name': VOLUME_NAME,
+    'parent_id': VOLUME_ID,
+    'expiration_hours': '10',
+    'retention_hours': '10'
+}
+
+snap2 = {
+    'name': SNAPSHOT_NAME2,
+    'id': SNAPSHOT_ID2,
+    'display_name': SNAPSHOT_NAME2,
+    'parent_id': VOLUME_ID,
+    'ParentName': VOLUME_NAME,
+    'expiration_hours': '5',
+    'retention_hours': '5',
+    'is_snap': True,
+    'size': 2,
+    'snap_metadata': snap2_metadata,
+    'snapshots': []
+}
+
+snap3_metadata = {
+    'name': SNAPSHOT_NAME2,
+    'id': SNAPSHOT_ID2,
+    'parent_name': SNAPSHOT_NAME1,
+    'parent_id': SNAPSHOT_ID1,
+    'expiration_hours': '10',
+    'retention_hours': '10'
+}
+snap3 = {
+    'name': SNAPSHOT_NAME3,
+    'id': SNAPSHOT_ID3,
+    'display_name': SNAPSHOT_NAME3,
+    # This is a child of ref_to_snap1
+    'parent_id': SNAPSHOT_ID1,
+    'ParentName': SNAPSHOT_NAME1,
+    'expiration_hours': '5',
+    'retention_hours': '5',
+    'is_snap': True,
+    'size': 2,
+    'snap_metadata': snap3_metadata,
+    'snapshots': []
+}
+
+ref_to_snap1 = {
+    'name': SNAPSHOT_NAME1,
+    'id': SNAPSHOT_ID1,
+    'parent_id': VOLUME_ID,
+    'ParentName': VOLUME_NAME
+}
+
+ref_to_snap2 = {
+    'name': SNAPSHOT_NAME2,
+    'id': SNAPSHOT_ID2,
+    'parent_id': VOLUME_ID,
+    'ParentName': VOLUME_NAME
+}
+
+ref_to_snap3 = {
+    'name': SNAPSHOT_NAME3,
+    'id': SNAPSHOT_ID3,
+    # This is a child of ref_to_snap1
+    'parent_id': SNAPSHOT_ID1,
+    'ParentName': VOLUME_NAME
+}
 
 bkend_snapshots = [SNAPSHOT_3PAR_NAME]
 
@@ -179,8 +275,10 @@ volume_with_snapshots = {
     'provisioning': THIN,
     'flash_cache': None,
     'compression': None,
-    'snapshots': [snapshot1, snapshot2],
-    'mount_conflict_delay': 3}
+    'snapshots': [ref_to_snap1, ref_to_snap2],
+    'mount_conflict_delay': 3,
+    'is_snap': False
+}
 
 
 volume_with_multilevel_snapshot = {
@@ -192,78 +290,98 @@ volume_with_multilevel_snapshot = {
     'provisioning': THIN,
     'flash_cache': None,
     'compression': None,
-    'snapshots': [snapshot1, snapshot2, snapshot3],
-    'mount_conflict_delay': 3}
+    'snapshots': [ref_to_snap1, ref_to_snap2, ref_to_snap3],
+    'mount_conflict_delay': 3,
+    'is_snap': False
+}
 
-volume_encrypted = {'name': VOLUME_NAME,
-                    'id': VOLUME_ID,
-                    'display_name': VOL_DISP_NAME,
-                    'size': 2,
-                    'host': FAKE_DOCKER_HOST,
-                    'encryption_key_id': 'fake_key',
-                    'provisioning': THIN,
-                    'flash_cache': None,
-                    'snapshots': [],
-                    'mount_conflict_delay': 3}
+volume_encrypted = {
+    'name': VOLUME_NAME,
+    'id': VOLUME_ID,
+    'display_name': VOL_DISP_NAME,
+    'size': 2,
+    'host': FAKE_DOCKER_HOST,
+    'encryption_key_id': 'fake_key',
+    'provisioning': THIN,
+    'flash_cache': None,
+    'snapshots': [],
+    'mount_conflict_delay': 3,
+    'is_snap': False
+}
 
-volume_dedup_compression = {'name': VOLUME_NAME,
-                            'id': VOLUME_ID,
-                            'display_name': VOL_DISP_NAME,
-                            'size': 16,
-                            'host': FAKE_DOCKER_HOST,
-                            'compression': None,
-                            'flash_cache': None,
-                            'provisioning': DEDUP,
-                            'snapshots': [],
-                            'mount_conflict_delay': 3}
+volume_dedup_compression = {
+    'name': VOLUME_NAME,
+    'id': VOLUME_ID,
+    'display_name': VOL_DISP_NAME,
+    'size': 16,
+    'host': FAKE_DOCKER_HOST,
+    'compression': None,
+    'flash_cache': None,
+    'provisioning': DEDUP,
+    'snapshots': [],
+    'mount_conflict_delay': 3,
+    'is_snap': False
+}
 
-volume_compression = {'name': VOLUME_NAME,
-                      'id': VOLUME_ID,
-                      'display_name': VOL_DISP_NAME,
-                      'size': 16,
-                      'host': FAKE_DOCKER_HOST,
-                      'compression': 'true',
-                      'provisioning': THIN,
-                      'flash_cache': None,
-                      'qos_name': None,
-                      'snapshots': [],
-                      'mount_conflict_delay': 3}
+volume_compression = {
+    'name': VOLUME_NAME,
+    'id': VOLUME_ID,
+    'display_name': VOL_DISP_NAME,
+    'size': 16,
+    'host': FAKE_DOCKER_HOST,
+    'compression': 'true',
+    'provisioning': THIN,
+    'flash_cache': None,
+    'qos_name': None,
+    'snapshots': [],
+    'mount_conflict_delay': 3,
+    'is_snap': False
+}
 
-volume_dedup = {'name': VOLUME_NAME,
-                'id': VOLUME_ID,
-                'display_name': VOL_DISP_NAME,
-                'size': 2,
-                'host': FAKE_DOCKER_HOST,
-                'provisioning': DEDUP,
-                'flash_cache': None,
-                'qos_name': None,
-                'compression': None,
-                'snapshots': [],
-                'mount_conflict_delay': 3}
+volume_dedup = {
+    'name': VOLUME_NAME,
+    'id': VOLUME_ID,
+    'display_name': VOL_DISP_NAME,
+    'size': 2,
+    'host': FAKE_DOCKER_HOST,
+    'provisioning': DEDUP,
+    'flash_cache': None,
+    'qos_name': None,
+    'compression': None,
+    'snapshots': [],
+    'mount_conflict_delay': 3,
+    'is_snap': False
+}
 
-volume_qos = {'name': VOLUME_NAME,
-              'id': VOLUME_ID,
-              'display_name': VOL_DISP_NAME,
-              'size': 2,
-              'host': FAKE_DOCKER_HOST,
-              'provisioning': THIN,
-              'flash_cache': None,
-              'qos_name': "vvk_vvset",
-              'compression': None,
-              'snapshots': [],
-              'mount_conflict_delay': 3}
+volume_qos = {
+    'name': VOLUME_NAME,
+    'id': VOLUME_ID,
+    'display_name': VOL_DISP_NAME,
+    'size': 2,
+    'host': FAKE_DOCKER_HOST,
+    'provisioning': THIN,
+    'flash_cache': None,
+    'qos_name': "vvk_vvset",
+    'compression': None,
+    'snapshots': [],
+    'mount_conflict_delay': 3,
+    'is_snap': False
+}
 
-volume_flash_cache = {'name': VOLUME_NAME,
-                      'id': VOLUME_ID,
-                      'display_name': VOL_DISP_NAME,
-                      'size': 2,
-                      'host': FAKE_DOCKER_HOST,
-                      'provisioning': THIN,
-                      'flash_cache': 'true',
-                      'qos_name': None,
-                      'compression': None,
-                      'snapshots': [],
-                      'mount_conflict_delay': 3}
+volume_flash_cache = {
+    'name': VOLUME_NAME,
+    'id': VOLUME_ID,
+    'display_name': VOL_DISP_NAME,
+    'size': 2,
+    'host': FAKE_DOCKER_HOST,
+    'provisioning': THIN,
+    'flash_cache': 'true',
+    'qos_name': None,
+    'compression': None,
+    'snapshots': [],
+    'mount_conflict_delay': 3,
+    'is_snap': False
+}
 
 volume_flash_cache_and_qos = {
     'name': VOLUME_NAME,
@@ -276,7 +394,9 @@ volume_flash_cache_and_qos = {
     'qos_name': 'vvk_vvset',
     'compression': None,
     'snapshots': [],
-    'mount_conflict_delay': 3}
+    'mount_conflict_delay': 3,
+    'is_snap': False
+}
 
 wwn = ["123456789012345", "123456789054321", "unassigned-wwn1"]
 
@@ -307,25 +427,122 @@ host_vluns = [{'active': True,
                'remoteName': wwn[0],
                'lun': 90, 'type': 0}]
 
+snap_host_vluns1 = [
+    {
+        'active': True,
+        'volumeName': SNAPSHOT_3PAR_NAME,
+        'portPos': {'node': 7, 'slot': 1, 'cardPort': 1},
+        'remoteName': wwn[1],
+        'lun': 90, 'type': 0
+    }
+]
+
+snap_host_vluns2 = [
+    {
+        'active': True,
+        'volumeName': SNAPSHOT_3PAR_NAME,
+        'portPos': {'node': 6, 'slot': 1, 'cardPort': 1},
+        'remoteName': wwn[0],
+        'lun': 90, 'type': 0
+    }
+]
+
+snap_host_vluns = [
+    {
+        'active': True,
+        'volumeName': SNAPSHOT_3PAR_NAME,
+        'portPos': {
+            'node': 7,
+            'slot': 1,
+            'cardPort': 1
+        },
+        'remoteName': wwn[1],
+        'lun': 90, 'type': 0
+    },
+    {
+        'active': False,
+        'volumeName': SNAPSHOT_3PAR_NAME,
+        'portPos': {
+            'node': 9,
+            'slot': 1,
+            'cardPort': 1
+        },
+        'remoteName': wwn[0],
+        'lun': 90, 'type': 0
+    }
+]
+
 iscsi_host_vluns = [{'active': True,
                      'hostname': FAKE_HOST,
                      'volumeName': VOLUME_3PAR_NAME,
                      'lun': TARGET_LUN, 'type': 0,
+                     'remoteName': TARGET_IQN,
                      'portPos': {'node': 8, 'slot': 1, 'cardPort': 1}},
                     {'active': False,
                      'hostname': FAKE_HOST,
                      'volumeName': VOLUME_3PAR_NAME,
                      'lun': TARGET_LUN, 'type': 0,
+                     'remoteName': TARGET_IQN,
                      'portPos': {'node': 9, 'slot': 1, 'cardPort': 1}}]
 
-iscsi_host_vluns1 = [{'active': True,
-                      'hostname': FAKE_HOST,
-                      'volumeName': VOLUME_3PAR_NAME,
-                      'lun': TARGET_LUN, 'type': 0,
-                      'portPos': {'node': 8, 'slot': 1, 'cardPort': 1}}]
-iscsi_host_vluns2 = [{'active': True,
-                      'volumeName': VOLUME_3PAR_NAME,
-                      'lun': TARGET_LUN, 'type': 0}]
+snap_iscsi_host_vluns = [
+    {
+        'active': True,
+        'hostname': FAKE_HOST,
+        'volumeName': SNAPSHOT_3PAR_NAME,
+        'lun': TARGET_LUN, 'type': 0,
+        'remoteName': TARGET_IQN,
+        'portPos': {'node': 8, 'slot': 1, 'cardPort': 1}
+    },
+    {
+        'active': False,
+        'hostname': FAKE_HOST,
+        'volumeName': SNAPSHOT_3PAR_NAME,
+        'lun': TARGET_LUN, 'type': 0,
+        'remoteName': TARGET_IQN,
+        'portPos': {'node': 9, 'slot': 1, 'cardPort': 1}
+    }
+]
+
+iscsi_host_vluns1 = [
+    {
+        'active': True,
+        'hostname': FAKE_HOST,
+        'volumeName': VOLUME_3PAR_NAME,
+        'lun': TARGET_LUN, 'type': 0,
+        'remoteName': TARGET_IQN,
+        'portPos': {'node': 8, 'slot': 1, 'cardPort': 1}
+    }
+]
+
+iscsi_host_vluns2 = [
+    {
+        'active': True,
+        'volumeName': VOLUME_3PAR_NAME,
+        'lun': TARGET_LUN, 'type': 0,
+        'remoteName': TARGET_IQN,
+    }
+]
+
+snap_iscsi_host_vluns1 = [
+    {
+        'active': True,
+        'hostname': FAKE_HOST,
+        'volumeName': SNAPSHOT_3PAR_NAME,
+        'lun': TARGET_LUN, 'type': 0,
+        'remoteName': TARGET_IQN,
+        'portPos': {'node': 8, 'slot': 1, 'cardPort': 1}
+    }
+]
+
+snap_iscsi_host_vluns2 = [
+    {
+        'active': True,
+        'volumeName': SNAPSHOT_3PAR_NAME,
+        'remoteName': TARGET_IQN,
+        'lun': TARGET_LUN, 'type': 0
+    }
+]
 
 fake_fc_host = {'name': FAKE_HOST,
                 'FCPaths': [
@@ -377,19 +594,6 @@ connector_multipath_enabled = {'ip': '10.0.0.2',
                                          "223456789054321"],
                                'host': FAKE_HOST,
                                'multipath': True}
-
-volume_type = {'name': 'gold',
-               'deleted': False,
-               'updated_at': None,
-               'extra_specs': {'cpg': HPE3PAR_CPG2,
-                               'qos:maxIOPS': '1000',
-                               'qos:maxBWS': '50',
-                               'qos:minIOPS': '100',
-                               'qos:minBWS': '25',
-                               'qos:latency': '25',
-                               'qos:priority': 'low'},
-               'deleted_at': None,
-               'id': 'gold'}
 
 TASK_ID = '123456789'
 TASK_DONE = 1
