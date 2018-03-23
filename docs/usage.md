@@ -89,7 +89,7 @@ docker volume inspect <snapshot_name>
 docker volume rm <snapshot_name>
 ```
 
-#### Mounting a volume
+#### Mounting a volume/snapshot
 
 Use the following command to mount a volume and start a bash prompt:
 
@@ -98,6 +98,7 @@ docker run -it -v <vol_name>:/<mount_point>/ --volume-driver hpe <image_name> ba
 ```
 
 Note: If the volume does not exist it will be created.
+<vol_name> here can be both snapshot (or) a base volume created by the plugin.
 
 The image used for mounting can be any image located on https://hub.docker.com/ or
 the local filesystem. See https://docs.docker.com/v1.8/userguide/dockerimages/
