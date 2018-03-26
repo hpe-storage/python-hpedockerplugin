@@ -155,42 +155,30 @@ class VolumeManager(object):
 
         return self._clone_volume(clone_name, src_vol, size)
 
+    def _create_snapshot_record(self, snap_vol, snapshot_name, undo_steps):
+        self._etcd.save_vol(snap_vol)
+        undo_steps.append({'undo_func': self._etcd.delete_vol,
+                           'params': {'vol': snap_vol},
+                           'msg': "Cleaning up snapshot record for '%s'"
+                                  " from ETCD..." % snapshot_name})
+
     @synchronization.synchronized('{snapshot_name}')
-    def _create_snapshot_record(self, snap_vol, snapshot_name, snapshot):
-        undo_steps = []
-        try:
-            bkend_snap_name = self._hpeplugin_driver.create_snapshot(snapshot)
-            undo_steps.append(
-                {'undo_func': self._hpeplugin_driver.delete_volume,
-                 'params': {'volume': snapshot,
-                            'is_snapshot': True},
-                 'msg': 'Cleaning up backend snapshot: %s...'
-                        % bkend_snap_name})
-        except Exception as ex:
-            msg = (_('create snapshot failed, error is: %s'),
-                   six.text_type(ex))
-            LOG.error(msg)
-            return json.dumps({u"Err": six.text_type(msg)})
-
-        try:
-            self._etcd.save_vol(snap_vol)
-            LOG.debug('snapshot: %(name)s was successfully saved'
-                      ' to etcd', {'name': snapshot_name})
-        except Exception as ex:
-            msg = (_('save snapshot to etcd faied, error is: %s'),
-                   six.text_type(ex))
-            LOG.err(msg)
-            self._rollback(undo_steps)
-            response = json.dumps({u"Err": six.text_type(msg)})
-            return response
-        response = None
-        return response
-
-    @synchronization.synchronized('{src_vol_name}')
     def create_snapshot(self, src_vol_name, snapshot_name,
                         expiration_hrs, retention_hrs):
         # Check if volume is present in database
-        is_snap = True
+        snap = self._etcd.get_vol_byname(snapshot_name)
+        if snap:
+            msg = 'snapshot %s already exists' % snapshot_name
+            LOG.info(msg)
+            response = json.dumps({'Err': msg})
+            return response
+
+        return self._create_snapshot(src_vol_name, snapshot_name,
+                                     expiration_hrs, retention_hrs)
+
+    @synchronization.synchronized('{src_vol_name}')
+    def _create_snapshot(self, src_vol_name, snapshot_name,
+                         expiration_hrs, retention_hrs):
         vol = self._etcd.get_vol_byname(src_vol_name)
         if vol is None:
             msg = 'source volume: %s does not exist' % src_vol_name
@@ -199,11 +187,14 @@ class VolumeManager(object):
             return response
 
         volid = vol['id']
-
+        # Check if this is an old volume type. If yes, add is_snap flag to it
         if 'is_snap' not in vol:
             vol_snap_flag = volume.DEFAULT_TO_SNAP_TYPE
+            vol['is_snap'] = vol_snap_flag
             self._etcd.update_vol(volid, 'is_snap', vol_snap_flag)
 
+        # Check if instead of specifying parent volume, user incorrectly
+        # specified snapshot as virtualCopyOf parameter. If yes, return error.
         if 'is_snap' in vol and vol['is_snap']:
             msg = 'source volume: %s is a snapshot, creating hierarchy ' \
                   'of snapshots is not allowed.' % src_vol_name
@@ -218,10 +209,18 @@ class VolumeManager(object):
         snap_qos = volume.DEFAULT_QOS
         mount_cononflict_delay = vol['mount_conflict_delay']
 
+        is_snap = True
         snap_vol = volume.createvol(snapshot_name, snap_size, snap_prov,
                                     snap_flash, snap_compression, snap_qos,
                                     mount_cononflict_delay, is_snap)
 
+        # TODO: Remove the below code or remove snapshot back reference entry
+        # Imran: The code below now means snapshot back reference is present
+        # However in the caller of this function, we are checking is meta-data
+        # for snapshot exists. So this kind of situation should never arise
+        # when snapshot meta-data doesn't exist but a dangling back reference
+        # to it is present in the volume meta-data. We should remove the below
+        # block of code
         if vol['snapshots']:
             ss_list = vol['snapshots']
             for ss in ss_list:
@@ -234,6 +233,7 @@ class VolumeManager(object):
                     return json.dumps({u"Err": six.text_type(msg)})
 
         snapshot_id = snap_vol['id']
+
         snapshot = {'id': snapshot_id,
                     'display_name': snapshot_name,
                     'volume_id': vol['id'],
@@ -242,6 +242,23 @@ class VolumeManager(object):
                     'retentionHours': retention_hrs,
                     'display_description': 'snapshot of volume %s'
                                            % src_vol_name}
+        undo_steps = []
+        try:
+            bkend_snap_name = self._hpeplugin_driver.create_snapshot(
+                snapshot)
+            undo_steps.append(
+                {'undo_func': self._hpeplugin_driver.delete_volume,
+                 'params': {'volume': snapshot_name,
+                            'is_snapshot': True},
+                 'msg': 'Cleaning up backend snapshot: %s...'
+                        % bkend_snap_name})
+        except Exception as ex:
+            msg = (_('create snapshot failed, error is: %s'),
+                   six.text_type(ex))
+            LOG.error(msg)
+            return json.dumps({u"Err": six.text_type(ex)})
+
+        # Add back reference to child snapshot in volume metadata
         db_snapshot = {'name': snapshot_name,
                        'id': snapshot_id,
                        'parent_name': src_vol_name,
@@ -249,14 +266,11 @@ class VolumeManager(object):
                        'expiration_hours': expiration_hrs,
                        'retention_hours': retention_hrs}
         vol['snapshots'].append(db_snapshot)
-
         snap_vol['snap_metadata'] = db_snapshot
 
-        response = self._create_snapshot_record(snap_vol, snapshot_name,
-                                                snapshot)
-        if response is not None:
-            return response
         try:
+            self._create_snapshot_record(snap_vol, snapshot_name, undo_steps)
+
             # For now just track volume to uuid mapping internally
             # TODO: Save volume name and uuid mapping in etcd as well
             # This will make get_vol_byname more efficient
@@ -264,17 +278,13 @@ class VolumeManager(object):
             LOG.debug('snapshot: %(name)s was successfully saved '
                       'to etcd', {'name': snapshot_name})
         except Exception as ex:
-            # TODO: 3PAR clean up issue over here - snapshot got
-            # created in the backend but since it could not be saved
-            # in ETCD db we are throwing an error saying operation
-            # failed.
-            # TODO: Snapshot needs clean up
             msg = (_('save volume to etcd failed, error is: %s'),
                    six.text_type(ex))
             LOG.error(msg)
-            # self._rollback(undo_steps)
+            self._rollback(undo_steps)
             response = json.dumps({u"Err": six.text_type(ex)})
-        response = json.dumps({u"Err": ''})
+        else:
+            response = json.dumps({u"Err": ''})
         return response
 
     @synchronization.synchronized('{volname}')
