@@ -178,7 +178,7 @@ class VolumeManager(object):
 
     @synchronization.synchronized('{src_vol_name}')
     def _create_snapshot(self, src_vol_name, snapshot_name,
-                         expiration_hrs, retention_hrs)
+                         expiration_hrs, retention_hrs):
         vol = self._etcd.get_vol_byname(src_vol_name)
         if vol is None:
             msg = 'source volume: %s does not exist' % src_vol_name
