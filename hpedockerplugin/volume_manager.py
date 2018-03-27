@@ -214,24 +214,6 @@ class VolumeManager(object):
                                     snap_flash, snap_compression, snap_qos,
                                     mount_cononflict_delay, is_snap)
 
-        # TODO: Remove the below code or remove snapshot back reference entry
-        # Imran: The code below now means snapshot back reference is present
-        # However in the caller of this function, we are checking is meta-data
-        # for snapshot exists. So this kind of situation should never arise
-        # when snapshot meta-data doesn't exist but a dangling back reference
-        # to it is present in the volume meta-data. We should remove the below
-        # block of code
-        if vol['snapshots']:
-            ss_list = vol['snapshots']
-            for ss in ss_list:
-                if snapshot_name == ss['name']:
-                    msg = (_('Snapshot create failed. Error '
-                             'is: %(snap_name)s is already created. '
-                             'Please enter a new snapshot name.') %
-                           {'snap_name': snapshot_name})
-                    LOG.error(msg)
-                    return json.dumps({u"Err": six.text_type(msg)})
-
         snapshot_id = snap_vol['id']
 
         snapshot = {'id': snapshot_id,
