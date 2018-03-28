@@ -164,8 +164,12 @@ class VolumeManager(object):
 
     @synchronization.synchronized('{snapshot_name}')
     def create_snapshot(self, src_vol_name, snapshot_name,
+<<<<<<< fe3a4168a0a8cf0670d18d291970b862d0d8198d
                         expiration_hrs, retention_hrs,
                         mount_conflict_delay):
+=======
+                        expiration_hrs, retention_hrs, mount_conflict_delay):
+>>>>>>> Fix for issue #159
         # Check if volume is present in database
         snap = self._etcd.get_vol_byname(snapshot_name)
         if snap:
@@ -289,9 +293,12 @@ class VolumeManager(object):
         if 'is_snap' in vol and vol['is_snap']:
             is_snap = True
             parent_name = vol['snap_metadata']['parent_name']
+<<<<<<< fe3a4168a0a8cf0670d18d291970b862d0d8198d
 
         try:
             if vol['snapshots']:
+=======
+>>>>>>> Fix for issue #159
                 msg = (_LE('Err: Volume %s has one or more child '
                            'snapshots - volume cannot be deleted!'
                            % volname))
