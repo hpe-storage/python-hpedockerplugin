@@ -197,7 +197,9 @@ class VolumePlugin(object):
                 return json.dumps({u"Err": six.text_type(msg)})
 
             if ('virtualCopyOf' in contents['Opts']):
-                return self.volumedriver_create_snapshot(name, opts)
+                return self.volumedriver_create_snapshot(name,
+                                                         mount_conflict_delay,
+                                                         opts)
             elif ('cloneOf' in contents['Opts']):
                 return self.volumedriver_clone_volume(name, opts)
 
@@ -234,7 +236,8 @@ class VolumePlugin(object):
         clone_name = contents['Name']
         return self._manager.clone_volume(src_vol_name, clone_name, size)
 
-    def volumedriver_create_snapshot(self, name, opts=None):
+    def volumedriver_create_snapshot(self, name, mount_conflict_delay,
+                                     opts=None):
         # Repeating the validation here in anticipation that when
         # actual REST call for snapshot creation is added, this
         # function will have minimal impact
@@ -276,7 +279,8 @@ class VolumePlugin(object):
         return self._manager.create_snapshot(src_vol_name,
                                              snapshot_name,
                                              expiration_hrs,
-                                             retention_hrs)
+                                             retention_hrs,
+                                             mount_conflict_delay)
 
     @app.route("/VolumeDriver.Mount", methods=["POST"])
     def volumedriver_mount(self, name):
