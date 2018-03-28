@@ -230,7 +230,7 @@ class VolumeManager(object):
                 snapshot)
             undo_steps.append(
                 {'undo_func': self._hpeplugin_driver.delete_volume,
-                 'params': {'volume': snapshot_name,
+                 'params': {'volume': snapshot,
                             'is_snapshot': True},
                  'msg': 'Cleaning up backend snapshot: %s...'
                         % bkend_snap_name})

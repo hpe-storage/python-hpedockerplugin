@@ -383,7 +383,7 @@ class HPE3PARFCDriver(object):
     def create_snapshot(self, snapshot):
         common = self._login()
         try:
-            common.create_snapshot(snapshot)
+            return common.create_snapshot(snapshot)
         finally:
             self._logout(common)
 
