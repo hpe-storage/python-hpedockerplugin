@@ -188,7 +188,7 @@ class VolumeManager(object):
 
     @synchronization.synchronized('{src_vol_name}')
     def create_snapshot(self, src_vol_name, snapshot_name,
-                        expiration_hrs, retention_hrs):
+                        expiration_hrs, retention_hrs, mount_conflict_delay):
         # Check if volume is present in database
         is_snap = True
         vol = self._etcd.get_vol_byname(src_vol_name)
@@ -216,11 +216,10 @@ class VolumeManager(object):
         snap_flash = vol['flash_cache']
         snap_compression = vol['compression']
         snap_qos = volume.DEFAULT_QOS
-        mount_cononflict_delay = vol['mount_conflict_delay']
 
         snap_vol = volume.createvol(snapshot_name, snap_size, snap_prov,
                                     snap_flash, snap_compression, snap_qos,
-                                    mount_cononflict_delay, is_snap)
+                                    mount_conflict_delay, is_snap)
 
         if vol['snapshots']:
             ss_list = vol['snapshots']
