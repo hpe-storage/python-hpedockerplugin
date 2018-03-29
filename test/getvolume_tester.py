@@ -34,22 +34,33 @@ class TestQosVolume(GetVolumeUnitTest):
         mock_3parclient.queryQoSRule.return_value = data.qos_from_3par_wsapi
 
     def check_response(self, resp):
-        expected = {u'Volume':
-                    {u'Devicename': u'', u'Status':
-                     {u'qos_detail': {u'Latency': u'10 sec',
-                                      u'enabled': None,
-                                      u'maxBWS': u'40 MB/sec',
-                                      u'maxIOPS': u'2000000 IOs/sec',
-                                      u'minBWS': u'30 MB/sec',
-                                      u'minIOPS': u'10000 IOs/sec',
-                                      u'priority': u'Normal',
-                                      u'vvset_name': u'vvk_vvset'},
-                      u'volume_detail': {u'compression': None,
-                                         u'flash_cache': None,
-                                         u'provisioning': u'thin',
-                                         u'size': 2}},
-                     u'Name': u'volume-d03338a9-9115-48a3-8dfc-35cdfcdc15a7',
-                     u'Mountpoint': u''}, u'Err': u''}
+        expected = {
+            u'Volume': {
+                u'Devicename': u'',
+                u'Status': {
+                    u'qos_detail': {
+                        u'Latency': u'10 sec',
+                        u'enabled': None,
+                        u'maxBWS': u'40 MB/sec',
+                        u'maxIOPS': u'2000000 IOs/sec',
+                        u'minBWS': u'30 MB/sec',
+                        u'minIOPS': u'10000 IOs/sec',
+                        u'priority': u'Normal',
+                        u'vvset_name': u'vvk_vvset'
+                    },
+                    u'volume_detail': {
+                        u'compression': None,
+                        u'flash_cache': None,
+                        u'provisioning': u'thin',
+                        u'size': 2,
+                        u'mountConflictDelay': data.MOUNT_CONFLICT_DELAY
+                    }
+                },
+                u'Name': u'volume-d03338a9-9115-48a3-8dfc-35cdfcdc15a7',
+                u'Mountpoint': u''
+            },
+            u'Err': u''
+        }
 
         self._test_case.assertEqual(resp, expected)
 
@@ -73,14 +84,23 @@ class TestCloneVolume(GetVolumeUnitTest):
         mock_etcd.get_vol_path_info.return_value = None
 
     def check_response(self, resp):
-        expected = {u'Volume':
-                    {u'Devicename': u'', u'Status':
-                     {u'volume_detail': {u'compression': None,
-                                         u'flash_cache': None,
-                                         u'provisioning': u'dedup',
-                                         u'size': 2}},
-                     u'Name': u'volume-d03338a9-9115-48a3-8dfc-35cdfcdc15a7',
-                     u'Mountpoint': u''}, u'Err': u''}
+        expected = {
+            u'Volume': {
+                u'Devicename': u'',
+                u'Status': {
+                    u'volume_detail': {
+                        u'compression': None,
+                        u'flash_cache': None,
+                        u'provisioning': u'dedup',
+                        u'size': 2,
+                        u'mountConflictDelay': data.MOUNT_CONFLICT_DELAY
+                    }
+                },
+                u'Name': u'volume-d03338a9-9115-48a3-8dfc-35cdfcdc15a7',
+                u'Mountpoint': u''
+            },
+            u'Err': u''
+        }
 
         self._test_case.assertEqual(resp, expected)
 
@@ -129,7 +149,8 @@ class TestSyncSnapshots(GetSnapshotUnitTest):
             u'provisioning': None,
             u'size': 2,
             u'expiration_hours': '10',
-            u'retention_hours': '10'
+            u'retention_hours': '10',
+            u'mountConflictDelay': data.MOUNT_CONFLICT_DELAY
         }
 
         expected = {

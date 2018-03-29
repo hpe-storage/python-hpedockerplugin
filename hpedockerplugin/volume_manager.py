@@ -207,12 +207,12 @@ class VolumeManager(object):
         snap_flash = vol['flash_cache']
         snap_compression = vol['compression']
         snap_qos = volume.DEFAULT_QOS
-        mount_cononflict_delay = vol['mount_conflict_delay']
+        mount_conflict_delay = vol['mount_conflict_delay']
 
         is_snap = True
         snap_vol = volume.createvol(snapshot_name, snap_size, snap_prov,
                                     snap_flash, snap_compression, snap_qos,
-                                    mount_cononflict_delay, is_snap)
+                                    mount_conflict_delay, is_snap)
 
         snapshot_id = snap_vol['id']
 
@@ -456,6 +456,8 @@ class VolumeManager(object):
         snap_detail['parent_id'] = parent_id
         snap_detail['expiration_hours'] = expiration_hours
         snap_detail['retention_hours'] = retention_hours
+        snap_detail['mountConflictDelay'] = snapinfo.get(
+            'mount_conflict_delay')
 
         snapshot['Status'].update({'snap_detail': snap_detail})
 
@@ -567,6 +569,8 @@ class VolumeManager(object):
             vol_detail['flash_cache'] = volinfo.get('flash_cache')
             vol_detail['compression'] = volinfo.get('compression')
             vol_detail['provisioning'] = volinfo.get('provisioning')
+            vol_detail['mountConflictDelay'] = volinfo.get(
+                'mount_conflict_delay')
             volume['Status'].update({'volume_detail': vol_detail})
 
         response = json.dumps({u"Err": err, u"Volume": volume})

@@ -41,6 +41,7 @@ VOLUME_3PAR_NAME = 'dcv-0DM4qZEVSKON-DXN-NwVpw'
 SNAPSHOT_3PAR_NAME = 'dcs-L4I73ONuTci9Fd4ceij-MQ'
 TARGET_IQN = 'iqn.2000-05.com.3pardata:21810002ac00383d'
 TARGET_LUN = 90
+MOUNT_CONFLICT_DELAY = 3
 # fake host on the 3par
 FAKE_HOST = 'fakehost'
 FAKE_DOCKER_HOST = 'fakehost@foo#' + HPE3PAR_CPG
@@ -89,7 +90,7 @@ volume = {
     'qos_name': None,
     'compression': None,
     'snapshots': [],
-    'mount_conflict_delay': 3,
+    'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
     'is_snap': False
 }
 
@@ -124,7 +125,7 @@ vol_mounted_on_this_node = {
     'snapshots': [],
     'node_mount_info': {THIS_NODE_ID: ['Fake-Mount-ID']},
     'path_info': json_path_info,
-    'mount_conflict_delay': 3,
+    'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
     'is_snap': False
 }
 
@@ -141,7 +142,7 @@ vol_mounted_on_other_node = {
     'snapshots': [],
     'node_mount_info': {OTHER_NODE_ID: ['Fake-Mount-ID']},
     'path_info': path_info,
-    'mount_conflict_delay': 3,
+    'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
     'is_snap': False
 }
 
@@ -158,7 +159,7 @@ volume_mounted_twice_on_this_node = {
     'snapshots': [],
     'node_mount_info': {THIS_NODE_ID: ['Fake-Mount-ID', 'Fake-Mount-ID']},
     'path_info': path_info,
-    'mount_conflict_delay': 3,
+    'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
     'is_snap': False
 }
 
@@ -180,7 +181,8 @@ snap1 = {
     'is_snap': True,
     'size': 2,
     'snap_metadata': snap1_metadata,
-    'snapshots': []
+    'snapshots': [],
+    'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
 }
 
 snap2_metadata = {
@@ -201,7 +203,8 @@ snap2 = {
     'is_snap': True,
     'size': 2,
     'snap_metadata': snap2_metadata,
-    'snapshots': []
+    'snapshots': [],
+    'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
 }
 
 snap3_metadata = {
@@ -222,7 +225,8 @@ snap3 = {
     'is_snap': True,
     'size': 2,
     'snap_metadata': snap3_metadata,
-    'snapshots': []
+    'snapshots': [],
+    'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
 }
 
 ref_to_snap1 = {
@@ -270,7 +274,7 @@ volume_with_snapshots = {
     'flash_cache': None,
     'compression': None,
     'snapshots': [ref_to_snap1, ref_to_snap2],
-    'mount_conflict_delay': 3,
+    'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
     'is_snap': False
 }
 
@@ -285,7 +289,7 @@ volume_with_multilevel_snapshot = {
     'flash_cache': None,
     'compression': None,
     'snapshots': [ref_to_snap1, ref_to_snap2, ref_to_snap3],
-    'mount_conflict_delay': 3,
+    'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
     'is_snap': False
 }
 
@@ -299,7 +303,7 @@ volume_encrypted = {
     'provisioning': THIN,
     'flash_cache': None,
     'snapshots': [],
-    'mount_conflict_delay': 3,
+    'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
     'is_snap': False
 }
 
@@ -313,7 +317,7 @@ volume_dedup_compression = {
     'flash_cache': None,
     'provisioning': DEDUP,
     'snapshots': [],
-    'mount_conflict_delay': 3,
+    'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
     'is_snap': False
 }
 
@@ -328,7 +332,7 @@ volume_compression = {
     'flash_cache': None,
     'qos_name': None,
     'snapshots': [],
-    'mount_conflict_delay': 3,
+    'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
     'is_snap': False
 }
 
@@ -343,7 +347,7 @@ volume_dedup = {
     'qos_name': None,
     'compression': None,
     'snapshots': [],
-    'mount_conflict_delay': 3,
+    'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
     'is_snap': False
 }
 
@@ -358,7 +362,7 @@ volume_qos = {
     'qos_name': "vvk_vvset",
     'compression': None,
     'snapshots': [],
-    'mount_conflict_delay': 3,
+    'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
     'is_snap': False
 }
 
@@ -373,7 +377,7 @@ volume_flash_cache = {
     'qos_name': None,
     'compression': None,
     'snapshots': [],
-    'mount_conflict_delay': 3,
+    'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
     'is_snap': False
 }
 
@@ -388,7 +392,7 @@ volume_flash_cache_and_qos = {
     'qos_name': 'vvk_vvset',
     'compression': None,
     'snapshots': [],
-    'mount_conflict_delay': 3,
+    'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
     'is_snap': False
 }
 
