@@ -15,7 +15,7 @@ cp <path>/dory hpe
 {
     "dockerVolumePluginSocketPath": "/run/docker/plugins/hpe.sock",
     "logDebug": true,
-    "supportsCapabilities": false,
+    "supportsCapabilities": true,
     "stripK8sFromOptions": true,
     "createVolumes": true,
     "listOfStorageResourceOptions": ["size"]
