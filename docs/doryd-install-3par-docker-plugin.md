@@ -6,7 +6,7 @@
 cd /usr/libexec/kubernetes/kubelet-plugins/volume/exec/
 mkdir dev.hpe.com~hpe
 cd dev.hpe.com~hpe
-cp <path>/dory .
+cp <path>/dory hpe
 # create a file called hpe.json in this folder
 ```
 
@@ -15,7 +15,6 @@ cp <path>/dory .
 {
     "dockerVolumePluginSocketPath": "/run/docker/plugins/hpe.sock",
     "logDebug": true,
-    "enable1.6": true,
     "supportsCapabilities": false,
     "stripK8sFromOptions": true,
     "createVolumes": true,
@@ -28,6 +27,12 @@ cp <path>/dory .
 kubectl apply -f https://raw.githubusercontent.com/hpe-storage/dory/master/examples/ds-doryd.yaml
 kubectl describe ds/doryd
 ```
+Alternate way is to run the doryd binary like
+
+```
+<path>/doryd dev.hpe.com /root/.kube/config
+```
+
 More details refer this [blog](https://developer.hpe.com/blog/doryd-a-dynamic-provisioner-for-docker-volume-plugins)
 Note: Please start from section "Kubekuddle this!" , since other pre-requisites are taken care of already.
 
