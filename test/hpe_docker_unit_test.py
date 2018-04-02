@@ -27,6 +27,9 @@ class HpeDockerUnitTestExecutor(object):
        as desired
     """
 
+    def __init__(self, **kwargs):
+        self._kwargs = kwargs
+
     @staticmethod
     def _get_request_body(request_dict):
         req_body_str = json.dumps(request_dict)
@@ -43,6 +46,7 @@ class HpeDockerUnitTestExecutor(object):
         """
         # import pdb
         # pdb.set_trace()
+
         # Get API parameters from child class
         req_body = self._get_request_body(self.get_request_params())
 

@@ -252,7 +252,7 @@ class VolumePlugin(object):
 
         # Verify valid Opts arguments.
         valid_volume_create_opts = ['virtualCopyOf', 'expirationHours',
-                                    'retentionHours']
+                                    'retentionHours', 'mountConflictDelay']
         if 'Opts' in contents and contents['Opts']:
             for key in contents['Opts']:
                 if key not in valid_volume_create_opts:

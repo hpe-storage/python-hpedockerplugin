@@ -450,6 +450,15 @@ class HPE3PARCommon(object):
                         raise exception.HPEDriverForceRemoveVLUNFailed(
                             reason=ex)
 
+            # Imran: Fix for issue #153
+            try:
+                self.client.getHostVLUNs(hostname)
+            except hpeexceptions.HTTPNotFound:
+                # Since no VLUNs present for the host, remove it
+                LOG.info("Removing host '%s' from 3PAR..." % hostname)
+                self._delete_3par_host(hostname)
+                LOG.info("Removed host '%s' from 3PAR!" % hostname)
+
     def delete_vlun(self, volume, hostname, is_snap):
         volume_name = utils.get_3par_name(volume['id'], is_snap)
         vluns = self.client.getHostVLUNs(hostname)

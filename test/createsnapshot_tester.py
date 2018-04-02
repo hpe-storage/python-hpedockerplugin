@@ -13,13 +13,20 @@ class CreateSnapshotUnitTest(createvolume.CreateVolumeUnitTest):
 
 # This exercises online-copy path
 class TestCreateSnapshotDefault(CreateSnapshotUnitTest):
+    def __init__(self, **kwargs):
+        super(type(self), self).__init__(**kwargs)
+        self._parent_vol = copy.deepcopy(data.volume)
+
     def get_request_params(self):
-        return {"Name": "snap-001",
-                "Opts": {"snapshotOf": data.VOLUME_NAME}}
+        return {"Name": data.SNAPSHOT_NAME1,
+                "Opts": {"virtualCopyOf": data.VOLUME_NAME}}
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
-        mock_etcd.get_vol_byname.return_value = copy.deepcopy(data.volume)
+        mock_etcd.get_vol_byname.side_effect = [
+            None,
+            copy.deepcopy(data.volume)
+        ]
 
     def check_response(self, resp):
         self._test_case.assertEqual(resp, {u"Err": ''})
@@ -31,14 +38,17 @@ class TestCreateSnapshotDefault(CreateSnapshotUnitTest):
 
 class TestCreateSnapshotWithExpiryRetentionTimes(CreateSnapshotUnitTest):
     def get_request_params(self):
-        return {"Name": "snap-001",
-                "Opts": {"snapshotOf": data.VOLUME_NAME,
+        return {"Name": data.SNAPSHOT_NAME1,
+                "Opts": {"virtualCopyOf": data.VOLUME_NAME,
                          "expirationHours": '10',
                          "retentionHours": '5'}}
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
-        mock_etcd.get_vol_byname.return_value = copy.deepcopy(data.volume)
+        mock_etcd.get_vol_byname.side_effect = [
+            None,
+            copy.deepcopy(data.volume)
+        ]
 
     def check_response(self, resp):
         self._test_case.assertEqual(resp, {u"Err": ''})
@@ -52,24 +62,22 @@ class TestCreateSnapshotWithExpiryRetentionTimes(CreateSnapshotUnitTest):
 class TestCreateSnapshotDuplicateName(CreateSnapshotUnitTest):
     def get_request_params(self):
         return {"Name": data.SNAPSHOT_NAME1,
-                "Opts": {"snapshotOf": data.VOLUME_NAME}}
+                "Opts": {"virtualCopyOf": data.VOLUME_NAME}}
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
-        mock_etcd.get_vol_byname.return_value = data.volume_with_snapshots
+        mock_etcd.get_vol_byname.return_value = data.snap1
 
     def check_response(self, resp):
-        self._test_case.assertEqual(resp, {u"Err": 'Snapshot create failed.'
-                                           ' Error is: snapshot-1 is '
-                                           'already created. Please enter '
-                                           'a new snapshot name.'})
+        self._test_case.assertEqual(resp, {u"Err": 'snapshot snapshot-1'
+                                                   ' already exists'})
 
 
 # Tries to create snapshot with retention time > expiry time. This should fail.
 class TestCreateSnapshotWithInvalidTimes(CreateSnapshotUnitTest):
     def get_request_params(self):
         return {"Name": "snap-001",
-                "Opts": {"snapshotOf": data.VOLUME_NAME,
+                "Opts": {"virtualCopyOf": data.VOLUME_NAME,
                          "expirationHours": '10',
                          "retentionHours": '20'}}
 
@@ -84,11 +92,14 @@ class TestCreateSnapshotWithInvalidTimes(CreateSnapshotUnitTest):
 class TestCreateSnapshotForNonExistentVolume(CreateSnapshotUnitTest):
     def get_request_params(self):
         return {"Name": "snap-001",
-                "Opts": {"snapshotOf": 'i_do_not_exist_volume'}}
+                "Opts": {"virtualCopyOf": 'i_do_not_exist_volume'}}
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
-        mock_etcd.get_vol_byname.return_value = None
+        mock_etcd.get_vol_byname.side_effect = [
+            None,
+            None
+        ]
 
     def check_response(self, resp):
         expected = 'source volume: %s does not exist' % \
@@ -98,12 +109,15 @@ class TestCreateSnapshotForNonExistentVolume(CreateSnapshotUnitTest):
 
 class TestCreateSnapshotEtcdSaveFails(CreateSnapshotUnitTest):
     def get_request_params(self):
-        return {"Name": "snap-001",
-                "Opts": {"snapshotOf": data.VOLUME_NAME}}
+        return {"Name": data.SNAPSHOT_NAME1,
+                "Opts": {"virtualCopyOf": data.VOLUME_NAME}}
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
-        mock_etcd.get_vol_byname.return_value = copy.deepcopy(data.volume)
+        mock_etcd.get_vol_byname.side_effect = [
+            None,
+            copy.deepcopy(data.volume)
+        ]
         mock_etcd.save_vol.side_effect = \
             [hpe_exc.HPEPluginSaveFailed(obj='snap-001')]
 

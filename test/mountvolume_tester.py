@@ -7,11 +7,18 @@ from hpe3parclient import exceptions
 
 
 class MountVolumeUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):
+    def __init__(self, is_snap=False):
+        self._is_snap = is_snap
+        if not is_snap:
+            self._vol = copy.deepcopy(data.volume)
+        else:
+            self._vol = copy.deepcopy(data.snap1)
+
     def _get_plugin_api(self):
         return 'volumedriver_mount'
 
     def get_request_params(self):
-        return {"Name": "test-vol-001",
+        return {"Name": self._vol['display_name'],
                 "ID": "Fake-Mount-ID",
                 "Opts": {'mount-volume': 'True'}}
 
@@ -22,7 +29,7 @@ class MountVolumeUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):
 
         def _setup_mock_etcd():
             mock_etcd = self.mock_objects['mock_etcd']
-            mock_etcd.get_vol_byname.return_value = copy.deepcopy(data.volume)
+            mock_etcd.get_vol_byname.return_value = self._vol
             # Allow child class to make changes
             self.setup_mock_etcd()
 
@@ -76,6 +83,9 @@ class MountVolumeUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):
 
 # Done
 class TestMountVolumeFCHost(MountVolumeUnitTest):
+    def __init__(self, **kwargs):
+        super(type(self), self).__init__(**kwargs)
+
     def setup_mock_3parclient(self):
         mock_client = self.mock_objects['mock_3parclient']
         mock_client.getVolume.return_value = {'userCPG': data.HPE3PAR_CPG}
@@ -84,11 +94,19 @@ class TestMountVolumeFCHost(MountVolumeUnitTest):
             exceptions.HTTPNotFound('fake'),
             data.fake_fc_host]
         mock_client.queryHost.return_value = data.fake_hosts
+
+        if not self._is_snap:
+            mock_client.getHostVLUNs.side_effect = [
+                exceptions.HTTPNotFound('fake'),
+                data.host_vluns1,
+                data.host_vluns2]
+        else:
+            mock_client.getHostVLUNs.side_effect = [
+                exceptions.HTTPNotFound('fake'),
+                data.snap_host_vluns1,
+                data.snap_host_vluns2]
+
         # Existing VLUN not found hence create new one
-        mock_client.getHostVLUNs.side_effect = [
-            exceptions.HTTPNotFound('fake'),
-            data.host_vluns1,
-            data.host_vluns2]
         mock_client.createVLUN.return_value = data.location
 
     def check_response(self, resp):
@@ -101,7 +119,7 @@ class TestMountVolumeFCHost(MountVolumeUnitTest):
         # resp -> {u'Mountpoint': u'/tmp', u'Name': u'test-vol-001',
         #          u'Err': u'', u'Devicename': u'/tmp'}
         self._test_case.assertEqual(resp['Mountpoint'], u'/tmp')
-        self._test_case.assertEqual(resp['Name'], u'test-vol-001')
+        self._test_case.assertEqual(resp['Name'], self._vol['display_name'])
         self._test_case.assertEqual(resp['Err'], u'')
         self._test_case.assertEqual(resp['Devicename'], u'/tmp')
 
@@ -137,6 +155,9 @@ class TestMountVolumeFCHost(MountVolumeUnitTest):
 # Host exists for supplied WWN + VLUN exists
 # For host creation, both getHost and queryHost should not return anything
 class TestMountVolumeFCHostVLUNExists(MountVolumeUnitTest):
+    def __init__(self, **kwargs):
+        super(type(self), self).__init__(**kwargs)
+
     def setup_mock_3parclient(self):
         mock_client = self.mock_objects['mock_3parclient']
         mock_client.getVolume.return_value = {'userCPG': data.HPE3PAR_CPG}
@@ -146,9 +167,15 @@ class TestMountVolumeFCHostVLUNExists(MountVolumeUnitTest):
             data.fake_fc_host]
         mock_client.queryHost.return_value = data.fake_hosts
         # Use existing VLUN. No need to create new one
-        mock_client.getHostVLUNs.side_effect = [
-            data.host_vluns1,
-            data.host_vluns2]
+        if not self._is_snap:
+            mock_client.getHostVLUNs.side_effect = [
+                data.host_vluns1,
+                data.host_vluns2]
+        else:
+            mock_client.getHostVLUNs.side_effect = [
+                data.snap_host_vluns1,
+                data.snap_host_vluns2]
+
         mock_client.createVLUN.return_value = data.location
 
     def check_response(self, resp):
@@ -159,7 +186,7 @@ class TestMountVolumeFCHostVLUNExists(MountVolumeUnitTest):
             self._test_case.assertIn(key, resp)
 
         self._test_case.assertEqual(resp['Mountpoint'], u'/tmp')
-        self._test_case.assertEqual(resp['Name'], u'test-vol-001')
+        self._test_case.assertEqual(resp['Name'], self._vol['display_name'])
         self._test_case.assertEqual(resp['Err'], u'')
         self._test_case.assertEqual(resp['Devicename'], u'/tmp')
 
@@ -193,6 +220,9 @@ class TestMountVolumeFCHostVLUNExists(MountVolumeUnitTest):
 
 # Host + VLUN doesn't exist
 class TestMountVolumeNoFCHostNoVLUN(MountVolumeUnitTest):
+    def __init__(self, **kwargs):
+        super(type(self), self).__init__(**kwargs)
+
     def setup_mock_3parclient(self):
         mock_client = self.mock_objects['mock_3parclient']
         mock_client.getVolume.return_value = {'userCPG': data.HPE3PAR_CPG}
@@ -203,10 +233,17 @@ class TestMountVolumeNoFCHostNoVLUN(MountVolumeUnitTest):
         # This will make the flow create a new host on 3PAR
         mock_client.queryHost.return_value = None
         # Create new VLUN
-        mock_client.getHostVLUNs.side_effect = [
-            exceptions.HTTPNotFound('VLUNs not found for host'),
-            data.host_vluns1,
-            data.host_vluns2]
+        if not self._is_snap:
+            mock_client.getHostVLUNs.side_effect = [
+                exceptions.HTTPNotFound('VLUNs not found for host'),
+                data.host_vluns1,
+                data.host_vluns2]
+        else:
+            mock_client.getHostVLUNs.side_effect = [
+                exceptions.HTTPNotFound('VLUNs not found for host'),
+                data.snap_host_vluns1,
+                data.snap_host_vluns2]
+
         mock_client.createVLUN.return_value = data.location
 
     def check_response(self, resp):
@@ -217,7 +254,7 @@ class TestMountVolumeNoFCHostNoVLUN(MountVolumeUnitTest):
             self._test_case.assertIn(key, resp)
 
         self._test_case.assertEqual(resp['Mountpoint'], u'/tmp')
-        self._test_case.assertEqual(resp['Name'], u'test-vol-001')
+        self._test_case.assertEqual(resp['Name'], self._vol['display_name'])
         self._test_case.assertEqual(resp['Err'], u'')
         self._test_case.assertEqual(resp['Devicename'], u'/tmp')
 
@@ -261,10 +298,16 @@ class TestMountVolumeNoFCHostNoVLUN(MountVolumeUnitTest):
 # Host + VLUN exists
 # New WWN added to existing host
 class TestMountVolumeModifyHostVLUNExists(MountVolumeUnitTest):
+    def __init__(self, **kwargs):
+        super(type(self), self).__init__(**kwargs)
+
     def setup_mock_3parclient(self):
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.getVolume.return_value = {'userCPG': data.HPE3PAR_CPG}
-        mock_3parclient.getHostVLUNs.return_value = data.host_vluns
+        if not self._is_snap:
+            mock_3parclient.getHostVLUNs.return_value = data.host_vluns
+        else:
+            mock_3parclient.getHostVLUNs.return_value = data.snap_host_vluns
 
         mock_3parclient.getHost.return_value = data.fake_fc_host
         mock_3parclient.queryHost.return_value = None
@@ -283,7 +326,7 @@ class TestMountVolumeModifyHostVLUNExists(MountVolumeUnitTest):
             self._test_case.assertIn(key, resp)
 
         self._test_case.assertEqual(resp['Mountpoint'], u'/tmp')
-        self._test_case.assertEqual(resp['Name'], u'test-vol-001')
+        self._test_case.assertEqual(resp['Name'], self._vol['display_name'])
         self._test_case.assertEqual(resp['Err'], u'')
         self._test_case.assertEqual(resp['Devicename'], u'/tmp')
 
@@ -304,6 +347,9 @@ class TestMountVolumeModifyHostVLUNExists(MountVolumeUnitTest):
 # Host exists with different name
 # VLUN doesn't exist
 class TestMountVolumeISCSIHostNoVLUN(MountVolumeUnitTest):
+    def __init__(self, **kwargs):
+        super(type(self), self).__init__(**kwargs)
+
     def setup_mock_3parclient(self):
         mock_client = self.mock_objects['mock_3parclient']
         mock_client.getVolume.return_value = {'userCPG': data.HPE3PAR_CPG}
@@ -315,9 +361,15 @@ class TestMountVolumeISCSIHostNoVLUN(MountVolumeUnitTest):
             'members': [{
                 'name': data.FAKE_HOST
             }]}
-        mock_client.getHostVLUNs.side_effect = [
-            exceptions.HTTPNotFound('fake'),
-            data.iscsi_host_vluns1]
+        if not self._is_snap:
+            mock_client.getHostVLUNs.side_effect = [
+                exceptions.HTTPNotFound('fake'),
+                data.iscsi_host_vluns1]
+        else:
+            mock_client.getHostVLUNs.side_effect = [
+                exceptions.HTTPNotFound('fake'),
+                data.snap_iscsi_host_vluns1]
+
         mock_client.createVLUN.return_value = data.location
         mock_client.getiSCSIPorts.return_value = [data.FAKE_ISCSI_PORT]
 
@@ -329,7 +381,7 @@ class TestMountVolumeISCSIHostNoVLUN(MountVolumeUnitTest):
             self._test_case.assertIn(key, resp)
 
         self._test_case.assertEqual(resp['Mountpoint'], u'/tmp')
-        self._test_case.assertEqual(resp['Name'], u'test-vol-001')
+        self._test_case.assertEqual(resp['Name'], self._vol['display_name'])
         self._test_case.assertEqual(resp['Err'], u'')
         self._test_case.assertEqual(resp['Devicename'], u'/tmp')
 
@@ -364,6 +416,9 @@ class TestMountVolumeISCSIHostNoVLUN(MountVolumeUnitTest):
 # Host exists with different name
 # VLUN also exists
 class TestMountVolumeISCSIHostVLUNExist(MountVolumeUnitTest):
+    def __init__(self, **kwargs):
+        super(type(self), self).__init__(**kwargs)
+
     def setup_mock_3parclient(self):
         mock_client = self.mock_objects['mock_3parclient']
         mock_client.getVolume.return_value = {'userCPG': data.HPE3PAR_CPG}
@@ -375,9 +430,15 @@ class TestMountVolumeISCSIHostVLUNExist(MountVolumeUnitTest):
             'members': [{
                 'name': data.FAKE_HOST
             }]}
-        mock_client.getHostVLUNs.side_effect = [
-            data.iscsi_host_vluns1,
-            data.iscsi_host_vluns2]
+        if not self._is_snap:
+            mock_client.getHostVLUNs.side_effect = [
+                data.iscsi_host_vluns1,
+                data.iscsi_host_vluns2]
+        else:
+            mock_client.getHostVLUNs.side_effect = [
+                data.snap_iscsi_host_vluns1,
+                data.snap_iscsi_host_vluns2]
+
         mock_client.getiSCSIPorts.return_value = [data.FAKE_ISCSI_PORT]
 
     def check_response(self, resp):
@@ -388,7 +449,7 @@ class TestMountVolumeISCSIHostVLUNExist(MountVolumeUnitTest):
             self._test_case.assertIn(key, resp)
 
         self._test_case.assertEqual(resp['Mountpoint'], u'/tmp')
-        self._test_case.assertEqual(resp['Name'], u'test-vol-001')
+        self._test_case.assertEqual(resp['Name'], self._vol['display_name'])
         self._test_case.assertEqual(resp['Err'], u'')
         self._test_case.assertEqual(resp['Devicename'], u'/tmp')
 
@@ -422,6 +483,9 @@ class TestMountVolumeISCSIHostVLUNExist(MountVolumeUnitTest):
 # Host exists with different name
 # VLUN also exists
 class TestMountVolumeISCSIHostChapOn(MountVolumeUnitTest):
+    def __init__(self, **kwargs):
+        super(type(self), self).__init__(**kwargs)
+
     def setup_mock_3parclient(self):
         mock_client = self.mock_objects['mock_3parclient']
         mock_client.getVolume.return_value = {'userCPG': data.HPE3PAR_CPG}
@@ -432,9 +496,17 @@ class TestMountVolumeISCSIHostChapOn(MountVolumeUnitTest):
             data.fake_host]
         mock_client.queryHost.return_value = None
         mock_client.getVLUN.return_value = {'lun': data.TARGET_LUN}
-        mock_client.getHostVLUNs.side_effect = [
-            data.iscsi_host_vluns1,
-            data.iscsi_host_vluns1]
+        if not self._is_snap:
+            mock_client.getHostVLUNs.side_effect = [
+                data.iscsi_host_vluns1,
+                data.iscsi_host_vluns1,
+                data.iscsi_host_vluns2]
+        else:
+            mock_client.getHostVLUNs.side_effect = [
+                data.snap_iscsi_host_vluns1,
+                data.snap_iscsi_host_vluns1,
+                data.snap_iscsi_host_vluns2]
+
         mock_client.getVolumeMetaData.return_value = data.volume_metadata
         mock_client.getiSCSIPorts.return_value = [data.FAKE_ISCSI_PORT]
 
@@ -456,7 +528,7 @@ class TestMountVolumeISCSIHostChapOn(MountVolumeUnitTest):
             self._test_case.assertIn(key, resp)
 
         self._test_case.assertEqual(resp['Mountpoint'], u'/tmp')
-        self._test_case.assertEqual(resp['Name'], u'test-vol-001')
+        self._test_case.assertEqual(resp['Name'], self._vol['display_name'])
         self._test_case.assertEqual(resp['Err'], u'')
         self._test_case.assertEqual(resp['Devicename'], u'/tmp')
 
@@ -489,9 +561,13 @@ class TestMountVolumeISCSIHostChapOn(MountVolumeUnitTest):
         mock_protocol_connector.connect_volume.assert_called()
 
 
+# TODO: Ununsed - to be removed
 # Host + VLUN exists
 # New IQN added to existing host
 class TestMountVolumeModifyISCSIHostVLUNExists_Old(MountVolumeUnitTest):
+    def __init__(self, **kwargs):
+        super(type(self), self).__init__(**kwargs)
+
     def setup_mock_3parclient(self):
         mock_client = self.mock_objects['mock_3parclient']
         mock_client.getVolume.return_value = {'userCPG': data.HPE3PAR_CPG}
@@ -519,7 +595,7 @@ class TestMountVolumeModifyISCSIHostVLUNExists_Old(MountVolumeUnitTest):
             self._test_case.assertIn(key, resp)
 
         self._test_case.assertEqual(resp['Mountpoint'], u'/tmp')
-        self._test_case.assertEqual(resp['Name'], u'test-vol-001')
+        self._test_case.assertEqual(resp['Name'], self._vol['display_name'])
         self._test_case.assertEqual(resp['Err'], u'')
         self._test_case.assertEqual(resp['Devicename'], u'/tmp')
 
@@ -540,6 +616,9 @@ class TestMountVolumeModifyISCSIHostVLUNExists_Old(MountVolumeUnitTest):
 # Single path
 # Host + VLUN doesn't exist
 class TestMountVolumeNoISCSIHostNoVLUN(MountVolumeUnitTest):
+    def __init__(self, **kwargs):
+        super(type(self), self).__init__(**kwargs)
+
     def setup_mock_3parclient(self):
         mock_client = self.mock_objects['mock_3parclient']
         mock_client.getVolume.return_value = {'userCPG': data.HPE3PAR_CPG}
@@ -550,10 +629,17 @@ class TestMountVolumeNoISCSIHostNoVLUN(MountVolumeUnitTest):
         # This will make the flow create a new host on 3PAR
         mock_client.queryHost.return_value = None
         # Create new VLUN
-        mock_client.getHostVLUNs.side_effect = [
-            exceptions.HTTPNotFound('VLUNs not found for host'),
-            data.iscsi_host_vluns1,
-            data.iscsi_host_vluns2]
+        if not self._is_snap:
+            mock_client.getHostVLUNs.side_effect = [
+                exceptions.HTTPNotFound('VLUNs not found for host'),
+                data.iscsi_host_vluns1,
+                data.iscsi_host_vluns2]
+        else:
+            mock_client.getHostVLUNs.side_effect = [
+                exceptions.HTTPNotFound('VLUNs not found for host'),
+                data.snap_iscsi_host_vluns1,
+                data.snap_iscsi_host_vluns2]
+
         mock_client.createVLUN.return_value = data.location
 
     def override_configuration(self, config):
@@ -568,7 +654,7 @@ class TestMountVolumeNoISCSIHostNoVLUN(MountVolumeUnitTest):
             self._test_case.assertIn(key, resp)
 
         self._test_case.assertEqual(resp['Mountpoint'], u'/tmp')
-        self._test_case.assertEqual(resp['Name'], u'test-vol-001')
+        self._test_case.assertEqual(resp['Name'], self._vol['display_name'])
         self._test_case.assertEqual(resp['Err'], u'')
         self._test_case.assertEqual(resp['Devicename'], u'/tmp')
 
@@ -613,10 +699,16 @@ class TestMountVolumeNoISCSIHostNoVLUN(MountVolumeUnitTest):
 # New WWN added to existing host
 # Incomplete TC
 class TestMountVolumeModifyISCSIHostVLUNExists(MountVolumeUnitTest):
+    def __init__(self, **kwargs):
+        super(type(self), self).__init__(**kwargs)
+
     def setup_mock_3parclient(self):
         mock_client = self.mock_objects['mock_3parclient']
         mock_client.getVolume.return_value = {'userCPG': data.HPE3PAR_CPG}
-        mock_client.getHostVLUNs.return_value = data.iscsi_host_vluns
+        if not self._is_snap:
+            mock_client.getHostVLUNs.return_value = data.iscsi_host_vluns
+        else:
+            mock_client.getHostVLUNs.return_value = data.snap_iscsi_host_vluns
 
         mock_client.getHost.return_value = data.fake_host
         mock_client.queryHost.return_value = None
@@ -636,7 +728,7 @@ class TestMountVolumeModifyISCSIHostVLUNExists(MountVolumeUnitTest):
             self._test_case.assertIn(key, resp)
 
         self._test_case.assertEqual(resp['Mountpoint'], u'/tmp')
-        self._test_case.assertEqual(resp['Name'], u'test-vol-001')
+        self._test_case.assertEqual(resp['Name'], self._vol['display_name'])
         self._test_case.assertEqual(resp['Err'], u'')
         self._test_case.assertEqual(resp['Devicename'], u'/tmp')
 
@@ -657,6 +749,9 @@ class TestMountVolumeModifyISCSIHostVLUNExists(MountVolumeUnitTest):
 # Volume mounted on this node
 # Another mount request comes in to mount on this node only
 class TestVolFencingMountTwiceSameNode(MountVolumeUnitTest):
+    def __init__(self, **kwargs):
+        super(type(self), self).__init__(**kwargs)
+
     def setup_mock_etcd(self):
         mock_etcd = self.mock_objects['mock_etcd']
         mock_etcd.get_vol_byname.return_value = copy.deepcopy(
@@ -696,12 +791,28 @@ class TestVolFencingMountTwiceSameNode(MountVolumeUnitTest):
 # This node waits for un-mounting of volume from other node
 # Other node un-mounts before mount-conflict-delay period ends
 class TestVolFencingGracefulUnmount(MountVolumeUnitTest):
+    def __init__(self, **kwargs):
+        super(type(self), self).__init__(**kwargs)
+        self._vol_mounted_on_other_node = copy.deepcopy(
+            data.vol_mounted_on_other_node)
+        self._unmounted_vol = copy.deepcopy(data.volume)
+
+        # Change appropriate fields from vol so that it represents a snapshot
+        if self._is_snap:
+            self._vol_mounted_on_other_node['is_snap'] = True
+            self._vol_mounted_on_other_node['display_name'] = \
+                data.SNAPSHOT_NAME1
+            self._vol_mounted_on_other_node['id'] = data.SNAPSHOT_ID1
+            self._unmounted_vol['is_snap'] = True
+            self._unmounted_vol['display_name'] = data.SNAPSHOT_NAME1
+            self._unmounted_vol['id'] = data.SNAPSHOT_ID1
+
     def setup_mock_etcd(self):
         mock_etcd = self.mock_objects['mock_etcd']
         mock_etcd.get_vol_byname.side_effect = [
-            copy.deepcopy(data.vol_mounted_on_other_node),
-            copy.deepcopy(data.vol_mounted_on_other_node),
-            copy.deepcopy(data.volume)
+            self._vol_mounted_on_other_node,
+            self._vol_mounted_on_other_node,
+            self._unmounted_vol
         ]
         mock_etcd.get_vol_path_info.return_value = copy.deepcopy(
             data.path_info)
@@ -709,7 +820,10 @@ class TestVolFencingGracefulUnmount(MountVolumeUnitTest):
     def setup_mock_3parclient(self):
         mock_client = self.mock_objects['mock_3parclient']
         mock_client.getVolume.return_value = {'userCPG': data.HPE3PAR_CPG}
-        mock_client.getHostVLUNs.return_value = data.iscsi_host_vluns
+        if not self._is_snap:
+            mock_client.getHostVLUNs.return_value = data.iscsi_host_vluns
+        else:
+            mock_client.getHostVLUNs.return_value = data.snap_iscsi_host_vluns
 
         mock_client.getHost.return_value = data.fake_host
         mock_client.queryHost.return_value = None
@@ -729,7 +843,7 @@ class TestVolFencingGracefulUnmount(MountVolumeUnitTest):
             self._test_case.assertIn(key, resp)
 
         self._test_case.assertEqual(resp['Mountpoint'], u'/tmp')
-        self._test_case.assertEqual(resp['Name'], u'test-vol-001')
+        self._test_case.assertEqual(resp['Name'], self._vol['display_name'])
         self._test_case.assertEqual(resp['Err'], u'')
         self._test_case.assertEqual(resp['Devicename'], u'/tmp')
 
@@ -751,12 +865,22 @@ class TestVolFencingGracefulUnmount(MountVolumeUnitTest):
 # Add the new mount ID to the mount-id-list and return
 # connection-info
 class TestVolFencingForcedUnmount(MountVolumeUnitTest):
+    def __init__(self, **kwargs):
+        super(type(self), self).__init__(**kwargs)
+        self._vol_mounted_on_other_node = copy.deepcopy(
+            data.vol_mounted_on_other_node)
+        if self._is_snap:
+            self._vol_mounted_on_other_node['is_snap'] = True
+            self._vol_mounted_on_other_node['display_name'] = \
+                data.SNAPSHOT_NAME1
+            self._vol_mounted_on_other_node['id'] = data.SNAPSHOT_ID1
+
     def setup_mock_etcd(self):
         mock_etcd = self.mock_objects['mock_etcd']
-        vol_mounted_on_other_node = copy.deepcopy(
-            data.vol_mounted_on_other_node)
-        mock_etcd.get_vol_byname.return_value = vol_mounted_on_other_node
-        mock_etcd.get_vol_by_id.return_value = vol_mounted_on_other_node
+        mock_etcd.get_vol_byname.return_value = \
+            self._vol_mounted_on_other_node
+        mock_etcd.get_vol_by_id.return_value = \
+            self._vol_mounted_on_other_node
         mock_etcd.get_vol_path_info.return_value = copy.deepcopy(
             data.path_info)
         # Allow child class to make changes
@@ -764,7 +888,10 @@ class TestVolFencingForcedUnmount(MountVolumeUnitTest):
     def setup_mock_3parclient(self):
         mock_client = self.mock_objects['mock_3parclient']
         mock_client.getVolume.return_value = {'userCPG': data.HPE3PAR_CPG}
-        mock_client.getHostVLUNs.return_value = data.iscsi_host_vluns
+        if not self._is_snap:
+            mock_client.getHostVLUNs.return_value = data.iscsi_host_vluns
+        else:
+            mock_client.getHostVLUNs.return_value = data.snap_iscsi_host_vluns
 
         mock_client.getHost.return_value = data.fake_host
         mock_client.queryHost.return_value = None
@@ -772,7 +899,6 @@ class TestVolFencingForcedUnmount(MountVolumeUnitTest):
         mock_client.getCPG.return_value = {}
         mock_client.getiSCSIPorts.return_value = [data.FAKE_ISCSI_PORT]
         mock_client.getVLUN.return_value = {'hostname': 'FakeHostName'}
-        mock_client.getHostVLUNs.return_value = data.iscsi_host_vluns
         mock_client.getiSCSIPorts.return_value = data.FAKE_ISCSI_PORTS
 
     def setup_mock_fileutil(self):
@@ -787,7 +913,7 @@ class TestVolFencingForcedUnmount(MountVolumeUnitTest):
             self._test_case.assertIn(key, resp)
 
         self._test_case.assertEqual(resp['Mountpoint'], u'/tmp')
-        self._test_case.assertEqual(resp['Name'], u'test-vol-001')
+        self._test_case.assertEqual(resp['Name'], self._vol['display_name'])
         self._test_case.assertEqual(resp['Err'], u'')
         self._test_case.assertEqual(resp['Devicename'], u'/tmp')
 
@@ -803,6 +929,170 @@ class TestVolFencingForcedUnmount(MountVolumeUnitTest):
         # mock_3parclient.modifyHost.assert_called()
         mock_3parclient.getPorts.assert_called()
         mock_3parclient.getHostVLUNs.assert_called()
+
+
+# # Volume Fencing
+# # Add the new mount ID to the mount-id-list and return
+# # connection-info
+# class TestVolFencingForcedUnmountDelVHost(MountVolumeUnitTest):
+#     def __init__(self, **kwargs):
+#         super(type(self), self).__init__(**kwargs)
+#         self._vol_mounted_on_other_node = copy.deepcopy(
+#             data.vol_mounted_on_other_node)
+#         if self._is_snap:
+#             self._vol_mounted_on_other_node['is_snap'] = True
+#             self._vol_mounted_on_other_node['display_name'] = \
+#                 data.SNAPSHOT_NAME1
+#             self._vol_mounted_on_other_node['id'] = data.SNAPSHOT_ID1
+#
+#     def setup_mock_etcd(self):
+#         mock_etcd = self.mock_objects['mock_etcd']
+#         mock_etcd.get_vol_byname.return_value = \
+#             self._vol_mounted_on_other_node
+#         mock_etcd.get_vol_by_id.return_value = \
+#             self._vol_mounted_on_other_node
+#         mock_etcd.get_vol_path_info.return_value = copy.deepcopy(
+#             data.path_info)
+#         # Allow child class to make changes
+#
+#     def setup_mock_3parclient(self):
+#         mock_client = self.mock_objects['mock_3parclient']
+#         mock_client.getVolume.return_value = {'userCPG': data.HPE3PAR_CPG}
+#         if not self._is_snap:
+#             mock_client.getHostVLUNs.side_effect = [
+#                 data.iscsi_host_vluns,
+#                 exceptions.HTTPNotFound('NoVLunForThisHost'),
+#                 data.iscsi_host_vluns,
+#             ]
+#         else:
+#             mock_client.getHostVLUNs.side_effect = [
+#                 data.snap_iscsi_host_vluns,
+#                 exceptions.HTTPNotFound('NoVLunForThisHost')
+#                 data.snap_iscsi_host_vluns,
+#             ]
+#
+#         mock_client.getHost.return_value = data.fake_host
+#         mock_client.queryHost.return_value = None
+#         mock_client.getVolumeMetaData.return_value = data.volume_metadata
+#         mock_client.getCPG.return_value = {}
+#         mock_client.getiSCSIPorts.return_value = [data.FAKE_ISCSI_PORT]
+#         mock_client.getVLUN.side_effect = [
+#             {'hostname': 'FakeHostName'},
+#             exceptions.HTTPNotFound('NoVLunFound'),
+#             exceptions.HTTPNotFound('NoVLunFound'),
+#             {'hostname': 'FakeHostName'},
+#             {'hostname': 'FakeHostName'},
+#         ]
+#         mock_client.getiSCSIPorts.return_value = data.FAKE_ISCSI_PORTS
+#
+#     def setup_mock_fileutil(self):
+#         mock_fileutil = self.mock_objects['mock_fileutil']
+#         mock_fileutil.mkdir_for_mounting.return_value = '/tmp'
+#
+#     def check_response(self, resp):
+#         # resp -> {"Mountpoint": "/tmp", "Name": "test-vol-001",
+#         # "Err": "", "Devicename": "/tmp"}
+#         expected_keys = ["Mountpoint", "Name", "Err", "Devicename"]
+#         for key in expected_keys:
+#             self._test_case.assertIn(key, resp)
+#
+#         self._test_case.assertEqual(resp['Mountpoint'], u'/tmp')
+#         self._test_case.assertEqual(resp['Name'], self._vol['display_name'])
+#         self._test_case.assertEqual(resp['Err'], u'')
+#         self._test_case.assertEqual(resp['Devicename'], u'/tmp')
+#
+#         # Check if these functions were actually invoked
+#         # in the flow or not
+#         mock_3parclient = self.mock_objects['mock_3parclient']
+#         mock_3parclient.getWsApiVersion.assert_called()
+#         mock_3parclient.getVolume.assert_called()
+#         mock_3parclient.getCPG.assert_called()
+#         mock_3parclient.getHost.assert_called()
+#         # mock_3parclient.queryHost.assert_called()
+#         # Important check for this TC
+#         # mock_3parclient.modifyHost.assert_called()
+#         mock_3parclient.getPorts.assert_called()
+#         mock_3parclient.getHostVLUNs.assert_called()
+#
+#         # Since last VLUN is removed for the host, driver
+#         # deletes the host entry from 3PAR using deleteHost
+#         # call. Ensure that it got called
+#         mock_3parclient.deleteHost.assert_called()
+
+
+class TestMountPreviousVersionVolumeFCHost(MountVolumeUnitTest):
+    def __init__(self, **kwargs):
+        super(type(self), self).__init__(**kwargs)
+        # We need here old type of volume which won't have
+        # mount_conflict_delay. After the execution of this TC,
+        # mount_conflict_delay should get added to volume again
+        self._vol.pop('mount_conflict_delay')
+
+    def setup_mock_3parclient(self):
+        mock_client = self.mock_objects['mock_3parclient']
+        mock_client.getVolume.return_value = {'userCPG': data.HPE3PAR_CPG}
+        mock_client.getCPG.return_value = {}
+        mock_client.getHost.side_effect = [
+            exceptions.HTTPNotFound('fake'),
+            data.fake_fc_host]
+        mock_client.queryHost.return_value = data.fake_hosts
+
+        if not self._is_snap:
+            mock_client.getHostVLUNs.side_effect = [
+                exceptions.HTTPNotFound('fake'),
+                data.host_vluns1,
+                data.host_vluns2]
+        else:
+            mock_client.getHostVLUNs.side_effect = [
+                exceptions.HTTPNotFound('fake'),
+                data.snap_host_vluns1,
+                data.snap_host_vluns2]
+
+        # Existing VLUN not found hence create new one
+        mock_client.createVLUN.return_value = data.location
+
+    def check_response(self, resp):
+        # resp -> {"Mountpoint": "/tmp", "Name": "test-vol-001",
+        # "Err": "", "Devicename": "/tmp"}
+        expected_keys = ["Mountpoint", "Name", "Err", "Devicename"]
+        for key in expected_keys:
+            self._test_case.assertIn(key, resp)
+
+        self._test_case.assertIn('mount_conflict_delay', self._vol)
+
+        # resp -> {u'Mountpoint': u'/tmp', u'Name': u'test-vol-001',
+        #          u'Err': u'', u'Devicename': u'/tmp'}
+        self._test_case.assertEqual(resp['Mountpoint'], u'/tmp')
+        self._test_case.assertEqual(resp['Name'], self._vol['display_name'])
+        self._test_case.assertEqual(resp['Err'], u'')
+        self._test_case.assertEqual(resp['Devicename'], u'/tmp')
+
+        # Check if these functions were actually invoked
+        # in the flow or not
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.getWsApiVersion.assert_called()
+        mock_3parclient.getVolume.assert_called()
+        mock_3parclient.getCPG.assert_called()
+        mock_3parclient.getHost.assert_called()
+        mock_3parclient.queryHost.assert_called()
+        mock_3parclient.getPorts.assert_called()
+        mock_3parclient.getHostVLUNs.assert_called()
+        mock_3parclient.createVLUN.assert_called()
+
+        mock_fileutil = self.mock_objects['mock_fileutil']
+        mock_fileutil.has_filesystem.assert_called()
+        mock_fileutil.create_filesystem.assert_called()
+        mock_fileutil.mkdir_for_mounting.assert_called()
+        mock_fileutil.mount_dir.assert_called()
+        # lost+found directory removed or not
+        mock_fileutil.remove_dir.assert_called()
+
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.assert_called()
+        mock_etcd.update_vol.assert_called()
+
+        mock_protocol_connector = self.mock_objects['mock_protocol_connector']
+        mock_protocol_connector.connect_volume.assert_called()
 
 
 # class TestMountVolumeWithChap(MountVolumeUnitTest):

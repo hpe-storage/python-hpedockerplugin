@@ -162,9 +162,9 @@ class TestCreateVolumeWithInvalidQOS(CreateVolumeUnitTest):
 class TestCreateVolumeWithMutuallyExclusiveList(CreateVolumeUnitTest):
     def check_response(self, resp):
         self._test_case.assertEqual(
-            resp,
-            {"Err": "['snapshotOf', 'cloneOf', 'qos-name', 'promote'] cannot "
-             "be specified at the same time"})
+            {"Err": "['virtualCopyOf', 'cloneOf', 'qos-name'] "
+                    "cannot be specified at the same time"},
+            resp)
 
     def get_request_params(self):
         return {"Name": "test-vol-001",
