@@ -206,11 +206,7 @@ class VolumePlugin(object):
         if compression_val is not None:
             if compression_val.lower() not in valid_compression_opts:
                 msg = (_('create volume failed, error is:'
-<<<<<<< fe3a4168a0a8cf0670d18d291970b862d0d8198d
-                         'passed compression parameter  do not have a valid '
-=======
                          'passed compression parameter do not have a valid '
->>>>>>> Fix for issue #159
                          'value. Valid vaues are: %(valid)s') %
                        {'valid': valid_compression_opts, })
                 LOG.error(msg)
