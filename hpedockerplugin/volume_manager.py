@@ -290,6 +290,7 @@ class VolumeManager(object):
             is_snap = True
             parent_name = vol['snap_metadata']['parent_name']
 
+        try:
             if vol['snapshots']:
                 msg = (_LE('Err: Volume %s has one or more child '
                            'snapshots - volume cannot be deleted!'
