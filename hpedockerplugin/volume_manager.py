@@ -286,8 +286,6 @@ class VolumeManager(object):
         if 'is_snap' in vol and vol['is_snap']:
             is_snap = True
             parent_name = vol['snap_metadata']['parent_name']
-        if is_snap:
-            self.remove_snapshot(parent_name, volname)
 
         try:
             if vol['snapshots']:
@@ -301,6 +299,8 @@ class VolumeManager(object):
                 self._hpeplugin_driver.delete_volume(vol, is_snap)
                 LOG.info(_LI('volume: %(name)s,' 'was successfully deleted'),
                          {'name': volname})
+                if is_snap:
+                    self.remove_snapshot(parent_name, volname)
         except Exception as ex:
             msg = (_LE('Err: Failed to remove volume %s, error is %s'),
                    volname, six.text_type(ex))
