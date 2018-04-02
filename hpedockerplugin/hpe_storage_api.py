@@ -151,7 +151,7 @@ class VolumePlugin(object):
         if ('Opts' in contents and contents['Opts']):
             for key in contents['Opts']:
                 if key not in valid_volume_create_opts:
-                    msg = (_('create volume failed, error is: '
+                    msg = (_('create volume/snapshot/clone failed, error is: '
                              '%(key)s is not a valid option. Valid options '
                              'are: %(valid)s') %
                            {'key': key,
@@ -206,7 +206,7 @@ class VolumePlugin(object):
         if compression_val is not None:
             if compression_val.lower() not in valid_compression_opts:
                 msg = (_('create volume failed, error is:'
-                         'passed compression parameterdo not have a valid '
+                         'passed compression parameter  do not have a valid '
                          'value. Valid vaues are: %(valid)s') %
                        {'valid': valid_compression_opts, })
                 LOG.error(msg)
@@ -252,20 +252,6 @@ class VolumePlugin(object):
 
         src_vol_name = str(contents['Opts']['virtualCopyOf'])
         snapshot_name = contents['Name']
-
-        # Verify valid Opts arguments.
-        valid_volume_create_opts = ['virtualCopyOf', 'expirationHours',
-                                    'retentionHours', 'mountConflictDelay']
-        if 'Opts' in contents and contents['Opts']:
-            for key in contents['Opts']:
-                if key not in valid_volume_create_opts:
-                    msg = (_('create snapshot failed, error is: '
-                             '%(key)s is not a valid option. Valid options '
-                             'are: %(valid)s') %
-                           {'key': key,
-                            'valid': valid_volume_create_opts, })
-                    LOG.error(msg)
-                    return json.dumps({u"Err": six.text_type(msg)})
 
         expiration_hrs = None
         if 'Opts' in contents and contents['Opts'] and \
