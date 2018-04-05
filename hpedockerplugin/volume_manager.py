@@ -692,6 +692,7 @@ class VolumeManager(object):
         # Add new node information to volume meta-data
         node_mount_info[self._node_id] = [mount_id]
 
+    @synchronization.synchronized('{volname}')
     def mount_volume(self, volname, vol_mount, mount_id):
         vol = self._etcd.get_vol_byname(volname)
         if vol is None:
@@ -841,6 +842,7 @@ class VolumeManager(object):
                                u"Devicename": path.path})
         return response
 
+    @synchronization.synchronized('{volname}')
     def unmount_volume(self, volname, vol_mount, mount_id):
         vol = self._etcd.get_vol_byname(volname)
         if vol is None:
@@ -947,7 +949,13 @@ class VolumeManager(object):
 
         # TODO: Create path_info list as we can mount the volume to multiple
         # hosts at the same time.
-        self._etcd.update_vol(volid, 'path_info', None)
+        node_mount_info = {}
+        if 'node_mount_info' in vol:
+            node_mount_info = vol['node_mount_info']
+
+        # If this node owns the volume then update path_info
+        if self._node_id in node_mount_info:
+            self._etcd.update_vol(volid, 'path_info', None)
 
         LOG.info(_LI('path for volume: %(name)s, was successfully removed: '
                      '%(path_name)s'), {'name': volname,
