@@ -87,7 +87,7 @@ hpedockerplugin:
      - /lib/modules:/lib/modules
      - /lib/x86_64-linux-gnu:/lib64
      - /var/run/docker.sock:/var/run/docker.sock
-     - /opt/hpe/data:/opt/hpe/data:shared
+     - /opt/hpe/data:/opt/hpe/data:rshared
   ```
 
 - Start the plugin container by `docker-compose docker-compose.yml`

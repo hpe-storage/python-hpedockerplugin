@@ -164,7 +164,8 @@ class VolumeManager(object):
 
     @synchronization.synchronized('{snapshot_name}')
     def create_snapshot(self, src_vol_name, snapshot_name,
-                        expiration_hrs, retention_hrs):
+                        expiration_hrs, retention_hrs,
+                        mount_conflict_delay):
         # Check if volume is present in database
         snap = self._etcd.get_vol_byname(snapshot_name)
         if snap:
@@ -174,11 +175,13 @@ class VolumeManager(object):
             return response
 
         return self._create_snapshot(src_vol_name, snapshot_name,
-                                     expiration_hrs, retention_hrs)
+                                     expiration_hrs, retention_hrs,
+                                     mount_conflict_delay)
 
     @synchronization.synchronized('{src_vol_name}')
     def _create_snapshot(self, src_vol_name, snapshot_name,
-                         expiration_hrs, retention_hrs):
+                         expiration_hrs, retention_hrs,
+                         mount_conflict_delay):
         vol = self._etcd.get_vol_byname(src_vol_name)
         if vol is None:
             msg = 'source volume: %s does not exist' % src_vol_name
@@ -207,7 +210,6 @@ class VolumeManager(object):
         snap_flash = vol['flash_cache']
         snap_compression = vol['compression']
         snap_qos = volume.DEFAULT_QOS
-        mount_conflict_delay = vol['mount_conflict_delay']
 
         is_snap = True
         snap_vol = volume.createvol(snapshot_name, snap_size, snap_prov,
@@ -287,8 +289,6 @@ class VolumeManager(object):
         if 'is_snap' in vol and vol['is_snap']:
             is_snap = True
             parent_name = vol['snap_metadata']['parent_name']
-        if is_snap:
-            self.remove_snapshot(parent_name, volname)
 
         try:
             if vol['snapshots']:
@@ -302,6 +302,8 @@ class VolumeManager(object):
                 self._hpeplugin_driver.delete_volume(vol, is_snap)
                 LOG.info(_LI('volume: %(name)s,' 'was successfully deleted'),
                          {'name': volname})
+                if is_snap:
+                    self.remove_snapshot(parent_name, volname)
         except Exception as ex:
             msg = (_LE('Err: Failed to remove volume %s, error is %s'),
                    volname, six.text_type(ex))

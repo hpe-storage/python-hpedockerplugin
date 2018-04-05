@@ -151,7 +151,7 @@ class VolumePlugin(object):
         if ('Opts' in contents and contents['Opts']):
             for key in contents['Opts']:
                 if key not in valid_volume_create_opts:
-                    msg = (_('create volume failed, error is: '
+                    msg = (_('create volume/snapshot/clone failed, error is: '
                              '%(key)s is not a valid option. Valid options '
                              'are: %(valid)s') %
                            {'key': key,
@@ -197,14 +197,16 @@ class VolumePlugin(object):
                 return json.dumps({u"Err": six.text_type(msg)})
 
             if ('virtualCopyOf' in contents['Opts']):
-                return self.volumedriver_create_snapshot(name, opts)
+                return self.volumedriver_create_snapshot(name,
+                                                         mount_conflict_delay,
+                                                         opts)
             elif ('cloneOf' in contents['Opts']):
                 return self.volumedriver_clone_volume(name, opts)
 
         if compression_val is not None:
             if compression_val.lower() not in valid_compression_opts:
                 msg = (_('create volume failed, error is:'
-                         'passed compression parameterdo not have a valid '
+                         'passed compression parameter do not have a valid '
                          'value. Valid vaues are: %(valid)s') %
                        {'valid': valid_compression_opts, })
                 LOG.error(msg)
@@ -234,7 +236,8 @@ class VolumePlugin(object):
         clone_name = contents['Name']
         return self._manager.clone_volume(src_vol_name, clone_name, size)
 
-    def volumedriver_create_snapshot(self, name, opts=None):
+    def volumedriver_create_snapshot(self, name, mount_conflict_delay,
+                                     opts=None):
         # Repeating the validation here in anticipation that when
         # actual REST call for snapshot creation is added, this
         # function will have minimal impact
@@ -250,20 +253,6 @@ class VolumePlugin(object):
         src_vol_name = str(contents['Opts']['virtualCopyOf'])
         snapshot_name = contents['Name']
 
-        # Verify valid Opts arguments.
-        valid_volume_create_opts = ['virtualCopyOf', 'expirationHours',
-                                    'retentionHours', 'mountConflictDelay']
-        if 'Opts' in contents and contents['Opts']:
-            for key in contents['Opts']:
-                if key not in valid_volume_create_opts:
-                    msg = (_('create snapshot failed, error is: '
-                             '%(key)s is not a valid option. Valid options '
-                             'are: %(valid)s') %
-                           {'key': key,
-                            'valid': valid_volume_create_opts, })
-                    LOG.error(msg)
-                    return json.dumps({u"Err": six.text_type(msg)})
-
         expiration_hrs = None
         if 'Opts' in contents and contents['Opts'] and \
                 'expirationHours' in contents['Opts']:
@@ -276,7 +265,8 @@ class VolumePlugin(object):
         return self._manager.create_snapshot(src_vol_name,
                                              snapshot_name,
                                              expiration_hrs,
-                                             retention_hrs)
+                                             retention_hrs,
+                                             mount_conflict_delay)
 
     @app.route("/VolumeDriver.Mount", methods=["POST"])
     def volumedriver_mount(self, name):
