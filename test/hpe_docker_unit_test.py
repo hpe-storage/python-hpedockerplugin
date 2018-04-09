@@ -1,11 +1,13 @@
 import abc
-import fake_3par_data as data
 import json
 import mock
-import setup_mock
+
 from cStringIO import StringIO
-from hpedockerplugin import hpe_storage_api as api
 from twisted.internet import reactor
+
+import fake_3par_data as data
+from hpedockerplugin import hpe_storage_api as api
+import setup_mock
 
 
 class RequestBody:
@@ -25,6 +27,9 @@ class HpeDockerUnitTestExecutor(object):
        as desired
     """
 
+    def __init__(self, **kwargs):
+        self._kwargs = kwargs
+
     @staticmethod
     def _get_request_body(request_dict):
         req_body_str = json.dumps(request_dict)
@@ -39,8 +44,9 @@ class HpeDockerUnitTestExecutor(object):
             String containing VolumePlugin API name
         :return: Nothing
         """
-#        import pdb
-#        pdb.set_trace()
+        # import pdb
+        # pdb.set_trace()
+
         # Get API parameters from child class
         req_body = self._get_request_body(self.get_request_params())
 
@@ -74,8 +80,8 @@ class HpeDockerUnitTestExecutor(object):
             String containing VolumePlugin API name
         :return: Nothing
         """
-#        import pdb
-#        pdb.set_trace()
+        # import pdb
+        # pdb.set_trace()
         self.mock_objects = mock_objects
 
         # Let the child class configure mock objects
@@ -184,21 +190,22 @@ def create_configuration(protocol):
         config.hpedockerplugin_driver = \
             "hpedockerplugin.hpe.hpe_3par_fc.HPE3PARFCDriver"
 
-    config.hpe3par_api_url = "https://10.50.3.7:8080/api/v1"
+    config.hpe3par_api_url = "https://10.50.3.9:8080/api/v1"
     config.hpe3par_username = "3paradm"
     config.hpe3par_password = "3pardata"
-    config.san_ip = "10.50.3.7"
+    config.san_ip = "10.50.3.9"
     config.san_login = "3paradm"
     config.san_password = "3pardata"
     config.hpe3par_cpg = [data.HPE3PAR_CPG, data.HPE3PAR_CPG2]
     config.hpe3par_snapcpg = [data.HPE3PAR_CPG]
-    config.hpe3par_iscsi_ips = []
+    config.hpe3par_iscsi_ips = ['10.50.3.59', '10.50.3.60']
     config.iscsi_ip_address = '1.1.1.2'
     config.hpe3par_iscsi_chap_enabled = False
     config.use_multipath = True
     config.enforce_multipath = True
     config.host_etcd_client_cert = None
     config.host_etcd_client_key = None
+    config.mount_conflict_delay = 3
 
     # This flag doesn't belong to hpe.conf. Has been added to allow
     # framework to decide if ETCD is to be mocked or real

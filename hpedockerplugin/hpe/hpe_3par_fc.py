@@ -112,7 +112,7 @@ class HPE3PARFCDriver(object):
         finally:
             self._logout(common)
 
-    def initialize_connection(self, volume, connector):
+    def initialize_connection(self, volume, connector, is_snap):
         """Assigns the volume to a server.
 
         Assign any created volume to a compute node/host so that it can be
@@ -154,11 +154,11 @@ class HPE3PARFCDriver(object):
         common = self._login()
         try:
             # we have to make sure we have a host
-            host = self._create_host(common, volume, connector)
+            host = self._create_host(common, volume, connector, is_snap)
             target_wwns, init_targ_map, numPaths = \
                 self._build_initiator_target_map(common, connector)
             # check if a VLUN already exists for this host
-            existing_vlun = common.find_existing_vlun(volume, host)
+            existing_vlun = common.find_existing_vlun(volume, host, is_snap)
 
             vlun = None
             if existing_vlun is None:
@@ -182,6 +182,7 @@ class HPE3PARFCDriver(object):
                         nsp = port['nsp']
                         vlun = common.create_vlun(volume,
                                                   host,
+                                                  is_snap,
                                                   nsp,
                                                   lun_id=lun_id)
                         target_wwns.append(port['portWWN'])
@@ -213,12 +214,12 @@ class HPE3PARFCDriver(object):
         finally:
             self._logout(common)
 
-    def terminate_connection(self, volume, connector, **kwargs):
+    def terminate_connection(self, volume, connector, is_snap, **kwargs):
         """Driver entry point to unattach a volume from an instance."""
         common = self._login()
         try:
             hostname = common._safe_hostname(connector['host'])
-            common.terminate_connection(volume, hostname,
+            common.terminate_connection(volume, hostname, is_snap,
                                         wwn=connector['wwpns'])
 
             info = {'driver_volume_type': 'fibre_channel',
@@ -273,12 +274,12 @@ class HPE3PARFCDriver(object):
                           {'hostname': hostname,
                            'code': path_conflict.get_code()})
 
-    def _create_host(self, common, volume, connector):
+    def _create_host(self, common, volume, connector, is_snap):
         """Creates or modifies existing 3PAR host."""
         host = None
         LOG.debug('\nBefore safe_hostname value is %s', connector['host'])
         hostname = common._safe_hostname(connector['host'])
-        cpg = common.get_cpg(volume, allowSnap=True)
+        cpg = common.get_cpg(volume, is_snap, allowSnap=True)
         domain = common.get_domain(cpg)
         LOG.debug('\nAfter domain : %s', domain)
         try:
@@ -333,7 +334,7 @@ class HPE3PARFCDriver(object):
             host = common._get_3par_host(host['name'])
         return host
 
-    def create_export(self, volume, connector):
+    def create_export(self, volume, connector, is_snap):
         pass
 
     def _create_3par_fibrechan_host(self, common, hostname, wwns,
@@ -382,7 +383,7 @@ class HPE3PARFCDriver(object):
     def create_snapshot(self, snapshot):
         common = self._login()
         try:
-            common.create_snapshot(snapshot)
+            return common.create_snapshot(snapshot)
         finally:
             self._logout(common)
 
@@ -411,5 +412,48 @@ class HPE3PARFCDriver(object):
         common = self._login()
         try:
             return common.get_qos_detail(vvset)
+        finally:
+            self._logout(common)
+
+    def create_vvs(self, id):
+        common = self._login()
+        try:
+            return common.create_vvs(id)
+        finally:
+            self._logout(common)
+
+    def delete_vvset(self, id):
+        common = self._login()
+        try:
+            return common.delete_vvset(id)
+        finally:
+            self._logout(common)
+
+    def add_volume_to_volume_set(self, vol, vvs_name):
+        common = self._login()
+        try:
+            return common.add_volume_to_volume_set(vol, vvs_name)
+        finally:
+            self._logout(common)
+
+    def remove_volume_from_volume_set(self, vol_name, vvs_name):
+        common = self._login()
+        try:
+            return common.remove_volume_from_volume_set(vol_name, vvs_name)
+        finally:
+            self._logout(common)
+
+    def set_flash_cache_policy_on_vvs(self, flash_cache, vvs_name):
+        common = self._login()
+        try:
+            return common.set_flash_cache_policy_on_vvs(flash_cache,
+                                                        vvs_name)
+        finally:
+            self._logout(common)
+
+    def force_remove_volume_vlun(self, vol_name):
+        common = self._login()
+        try:
+            return common.force_remove_volume_vlun(vol_name)
         finally:
             self._logout(common)

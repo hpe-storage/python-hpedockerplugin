@@ -85,9 +85,15 @@ class EtcdUtil(object):
     def save_vol(self, vol):
         volkey = self.volumeroot + vol['id']
         volval = json.dumps(vol)
-
-        self.client.write(volkey, volval)
-        LOG.info(_LI('Write key: %s to etc, value is: %s'), volkey, volval)
+        try:
+            self.client.write(volkey, volval)
+        except Exception as ex:
+            msg = 'Failed to save volume to ETCD: %s'\
+                  % six.text_type(ex)
+            LOG.error(msg)
+            raise exception.HPEPluginSaveFailed(obj=vol['display_name'])
+        else:
+            LOG.info('Write key: %s to etc, value is: %s', volkey, volval)
 
     def update_vol(self, volid, key, val):
         volkey = self.volumeroot + volid
@@ -149,6 +155,11 @@ class EtcdUtil(object):
                 elif volmember['name'] == volname:
                     return volmember
         return None
+
+    def get_vol_by_id(self, volid):
+        volkey = self.volumeroot + volid
+        result = self.client.read(volkey)
+        return json.loads(result.value)
 
     def get_all_vols(self):
         volumes = self.client.read(self.volumeroot, recursive=True)

@@ -63,7 +63,8 @@ REPOSITORY                           TAG                 IMAGE ID            CRE
 hpe-storage/python-hpedockerplugin   plugin_v2          9b540a18a9b2        4 weeks ago         239MB
 ```
 
-- Copy the file https://github.com/hpe-storage/python-hpedockerplugin/blob/plugin_v2/quick-start/docker-compose.yml.example as docker-compose.yml
+- On Ubuntu systems - copy the file https://github.com/hpe-storage/python-hpedockerplugin/blob/plugin_v2/quick-start/docker-compose.yml.example as docker-compose.yml 
+- On RHEL/CentOS  system - copy the file https://github.com/hpe-storage/python-hpedockerplugin/blob/plugin_v2/quick-start/docker-compose.yml.rhel.example as docker-compose.yml
 - Substitute the  `image: <image>` in docker-compose.yml with the name of the built image. `container_name: <container_name>` can be substituted by any user defined name.
 
 - Sample docker-compose.yml 
@@ -86,7 +87,7 @@ hpedockerplugin:
      - /lib/modules:/lib/modules
      - /lib/x86_64-linux-gnu:/lib64
      - /var/run/docker.sock:/var/run/docker.sock
-     - /opt/hpe/data:/opt/hpe/data:shared
+     - /opt/hpe/data:/opt/hpe/data:rshared
   ```
 
 - Start the plugin container by `docker-compose docker-compose.yml`

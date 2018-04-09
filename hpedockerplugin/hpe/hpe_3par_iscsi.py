@@ -189,7 +189,7 @@ class HPE3PARISCSIDriver(object):
         finally:
             self._logout(common)
 
-    def initialize_connection(self, volume, connector):
+    def initialize_connection(self, volume, connector, is_snap):
         """Assigns the volume to a server.
 
         Assign any created volume to a compute node/host so that it can be
@@ -221,7 +221,7 @@ class HPE3PARISCSIDriver(object):
             host, username, password = self._create_host(
                 common,
                 volume,
-                connector)
+                connector, is_snap)
 
             if connector['multipath']:
                 ready_ports = common.client.getiSCSIPorts(
@@ -235,7 +235,8 @@ class HPE3PARISCSIDriver(object):
                 target_portal_ips = self.iscsi_ips.keys()
 
                 # Collect all existing VLUNs for this volume/host combination.
-                existing_vluns = common.find_existing_vluns(volume, host)
+                existing_vluns = common.find_existing_vluns(volume, host,
+                                                            is_snap)
 
                 # Cycle through each ready iSCSI port and determine if a new
                 # VLUN should be created or an existing one used.
@@ -255,7 +256,8 @@ class HPE3PARISCSIDriver(object):
                                 break
                         else:
                             vlun = common.create_vlun(
-                                volume, host, self.iscsi_ips[iscsi_ip]['nsp'],
+                                volume, host, is_snap,
+                                self.iscsi_ips[iscsi_ip]['nsp'],
                                 lun_id=lun_id)
                             # We want to use the same LUN ID  for every port
                             lun_id = vlun['lun']
@@ -280,7 +282,8 @@ class HPE3PARISCSIDriver(object):
                 least_used_nsp = None
 
                 # check if a VLUN already exists for this host
-                existing_vlun = common.find_existing_vlun(volume, host)
+                existing_vlun = common.find_existing_vlun(volume, host,
+                                                          is_snap)
 
                 if existing_vlun:
                     # We override the nsp here on purpose to force the
@@ -298,7 +301,8 @@ class HPE3PARISCSIDriver(object):
                 vlun = None
                 if existing_vlun is None:
                     # now that we have a host, create the VLUN
-                    vlun = common.create_vlun(volume, host, least_used_nsp)
+                    vlun = common.create_vlun(volume, host, is_snap,
+                                              least_used_nsp)
                 else:
                     vlun = existing_vlun
 
@@ -332,7 +336,7 @@ class HPE3PARISCSIDriver(object):
         finally:
             self._logout(common)
 
-    def terminate_connection(self, volume, connector, **kwargs):
+    def terminate_connection(self, volume, connector, is_snap, **kwargs):
         """Driver entry point to unattach a volume from an instance."""
         common = self._login()
         try:
@@ -340,17 +344,18 @@ class HPE3PARISCSIDriver(object):
             common.terminate_connection(
                 volume,
                 hostname,
+                is_snap,
                 iqn=connector['initiator'])
-            self._clear_chap_3par(common, volume)
+            self._clear_chap_3par(common, volume, is_snap)
         finally:
             self._logout(common)
 
-    def _clear_chap_3par(self, common, volume):
+    def _clear_chap_3par(self, common, volume, is_snap):
         """Clears CHAP credentials on a 3par volume.
 
         Ignore exceptions caused by the keys not being present on a volume.
         """
-        vol_name = volume_utils.get_3par_vol_name(volume['id'])
+        vol_name = volume_utils.get_3par_name(volume['id'], is_snap)
 
         try:
             common.client.removeVolumeMetaData(vol_name, CHAP_USER_KEY)
@@ -411,19 +416,19 @@ class HPE3PARISCSIDriver(object):
                        'chapSecret': password}
         common.client.modifyHost(hostname, mod_request)
 
-    def _create_host(self, common, volume, connector):
+    def _create_host(self, common, volume, connector, is_snap):
         """Creates or modifies existing 3PAR host."""
         # make sure we don't have the host already
         host = None
         username = None
         password = None
         hostname = common._safe_hostname(connector['host'])
-        cpg = common.get_cpg(volume, allowSnap=True)
+        cpg = common.get_cpg(volume, is_snap, allowSnap=True)
         domain = common.get_domain(cpg)
 
         # Get the CHAP secret if CHAP is enabled
         if self.configuration.hpe3par_iscsi_chap_enabled:
-            vol_name = volume_utils.get_3par_vol_name(volume['id'])
+            vol_name = volume_utils.get_3par_name(volume['id'], is_snap)
             username = common.client.getVolumeMetaData(
                 vol_name, CHAP_USER_KEY)['value']
             password = common.client.getVolumeMetaData(
@@ -468,7 +473,7 @@ class HPE3PARISCSIDriver(object):
 
         return host, username, password
 
-    def _do_export(self, common, volume, connector):
+    def _do_export(self, common, volume, connector, is_snap):
         """Gets the associated account, generates CHAP info and updates."""
         model_update = {}
 
@@ -529,7 +534,7 @@ class HPE3PARISCSIDriver(object):
                                 "Generating new CHAP key."))
 
         # Add CHAP credentials to the volume metadata
-        vol_name = volume_utils.get_3par_vol_name(volume['id'])
+        vol_name = volume_utils.get_3par_name(volume['id'], is_snap)
         common.client.setVolumeMetaData(
             vol_name, CHAP_USER_KEY, chap_username)
         common.client.setVolumeMetaData(
@@ -540,10 +545,10 @@ class HPE3PARISCSIDriver(object):
 
         return model_update
 
-    def create_export(self, volume, connector):
+    def create_export(self, volume, connector, is_snap):
         common = self._login()
         try:
-            return self._do_export(common, volume, connector)
+            return self._do_export(common, volume, connector, is_snap)
         finally:
             self._logout(common)
 
@@ -619,7 +624,7 @@ class HPE3PARISCSIDriver(object):
     def create_snapshot(self, snapshot):
         common = self._login()
         try:
-            common.create_snapshot(snapshot)
+            return common.create_snapshot(snapshot)
         finally:
             self._logout(common)
 
@@ -648,5 +653,48 @@ class HPE3PARISCSIDriver(object):
         common = self._login()
         try:
             return common.get_qos_detail(vvset)
+        finally:
+            self._logout(common)
+
+    def create_vvs(self, id):
+        common = self._login()
+        try:
+            return common.create_vvs(id)
+        finally:
+            self._logout(common)
+
+    def delete_vvset(self, id):
+        common = self._login()
+        try:
+            return common.delete_vvset(id)
+        finally:
+            self._logout(common)
+
+    def add_volume_to_volume_set(self, vol, vvs_name):
+        common = self._login()
+        try:
+            return common.add_volume_to_volume_set(vol, vvs_name)
+        finally:
+            self._logout(common)
+
+    def remove_volume_from_volume_set(self, vol_name, vvs_name):
+        common = self._login()
+        try:
+            return common.remove_volume_from_volume_set(vol_name, vvs_name)
+        finally:
+            self._logout(common)
+
+    def set_flash_cache_policy_on_vvs(self, flash_cache, vvs_name):
+        common = self._login()
+        try:
+            return common.set_flash_cache_policy_on_vvs(flash_cache,
+                                                        vvs_name)
+        finally:
+            self._logout(common)
+
+    def force_remove_volume_vlun(self, vol_name):
+        common = self._login()
+        try:
+            return common.force_remove_volume_vlun(vol_name)
         finally:
             self._logout(common)

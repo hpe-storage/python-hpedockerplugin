@@ -17,28 +17,17 @@ An HTTP API implementing the Docker Volumes Plugin API.
 
 See https://github.com/docker/docker/tree/master/docs/extend for details.
 """
-from os_brick.initiator import connector
-from oslo_utils import netutils
-import uuid
-from i18n import _, _LE, _LI, _LW
-import exception
-import six
-
 import json
-
-from twisted.python.filepath import FilePath
-
-import fileutil
-
-from klein import Klein
-from hpe import volume
-from hpe import utils
-from oslo_utils import importutils
-import etcdutil as util
-import synchronization
+import six
+import re
 
 from oslo_log import log as logging
 
+import exception
+from i18n import _, _LE, _LI
+from klein import Klein
+from hpe import volume
+import volume_manager as mgr
 
 LOG = logging.getLogger(__name__)
 
@@ -58,61 +47,10 @@ class VolumePlugin(object):
         LOG.info(_LI('Initialize Volume Plugin'))
 
         self._reactor = reactor
-        self._hpepluginconfig = hpepluginconfig
-        hpeplugin_driver = hpepluginconfig.hpedockerplugin_driver
-
-        protocol = 'ISCSI'
-
-        if 'HPE3PARFCDriver' in hpeplugin_driver:
-            protocol = 'FIBRE_CHANNEL'
-
-        self.hpeplugin_driver = \
-            importutils.import_object(hpeplugin_driver, self._hpepluginconfig)
-
-        if self.hpeplugin_driver is None:
-            msg = (_('hpeplugin_driver import driver failed'))
-            LOG.error(msg)
-            raise exception.HPEPluginNotInitializedException(reason=msg)
-
-        try:
-            self.hpeplugin_driver.do_setup()
-            self.hpeplugin_driver.check_for_setup_error()
-        except Exception as ex:
-            msg = (_('hpeplugin_driver do_setup failed, error is: %s'),
-                   six.text_type(ex))
-            LOG.error(msg)
-            raise exception.HPEPluginNotInitializedException(reason=msg)
-
-        self._voltracker = {}
-        self._path_info = []
-        self._my_ip = netutils.get_my_ipv4()
-
-        self._etcd = self._get_etcd_util()
 
         # TODO: make device_scan_attempts configurable
         # see nova/virt/libvirt/volume/iscsi.py
-
-        # Override the settings of use_multipath, enforce_multipath
-        # This will be a workaround until Issue #50 is fixed.
-        msg = (_('Overriding the value of multipath flags to True'))
-        LOG.info(msg)
-        self.use_multipath = True
-        self.enforce_multipath = True
-
-        self.connector = self._get_connector(protocol)
-
-    def _get_connector(self, protocol):
-        root_helper = 'sudo'
-        return connector.InitiatorConnector.factory(
-            protocol, root_helper, use_multipath=self.use_multipath,
-            device_scan_attempts=5, transport='default')
-
-    def _get_etcd_util(self):
-        return util.EtcdUtil(
-            self._hpepluginconfig.host_etcd_ip_address,
-            self._hpepluginconfig.host_etcd_port_number,
-            self._hpepluginconfig.host_etcd_client_cert,
-            self._hpepluginconfig.host_etcd_client_key)
+        self._manager = mgr.VolumeManager(hpepluginconfig)
 
     def disconnect_volume_callback(self, connector_info):
         LOG.info(_LI('In disconnect_volume_callback: connector info is %s'),
@@ -140,152 +78,8 @@ class VolumePlugin(object):
         :return: Result indicating success.
         """
         contents = json.loads(name.content.getvalue())
-        obj_to_remove = contents['Name']
-        tokens = obj_to_remove.split('/')
-        token_cnt = len(tokens)
-        LOG.debug("volumedriver_remove - obj_to_remove: %s" %
-                  obj_to_remove)
-        if token_cnt > 2:
-            msg = (_LE("invalid volume or snapshot name %s"
-                       % obj_to_remove))
-            LOG.error(msg)
-            response = json.dumps({u"Err": msg})
-            return response
-
-        if token_cnt == 2:
-            volname = tokens[0]
-            snapname = tokens[1]
-            # We don't want to insert remove-snapshot code within
-            # remove-volume code for two reasons:
-            # 1. We want to avoid regression in existing remove-volume
-            # 2. In the future, if docker engine provides snapshot
-            #    support, this code should have minimum impact
-            return self.volumedriver_remove_snapshot(volname, snapname)
-        else:
-            volname = tokens[0]
-
-        return self._volumedriver_remove(volname)
-
-    @synchronization.synchronized('{volname}')
-    def _volumedriver_remove(self, volname):
-        # Only 1 node in a multinode cluster can try to remove the volume.
-        # Grab lock for volume name. If lock is inuse, just return with no
-        # error.
-        # Expand lock code inline as function based lock causes
-        # unexpected behavior
-        vol = self._etcd.get_vol_byname(volname)
-        if vol is None:
-            # Just log an error, but don't fail the docker rm command
-            msg = (_LE('Volume remove name not found %s'), volname)
-            LOG.error(msg)
-            return json.dumps({u"Err": ''})
-
-        try:
-            if vol['snapshots']:
-                msg = (_LE('Err: Volume %s has one or more child '
-                           'snapshots - volume cannot be deleted!'
-                           % volname))
-                LOG.error(msg)
-                response = json.dumps({u"Err": msg})
-                return response
-            else:
-                self.hpeplugin_driver.delete_volume(vol)
-                LOG.info(_LI('volume: %(name)s,' 'was successfully deleted'),
-                         {'name': volname})
-        except Exception as ex:
-            msg = (_LE('Err: Failed to remove volume %s, error is %s'),
-                   volname, six.text_type(ex))
-            LOG.error(msg)
-            return json.dumps({u"Err": six.text_type(ex)})
-
-        try:
-            self._etcd.delete_vol(vol)
-        except KeyError:
-            msg = (_LW('Warning: Failed to delete volume key: %s from '
-                       'etcd due to KeyError'), volname)
-            LOG.warning(msg)
-            pass
-        return json.dumps({u"Err": ''})
-
-    def _get_snapshot_by_name(self, snapshots, snapname):
-        idx = 0
-        for s in snapshots:
-            if s['name'] == snapname:
-                return s, idx
-            idx = idx + 1
-        return None, None
-
-    @synchronization.synchronized('{volname}')
-    def volumedriver_remove_snapshot(self, volname, snapname):
-        LOG.info("volumedriver_remove_snapshot - getting volume %s"
-                 % volname)
-
-        vol = self._etcd.get_vol_byname(volname)
-        if vol is None:
-            # Just log an error, but don't fail the docker rm command
-            msg = (_LE('snapshot remove - parent volume name not found '
-                       '%s'), volname)
-            LOG.error(msg)
-            return json.dumps({u"Err": msg})
-
-        if snapname:
-            snapshots = vol['snapshots']
-            LOG.info("Getting snapshot by name: %s" % snapname)
-            snapshot, idx = self._get_snapshot_by_name(snapshots,
-                                                       snapname)
-
-            if snapshot:
-                LOG.info("Found snapshot by name: %s" % snapname)
-                # Does the snapshot have child snapshot(s)?
-                for ss in snapshots:
-                    LOG.info("Checking if snapshot has children: %s"
-                             % snapname)
-                    if ss['parent_id'] == snapshot['id']:
-                        msg = (_LE('snapshot %s/%s has one or more child '
-                                   'snapshots - it cannot be deleted!'
-                                   % (volname, snapname)))
-                        LOG.error(msg)
-                        response = json.dumps({u"Err": msg})
-                        return response
-                try:
-                    LOG.info("Deleting snapshot at backend: %s" % snapname)
-                    self.hpeplugin_driver.delete_volume(snapshot,
-                                                        is_snapshot=True)
-                except Exception as err:
-                    msg = (_LE('Failed to remove snapshot error is: %s'),
-                           six.text_type(err))
-                    LOG.error(msg)
-                    response = json.dumps({u"Err": six.text_type(err)})
-                    return response
-
-                LOG.info("Deleting snapshot in ETCD - %s" % snapname)
-                # Remove snapshot entry from list and save it back to
-                # ETCD DB
-                del snapshots[idx]
-                try:
-                    LOG.info("Updating volume in ETCD after snapshot "
-                             "removal - vol-name: %s" % volname)
-                    # For now just track volume to uuid mapping internally
-                    # TODO: Save volume name and uuid mapping in etcd as
-                    # well. This will make get_vol_byname more efficient
-                    self._etcd.update_vol(vol['id'],
-                                          'snapshots',
-                                          snapshots)
-                    LOG.info('snapshot: %(name)s was successfully '
-                             'removed', {'name': snapname})
-                    response = json.dumps({u"Err": ''})
-                    return response
-                except Exception as ex:
-                    msg = (_('remove snapshot from etcd failed, error is:'
-                             ' %s'), six.text_type(ex))
-                    LOG.error(msg)
-                    response = json.dumps({u"Err": six.text_type(ex)})
-                    return response
-            else:
-                msg = (_LE('snapshot %s does not exist!' % snapname))
-                LOG.error(msg)
-                response = json.dumps({u"Err": msg})
-                return response
+        volname = contents['Name']
+        return self._manager.remove_volume(volname)
 
     @app.route("/VolumeDriver.Unmount", methods=["POST"])
     def volumedriver_unmount(self, name):
@@ -301,79 +95,14 @@ class VolumePlugin(object):
         LOG.info(_LI('In volumedriver_unmount'))
         contents = json.loads(name.content.getvalue())
         volname = contents['Name']
-        vol = self._etcd.get_vol_byname(volname)
-        if vol is not None:
-            volid = vol['id']
-        else:
-            msg = (_LE('Volume unmount name not found %s'), volname)
-            LOG.error(msg)
-            raise exception.HPEPluginUMountException(reason=msg)
 
         vol_mount = volume.DEFAULT_MOUNT_VOLUME
         if ('Opts' in contents and contents['Opts'] and
                 'mount-volume' in contents['Opts']):
             vol_mount = str(contents['Opts']['mount-volume'])
 
-        path_info = self._etcd.get_vol_path_info(volname)
-        if path_info:
-            path_name = path_info['path']
-            connection_info = path_info['connection_info']
-            mount_dir = path_info['mount_dir']
-        else:
-            msg = (_LE('Volume unmount path info not found %s'), volname)
-            LOG.error(msg)
-            raise exception.HPEPluginUMountException(reason=msg)
-
-        # Get connector info from OS Brick
-        # TODO: retrieve use_multipath and enforce_multipath from config file
-        root_helper = 'sudo'
-
-        connector_info = connector.get_connector_properties(
-            root_helper, self._my_ip, multipath=self.use_multipath,
-            enforce_multipath=self.enforce_multipath)
-
-        # Determine if we need to unmount a previously mounted volume
-        if vol_mount is volume.DEFAULT_MOUNT_VOLUME:
-            # unmount directory
-            fileutil.umount_dir(mount_dir)
-            # remove directory
-            fileutil.remove_dir(mount_dir)
-
-        # Changed asynchronous disconnect_volume to sync call
-        # since it causes a race condition between unmount and
-        # mount operation on the same volume. This scenario is
-        # more noticed in case of repeated mount & unmount
-        # operations on the same volume. Refer Issue #64
-        if connection_info:
-            LOG.info(_LI('sync call os brick to disconnect volume'))
-            self.connector.disconnect_volume(connection_info['data'], None)
-            LOG.info(_LI('end of sync call to disconnect volume'))
-
-        try:
-            # Call driver to terminate the connection
-            self.hpeplugin_driver.terminate_connection(vol, connector_info)
-            LOG.info(_LI('connection_info: %(connection_info)s, '
-                         'was successfully terminated'),
-                     {'connection_info': json.dumps(connection_info)})
-        except Exception as ex:
-            msg = (_LE('connection info termination failed %s'),
-                   six.text_type(ex))
-            LOG.error(msg)
-            # Not much we can do here, so just continue on with unmount
-            # We need to ensure we update etcd path_info so the stale
-            # path does not stay around
-            # raise exception.HPEPluginUMountException(reason=msg)
-
-        # TODO: Create path_info list as we can mount the volume to multiple
-        # hosts at the same time.
-        self._etcd.update_vol(volid, 'path_info', None)
-
-        LOG.info(_LI('path for volume: %(name)s, was successfully removed: '
-                     '%(path_name)s'), {'name': volname,
-                                        'path_name': path_name})
-
-        response = json.dumps({u"Err": ''})
-        return response
+        mount_id = contents['ID']
+        return self._manager.unmount_volume(volname, vol_mount, mount_id)
 
     @app.route("/VolumeDriver.Create", methods=["POST"])
     def volumedriver_create(self, name, opts=None):
@@ -395,23 +124,34 @@ class VolumePlugin(object):
             LOG.error(msg)
             raise exception.HPEPluginCreateException(reason=msg)
         volname = contents['Name']
+
+        is_valid_name = re.match("^[A-Za-z0-9]+[A-Za-z0-9_-]+$", volname)
+        if not is_valid_name:
+            msg = 'Invalid volume name: %s is passed.' % volname
+            LOG.debug(msg)
+            response = json.dumps({u"Err": msg})
+            return response
+
         vol_size = volume.DEFAULT_SIZE
         vol_prov = volume.DEFAULT_PROV
         vol_flash = volume.DEFAULT_FLASH_CACHE
         vol_qos = volume.DEFAULT_QOS
         compression_val = volume.DEFAULT_COMPRESSION_VAL
         valid_compression_opts = ['true', 'false']
+        mount_conflict_delay = volume.DEFAULT_MOUNT_CONFLICT_DELAY
 
         # Verify valid Opts arguments.
         valid_volume_create_opts = ['mount-volume', 'compression',
                                     'size', 'provisioning', 'flash-cache',
-                                    'cloneOf', 'snapshotOf', 'expirationHours',
-                                    'retentionHours', 'promote', 'qos-name']
+                                    'cloneOf', 'virtualCopyOf',
+                                    'expirationHours', 'retentionHours',
+                                    'qos-name',
+                                    'mountConflictDelay']
 
         if ('Opts' in contents and contents['Opts']):
             for key in contents['Opts']:
                 if key not in valid_volume_create_opts:
-                    msg = (_('create volume failed, error is: '
+                    msg = (_('create volume/snapshot/clone failed, error is: '
                              '%(key)s is not a valid option. Valid options '
                              'are: %(valid)s') %
                            {'key': key,
@@ -435,18 +175,19 @@ class VolumePlugin(object):
             if ('qos-name' in contents['Opts']):
                 vol_qos = str(contents['Opts']['qos-name'])
 
-            # check for valid promoteSnap option and return the result
-            if ('promote' in contents['Opts'] and len(contents['Opts']) == 1):
-                return self.revert_to_snapshot(name, opts)
-            elif ('promote' in contents['Opts']):
-                msg = (_('while reverting volume to snapshot status only '
-                         'valid option is promote=<vol_name>'))
-                LOG.error(msg)
-                return json.dumps({u"Err": six.text_type(msg)})
+            if ('mountConflictDelay' in contents['Opts']):
+                mount_conflict_delay_str = str(contents['Opts']
+                                               ['mountConflictDelay'])
+                try:
+                    mount_conflict_delay = int(mount_conflict_delay_str)
+                except ValueError as ex:
+                    return json.dumps({'Err': "Invalid value '%s' specified "
+                                              "for mountConflictDelay. Please"
+                                              "specify an integer value." %
+                                              mount_conflict_delay_str})
 
             # mutually exclusive options check
-            mutually_exclusive_list = ['snapshotOf', 'cloneOf', 'qos-name',
-                                       'promote']
+            mutually_exclusive_list = ['virtualCopyOf', 'cloneOf', 'qos-name']
             input_list = contents['Opts'].keys()
             if (len(list(set(input_list) &
                          set(mutually_exclusive_list))) >= 2):
@@ -455,60 +196,26 @@ class VolumePlugin(object):
                 LOG.error(msg)
                 return json.dumps({u"Err": six.text_type(msg)})
 
-            if ('snapshotOf' in contents['Opts']):
-                return self.volumedriver_create_snapshot(name, opts)
+            if ('virtualCopyOf' in contents['Opts']):
+                return self.volumedriver_create_snapshot(name,
+                                                         mount_conflict_delay,
+                                                         opts)
             elif ('cloneOf' in contents['Opts']):
                 return self.volumedriver_clone_volume(name, opts)
 
         if compression_val is not None:
             if compression_val.lower() not in valid_compression_opts:
                 msg = (_('create volume failed, error is:'
-                         'passed compression parameterdo not have a valid '
+                         'passed compression parameter do not have a valid '
                          'value. Valid vaues are: %(valid)s') %
                        {'valid': valid_compression_opts, })
                 LOG.error(msg)
                 return json.dumps({u"Err": six.text_type(msg)})
 
-        response = self._volumedriver_create(volname, vol_size,
-                                             vol_prov, vol_flash,
-                                             compression_val, vol_qos)
-        return response
-
-    @synchronization.synchronized('{volname}')
-    def _volumedriver_create(self, volname, vol_size, vol_prov,
-                             vol_flash, compression_val, vol_qos):
-        LOG.debug('In _volumedriver_create')
-
-        # NOTE: Since Docker passes user supplied names and not a unique
-        # uuid, we can't allow duplicate volume names to exist
-        vol = self._etcd.get_vol_byname(volname)
-        if vol is not None:
-            return json.dumps({u"Err": ''})
-
-        vol = volume.createvol(volname, vol_size, vol_prov,
-                               vol_flash, compression_val, vol_qos)
-        try:
-            self.hpeplugin_driver.create_volume(vol)
-        except Exception as ex:
-            msg = (_('Create volume failed with error: %s'), six.text_type(ex))
-            LOG.exception(msg)
-            return json.dumps({u"Err": six.text_type(ex)})
-
-        response = json.dumps({u"Err": ''})
-        try:
-            # For now just track volume to uuid mapping internally
-            # TODO: Save volume name and uuid mapping in etcd as well
-            # This will make get_vol_byname more efficient
-            self._etcd.save_vol(vol)
-            LOG.debug('volume: %(name)s was successfully saved to etcd',
-                      {'name': volname})
-        except exception.HPEPluginSaveFailed as ex:
-            # TODO: Cleanup backend volume and if needed VVS too
-            msg = 'Save volume to etcd failed, error is: %s'\
-                  % six.text_type(ex)
-            LOG.exception(msg)
-            response = json.dumps({u"Err": six.text_type(_(ex))})
-        return response
+        return self._manager.create_volume(volname, vol_size,
+                                           vol_prov, vol_flash,
+                                           compression_val, vol_qos,
+                                           mount_conflict_delay)
 
     def volumedriver_clone_volume(self, name, opts=None):
         # Repeating the validation here in anticipation that when
@@ -520,67 +227,17 @@ class VolumePlugin(object):
             LOG.error(msg)
             raise exception.HPEPluginCreateException(reason=msg)
 
-        src_vol_name = str(contents['Opts']['cloneOf'])
-        clone_name = contents['Name']
-
-        return self._volumedriver_clone_volume(
-            src_vol_name, clone_name, contents)
-
-    @synchronization.synchronized('{src_vol_name}')
-    def _volumedriver_clone_volume(self, src_vol_name, clone_name,
-                                   contents):
-        # Check if volume is present in database
-        src_vol = self._etcd.get_vol_byname(src_vol_name)
-        if src_vol is None:
-            msg = 'source volume: %s does not exist' % src_vol_name
-            LOG.debug(msg)
-            response = json.dumps({u"Err": msg})
-            return response
-
+        size = None
         if ('Opts' in contents and contents['Opts'] and
                 'size' in contents['Opts']):
             size = int(contents['Opts']['size'])
-        else:
-            size = src_vol['size']
 
-        if size < src_vol['size']:
-            msg = 'clone volume size %s is less than source ' \
-                  'volume size %s' % (size, src_vol['size'])
-            LOG.debug(msg)
-            response = json.dumps({u"Err": msg})
-            return response
-        return self._clone_volume(clone_name, src_vol, size)
+        src_vol_name = str(contents['Opts']['cloneOf'])
+        clone_name = contents['Name']
+        return self._manager.clone_volume(src_vol_name, clone_name, size)
 
-    @synchronization.synchronized('{clone_name}')
-    def _clone_volume(self, clone_name, src_vol, size):
-        # Create clone volume specification
-        clone_vol = volume.createvol(clone_name, size,
-                                     src_vol['provisioning'],
-                                     src_vol['flash_cache'],
-                                     src_vol['compression'],
-                                     src_vol['qos_name'])
-        try:
-            self.hpeplugin_driver.create_cloned_volume(clone_vol, src_vol)
-
-            response = json.dumps({u"Err": ''})
-            # For now just track volume to uuid mapping internally
-            # TODO: Save volume name and uuid mapping in etcd as well
-            # This will make get_vol_byname more efficient
-            self._etcd.save_vol(clone_vol)
-        except exception.HPEPluginEtcdException as ex:
-            # TODO: 3PAR clean up issue over here - clone got created
-            # in the backend but since it could not be saved in etcd db
-            # we are throwing an error saying operation failed.
-            # TODO: This needs to be fixed
-            response = json.dumps({u"Err": ex.message})
-        except Exception as ex:
-            msg = (_('clone volume failed, error is: %s'),
-                   six.text_type(ex))
-            LOG.error(msg)
-            response = json.dumps({u"Err": six.text_type(ex)})
-        return response
-
-    def volumedriver_create_snapshot(self, name, opts=None):
+    def volumedriver_create_snapshot(self, name, mount_conflict_delay,
+                                     opts=None):
         # Repeating the validation here in anticipation that when
         # actual REST call for snapshot creation is added, this
         # function will have minimal impact
@@ -593,22 +250,8 @@ class VolumePlugin(object):
             LOG.error(msg)
             raise exception.HPEPluginCreateException(reason=msg)
 
-        src_vol_name = str(contents['Opts']['snapshotOf'])
+        src_vol_name = str(contents['Opts']['virtualCopyOf'])
         snapshot_name = contents['Name']
-
-        # Verify valid Opts arguments.
-        valid_volume_create_opts = ['snapshotOf', 'expirationHours',
-                                    'retentionHours']
-        if 'Opts' in contents and contents['Opts']:
-            for key in contents['Opts']:
-                if key not in valid_volume_create_opts:
-                    msg = (_('create snapshot failed, error is: '
-                             '%(key)s is not a valid option. Valid options '
-                             'are: %(valid)s') %
-                           {'key': key,
-                            'valid': valid_volume_create_opts, })
-                    LOG.error(msg)
-                    return json.dumps({u"Err": six.text_type(msg)})
 
         expiration_hrs = None
         if 'Opts' in contents and contents['Opts'] and \
@@ -619,75 +262,11 @@ class VolumePlugin(object):
         if 'Opts' in contents and contents['Opts'] and \
                 'retentionHours' in contents['Opts']:
             retention_hrs = int(contents['Opts']['retentionHours'])
-        return self._volumedriver_create_snapshot(src_vol_name,
-                                                  snapshot_name,
-                                                  expiration_hrs,
-                                                  retention_hrs)
-
-    @synchronization.synchronized('{src_vol_name}')
-    def _volumedriver_create_snapshot(self, src_vol_name, snapshot_name,
-                                      expiration_hrs, retention_hrs):
-        # Check if volume is present in database
-        vol = self._etcd.get_vol_byname(src_vol_name)
-        if vol is None:
-            msg = 'source volume: %s does not exist' % src_vol_name
-            LOG.debug(msg)
-            response = json.dumps({u"Err": msg})
-            return response
-
-        if vol['snapshots']:
-            ss_list = vol['snapshots']
-            for ss in ss_list:
-                if snapshot_name == ss['name']:
-                    msg = (_('Snapshot create failed. Error '
-                             'is: %(snap_name)s is already created. '
-                             'Please enter a new snapshot name.') %
-                           {'snap_name': snapshot_name})
-                    LOG.error(msg)
-                    return json.dumps({u"Err": six.text_type(msg)})
-
-        snapshot_id = str(uuid.uuid4())
-        snapshot = {'id': snapshot_id,
-                    'display_name': snapshot_name,
-                    'volume_id': vol['id'],
-                    'volume_name': src_vol_name,
-                    'expirationHours': expiration_hrs,
-                    'retentionHours': retention_hrs,
-                    'display_description': 'snapshot of volume %s'
-                                           % src_vol_name}
-        try:
-            self.hpeplugin_driver.create_snapshot(snapshot)
-        except Exception as ex:
-            msg = (_('create snapshot failed, error is: %s'),
-                   six.text_type(ex))
-            LOG.error(msg)
-            return json.dumps({u"Err": six.text_type(ex)})
-
-        response = json.dumps({u"Err": ''})
-        db_snapshot = {'name': snapshot_name,
-                       'id': snapshot_id,
-                       'parent_id': vol['id'],
-                       'expiration_hours': expiration_hrs,
-                       'retention_hours': retention_hrs}
-        vol['snapshots'].append(db_snapshot)
-        try:
-            # For now just track volume to uuid mapping internally
-            # TODO: Save volume name and uuid mapping in etcd as well
-            # This will make get_vol_byname more efficient
-            self._etcd.save_vol(vol)
-            LOG.debug('snapshot: %(name)s was successfully saved '
-                      'to etcd', {'name': snapshot_name})
-        except Exception as ex:
-            # TODO: 3PAR clean up issue over here - snapshot got
-            # created in the backend but since it could not be saved
-            # in ETCD db we are throwing an error saying operation
-            # failed.
-            # TODO: Snapshot needs clean up
-            msg = (_('save volume to etcd failed, error is: %s'),
-                   six.text_type(ex))
-            LOG.error(msg)
-            response = json.dumps({u"Err": six.text_type(ex)})
-        return response
+        return self._manager.create_snapshot(src_vol_name,
+                                             snapshot_name,
+                                             expiration_hrs,
+                                             retention_hrs,
+                                             mount_conflict_delay)
 
     @app.route("/VolumeDriver.Mount", methods=["POST"])
     def volumedriver_mount(self, name):
@@ -708,109 +287,14 @@ class VolumePlugin(object):
         # TODO: use persistent storage to lookup volume for deletion
         contents = json.loads(name.content.getvalue())
         volname = contents['Name']
-        vol = self._etcd.get_vol_byname(volname)
-        if vol is not None:
-            volid = vol['id']
-        else:
-            msg = (_LE('Volume mount name not found %s'), volname)
-            LOG.error(msg)
-            raise exception.HPEPluginMountException(reason=msg)
 
         vol_mount = volume.DEFAULT_MOUNT_VOLUME
         if ('Opts' in contents and contents['Opts'] and
                 'mount-volume' in contents['Opts']):
             vol_mount = str(contents['Opts']['mount-volume'])
 
-        # Get connector info from OS Brick
-        # TODO: retrieve use_multipath and enforce_multipath from config file
-        root_helper = 'sudo'
-
-        connector_info = connector.get_connector_properties(
-            root_helper, self._my_ip, multipath=self.use_multipath,
-            enforce_multipath=self.enforce_multipath)
-
-        try:
-            # Call driver to initialize the connection
-            self.hpeplugin_driver.create_export(vol, connector_info)
-            connection_info = \
-                self.hpeplugin_driver.initialize_connection(
-                    vol, connector_info)
-            LOG.debug('connection_info: %(connection_info)s, '
-                      'was successfully retrieved',
-                      {'connection_info': json.dumps(connection_info)})
-        except Exception as ex:
-            msg = (_('connection info retrieval failed, error is: %s'),
-                   six.text_type(ex))
-            LOG.error(msg)
-            raise exception.HPEPluginMountException(reason=msg)
-
-        # Call OS Brick to connect volume
-        try:
-            device_info = self.connector.\
-                connect_volume(connection_info['data'])
-        except Exception as ex:
-            msg = (_('OS Brick connect volume failed, error is: %s'),
-                   six.text_type(ex))
-            LOG.error(msg)
-            raise exception.HPEPluginMountException(reason=msg)
-
-        # Make sure the path exists
-        path = FilePath(device_info['path']).realpath()
-        if path.exists is False:
-            msg = (_('path: %s,  does not exist'), path)
-            LOG.error(msg)
-            raise exception.HPEPluginMountException(reason=msg)
-
-        LOG.debug('path for volume: %(name)s, was successfully created: '
-                  '%(device)s realpath is: %(realpath)s',
-                  {'name': volname, 'device': device_info['path'],
-                   'realpath': path.path})
-
-        # Create filesystem on the new device
-        if fileutil.has_filesystem(path.path) is False:
-            fileutil.create_filesystem(path.path)
-            LOG.debug('filesystem successfully created on : %(path)s',
-                      {'path': path.path})
-
-        # Determine if we need to mount the volume
-        if vol_mount == volume.DEFAULT_MOUNT_VOLUME:
-            # mkdir for mounting the filesystem
-            mount_dir = fileutil.mkdir_for_mounting(device_info['path'])
-            LOG.debug('Directory: %(mount_dir)s, '
-                      'successfully created to mount: '
-                      '%(mount)s',
-                      {'mount_dir': mount_dir, 'mount': device_info['path']})
-
-            # mount the directory
-            fileutil.mount_dir(path.path, mount_dir)
-            LOG.debug('Device: %(path) successfully mounted on %(mount)s',
-                      {'path': path.path, 'mount': mount_dir})
-
-            # TODO: find out how to invoke mkfs so that it creates the
-            # filesystem without the lost+found directory
-            # KLUDGE!!!!!
-            lostfound = mount_dir + '/lost+found'
-            lfdir = FilePath(lostfound)
-            if lfdir.exists and fileutil.remove_dir(lostfound):
-                LOG.debug('Successfully removed : '
-                          '%(lost)s from mount: %(mount)s',
-                          {'lost': lostfound, 'mount': mount_dir})
-        else:
-            mount_dir = ''
-
-        path_info = {}
-        path_info['name'] = volname
-        path_info['path'] = path.path
-        path_info['device_info'] = device_info
-        path_info['connection_info'] = connection_info
-        path_info['mount_dir'] = mount_dir
-
-        self._etcd.update_vol(volid, 'path_info', json.dumps(path_info))
-
-        response = json.dumps({u"Err": '', u"Name": volname,
-                               u"Mountpoint": mount_dir,
-                               u"Devicename": path.path})
-        return response
+        mount_id = contents['ID']
+        return self._manager.mount_volume(volname, vol_mount, mount_id)
 
     @app.route("/VolumeDriver.Path", methods=["POST"])
     def volumedriver_path(self, name):
@@ -823,85 +307,13 @@ class VolumePlugin(object):
         """
         contents = json.loads(name.content.getvalue())
         volname = contents['Name']
-        volinfo = self._etcd.get_vol_byname(volname)
-        if volinfo is None:
-            msg = (_LE('Volume Path: Volume name not found %s'), volname)
-            LOG.warning(msg)
-            response = json.dumps({u"Err": "No Mount Point",
-                                   u"Mountpoint": ""})
-            return response
+        return self._manager.get_path(volname)
 
-        path_name = ''
-        path_info = self._etcd.get_vol_path_info(volname)
-
-        if path_info is not None:
-            path_name = path_info['mount_dir']
-
-        response = json.dumps({u"Err": '', u"Mountpoint": path_name})
+    @app.route("/VolumeDriver.Capabilities", methods=["POST"])
+    def volumedriver_getCapabilities(self, body):
+        capability = {"Capabilities": {"Scope": "global"}}
+        response = json.dumps(capability)
         return response
-
-    def _get_snapshots_to_be_deleted(self, db_snapshots, bkend_snapshots):
-        ss_list = []
-        for db_ss in db_snapshots:
-            found = False
-            bkend_ss_name = utils.get_3par_snap_name(db_ss['id'])
-
-            for bkend_ss in bkend_snapshots:
-                if bkend_ss_name == bkend_ss:
-                    found = True
-                    break
-            if not found:
-                ss_list.append(db_ss)
-        return ss_list
-
-    def _sync_snapshots_from_array(self, vol_id, db_snapshots):
-        bkend_snapshots = \
-            self.hpeplugin_driver.get_snapshots_by_vol(vol_id)
-        ss_list_remove = self._get_snapshots_to_be_deleted(db_snapshots,
-                                                           bkend_snapshots)
-        if ss_list_remove:
-            for ss in ss_list_remove:
-                db_snapshots.remove(ss)
-            self._etcd.update_vol(vol_id, 'snapshots',
-                                  db_snapshots)
-
-    def get_required_qos_field(self, qos_detail):
-        qos_filter = {}
-
-        msg = (_LI('get_required_qos_field: %(qos_detail)s'),
-               {'qos_detail': qos_detail})
-        LOG.info(msg)
-
-        qos_filter['enabled'] = qos_detail.get('enabled')
-
-        if qos_detail.get('name'):
-            qos_filter['vvset_name'] = qos_detail.get('name')
-
-        bwMaxLimitKB = qos_detail.get('bwMaxLimitKB')
-        if bwMaxLimitKB:
-            qos_filter['maxBWS'] = str(bwMaxLimitKB / 1024) + " MB/sec"
-
-        bwMinGoalKB = qos_detail.get('bwMinGoalKB')
-        if bwMinGoalKB:
-            qos_filter['minBWS'] = str(bwMinGoalKB / 1024) + " MB/sec"
-
-        ioMaxLimit = qos_detail.get('ioMaxLimit')
-        if ioMaxLimit:
-            qos_filter['maxIOPS'] = str(ioMaxLimit) + " IOs/sec"
-
-        ioMinGoal = qos_detail.get('ioMinGoal')
-        if ioMinGoal:
-            qos_filter['minIOPS'] = str(ioMinGoal) + " IOs/sec"
-
-        latencyGoal = qos_detail.get('latencyGoal')
-        if latencyGoal:
-            qos_filter['Latency'] = str(latencyGoal) + " sec"
-
-        priority = qos_detail.get('priority')
-        if priority:
-            qos_filter['priority'] = volume.QOS_PRIORITY[priority]
-
-        return qos_filter
 
     @app.route("/VolumeDriver.Get", methods=["POST"])
     def volumedriver_get(self, name):
@@ -912,17 +324,14 @@ class VolumePlugin(object):
 
         :return: Result indicating success.
         """
-        err = ''
-        mountdir = ''
-        devicename = ''
         contents = json.loads(name.content.getvalue())
-        volname = contents['Name']
-        tokens = volname.split('/')
+        qualified_name = contents['Name']
+        tokens = qualified_name.split('/')
         token_cnt = len(tokens)
 
         if token_cnt > 2:
             msg = (_LE("invalid volume or snapshot name %s"
-                       % volname))
+                       % qualified_name))
             LOG.error(msg)
             response = json.dumps({u"Err": msg})
             return response
@@ -932,79 +341,8 @@ class VolumePlugin(object):
         if token_cnt == 2:
             snapname = tokens[1]
 
-        volinfo = self._etcd.get_vol_byname(volname)
-
-        if volinfo is None:
-            msg = (_LE('Volume Get: Volume name not found %s'), volname)
-            LOG.warning(msg)
-            response = json.dumps({u"Err": ""})
-            return response
-
-        path_info = self._etcd.get_vol_path_info(volname)
-        if path_info is not None:
-            mountdir = path_info['mount_dir']
-            devicename = path_info['path']
-
-        # use volinfo as volname could be partial match
-        volume = {'Name': contents['Name'],
-                  'Mountpoint': mountdir,
-                  'Devicename': devicename,
-                  'Status': {}}
-
-        if volinfo['snapshots']:
-            self._sync_snapshots_from_array(volinfo['id'],
-                                            volinfo['snapshots'])
-        # Is this request for snapshot inspect?
-        if snapname:
-            # Any snapshots left after synchronization with array?
-            if volinfo['snapshots']:
-                snapshot, idx = \
-                    self._get_snapshot_by_name(volinfo['snapshots'],
-                                               snapname)
-                settings = {"Settings": {
-                    'expirationHours': snapshot['expiration_hours'],
-                    'retentionHours': snapshot['retention_hours']}}
-                volume['Status'].update(settings)
-            else:
-                msg = (_LE('Snapshot Get: Snapshot name not found %s'),
-                       contents['Name'])
-                LOG.warning(msg)
-                # Should error be returned here or success?
-                response = json.dumps({u"Err": ""})
-                return response
-
-        else:
-            snapshots = volinfo.get('snapshots', None)
-            if snapshots:
-                ss_list_to_show = []
-                for s in snapshots:
-                    snapshot = {'Name': s['name'],
-                                'ParentName': volname}
-                    ss_list_to_show.append(snapshot)
-                volume['Status'].update({'Snapshots': ss_list_to_show})
-
-            qos_name = volinfo.get('qos_name')
-            if qos_name is not None:
-                try:
-                    qos_detail = self.hpeplugin_driver.get_qos_detail(qos_name)
-                    qos_filter = self.get_required_qos_field(qos_detail)
-                    volume['Status'].update({'qos_detail': qos_filter})
-                except Exception as ex:
-                    msg = (_('unable to get/filter qos from 3par, error is: %s'),
-                           six.text_type(ex))
-                    LOG.error(msg)
-                    return json.dumps({u"Err": six.text_type(ex)})
-
-            vol_detail = {}
-            vol_detail['size'] = volinfo.get('size')
-            vol_detail['flash_cache'] = volinfo.get('flash_cache')
-            vol_detail['compression'] = volinfo.get('compression')
-            vol_detail['provisioning'] = volinfo.get('provisioning')
-            volume['Status'].update({'volume_detail': vol_detail})
-
-        response = json.dumps({u"Err": err, u"Volume": volume})
-        LOG.debug("Get volume/snapshot: \n%s" % str(response))
-        return response
+        return self._manager.get_volume_snap_details(
+            volname, snapname, qualified_name)
 
     @app.route("/VolumeDriver.List", methods=["POST"])
     def volumedriver_list(self, body):
@@ -1015,68 +353,4 @@ class VolumePlugin(object):
 
         :return: Result indicating success.
         """
-        volumes = self._etcd.get_all_vols()
-
-        if volumes is None:
-            response = json.dumps({u"Err": ''})
-            return response
-
-        volumelist = []
-        for volinfo in volumes.children:
-            if volinfo.key != util.VOLUMEROOT:
-                path_info = self._etcd.get_path_info_from_vol(volinfo.value)
-                if path_info is not None and 'mount_dir' in path_info:
-                    mountdir = path_info['mount_dir']
-                    devicename = path_info['path']
-                else:
-                    mountdir = ''
-                    devicename = ''
-                info = json.loads(volinfo.value)
-                volume = {'Name': info['display_name'],
-                          'Devicename': devicename,
-                          'size': info['size'],
-                          'Mountpoint': mountdir,
-                          'Status': {}}
-                volumelist.append(volume)
-
-        response = json.dumps({u"Err": '', u"Volumes": volumelist})
-        return response
-
-    def revert_to_snapshot(self, name, opts=None):
-        contents = json.loads(name.content.getvalue())
-        if 'Name' not in contents:
-            msg = (_('revert snapshot failed, error is : Name is required'))
-            LOG.errpr(msg)
-            raise exception.HPEPluginCreateException(reason=msg)
-        snapname = contents['Name']
-        volumename = str(contents['Opts']['promote'])
-        return self._revert_to_snapshot(volumename, snapname)
-
-    @synchronization.synchronized('{volumename}')
-    def _revert_to_snapshot(self, volumename, snapname):
-        volume = self._etcd.get_vol_byname(volumename)
-        if volume is None:
-            msg = (_LE('Volume: %s does not exist' % volumename))
-            LOG.info(msg)
-            response = json.dumps({u"Err": msg})
-            return response
-
-        snapshots = volume['snapshots']
-        LOG.info("Getting snapshot by name: %s" % snapname)
-        snapshot, idx = self._get_snapshot_by_name(snapshots, snapname)
-        if snapshot:
-            try:
-                LOG.info("Found snapshot by name %s" % snapname)
-                self.hpeplugin_driver.revert_snap_to_vol(volume, snapshot)
-                response = json.dumps({u"Err": ''})
-                return response
-            except Exception as ex:
-                msg = (_('revert snapshot failed, error is: %s'),
-                       six.text_type(ex))
-                LOG.error(msg)
-                return json.dumps({u"Err": six.text_type(ex)})
-        else:
-            msg = (_LE('snapshot: %s does not exist!' % snapname))
-            LOG.info(msg)
-            response = json.dumps({u"Err": msg})
-            return response
+        return self._manager.list_volumes()

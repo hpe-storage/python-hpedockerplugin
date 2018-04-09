@@ -1,5 +1,6 @@
 # import mock
 import fake_3par_data as data
+from hpedockerplugin import exception as hpe_exc
 import hpe_docker_unit_test as hpedockerunittest
 from hpe3parclient import exceptions
 from oslo_config import cfg
@@ -33,6 +34,20 @@ class TestCreateVolumeDefault(CreateVolumeUnitTest):
 
     def get_request_params(self):
         return {"Name": "test-vol-001",
+                "Opts": {}}
+
+    def setup_mock_objects(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.return_value = None
+
+
+class TestCreateVolumeInvalidName(CreateVolumeUnitTest):
+    def check_response(self, resp):
+        self._test_case.assertEqual(resp, {u"Err": 'Invalid volume '
+                                           'name: test@vol@001 is passed.'})
+
+    def get_request_params(self):
+        return {"Name": "test@vol@001",
                 "Opts": {}}
 
     def setup_mock_objects(self):
@@ -147,9 +162,9 @@ class TestCreateVolumeWithInvalidQOS(CreateVolumeUnitTest):
 class TestCreateVolumeWithMutuallyExclusiveList(CreateVolumeUnitTest):
     def check_response(self, resp):
         self._test_case.assertEqual(
-            resp,
-            {"Err": "['snapshotOf', 'cloneOf', 'qos-name', 'promote'] cannot "
-             "be specified at the same time"})
+            {"Err": "['virtualCopyOf', 'cloneOf', 'qos-name'] "
+                    "cannot be specified at the same time"},
+            resp)
 
     def get_request_params(self):
         return {"Name": "test-vol-001",
@@ -228,12 +243,10 @@ class TestCreateVolumeFlashCacheAddToVVSFails(CreateVolumeUnitTest):
         mock_3parclient.createVolumeSet.assert_called()
         mock_3parclient.modifyVolumeSet.assert_called()
         mock_3parclient.addVolumeToVolumeSet.assert_called()
-        mock_3parclient.deleteVolumeSet.assert_called()
 
-        # TODO: This is not happening at the moment and would make
-        # the unit test fail
-        # TODO: Remove comment once deleteVolume is invoked
-        # mock_3parclient.deleteVolume.assert_called()
+        # Rollback steps validation
+        mock_3parclient.deleteVolumeSet.assert_called()
+        mock_3parclient.deleteVolume.assert_called()
 
     def get_request_params(self):
         return {"Name": "test-vol-001",
@@ -277,6 +290,35 @@ class TestCreateCompressedVolume(CreateVolumeUnitTest):
         mock_3parclient.getCPG.return_value = {}
         mock_3parclient.getStorageSystemInfo.return_value = \
             {'licenseInfo': {'licenses': [{'name': 'Compression'}]}}
+
+
+class TestCreateCompressedVolumeWithMountConflictDelay(CreateVolumeUnitTest):
+    def get_request_params(self):
+        return {"Name": "test-vol-001",
+                "Opts": {"compression": 'true',
+                         "size": '20',
+                         "provisioning": 'thin',
+                         "mountConflictDelay": '5'}}
+
+    def setup_mock_objects(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.return_value = None
+
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.getWsApiVersion.return_value = \
+            data.wsapi_version_for_compression
+        mock_3parclient.getCPG.return_value = {}
+        mock_3parclient.getStorageSystemInfo.return_value = \
+            {'licenseInfo': {'licenses': [{'name': 'Compression'}]}}
+
+    def check_response(self, resp):
+        self._test_case.assertEqual(resp, {u"Err": ''})
+
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.getWsApiVersion.assert_called()
+        mock_3parclient.getCPG.assert_called()
+        mock_3parclient.getStorageSystemInfo.assert_called()
+        mock_3parclient.createVolume.assert_called()
 
 
 class TestCreateCompressedVolumeNegativeSize(CreateVolumeUnitTest):
@@ -339,6 +381,100 @@ class TestCreateCompressedVolNoHardwareSupport(CreateVolumeUnitTest):
         mock_3parclient.getStorageSystemInfo.return_value = \
             {'licenseInfo': {'licenses': []}}
 
+
+class TestCreateVolWithQosAndFlashCacheEtcdSaveFails(CreateVolumeUnitTest):
+    def check_response(self, resp):
+        expected = "ETCD data save failed: test-vol-001"
+        self._test_case.assertEqual(resp, {u"Err": expected})
+
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.createVolume.assert_called()
+        mock_3parclient.modifyVolumeSet.assert_called()
+        mock_3parclient.addVolumeToVolumeSet.assert_called()
+
+        # Rollback steps validation
+        mock_3parclient.removeVolumeFromVolumeSet.assert_called()
+        mock_3parclient.deleteVolume.assert_called()
+
+    def get_request_params(self):
+        return {"Name": "test-vol-001",
+                "Opts": {"flash-cache": "true",
+                         "qos-name": "vvk_vvset",
+                         "provisioning": "thin",
+                         "size": "2"}}
+
+    def setup_mock_objects(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.return_value = None
+        mock_etcd.save_vol.side_effect = \
+            [hpe_exc.HPEPluginSaveFailed(obj='test-vol-001')]
+
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.getCPG.return_value = {}
+
+
+class TestCreateVolWithFlashCacheEtcdSaveFails(CreateVolumeUnitTest):
+    def check_response(self, resp):
+        expected = "ETCD data save failed: test-vol-001"
+        self._test_case.assertEqual(resp, {u"Err": expected})
+
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.createVolume.assert_called()
+        mock_3parclient.createVolumeSet.assert_called()
+        mock_3parclient.modifyVolumeSet.assert_called()
+        mock_3parclient.addVolumeToVolumeSet.assert_called()
+
+        # Rollback steps validation
+        mock_3parclient.removeVolumeFromVolumeSet.assert_called()
+        mock_3parclient.deleteVolumeSet.assert_called()
+        mock_3parclient.deleteVolume.assert_called()
+
+    def get_request_params(self):
+        return {"Name": "test-vol-001",
+                "Opts": {"flash-cache": "true",
+                         "provisioning": "thin",
+                         "size": "2"}}
+
+    def setup_mock_objects(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.return_value = None
+        mock_etcd.save_vol.side_effect = \
+            [hpe_exc.HPEPluginSaveFailed(obj='test-vol-001')]
+
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.getCPG.return_value = {}
+
+
+class TestCreateVolSetFlashCacheFails(CreateVolumeUnitTest):
+    def check_response(self, resp):
+        "Error setting Flash Cache policy to %s"
+        expected = "Driver: Failed to set flash cache policy"
+        self._test_case.assertIn(expected, resp["Err"])
+
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.createVolume.assert_called()
+        mock_3parclient.createVolumeSet.assert_called()
+        mock_3parclient.modifyVolumeSet.assert_called()
+
+        # Rollback steps validation
+        mock_3parclient.deleteVolumeSet.assert_called()
+        mock_3parclient.deleteVolume.assert_called()
+
+    def get_request_params(self):
+        return {"Name": "test-vol-001",
+                "Opts": {"flash-cache": "true",
+                         "provisioning": "thin",
+                         "size": "2"}}
+
+    def setup_mock_objects(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.return_value = None
+
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.getCPG.return_value = {}
+        mock_3parclient.modifyVolumeSet.side_effect = [
+            exceptions.HTTPInternalServerError("Internal server error")
+        ]
 
 # More cases of flash cache
 # 1.

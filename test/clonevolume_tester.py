@@ -1,6 +1,7 @@
 # import mock
 import fake_3par_data as data
 import createvolume_tester as createvolume
+from hpedockerplugin import exception as hpe_exc
 from hpe3parclient import exceptions
 
 
@@ -31,7 +32,6 @@ class TestCloneDefault(CloneVolumeUnitTest):
         mock_3parclient.getCPG.return_value = {}
 
 
-# TODO: Rollback is needed for created volume else unit test would fail
 class TestCloneDefaultEtcdSaveFails(CloneVolumeUnitTest):
     def get_request_params(self):
         return {"Name": "clone-vol-001",
@@ -53,14 +53,9 @@ class TestCloneDefaultEtcdSaveFails(CloneVolumeUnitTest):
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.getWsApiVersion.assert_called()
         mock_3parclient.copyVolume.assert_called()
-        # TODO: TC will fail as this is not happening today
-        # Again for online copy, we may not be able to delete the
-        # volume immediately. We may have to wait for online copy
-        # to complete. Or we may just fire delete volume hoping
-        # 3PAR will take care of deletion after online copy
-        # and eat up exception return by deleteVolume
-        # TODO: Remove comment once deleteVolume is invoked
-        # mock_3parclient.deleteVolume.assert_called()
+
+        # Rollback validation
+        mock_3parclient.deleteVolume.assert_called()
 
 
 # Offline copy
@@ -241,10 +236,9 @@ class TestCloneWithFlashCacheAddVVSetFails(CloneVolumeUnitTest):
         mock_3parclient.addVolumeToVolumeSet.assert_called()
         mock_3parclient.deleteVolumeSet.assert_called()
 
-        # TODO: This is not happening at the moment and would make
-        # the unit test fail
-        # TODO: Remove comment once deleteVolume is invoked
-        # mock_3parclient.deleteVolume.assert_called()
+        # Rollback steps validation
+        mock_3parclient.deleteVolumeSet.assert_called()
+        mock_3parclient.deleteVolume.assert_called()
 
     def get_request_params(self):
         return {"Name": "clone-vol-001",
@@ -260,6 +254,103 @@ class TestCloneWithFlashCacheAddVVSetFails(CloneVolumeUnitTest):
         # Make addVolumeToVolumeSet fail by throwing exception
         mock_3parclient.addVolumeToVolumeSet.side_effect = \
             [exceptions.HTTPNotFound('fake')]
+
+
+# Online copy with flash cache - etcd save fails
+class TestCloneWithFlashCacheEtcdSaveFails(CloneVolumeUnitTest):
+    def check_response(self, resp):
+        expected = "ETCD data save failed: clone-vol-001"
+        self._test_case.assertEqual(resp, {u"Err": expected})
+
+        # Check required WSAPI calls were made
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.copyVolume.assert_called()
+        mock_3parclient.createVolumeSet.assert_called()
+        mock_3parclient.modifyVolumeSet.assert_called()
+        mock_3parclient.addVolumeToVolumeSet.assert_called()
+
+        # Rollback steps validation
+        mock_3parclient.removeVolumeFromVolumeSet.assert_called()
+        mock_3parclient.deleteVolumeSet.assert_called()
+        mock_3parclient.deleteVolume.assert_called()
+
+    def get_request_params(self):
+        return {"Name": "clone-vol-001",
+                "Opts": {"cloneOf": data.VOLUME_NAME}}
+
+    def setup_mock_objects(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.return_value = data.volume_flash_cache
+        mock_etcd.save_vol.side_effect = \
+            [hpe_exc.HPEPluginSaveFailed(obj='clone-vol-001')]
+
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.copyVolume.return_value = {'taskid': data.TASK_ID}
+        mock_3parclient.getCPG.return_value = {}
+
+
+# Online copy with flash cache fails
+class TestCloneSetFlashCacheFails(CloneVolumeUnitTest):
+    def check_response(self, resp):
+        expected = "Driver: Failed to set flash cache policy"
+        self._test_case.assertIn(expected, resp["Err"])
+
+        # Check required WSAPI calls were made
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.createVolumeSet.assert_called()
+        mock_3parclient.modifyVolumeSet.assert_called()
+
+        # Rollback steps validation
+        mock_3parclient.deleteVolumeSet.assert_called()
+        mock_3parclient.deleteVolume.assert_called()
+
+    def get_request_params(self):
+        return {"Name": "clone-vol-001",
+                "Opts": {"cloneOf": data.VOLUME_NAME}}
+
+    def setup_mock_objects(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.return_value = data.volume_flash_cache
+
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.copyVolume.return_value = {'taskid': data.TASK_ID}
+        mock_3parclient.getCPG.return_value = {}
+        # Make addVolumeToVolumeSet fail by throwing exception
+        mock_3parclient.modifyVolumeSet.side_effect = [
+            exceptions.HTTPInternalServerError("Internal server error")
+        ]
+
+
+# Online copy with qos flow
+class TestCloneWithFlashCacheAndQOSEtcdSaveFails(CloneVolumeUnitTest):
+    def check_response(self, resp):
+        expected = "ETCD data save failed: clone-vol-001"
+        self._test_case.assertEqual(resp, {u"Err": expected})
+
+        # Check required WSAPI calls were made
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.copyVolume.assert_called()
+        mock_3parclient.modifyVolumeSet.assert_called()
+        mock_3parclient.addVolumeToVolumeSet.assert_called()
+
+        # Rollback steps validation
+        mock_3parclient.removeVolumeFromVolumeSet.assert_called()
+        mock_3parclient.deleteVolume.assert_called()
+
+    def get_request_params(self):
+        return {"Name": "clone-vol-001",
+                "Opts": {"cloneOf": data.VOLUME_NAME}}
+
+    def setup_mock_objects(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.return_value = \
+            data.volume_flash_cache_and_qos
+        mock_etcd.save_vol.side_effect = \
+            [hpe_exc.HPEPluginSaveFailed(obj='clone-vol-001')]
+
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.copyVolume.return_value = {'taskid': data.TASK_ID}
+        mock_3parclient.getCPG.return_value = {}
 
 
 # CHAP enabled makes Offline copy flow to execute
