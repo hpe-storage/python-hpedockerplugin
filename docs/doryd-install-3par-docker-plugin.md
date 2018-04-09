@@ -30,7 +30,7 @@ kubectl describe ds/doryd
 Alternate way is to run the doryd binary like
 
 ```
-<path>/doryd dev.hpe.com /root/.kube/config
+<path>/doryd  /root/.kube/config dev.hpe.com
 ```
 
 More details refer this [blog](https://developer.hpe.com/blog/doryd-a-dynamic-provisioner-for-docker-volume-plugins)
