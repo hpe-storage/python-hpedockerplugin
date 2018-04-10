@@ -779,8 +779,8 @@ class VolumeManager(object):
 
         # Call OS Brick to connect volume
         try:
-            device_info = self._connector. \
-                connect_volume(connection_info['data'])
+            device_info = self._connector.connect_volume(
+                connection_info['data'])
         except Exception as ex:
             msg = (_('OS Brick connect volume failed, error is: %s'),
                    six.text_type(ex))
