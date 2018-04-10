@@ -198,7 +198,7 @@ class HPE3PARFCDriver(object):
                     # New vlun creation failed
                     msg = _('No new vlun(s) were created')
                     LOG.error(msg)
-                    raise exception.VolumeDriverException(msg)
+                    raise exception.HPEDriverNoVLUNsCreated()
             else:
                 vlun = existing_vlun
 

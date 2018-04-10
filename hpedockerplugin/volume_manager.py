@@ -694,6 +694,7 @@ class VolumeManager(object):
         # Add new node information to volume meta-data
         node_mount_info[self._node_id] = [mount_id]
 
+    @synchronization.synchronized('{volname}')
     def mount_volume(self, volname, vol_mount, mount_id):
         vol = self._etcd.get_vol_byname(volname)
         if vol is None:
@@ -741,6 +742,7 @@ class VolumeManager(object):
                     LOG.info("Volume not gracefully unmounted by other "
                              "node. Removing VLUNs forcefully from the "
                              "backend...")
+                    LOG.info("%s" % vol)
                     self._force_remove_vlun(vol, is_snap)
                     LOG.info("VLUNs forcefully removed from the backend!")
 
@@ -777,8 +779,8 @@ class VolumeManager(object):
 
         # Call OS Brick to connect volume
         try:
-            device_info = self._connector.\
-                connect_volume(connection_info['data'])
+            device_info = self._connector.connect_volume(
+                connection_info['data'])
         except Exception as ex:
             msg = (_('OS Brick connect volume failed, error is: %s'),
                    six.text_type(ex))
@@ -843,6 +845,7 @@ class VolumeManager(object):
                                u"Devicename": path.path})
         return response
 
+    @synchronization.synchronized('{volname}')
     def unmount_volume(self, volname, vol_mount, mount_id):
         vol = self._etcd.get_vol_byname(volname)
         if vol is None:
@@ -857,41 +860,56 @@ class VolumeManager(object):
         LOG.info('Unmounting volume: %s' % vol)
         if 'node_mount_info' in vol:
             node_mount_info = vol['node_mount_info']
-            if self._node_id in node_mount_info:
-                LOG.info("node_id '%s' present in vol mount info"
-                         % self._node_id)
 
-                mount_id_list = node_mount_info[self._node_id]
+            # Check if this node still owns the volume. If not, then it is
+            # not possible to proceed with cleanup as the volume meta-data
+            # context was modified by other node and it's not relevant for
+            # this node anymore.
+            # TODO: To solve the above issue, when a volume is re-mounted
+            # forcibly on other node, that other node should save the volume
+            # meta-data in a different ETCD root for it to be accessible by
+            # this node. Once this node discovers that the volume is owned
+            # by some other node, it can go to that different ETCD root to
+            # fetch the volume meta-data and do the cleanup.
+            if self._node_id not in node_mount_info:
+                return json.dumps({u"Err": "Volume '%s' is mounted on another"
+                                           " node. Cannot unmount it!" %
+                                           volname})
 
-                LOG.info("Current mount_id_list %s " % mount_id_list)
+            LOG.info("node_id '%s' is present in vol mount info"
+                     % self._node_id)
 
-                try:
-                    mount_id_list.remove(mount_id)
-                except ValueError as ex:
-                    pass
+            mount_id_list = node_mount_info[self._node_id]
 
-                LOG.info("Updating node_mount_info '%s' in etcd..."
-                         % node_mount_info)
-                # Update the mount_id list in etcd
-                self._etcd.update_vol(volid, 'node_mount_info',
-                                      node_mount_info)
+            LOG.info("Current mount_id_list %s " % mount_id_list)
 
-                LOG.info("Updated node_mount_info '%s' in etcd!"
-                         % node_mount_info)
+            try:
+                mount_id_list.remove(mount_id)
+            except ValueError as ex:
+                pass
 
-                if len(mount_id_list) > 0:
-                    # Don't proceed with unmount
-                    LOG.info("Volume still in use by %s containers... "
-                             "no unmounting done!" % len(mount_id_list))
-                    return json.dumps({u"Err": ''})
-                else:
-                    # delete the node_id key from node_mount_info
-                    LOG.info("Removing node_mount_info %s",
-                             node_mount_info)
-                    vol.pop('node_mount_info')
-                    LOG.info("Saving volume to etcd: %s..." % vol)
-                    self._etcd.save_vol(vol)
-                    LOG.info("Volume saved to etcd: %s!" % vol)
+            LOG.info("Updating node_mount_info '%s' in etcd..."
+                     % node_mount_info)
+            # Update the mount_id list in etcd
+            self._etcd.update_vol(volid, 'node_mount_info',
+                                  node_mount_info)
+
+            LOG.info("Updated node_mount_info '%s' in etcd!"
+                     % node_mount_info)
+
+            if len(mount_id_list) > 0:
+                # Don't proceed with unmount
+                LOG.info("Volume still in use by %s containers... "
+                         "no unmounting done!" % len(mount_id_list))
+                return json.dumps({u"Err": ''})
+            else:
+                # delete the node_id key from node_mount_info
+                LOG.info("Removing node_mount_info %s",
+                         node_mount_info)
+                vol.pop('node_mount_info')
+                LOG.info("Saving volume to etcd: %s..." % vol)
+                self._etcd.save_vol(vol)
+                LOG.info("Volume saved to etcd: %s!" % vol)
 
         # TODO: Requirement #5 will bring the flow here but the below flow
         # may result into exception. Need to ensure it doesn't happen
@@ -949,6 +967,7 @@ class VolumeManager(object):
 
         # TODO: Create path_info list as we can mount the volume to multiple
         # hosts at the same time.
+        # If this node owns the volume then update path_info
         self._etcd.update_vol(volid, 'path_info', None)
 
         LOG.info(_LI('path for volume: %(name)s, was successfully removed: '
