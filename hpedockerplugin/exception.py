@@ -260,3 +260,7 @@ class HPEDriverAddVvToVvSetFailed(HPEDriverException):
 
 class HPEDriverForceRemoveVLUNFailed(HPEDriverException):
     message = "Forced removal of VLUN failed: %(reason)"
+
+
+class HPEDriverNoVLUNsCreated(HPEDriverException):
+    message = "No new VLUN(s) were created!"
