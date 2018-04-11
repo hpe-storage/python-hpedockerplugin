@@ -333,7 +333,13 @@ class HPE3PARCommon(object):
         return self.client.getPorts()
 
     def get_qos_detail(self, vvset):
-        return self.client.queryQoSRule(vvset)
+        try:
+            return self.client.queryQoSRule(vvset)
+        except Exception as ex:
+            msg = _("Failed to get qos from VV set %s - %s.") %\
+                   (vvset, ex)
+            LOG.error(msg)
+            raise exception.HPEDriverGetQosFromVvSetFailed(ex)
 
     def get_active_target_ports(self):
         ports = self.get_ports()
@@ -787,13 +793,7 @@ class HPE3PARCommon(object):
                     # volume is part of a volume set.
                     vvset_name = self.client.findVolumeSet(volume_name)
                     LOG.debug("Returned vvset_name = %s", vvset_name)
-                    if vvset_name is not None and \
-                       vvset_name.startswith('vvs-'):
-                        # We have a single volume per volume set, so
-                        # remove the volume set.
-                        self.client.deleteVolumeSet(
-                            utils.get_3par_vvs_name(volume['id']))
-                    elif vvset_name is not None:
+                    if vvset_name is not None:
                         # We have a pre-defined volume set just remove the
                         # volume and leave the volume set.
                         self.client.removeVolumeFromVolumeSet(vvset_name,
