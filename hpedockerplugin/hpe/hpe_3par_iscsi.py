@@ -445,32 +445,19 @@ class HPE3PARISCSIDriver(object):
                                                     connector['initiator'],
                                                     domain,
                                                     persona_id)
-            self._set_3par_chaps(common, hostname, volume, username, password)
-            host = common._get_3par_host(hostname)
         else:
             if 'iSCSIPaths' not in host or len(host['iSCSIPaths']) < 1:
                 self._modify_3par_iscsi_host(
                     common, hostname,
                     connector['initiator'])
-                self._set_3par_chaps(
-                    common,
-                    hostname,
-                    volume,
-                    username,
-                    password)
-                host = common._get_3par_host(hostname)
             elif (not host['initiatorChapEnabled'] and
                     self.configuration.hpe3par_iscsi_chap_enabled):
                 LOG.warning(_LW("Host exists without CHAP credentials set and "
                                 "has iSCSI attachments but CHAP is enabled. "
                                 "Updating host with new CHAP credentials."))
-                self._set_3par_chaps(
-                    common,
-                    hostname,
-                    volume,
-                    username,
-                    password)
 
+        self._set_3par_chaps(common, hostname, volume, username, password)
+        host = common._get_3par_host(hostname)
         return host, username, password
 
     def _do_export(self, common, volume, connector, is_snap):
