@@ -460,7 +460,6 @@ class VolumeManager(object):
 
         snap_detail = {}
         snap_detail['size'] = snapinfo.get('size')
-        snap_detail['flash_cache'] = snapinfo.get('flash_cache')
         snap_detail['compression'] = snapinfo.get('compression')
         snap_detail['provisioning'] = snapinfo.get('provisioning')
         snap_detail['is_snap'] = snapinfo.get('is_snap')

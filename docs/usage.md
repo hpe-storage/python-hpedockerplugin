@@ -75,7 +75,9 @@ There are couple of optional parameters that can be used during snapshot creatio
 - expirationHours -- specifies the expiration time for snapshot in hours
 - retentionHours  -- specifies the retention time for snapshot in hours
 
-Note: If snapcpg is not configured in hpe.conf then cpg would be used for snapshot
+Note:1. If snapcpg is not configured in hpe.conf then cpg would be used for snapshot.
+     2. expirationHours and retentionHours are valid attributes of a volume but 2.1
+        plugin ignores these parameters and are valid only for snapshots currently.
 
 #### Inspect a snapshot
 
