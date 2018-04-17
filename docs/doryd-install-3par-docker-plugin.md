@@ -23,11 +23,7 @@ cp <path>/dory hpe
 ```
 
 ### Installing the doryd 
-```
-kubectl apply -f https://raw.githubusercontent.com/hpe-storage/dory/master/examples/ds-doryd.yaml
-kubectl describe ds/doryd
-```
-Alternate way is to run the doryd binary like
+
 
 ```
 <path>/doryd  /root/.kube/config dev.hpe.com
@@ -60,8 +56,11 @@ Create a file (sc-example.yml) containing the StorageClass definition
 kind: StorageClass
 apiVersion: storage.k8s.io/v1
 metadata:
-  name: transactionaldb
+ name: sc-comp3
 provisioner: dev.hpe.com/hpe
+parameters:
+  size: "16"
+  provisioning: "thin"
 ```
 ```
 kubectl create -f sc-example.yml
