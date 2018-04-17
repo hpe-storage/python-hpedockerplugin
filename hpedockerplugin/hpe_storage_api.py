@@ -160,22 +160,28 @@ class VolumePlugin(object):
                     return json.dumps({u"Err": six.text_type(msg)})
 
             # Populating the values
-            if ('size' in contents['Opts']):
+            if ('size' in contents['Opts'] and
+                    contents['Opts']['size'] != ""):
                 vol_size = int(contents['Opts']['size'])
 
-            if ('provisioning' in contents['Opts']):
+            if ('provisioning' in contents['Opts'] and
+                    contents['Opts']['provisioning'] != ""):
                 vol_prov = str(contents['Opts']['provisioning'])
 
-            if ('compression' in contents['Opts']):
+            if ('compression' in contents['Opts'] and
+                    contents['Opts']['compression'] != ""):
                 compression_val = str(contents['Opts']['compression'])
 
-            if ('flash-cache' in contents['Opts']):
+            if ('flash-cache' in contents['Opts'] and
+                    contents['Opts']['flash-cache'] != ""):
                 vol_flash = str(contents['Opts']['flash-cache'])
 
-            if ('qos-name' in contents['Opts']):
+            if ('qos-name' in contents['Opts'] and
+                    contents['Opts']['qos-name'] != ""):
                 vol_qos = str(contents['Opts']['qos-name'])
 
-            if ('mountConflictDelay' in contents['Opts']):
+            if ('mountConflictDelay' in contents['Opts'] and
+                    contents['Opts']['mountConflictDelay'] != ""):
                 mount_conflict_delay_str = str(contents['Opts']
                                                ['mountConflictDelay'])
                 try:

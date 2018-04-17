@@ -246,6 +246,10 @@ class HPEDriverCreateVolumeWithQosFailed(HPEDriverException):
     message = ""
 
 
+class HPEDriverGetQosFromVvSetFailed(HPEDriverException):
+    message = ""
+
+
 class HPEDriverSetFlashCacheOnVvsFailed(HPEDriverException):
     message = _("%(reason)s")
 

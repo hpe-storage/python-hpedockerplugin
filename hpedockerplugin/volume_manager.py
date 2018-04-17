@@ -94,13 +94,23 @@ class VolumeManager(object):
     def create_volume(self, volname, vol_size, vol_prov,
                       vol_flash, compression_val, vol_qos,
                       mount_conflict_delay):
-        LOG.debug('In _volumedriver_create')
+        LOG.info('In _volumedriver_create')
 
         # NOTE: Since Docker passes user supplied names and not a unique
         # uuid, we can't allow duplicate volume names to exist
         vol = self._etcd.get_vol_byname(volname)
         if vol is not None:
             return json.dumps({u"Err": ''})
+
+        # if qos-name is given, check vvset is associated with qos or not
+        if vol_qos is not None:
+            try:
+                self._hpeplugin_driver.get_qos_detail(vol_qos)
+            except Exception as ex:
+                msg = (_('Create volume failed because vvset is not present or'
+                         'is not associated with qos: %s'), six.text_type(ex))
+                LOG.exception(msg)
+                return json.dumps({u"Err": six.text_type(ex)})
 
         undo_steps = []
         vol = volume.createvol(volname, vol_size, vol_prov,
@@ -121,8 +131,8 @@ class VolumeManager(object):
             self._rollback(undo_steps)
             return json.dumps({u"Err": six.text_type(ex)})
         else:
-            LOG.debug('Volume: %(name)s was successfully saved to etcd',
-                      {'name': volname})
+            LOG.info('Volume: %(name)s was successfully saved to etcd',
+                     {'name': volname})
             return json.dumps({u"Err": ''})
 
     @synchronization.synchronized('{src_vol_name}')
