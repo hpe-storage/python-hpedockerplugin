@@ -1,4 +1,19 @@
-### Build the dory/doryd binaries
+### prebuilt dory/doryd binaries
+```
+wget https://github.com/hpe-storage/python-hpedockerplugin/raw/master/dory_installer
+chmod u+x ./dory_installer
+sudo ./dory_installer
+
+# Confirm if the binaries are installed properly in this location
+
+[docker@csimbe06-b12 tmp]$ ls -l /usr/libexec/kubernetes/kubelet-plugins/volume/exec/dev.hpe.com~hpe/
+total 52360
+-rwxr-xr-x. 1 docker docker 47046107 Apr 20 06:11 doryd
+-rwxr-xr-x. 1 docker docker  6561963 Apr 20 06:11 hpe
+-rw-r--r--. 1 docker docker      237 Apr 20 06:11 hpe.json
+
+```
+### Build the dory/doryd binaries from source
 
 - Refer [build](https://github.com/hpe-storage/dory/blob/master/docs/dory/README.md#building) instructions
 
@@ -26,7 +41,7 @@ cp <path>/dory hpe
 
 
 ```
-<path>/doryd  /root/.kube/config dev.hpe.com
+sudo /usr/libexec/kubernetes/kubelet-plugins/volume/exec/dev.hpe.com~hpe/doryd /root/.kube/config hpe.com  /etc/kubernetes/admin.conf dev.hpe.com
 ```
 
 More details refer this [blog](https://developer.hpe.com/blog/doryd-a-dynamic-provisioner-for-docker-volume-plugins)
