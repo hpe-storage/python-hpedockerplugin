@@ -13,7 +13,7 @@ total 52360
 -rw-r--r--. 1 docker docker      237 Apr 20 06:11 hpe.json
 
 ```
-### Build the dory/doryd binaries from source
+### Build the dory/doryd binaries from source (Optional)
 
 - Refer [build](https://github.com/hpe-storage/dory/blob/master/docs/dory/README.md#building) instructions
 
@@ -25,7 +25,7 @@ cp <path>/dory hpe
 # create a file called hpe.json in this folder
 ```
 
-### Contents of hpe.json
+### Contents of hpe.json (default configuration installed by dory_installer)
 ```
 {
     "dockerVolumePluginSocketPath": "/run/docker/plugins/hpe.sock",
@@ -41,13 +41,13 @@ cp <path>/dory hpe
 
 
 ```
-sudo /usr/libexec/kubernetes/kubelet-plugins/volume/exec/dev.hpe.com~hpe/doryd /root/.kube/config hpe.com  /etc/kubernetes/admin.conf dev.hpe.com
+sudo /usr/libexec/kubernetes/kubelet-plugins/volume/exec/dev.hpe.com~hpe/doryd  /etc/kubernetes/admin.conf dev.hpe.com
 ```
 
 More details refer this [blog](https://developer.hpe.com/blog/doryd-a-dynamic-provisioner-for-docker-volume-plugins)
 Note: Please start from section "Kubekuddle this!" , since other pre-requisites are taken care of already.
 
-### Reload the kubelet service
+### Reload the kubelet service (applicable only for plain Kubernetes environment)
 ```
 systemctl daemon-reload
 systemctl restart kubelet
