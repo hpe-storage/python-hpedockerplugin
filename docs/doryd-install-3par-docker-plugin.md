@@ -71,7 +71,7 @@ Create a file (sc-example.yml) containing the StorageClass definition
 kind: StorageClass
 apiVersion: storage.k8s.io/v1
 metadata:
- name: sc-comp3
+ name: transactionaldb
 provisioner: dev.hpe.com/hpe
 parameters:
   size: "16"
