@@ -646,9 +646,16 @@ class VolumeManager(object):
         return self._node_id in node_mount_info
 
     def _update_mount_id_list(self, vol, mount_id):
+        node_mount_info = vol['node_mount_info']
+
+        # Check if mount_id is unique
+        if mount_id in node_mount_info[self._node_id]:
+            LOG.info("Received duplicate mount-id: %s. Ignoring"
+                     % mount_id)
+            return
+
         LOG.info("Adding new mount-id %s to node_mount_info..."
                  % mount_id)
-        node_mount_info = vol['node_mount_info']
         node_mount_info[self._node_id].append(mount_id)
         LOG.info("Updating etcd with modified node_mount_info: %s..."
                  % node_mount_info)
