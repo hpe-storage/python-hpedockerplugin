@@ -1,3 +1,7 @@
+# Source Availability
+- Source for the entire HPE 3PAR Docker Volume Plugin is present in plugin_v2 branch of this repository.
+- Source for paramiko is present under https://github.com/hpe-storage/python-hpedockerplugin/tree/master/paramiko_src 
+
 # Steps for Deploying the Managed Plugin 
 
 HPE 3PAR Docker Volume Plugin is tested against: 
