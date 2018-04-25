@@ -577,8 +577,10 @@ class HPE3PARCommon(object):
         vol = self.client.getVolume(volume_name)
         if 'userCPG' in vol:
             return vol['userCPG']
-        elif allowSnap:
+        elif allowSnap and 'snapCPG' in vol:
             return vol['snapCPG']
+        else:
+            return self.config.hpe3par_cpg[0]
         return None
 
     def _get_3par_vol_comment(self, volume_name):
