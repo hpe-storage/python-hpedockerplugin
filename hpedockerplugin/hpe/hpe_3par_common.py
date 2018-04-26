@@ -37,6 +37,7 @@ MIN_CLIENT_VERSION = '4.0.0'
 DEDUP_API_VERSION = 30201120
 FLASH_CACHE_API_VERSION = 30201200
 COMPRESSION_API_VERSION = 30301215
+TIME_OUT = 5
 
 hpe3par_opts = [
     cfg.StrOpt('hpe3par_api_url',
@@ -165,10 +166,17 @@ class HPE3PARCommon(object):
                 LOG.error(msg)
                 raise exception.InvalidInput(reason=msg)
 
-    def _create_client(self):
-        cl = client.HPE3ParClient(
-            self.config.hpe3par_api_url,
-            suppress_ssl_warnings=CONF.suppress_requests_ssl_warnings)
+    def _create_client(self, timeout=None):
+        try:
+            cl = client.HPE3ParClient(
+                self.config.hpe3par_api_url, timeout=timeout,
+                suppress_ssl_warnings=CONF.suppress_requests_ssl_warnings)
+        except Exception as ex:
+            msg = (_("Failed to connect to %(url)s, please check url") %
+                   {'url': self.config.hpe3par_api_url})
+            LOG.error(msg)
+            raise exception.ConnectionError(ex)
+
         client_version = hpe3parclient.version
 
         if client_version < MIN_CLIENT_VERSION:
@@ -212,14 +220,14 @@ class HPE3PARCommon(object):
         LOG.debug("Disconnect from 3PAR REST and SSH %s", self.uuid)
         self.client.logout()
 
-    def do_setup(self):
+    def do_setup(self, timeout=TIME_OUT):
         if hpe3parclient is None:
             msg = _('You must install hpe3parclient before using 3PAR'
                     ' drivers. Run "pip install python-3parclient" to'
                     ' install the hpe3parclient.')
             raise exception.VolumeBackendAPIException(data=msg)
         try:
-            self.client = self._create_client()
+            self.client = self._create_client(timeout=timeout)
             wsapi_version = self.client.getWsApiVersion()
             self.API_VERSION = wsapi_version['build']
         except hpeexceptions.UnsupportedVersion as ex:
