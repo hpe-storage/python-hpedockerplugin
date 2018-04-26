@@ -142,7 +142,6 @@ class TestSyncSnapshots(GetSnapshotUnitTest):
     def check_response(self, resp):
         snap_detail = {
             u'compression': None,
-            u'flash_cache': None,
             u'is_snap': True,
             u'parent_id': data.VOLUME_ID,
             u'parent_volume': data.VOLUME_NAME,

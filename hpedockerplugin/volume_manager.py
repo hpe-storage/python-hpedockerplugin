@@ -460,7 +460,6 @@ class VolumeManager(object):
 
         snap_detail = {}
         snap_detail['size'] = snapinfo.get('size')
-        snap_detail['flash_cache'] = snapinfo.get('flash_cache')
         snap_detail['compression'] = snapinfo.get('compression')
         snap_detail['provisioning'] = snapinfo.get('provisioning')
         snap_detail['is_snap'] = snapinfo.get('is_snap')
@@ -647,9 +646,16 @@ class VolumeManager(object):
         return self._node_id in node_mount_info
 
     def _update_mount_id_list(self, vol, mount_id):
+        node_mount_info = vol['node_mount_info']
+
+        # Check if mount_id is unique
+        if mount_id in node_mount_info[self._node_id]:
+            LOG.info("Received duplicate mount-id: %s. Ignoring"
+                     % mount_id)
+            return
+
         LOG.info("Adding new mount-id %s to node_mount_info..."
                  % mount_id)
-        node_mount_info = vol['node_mount_info']
         node_mount_info[self._node_id].append(mount_id)
         LOG.info("Updating etcd with modified node_mount_info: %s..."
                  % node_mount_info)
@@ -758,14 +764,6 @@ class VolumeManager(object):
 
                 self._replace_node_mount_info(node_mount_info, mount_id)
 
-        LOG.info("Updating node_mount_info in etcd with mount_id %s..."
-                 % mount_id)
-        self._etcd.update_vol(volid,
-                              'node_mount_info',
-                              node_mount_info)
-        LOG.info("node_mount_info updated successfully in etcd with mount_id "
-                 "%s" % mount_id)
-
         root_helper = 'sudo'
         connector_info = connector.get_connector_properties(
             root_helper, self._my_ip, multipath=self._use_multipath,
@@ -848,6 +846,13 @@ class VolumeManager(object):
         path_info['connection_info'] = connection_info
         path_info['mount_dir'] = mount_dir
 
+        LOG.info("Updating node_mount_info in etcd with mount_id %s..."
+                 % mount_id)
+        self._etcd.update_vol(volid,
+                              'node_mount_info',
+                              node_mount_info)
+        LOG.info("node_mount_info updated successfully in etcd with mount_id "
+                 "%s" % mount_id)
         self._etcd.update_vol(volid, 'path_info', json.dumps(path_info))
 
         response = json.dumps({u"Err": '', u"Name": volname,
