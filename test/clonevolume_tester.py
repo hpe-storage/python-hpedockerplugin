@@ -66,6 +66,7 @@ class TestCloneOfflineCopy(CloneVolumeUnitTest):
         mock_3parclient.createVolume.assert_called()
         mock_3parclient.copyVolume.assert_called()
         mock_3parclient.getTask.assert_called()
+        mock_3parclient.modifyVolume.assert_called()
 
     def get_request_params(self):
         return {"Name": "clone-vol-001",
