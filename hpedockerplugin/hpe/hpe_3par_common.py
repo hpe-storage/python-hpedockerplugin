@@ -37,7 +37,7 @@ MIN_CLIENT_VERSION = '4.0.0'
 DEDUP_API_VERSION = 30201120
 FLASH_CACHE_API_VERSION = 30201200
 COMPRESSION_API_VERSION = 30301215
-TIME_OUT = 5
+TIME_OUT = 30
 
 hpe3par_opts = [
     cfg.StrOpt('hpe3par_api_url',
@@ -166,14 +166,18 @@ class HPE3PARCommon(object):
                 LOG.error(msg)
                 raise exception.InvalidInput(reason=msg)
 
-    def _create_client(self, timeout=None):
+    def _create_client(self, timeout=TIME_OUT):
         try:
             cl = client.HPE3ParClient(
                 self.config.hpe3par_api_url, timeout=timeout,
                 suppress_ssl_warnings=CONF.suppress_requests_ssl_warnings)
         except Exception as ex:
-            msg = (_("Failed to connect to %(url)s, please check url") %
-                   {'url': self.config.hpe3par_api_url})
+            msg = (_('Failed to connect to the array using %(url)s.'
+                     'Please ensure the following \n'
+                     '1.Value of IP and port specified for '
+                     'hpe3par_api_url in hpe.conf is correct and \n'
+                     '2. The array is reachable from the host.\n')
+                   % {'url': self.config.hpe3par_api_url})
             LOG.error(msg)
             raise exception.ConnectionError(ex)
 
