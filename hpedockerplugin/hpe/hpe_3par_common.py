@@ -1146,6 +1146,16 @@ class HPE3PARCommon(object):
                     LOG.debug('Copy volume completed: create_cloned_volume: '
                               'id=%s.', dst_volume['id'])
 
+                comments = {'volume_id': dst_volume['id'],
+                            'name': dst_volume['name'],
+                            'type': 'Docker'}
+
+                name = dst_volume.get('display_name', None)
+                if name:
+                    comments['display_name'] = name
+
+                self.client.modifyVolume(dst_3par_vol_name,
+                                         {'comment': json.dumps(comments)})
                 return dst_3par_vol_name
 
         except hpeexceptions.HTTPForbidden:
