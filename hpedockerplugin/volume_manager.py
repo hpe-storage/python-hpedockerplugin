@@ -51,7 +51,7 @@ class VolumeManager(object):
             raise exception.HPEPluginNotInitializedException(reason=msg)
 
         try:
-            self._hpeplugin_driver.do_setup()
+            self._hpeplugin_driver.do_setup(timeout=5)
             self._hpeplugin_driver.check_for_setup_error()
         except Exception as ex:
             msg = (_('_hpeplugin_driver do_setup failed, error is: %s'),

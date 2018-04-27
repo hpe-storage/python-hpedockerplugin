@@ -99,9 +99,9 @@ class HPE3PARISCSIDriver(object):
                           'san_password']
         common.check_flags(self.configuration, required_flags)
 
-    def do_setup(self):
+    def do_setup(self, timeout):
         common = self._init_common()
-        common.do_setup()
+        common.do_setup(timeout=timeout)
         self._check_flags(common)
         common.check_for_setup_error()
 
