@@ -301,7 +301,7 @@ class VolumeManager(object):
             parent_name = vol['snap_metadata']['parent_name']
 
         try:
-            if vol['snapshots']:
+            if 'snapshots' in vol and vol['snapshots']:
                 msg = (_LE('Err: Volume %s has one or more child '
                            'snapshots - volume cannot be deleted!'
                            % volname))
@@ -529,7 +529,7 @@ class VolumeManager(object):
                   'Devicename': devicename,
                   'Status': {}}
 
-        if volinfo['snapshots']:
+        if volinfo.get('snapshots') and volinfo.get('snapshots') != '':
             self._sync_snapshots_from_array(volinfo['id'],
                                             volinfo['snapshots'])
         # Is this request for snapshot inspect?
