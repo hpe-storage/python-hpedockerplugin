@@ -112,6 +112,14 @@ There are couple of optional parameters that can be used during snapshot creatio
 Note:1. If snapcpg is not configured in hpe.conf then cpg would be used for snapshot.
      2. expirationHours and retentionHours are valid attributes of a volume but 2.1
         plugin ignores these parameters and are valid only for snapshots currently.
+
+```
+docker volume create -d hpe --name <snapshot_name> -o virtualCopyOf=<source_vol_name> -o expirationHours=3
+```
+Note:
+
+- When snapshot is created with expirationHours, snapshot is automatically deleted from 3PAR once expirationHours are over. When user does docker volume inspect on parent volume after expiration hours of snapshot, this will list the only those snapshots which are not expired.
+- When snapshot is created with retentionHours, user cannot delete snashot until the retentionHours are over. If both expirationHours and retentionHours are used while creating snapshot then retentionHours should be less than expirationHours
         
 ```
 Note: Same approch similar to volume mount is used for mounting a snapshot to a container.
