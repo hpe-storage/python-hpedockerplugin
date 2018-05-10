@@ -304,10 +304,6 @@ ln -s ../hpe.sock  hpe.sock
 
 - You should be able to do `docker volume` operations like `docker volume create -d hpe --name sample_vol -o size=1`
 
-##Restarting the plugin
-
-IMPORTANT NOTE: The /run/docker/plugins/hpe/hpe.sock and /run/docker/plugins/hpe/hpe.sock.lock files are not automatically removed when you stop the container. Therefore, these files will need to be removed between each run of the plugin.
-
 
 ## Restarting the plugin
 - IMPORTANT NOTE: The /run/docker/plugins/hpe/hpe.sock and /run/docker/plugins/hpe/hpe.sock.lock files are not automatically removed when you stop the container. Therefore, these files will need to be removed manually between each run of the plugin.
