@@ -15,16 +15,16 @@ store/hpestorage/hpedockervolumeplugin:2.0.2
 - `iSCSI and FC driver support with basic create, delete and mount volume operations`
 
 store/hpestorage/hpedockervolumeplugin:2.1
-- `Support for creating compressed volumes, snapshots, clones, qos, snapshot mount,`
+- `Support for creating compressed volumes, snapshots, clones, QoS, snapshot mount,`
   `mount_conflict_delay, and multiple container access for a volume on same node.`
 
 #### Steps:
-
-Setup etcd in a host following this instructions https://github.com/hpe-storage/python-hpedockerplugin/tree/master/quick-start#single-node-etcd-setup---install-etcd
+- Run etcd container
+Setup etcd in a host following this instructions https://github.com/hpe-storage/python-hpedockerplugin/tree/master/quick-start#Run-etcd-container-OR-cluster
 
 This etcd container can run in the same host where the HPE Docker Volume plugin is installed.
 
-Configure hpe.conf for Managed plugin.
+- Configure hpe.conf for Managed plugin.
 
 For 3PAR iSCSI plugin, use this template https://github.com/hpe-storage/python-hpedockerplugin/blob/master/config/hpe.conf.sample.3parISCSI and create a file called hpe.conf in /etc/hpedockerplugin/hpe.conf
 
@@ -53,7 +53,7 @@ $ docker plugin enable hpe
 
 ```
 
-Execute below commands to install the plugin on RHEL 7.3 and CentOS 7.3
+Execute below commands to install the plugin on RHEL 7.4 and CentOS 7.3
 
 ```
 # Install these pre-requisite packages
@@ -93,7 +93,6 @@ Example configuration for secure etcd setup is given in this link - https://gith
 
 ## Examples of using the HPE 3PAR Volume Plug-in for Docker
 
-
 To Create a volume
 ```
 $ docker volume create -d hpe --name db_vol -o size=10
@@ -114,10 +113,11 @@ To Create a Clone
 $ docker volume create -d hpe --name db_vol_clone -o cloneOf=db_vol
 ```
 
-To apply existing qos setting on new volume being created
+To apply existing QoS setting of VVSet on new volume being created
 ```
-$ docker volume create -d hpe --name db_vol_new -o qos-name=<existing_qos_in_3par>
+$ docker volume create -d hpe --name db_vol_new -o qos-name=<existing_vvsetname_in_3par>
 ```
+Note: Here Volume and vvset should be in same domain
 
 To Mount a volume 
 ```
@@ -170,7 +170,7 @@ or `` /var/log/messages ``
  - Volumes created using older plugins (2.0.2 or below) do not have snp_cpg associated with them, hence when the plugin is upgraded to      2.1 and user wants to perform clone/snapshot operations on these old volumes, he/she must set the snap_cpg for the 
    corresponding volumes using 3par cli or any tool before performing clone/snapshot operations.
 
-## Docker cli commands for various operations are listed in
+## Docker cli commands for various operations are listed in link
    https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/usage.md
 
 
@@ -182,12 +182,12 @@ or `` /var/log/messages ``
    older releases of docker use this containerized plugin
 ```
 
-# Deploying the HPE 3PAR Volume Plugin for Docker as a Docker Container (Containerized plugin) 
+# Steps for Deploying the Containerized Plugin(HPE 3PAR Volume Plug-in for Docker as Docker container) 
 
-### For running the containerized Plugin under Openshift 3.7 / Kubernetes 1.7 please follow these steps as documented in shared file
+### For running the Containerized Plugin under Openshift 3.7 / Kubernetes 1.7 please follow these steps as documented in shared file
     https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/OpenShift_Kubernetes_documentation.docx
     
-` Below are the steps for running etcd and containerized plugin. `
+` Below are the steps for running etcd and Containerized Plugin. `
 
 - reload docker daemon after configuring MountFlags
 ```
@@ -203,17 +203,16 @@ Configure the docker system service
 
 
 
-## Single node etcd setup - Install etcd
-These steps are for a single node setup only. If you plan to run a container orchestration service (such as Docker UCP or Kubernetes) in a cluster of systems then refer to the etcd cluster setup below. These orchestration services typically already have setup instructions for an etcd cluster, so there is no need to create a separate etcd cluster in these cases. The plugin can safely share access to the same etcd cluster being used by the orchestration technology.
+## Run etcd container OR cluster 
+**If you plan to run a container orchestration service (such as Docker UCP or Kubernetes) in a cluster of systems then refer to the etcd cluster setup link given below.** These orchestration services typically already have setup instructions for an etcd cluster, so there is no need to create a separate etcd cluster in these cases. The plugin can safely share access to the same etcd cluster being used by the orchestration technology.
+
+**These steps are for a single node setup only.**
 
 First create an export for your local IP:
-
 ```
 export HostIP="<your host IP>"
 ```
-
 Then run the following command to create an etcd container in Docker:
-
 ```
 sudo docker run -d -v /usr/share/ca-certificates/:/etc/ssl/certs -p 4001:4001 \
 -p 2380:2380 -p 2379:2379 \
@@ -227,7 +226,7 @@ sudo docker run -d -v /usr/share/ca-certificates/:/etc/ssl/certs -p 4001:4001 \
 -initial-cluster etcd0=http://${HostIP}:2380 \
 -initial-cluster-state new
 ```
-For more information on setting up an etcd cluster see:
+**For more information on setting up an etcd cluster see:**
 
 https://coreos.com/etcd/docs/latest/v2/docker_guide.html - instructions for etcd under Docker
 
@@ -304,7 +303,7 @@ hpedockerplugin:
 
 
 ## Restarting the plugin
-- docker stop <container id of plugin>
+- docker stop <container_id_of_plugin>
 - IMPORTANT NOTE: The /run/docker/plugins/hpe/hpe.sock and /run/docker/plugins/hpe/hpe.sock.lock files are not automatically removed when you stop the container. Therefore, these files will need to be removed manually between each run of the plugin.
 
 
