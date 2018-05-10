@@ -1,7 +1,7 @@
 ## Usage
-The following are the currently supported actions that can be taken using the HPE Docker plugin.
+The following are the currently supported actions that can be taken using the HPE 3PAR Volume Plug-in for Docker.
 
-#### Creating an HPE volume
+#### Creating a volume
 ```
 sudo docker volume create -d hpe --name <vol_name>
 ```
@@ -87,11 +87,11 @@ Finally, remove the volume:
 sudo docker volume rm <vol_name>
 ```
 
-#### Creating a volume using existing QOS(**introduced in plugin version 2.1**)
+#### Creating a volume with existing vvset associated with QoS rules(**introduced in plugin version 2.1**)
 ```
 docker volume create -d hpe --name <target_vol_name> -o qos-name=<vvset_name>
 ```
-Note -- 'vvset_name' should be present in 3par
+Note -- 'vvset_name' should be present in 3par and should have QoS rules set to it.
 
 #### Creating a clone of a volume(**introduced in plugin version 2.1**)
 ```
