@@ -256,8 +256,9 @@ git checkout plugin_v2
 2. Using prebuild images available on docker hub
 ```
 In docker-compose.yml keep image: hpestorage/legacyvolumeplugin:2.1
-
+```
 Observe the built container image by `docker images` command
+
 ```
 root@worker1:~/patch_201/python-hpedockerplugin# docker images
 REPOSITORY                           TAG                 IMAGE ID            CREATED             SIZE
