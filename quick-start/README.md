@@ -20,7 +20,7 @@ store/hpestorage/hpedockervolumeplugin:2.1
 
 #### Steps:
 - Run etcd container
-Setup etcd in a host following this instructions https://github.com/hpe-storage/python-hpedockerplugin/tree/master/quick-start#Run-etcd-container-OR-cluster
+Setup etcd in a host following this instructions https://github.com/hpe-storage/python-hpedockerplugin/tree/master/quick-start#run-etcd-container-or-cluster
 
 This etcd container can run in the same host where the HPE Docker Volume plugin is installed.
 
