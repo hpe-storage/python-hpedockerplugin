@@ -11,15 +11,16 @@ There are several optional parameters that can be used during volume creation:
 - size -- It specifies the desired size in GB of the volume. If size is not specified during volume creation , it defaults to 100 GB.
 - provisioning -- It specifies the type of provisioning to use (thin, full, dedup). If provisioning is not specified during volume creation, it defaults to thin provisioning. For dedup provisioning, CPG with SSD device type must be configured.
 - flash-cache -- It specifies whether flash cache should be used or not (True, False).
-- compression -- It enables or disabled compression on volume which is being created. It is only supported for thin/dedup volumes of size greater or equal to 16 GB. Valid values for compression are (true, false) or (True, False). Compression is only supported on 3par OS version 3.3.1 (introduced in plugin version 2.1)
+- compression -- It enables or disabled compression on volume which is being created. It is only supported for thin/dedup volumes of size greater or equal to 16 GB. Valid values for compression are (true, false) or (True, False). Compression is only supported on 3par OS version 3.3.1 (**introduced in plugin version 2.1**)
 - mountConflictDelay -- specifies period in seconds. This parameter is used to wait for a
 mounted volume to gracefully unmount from some node before it can be mounted on the current
 node. If graceful unmount doesn't happen within mountConflictDelay seconds then a forced
 cleanup of VLUN from the backend is performed so that volume can be mounted on the current
-node.(introduced in plugin version 2.1)
+node.(**introduced in plugin version 2.1**)
+- qos_name -- name of existing VVset on 3PAR where QoS rules are applied.(**introduced in plugin version 2.1**)
 
 Note: Setting flash-cache to True does not gurantee flash-cache will be used. The backend system
-must have the appropriate SSD setup configured, too.
+must have the appropriate SSD setup configured too.
 
 The following is an example call creating a full provisioned, 50 GB volume:
 ```
@@ -86,22 +87,22 @@ Finally, remove the volume:
 sudo docker volume rm <vol_name>
 ```
 
-#### Creating a volume using existing QOS
+#### Creating a volume using existing QOS(**introduced in plugin version 2.1**)
 ```
 docker volume create -d hpe --name <target_vol_name> -o qos-name=<vvset_name>
 ```
 Note -- 'vvset_name' should be present in 3par
 
-#### Creating a clone of a volume
+#### Creating a clone of a volume(**introduced in plugin version 2.1**)
 ```
 docker volume create -d hpe --name <target_vol_name> -o cloneOf=<source_vol_name>
 ```
-#### Creating compressed volume
+#### Creating compressed volume(**introduced in plugin version 2.1**)
 ```
 docker volume create -d hpe --name <target_vol_name> -o compression=true
 ```
 
-#### Creating a snapshot or virtualcopy of a volume
+#### Creating a snapshot or virtualcopy of a volume(**introduced in plugin version 2.1**)
 ```
 docker volume create -d hpe --name <snapshot_name> -o virtualCopyOf=<source_vol_name>
 ```
