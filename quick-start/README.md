@@ -153,6 +153,7 @@ On Ubuntu, grep for the `plugin id` in the logs , where the `plugin id` can be i
 Plugin logs will be available in system logs (eg. /var/log/syslog on Ubuntu).
 
 On RHEL and CentOS, issue ``journalctl -f -u docker.service`` to get the plugin logs.
+or `` /var/log/messages ``
 
 
 
