@@ -1,15 +1,15 @@
 # Source Availability
-- Source for the entire HPE 3PAR Docker Volume Plugin is present in plugin_v2 branch of this repository.
+- Source for the entire HPE 3PAR Volume Plugin for Docker is present in plugin_v2 branch of this repository.
 - Source for paramiko is present under https://github.com/hpe-storage/python-hpedockerplugin/tree/master/paramiko_src 
 
-# Steps for Deploying the Managed Plugin 
+# Steps for Deploying the Managed Plugin (HPE 3PAR Volume Plug-in for Docker) 
 
-HPE 3PAR Docker Volume Plugin is tested against: 
+HPE 3PAR Docker Volume Plugin for Docker is tested against: 
 
-- Docker EE release version >= 17.03
+- Docker EE release version 17.03 and 17.06
 - Ubuntu 16.04 (Xenial), RHEL 7.4 and CentOS 7.3
 
-Feature Matrix for Managed plugin:
+#### Feature Matrix for Managed plugin / HPE 3PAR Volume Plug-in for Docker :
 
 store/hpestorage/hpedockervolumeplugin:2.0.2
 - `iSCSI and FC driver support with basic create, delete and mount volume operations`
@@ -18,13 +18,13 @@ store/hpestorage/hpedockervolumeplugin:2.1
 - `Support for creating compressed volumes, snapshots, clones, qos, snapshot mount,`
   `mount_conflict_delay, and multiple container access for a volume on same node.`
 
-Steps:
+#### Steps:
 
 Setup etcd in a host following this instructions https://github.com/hpe-storage/python-hpedockerplugin/tree/master/quick-start#single-node-etcd-setup---install-etcd
 
 This etcd container can run in the same host where the HPE Docker Volume plugin is installed.
 
-Configure plugin for the appropriate 3PAR plugin.
+Configure hpe.conf for Managed plugin.
 
 For 3PAR iSCSI plugin, use this template https://github.com/hpe-storage/python-hpedockerplugin/blob/master/config/hpe.conf.sample.3parISCSI and create a file called hpe.conf in /etc/hpedockerplugin/hpe.conf
 
@@ -91,7 +91,7 @@ In Docker Swarm mode, etcd cluster will be created between manager nodes and etc
 
 Example configuration for secure etcd setup is given in this link - https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/etcd_cluster_setup.md
 
-## Examples of using the HPE Volume Plugin
+## Examples of using the HPE 3PAR Volume Plug-in for Docker
 
 
 To Create a volume
@@ -164,8 +164,8 @@ or `` /var/log/messages ``
 
 - Shared volume support is present for containers running on the same host.
 
-- For upgrading the plugin from older version 2.0 or 2.0.2 to 2.1 user needs to unmount all the volumes and follow the standerd
- upgrade procedure describrd in docker guide. 
+- For upgrading the plugin from older version 2.0 or 2.0.2 to 2.1 user needs to unmount all the volumes and follow the standard
+ upgrade procedure described in docker guide. 
  
  - Volumes created using older plugins (2.0.2 or below) do not have snp_cpg associated with them, hence when the plugin is upgraded to      2.1 and user wants to perform clone/snapshot operations on these old volumes, he/she must set the snap_cpg for the 
    corresponding volumes using 3par cli or any tool before performing clone/snapshot operations.
@@ -175,28 +175,33 @@ or `` /var/log/messages ``
 
 
 ```
-   Note: 3PAR volumes can be created in docker environment using 2 approces 1. using plugin form (Managed Pugin) as shown in
-   above steps or 2. using as a container image called as legacy plugin as shown below
+   Note: 3PAR volumes can be created in docker environment using 2 approces 
+   1. using plugin form (Managed Pugin) as shown in above steps or 
+   2. using as a container image called as containerized plugin as shown below
+   Managed plugin is supported only on docker 1.13 onwards, so to use the plugin on
+   older releases of docker use this containerized plugin
 ```
 
-# Deploying the HPE Docker Volume Plugin as a Docker Container 
+# Deploying the HPE 3PAR Volume Plugin for Docker as a Docker Container (Containerized plugin) 
 
-### For running the Docker Volume Plugin under Openshift 3.7 / Kubernetes 1.7 please follow these steps as documented in shared file
+### For running the containerized Plugin under Openshift 3.7 / Kubernetes 1.7 please follow these steps as documented in shared file
     https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/OpenShift_Kubernetes_documentation.docx
     
-` Below are the steps for running etcd and creating the hpe 3par docker volume plugin image container. `
-- reload docker daemon after configuring MountFlags
-- run the etcd container
-- set up hpe.conf and have a proper setup from host to array
-- use docker-compose to run the container
+` Below are the steps for running etcd and containerized plugin. `
 
-Configure the docker system service to use 
+- reload docker daemon after configuring MountFlags
+```
+Configure the docker system service 
 - MountFlags=shared (default is slave) in file  /usr/lib/systemd/system/docker.service (in case of RHEL)
 - restart the docker daemon using
+      systemctl daemon-reload
+      systemctl restart docker.service
 ```
-systemctl daemon-reload
-systemctl restart docker.service
-```
+- run the etcd container/ cluster of containers
+- set up hpe.conf and have a proper connectivity setup from host to 3PAR array
+- use docker-compose to run the containerized plugin
+
+
 
 ## Single node etcd setup - Install etcd
 These steps are for a single node setup only. If you plan to run a container orchestration service (such as Docker UCP or Kubernetes) in a cluster of systems then refer to the etcd cluster setup below. These orchestration services typically already have setup instructions for an etcd cluster, so there is no need to create a separate etcd cluster in these cases. The plugin can safely share access to the same etcd cluster being used by the orchestration technology.
@@ -246,7 +251,7 @@ cp <sample_file> hpe.conf
 Copy the edited configs into **/etc/hpedockerplugin/hpe.conf**.
 
 
-## Building the container image
+## There are 2 ways to get the containerized plugin on system
 1. Using the clone and building the image locally
 ```
 git clone https://github.com/hpe-storage/python-hpedockerplugin.git ~/container_code
@@ -293,30 +298,13 @@ hpedockerplugin:
      - /opt/hpe/data:/opt/hpe/data:rshared
   ```
 
-- Start the plugin container by `docker-compose docker-compose.yml`
-- create 2 symbolic links by using these steps
-```
-mkdir -p /run/docker/plugins/hpe
-cd /run/docker/plugins/hpe
-ln -s ../hpe.sock.lock  hpe.sock.lock
-ln -s ../hpe.sock  hpe.sock
-
-```
+- Start the plugin container by `docker-compose up -f docker-compose.yml`
 
 - You should be able to do `docker volume` operations like `docker volume create -d hpe --name sample_vol -o size=1`
 
 
 ## Restarting the plugin
+- docker stop <container id of plugin>
 - IMPORTANT NOTE: The /run/docker/plugins/hpe/hpe.sock and /run/docker/plugins/hpe/hpe.sock.lock files are not automatically removed when you stop the container. Therefore, these files will need to be removed manually between each run of the plugin.
 
-
-## Running the hpedockerplugin on different linux distros:
-
-Make sure to set **MountFlags=shared** in the docker.service. This is required to ensure the hpedockerplugin can write to /hpeplugin
-
-1. CentOS/RHEL: You now need to bind mount /etc/iscsi/initiatorname.iscsi in the docker compose file. The Alpine linux based version of the container does not come with an iscsi initiator. Therefore, you must bind mount an iscsi initiator for the plugin to work properly. 
-
-2. CoreOS: make sure to also bind mount /lib/modules. Otherwise, you'll get the following error in the hpedockerpluin logs:
-
-iscsiadm: initiator reported error (12 - iSCSI driver not found. Please make sure it is loaded, and retry the operation)
 
