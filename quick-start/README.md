@@ -11,19 +11,19 @@ HPE 3PAR Docker Volume Plugin for Docker is tested against:
 
 #### Feature Matrix for Managed plugin / HPE 3PAR Volume Plug-in for Docker :
 
-store/hpestorage/hpedockervolumeplugin:2.0.2
-- `iSCSI and FC driver support with basic create, delete and mount volume operations`
-
 store/hpestorage/hpedockervolumeplugin:2.1
-- `Support for creating compressed volumes, snapshots, clones, QoS, snapshot mount,`
-  `mount_conflict_delay, and multiple container access for a volume on same node.`
+- ```
+   Support for creating volumes of type thin, dedup, full, compressed volumes, snapshots, clones, 
+   QoS, snapshot mount, mount_conflict_delay, and multiple container access for a volume on same node.
+   Plugin supports both iscsi and FC drivers.
+   ```
 
 #### Steps:
 - Run etcd container
 
    Setup etcd in a host following this instructions https://github.com/hpe-storage/python-hpedockerplugin/tree/master/quick-start#run-etcd-container-or-cluster
 
-This etcd container can run in the same host where the HPE Docker Volume plugin is installed.
+  **Note:** This etcd container can run in the same host where the HPE Docker Volume plugin is installed.
 
 - Configure hpe.conf for Managed plugin.
 
@@ -36,7 +36,7 @@ Note: Template has different place holders for the storage system to be configur
 Note: Before enabling the plugin user needs to make sure that 
 - etcd container is in running state.
 - Host and 3PAR array has proper iSCSI connectivity if plugin's iscsi driver needs to be used.
-- Support for HPE 3PAR FC Volume Plugin has been added in hpestorage/hpedockervolumeplugin:2.0 and it is tested against Docker 17.06 EE. Note: FC plugin requires proper zoning between the docker host(s) and the 3PAR Array. Also, create /etc/multipath.conf based on instructions in :https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/multipath-managed-plugin.md
+- FC plugin requires proper zoning between the docker host(s) and the 3PAR Array. Also, create /etc/multipath.conf based on instructions in :https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/multipath-managed-plugin.md
 
 Execute below commands to install the plugin on Ubuntu 16.04
 
@@ -78,19 +78,6 @@ Confirm the plugin is successfully installed by
 
 `$ docker plugin ls`
 
-
-### Etcd cluster for High Availability
-
-Support for Etcd cluster with multiple Etcd hosts has been added in hpestorage/hpedockervolumeplugin:2.0 and it is tested against Docker 17.06 EE on Ubuntu 16.04.
-
-For setting up etcd client with cluster members, configure host_etcd_ip_address in hpe.conf in this below format where each member's ip:port is given with comma as delimiter. For example,
-```
-host_etcd_ip_address = 10.50.180.1:3379,10.50.164.1:3379,10.50.198.1:3379
-```
-
-In Docker Swarm mode, etcd cluster will be created between manager nodes and etcd clients will be workers nodes where volume plugin will be installed.
-
-Example configuration for secure etcd setup is given in this link - https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/etcd_cluster_setup.md
 
 ## Examples of using the HPE 3PAR Volume Plug-in for Docker
 
@@ -207,6 +194,8 @@ Configure the docker system service
 ## Run etcd container OR cluster 
 **If you plan to run a container orchestration service (such as Docker UCP or Kubernetes) in a cluster of systems then refer to the etcd cluster setup link given below.** These orchestration services typically already have setup instructions for an etcd cluster, so there is no need to create a separate etcd cluster in these cases. The plugin can safely share access to the same etcd cluster being used by the orchestration technology.
 
+**Note:** For quick start purpose user can create a single node etcd setup as shown in below example but for the production use case user can go for creating etcd cluster or High Availability etcd cluster.
+
 **These steps are for a single node setup only.**
 
 First create an export for your local IP:
@@ -232,6 +221,20 @@ sudo docker run -d -v /usr/share/ca-certificates/:/etc/ssl/certs -p 4001:4001 \
 https://coreos.com/etcd/docs/latest/v2/docker_guide.html - instructions for etcd under Docker
 
 Note: The etcd version used here is v2.2.0. Versions of etcd beyond v2.x require changes to the above command.
+
+### Etcd cluster for High Availability
+
+Support for Etcd cluster with multiple Etcd hosts has been tested against Docker 17.06 EE on Ubuntu 16.04.
+
+For setting up etcd client with cluster members, configure host_etcd_ip_address in hpe.conf in this below format where each member's ip:port is given with comma as delimiter. For example,
+```
+host_etcd_ip_address = 10.50.180.1:3379,10.50.164.1:3379,10.50.198.1:3379
+```
+
+In Docker Swarm mode, etcd cluster will be created between manager nodes and etcd clients will be workers nodes where volume plugin will be installed.
+
+Example configuration for secure etcd setup is given in this link - https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/etcd_cluster_setup.md
+
 
 ## Setup the plugin Configuration file
 
