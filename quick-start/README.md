@@ -185,10 +185,11 @@ Configure the docker system service
       systemctl daemon-reload
       systemctl restart docker.service
 ```
-- run the etcd container/ cluster of containers
-- set up hpe.conf and have a proper connectivity setup from host to 3PAR array
-- use docker-compose to run the containerized plugin
+- run the etcd container/ cluster of containers https://github.com/hpe-storage/python-hpedockerplugin/blob/master/quick-start/README.md#run-etcd-container-or-cluster
 
+- set up hpe.conf and have a proper connectivity setup from host to 3PAR array https://github.com/hpe-storage/python-hpedockerplugin/tree/master/quick-start#setup-the-plugin-configuration-file
+
+- use docker-compose to run the containerized plugin https://github.com/hpe-storage/python-hpedockerplugin/tree/master/quick-start#there-are-2-ways-to-get-the-containerized-plugin-on-system
 
 
 ## Run etcd container OR cluster 
