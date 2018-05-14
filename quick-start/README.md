@@ -177,6 +177,8 @@ or `` /var/log/messages ``
     
 ` Below are the steps for running etcd and Containerized Plugin. `
 
+#### Steps:
+
 - reload docker daemon after configuring MountFlags
 ```
 Configure the docker system service 
