@@ -197,7 +197,7 @@ Configure the docker system service
 
 **Note:** For quick start purpose user can create a single node etcd setup as shown in below example but for the production use case user can go for creating etcd cluster or High Availability etcd cluster.
 
-**These steps are for a single node setup only.**
+#### **These steps are for a single node setup only.:**
 
 First create an export for your local IP:
 ```
@@ -217,13 +217,13 @@ sudo docker run -d -v /usr/share/ca-certificates/:/etc/ssl/certs -p 4001:4001 \
 -initial-cluster etcd0=http://${HostIP}:2380 \
 -initial-cluster-state new
 ```
-**For more information on setting up an etcd cluster see:**
+#### **For more information on setting up an etcd cluster see:**
 
 https://coreos.com/etcd/docs/latest/v2/docker_guide.html - instructions for etcd under Docker
 
 Note: The etcd version used here is v2.2.0. Versions of etcd beyond v2.x require changes to the above command.
 
-### Etcd cluster for High Availability
+#### **Setting up Etcd cluster for High Availability see:**
 
 Support for Etcd cluster with multiple Etcd hosts has been tested against Docker 17.06 EE on Ubuntu 16.04.
 
