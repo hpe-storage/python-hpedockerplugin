@@ -23,7 +23,7 @@ store/hpestorage/hpedockervolumeplugin:2.1
 
    Setup etcd in a host following this instructions https://github.com/hpe-storage/python-hpedockerplugin/tree/master/quick-start#run-etcd-container-or-cluster
 
-  **Note:** This etcd container can run in the same host where the HPE Docker Volume plugin is installed.
+  **Note: This etcd container can run in the same host where the HPE Docker Volume plugin is installed.**
 
 - Configure hpe.conf for Managed plugin.
 
@@ -31,14 +31,14 @@ For 3PAR iSCSI plugin, use this template https://github.com/hpe-storage/python-h
 
 For 3PAR FC plugin, use this template https://github.com/hpe-storage/python-hpedockerplugin/blob/master/config/hpe.conf.sample.3parFC and create a file called hpe.conf in /etc/hpedockerplugin/hpe.conf
 
-Note: Template has different place holders for the storage system to be configured. In hpe.conf , parameter host_etcd_ip_address = <ip_address> needs to be replaced with the ip_address of the host where the etcd is started.
+**Note: Template has different place holders for the storage system to be configured. In hpe.conf , parameter host_etcd_ip_address = <ip_address> needs to be replaced with the ip_address of the host where the etcd is started.**
 
-Note: Before enabling the plugin user needs to make sure that 
+**Note: Before enabling the plugin user needs to make sure that**
 - etcd container is in running state.
 - Host and 3PAR array has proper iSCSI connectivity if plugin's iscsi driver needs to be used.
 - FC plugin requires proper zoning between the docker host(s) and the 3PAR Array. Also, create /etc/multipath.conf based on instructions in :https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/multipath-managed-plugin.md
 
-Execute below commands to install the plugin on Ubuntu 16.04
+**Execute below commands to install the plugin on Ubuntu 16.04**
 
 ```
 # Install these pre-requisite packages
@@ -54,7 +54,7 @@ $ docker plugin enable hpe
 
 ```
 
-Execute below commands to install the plugin on RHEL 7.4 and CentOS 7.3
+**Execute below commands to install the plugin on RHEL 7.4 and CentOS 7.3**
 
 ```
 # Install these pre-requisite packages
@@ -74,7 +74,7 @@ $ docker plugin set hpe glibc_libs.source=/lib64 certs.source=/tmp
 $ docker plugin enable hpe
 ```
 
-Confirm the plugin is successfully installed by
+**Confirm the plugin is successfully installed by**
 
 `$ docker plugin ls`
 
