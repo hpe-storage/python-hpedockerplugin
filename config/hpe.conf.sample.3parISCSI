@@ -48,7 +48,7 @@ hpe3par_cpg = <CPG name used for volume creation>
 hpe3par_snapcpg = <CPG name used for snapshot creation>
 # hpe3par_snapcpg is optional. If not provided, it defaults to hpe3par_cpg value
 
-iscsi_ip_address = <iSCSI IP address>
+# iscsi_ip_address = <iSCSI IP address>
 hpe3par_iscsi_chap_enabled = <True or False>
 hpe3par_iscsi_ips = <iSCSI IP addresses separated by comma>
 use_multipath = <True or False>
