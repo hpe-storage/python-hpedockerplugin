@@ -278,11 +278,13 @@ hpe-storage/python-hpedockerplugin   plugin_v2          9b540a18a9b2        4 we
 In docker-compose.yml keep image: hpestorage/legacyvolumeplugin:2.1
 ```
 
-- On **Ubuntu systems** - copy the file https://github.com/hpe-storage/python-hpedockerplugin/blob/plugin_v2/quick-start/docker-compose.yml.example as docker-compose.yml 
+- Sample docker-compose.yml file for Ubuntu:
+On **Ubuntu systems** - copy the file https://github.com/hpe-storage/python-hpedockerplugin/blob/plugin_v2/quick-start/docker-compose.yml.example as docker-compose.yml 
 
 - Substitute the  `image: <image>` in docker-compose.yml with the name of the built image. `container_name: <container_name>` can be substituted by any user defined name.
 
-- On **RHEL/CentOS systems** docker-compose.yml for creating containerized image using cloned repository in above example will be as shown in below example
+- Sample docker-compose.yml file for RHEL/CentOS:
+On **RHEL/CentOS systems** docker-compose.yml for creating containerized image using cloned repository in above example will be as shown in below example
 ``` 
 hpedockerplugin:
   image: hpe-storage/python-hpedockerplugin:plugin_v2
@@ -328,7 +330,7 @@ docker-compose version 1.21.0, build 1719ceb
 
 ## Restarting the plugin
 - docker stop <container_id_of_plugin>
-- IMPORTANT NOTE: The /run/docker/plugins/hpe/hpe.sock and /run/docker/plugins/hpe/hpe.sock.lock files are not automatically removed when you stop the container. Therefore, these files will need to be removed manually between each run of the plugin.
+- IMPORTANT NOTE: The /run/docker/plugins/hpe.sock and /run/docker/plugins/hpe.sock.lock files are not automatically removed when you stop the container. Therefore, these files will need to be removed manually between each run of the plugin.
 - docker start <container_id_of_plugin>
 
 
