@@ -313,5 +313,6 @@ hpedockerplugin:
 ## Restarting the plugin
 - docker stop <container_id_of_plugin>
 - IMPORTANT NOTE: The /run/docker/plugins/hpe/hpe.sock and /run/docker/plugins/hpe/hpe.sock.lock files are not automatically removed when you stop the container. Therefore, these files will need to be removed manually between each run of the plugin.
+- docker start <container_id_of_plugin>
 
 
