@@ -305,7 +305,23 @@ hpedockerplugin:
      - /opt/hpe/data:/opt/hpe/data:rshared
   ```
 
-- Start the plugin container by `docker-compose up -f docker-compose.yml`
+- **Start up the plugin container**
+
+Make sure you are in the location of the docker-compose.yml file
+```	 
+$ docker-compose up -d or
+$ docker-compose up 2>&1 | tee /tmp/plugin_logs.txt
+```
+```
+In case you are missing docker-compose, https://docs.docker.com/compose/install/#install-compose
+
+$ curl -x -L https://github.com/docker/compose/releases/download/1.21.0/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
+$ sudo chmod +x /usr/local/bin/docker-compose
+
+# Test the installation
+$ docker-compose --version
+docker-compose version 1.21.0, build 1719ceb
+```
 
 - You should be able to do `docker volume` operations like `docker volume create -d hpe --name sample_vol -o size=1`
 
