@@ -45,6 +45,8 @@ store/hpestorage/hpedockervolumeplugin:2.1
 #### Steps:
 
 - These are the prerequisiet packages to be installed on host OS:
+https://github.com/hpe-storage/python-hpedockerplugin/blob/master/quick-start/README.md#prerequisite-packages-to-be-installed-on-host-os
+
 
 - Run etcd container
 
@@ -207,6 +209,8 @@ Configure the docker system service
 ```
 
 -  These are prerequisite packages to be installed on host OS:
+https://github.com/hpe-storage/python-hpedockerplugin/blob/master/quick-start/README.md#prerequisite-packages-to-be-installed-on-host-os
+
 
 - run the etcd container/ cluster of containers https://github.com/hpe-storage/python-hpedockerplugin/blob/master/quick-start/README.md#run-etcd-container-or-cluster
 
