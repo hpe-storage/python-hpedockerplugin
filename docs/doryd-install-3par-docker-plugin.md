@@ -6,7 +6,7 @@ sudo ./dory_installer
 
 # Confirm if the binaries are installed properly in this location
 
-[docker@csimbe06-b12 tmp]$ ls -l /usr/libexec/kubernetes/kubelet-plugins/volume/exec/dev.hpe.com~hpe/
+[docker@csimbe06-b12 tmp]$ ls -l /usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/
 total 52360
 -rwxr-xr-x. 1 docker docker 47046107 Apr 20 06:11 doryd
 -rwxr-xr-x. 1 docker docker  6561963 Apr 20 06:11 hpe
@@ -41,7 +41,7 @@ cp <path>/dory hpe
 
 
 ```
-sudo /usr/libexec/kubernetes/kubelet-plugins/volume/exec/dev.hpe.com~hpe/doryd  /etc/kubernetes/admin.conf dev.hpe.com
+sudo /usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/doryd  /etc/kubernetes/admin.conf hpe.com
 ```
 
 More details refer this [blog](https://developer.hpe.com/blog/doryd-a-dynamic-provisioner-for-docker-volume-plugins)
@@ -72,7 +72,7 @@ kind: StorageClass
 apiVersion: storage.k8s.io/v1
 metadata:
  name: transactionaldb
-provisioner: dev.hpe.com/hpe
+provisioner: hpe.com/hpe
 parameters:
   size: "16"
   provisioning: "thin"
