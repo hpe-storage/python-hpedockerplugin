@@ -18,7 +18,34 @@ store/hpestorage/hpedockervolumeplugin:2.1
    Plugin supports both iscsi and FC drivers.
    ```
 
+#### **Prerequisite packages to be installed on host OS:**
+```
+   on Ubuntu 16.04:
+   
+   sudo apt-get install -y open-iscsi multipath-tools
+   $ systemctl daemon-reload
+   $ systemctl restart open-iscsi multipath-tools docker
+   
+   on RHEL 7.4 and CentOS 7.3:
+   
+   yum install -y iscsi-initiator-utils device-mapper-multipath
+   # configure /etc/multipath.conf and run below commands
+   create /etc/multipath.conf based on instructions in: https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/multipath-managed-plugin.md
+   Configure the docker system service 
+   - set the value of Mount Flags 
+      MountFlags=shared (default is slave) in file  /usr/lib/systemd/system/docker.service (in case of RHEL)
+   - restart the docker daemon using
+      $ systemctl daemon-reload
+      $ systemctl restart docker.service
+   
+      $ systemctl enable iscsid multipathd
+      $ systemctl start iscsid multipathd
+   
+```
 #### Steps:
+
+- These are the prerequisiet packages to be installed on host OS:
+
 - Run etcd container
 
    Setup etcd in a host following this instructions https://github.com/hpe-storage/python-hpedockerplugin/tree/master/quick-start#run-etcd-container-or-cluster
@@ -36,15 +63,11 @@ For 3PAR FC plugin, use this template https://github.com/hpe-storage/python-hped
 **Note: Before enabling the plugin user needs to make sure that**
 - etcd container is in running state.
 - Host and 3PAR array has proper iSCSI connectivity if plugin's iscsi driver needs to be used.
-- FC plugin requires proper zoning between the docker host(s) and the 3PAR Array. Also, create /etc/multipath.conf based on instructions in :https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/multipath-managed-plugin.md
+- FC plugin requires proper zoning between the docker host(s) and the 3PAR Array. 
 
 **Execute below commands to install the plugin on Ubuntu 16.04**
 
 ```
-# Install these pre-requisite packages
-$ sudo apt-get install -y open-iscsi multipath-tools
-$ systemctl daemon-reload
-$ systemctl restart open-iscsi multipath-tools docker
 
 $ docker plugin install store/hpestorage/hpedockervolumeplugin:<version>  --disable --alias hpe
 # certs.source should be set to the folder where the certificates for secure etcd is configured , otherwise
@@ -57,12 +80,6 @@ $ docker plugin enable hpe
 **Execute below commands to install the plugin on RHEL 7.4 and CentOS 7.3**
 
 ```
-# Install these pre-requisite packages
-$ yum install -y iscsi-initiator-utils device-mapper-multipath
-# configure /etc/multipath.conf and run below commands
-$ systemctl daemon-reload
-$ systemctl enable iscsid multipathd
-$ systemctl start iscsid multipathd
 
 $ docker plugin install store/hpestorage/hpedockervolumeplugin:<version> –-disable –-alias hpe 
 
@@ -72,6 +89,7 @@ $ docker plugin install store/hpestorage/hpedockervolumeplugin:<version> –-dis
 
 $ docker plugin set hpe glibc_libs.source=/lib64 certs.source=/tmp
 $ docker plugin enable hpe
+
 ```
 
 **Confirm the plugin is successfully installed by**
@@ -187,6 +205,9 @@ Configure the docker system service
       systemctl daemon-reload
       systemctl restart docker.service
 ```
+
+-  These are prerequisite packages to be installed on host OS:
+
 - run the etcd container/ cluster of containers https://github.com/hpe-storage/python-hpedockerplugin/blob/master/quick-start/README.md#run-etcd-container-or-cluster
 
 - set up hpe.conf and have a proper connectivity setup from host to 3PAR array https://github.com/hpe-storage/python-hpedockerplugin/tree/master/quick-start#setup-the-plugin-configuration-file
