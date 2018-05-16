@@ -231,3 +231,7 @@ Make sure to set **MountFlags=shared** in the docker.service. This is required t
 
 iscsiadm: initiator reported error (12 - iSCSI driver not found. Please make sure it is loaded, and retry the operation)
 
+## Known issues
+- While inspecting a snapshot, its provisioning field is set to that of parent volume's provisioning type. In 3PAR however, it is shown is 'snp'.
+- Mounting a QoS enabled volume can take longer than a volume without QoS for both FC and iSCSI protocol.
+- For a cloned volume with the same size as source volume, comment field won’t be populated on 3PAR.
