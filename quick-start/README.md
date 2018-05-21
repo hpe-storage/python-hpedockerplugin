@@ -143,6 +143,18 @@ On RHEL and CentOS, issue ``journalctl -f -u docker.service`` to get the plugin 
 
 - Shared volume support is not present. Shared volume support implies using a single volume across multiple containers either on the same docker node (or) across node(s) in a swarm cluster. Also, backup and restore support is not present yet.
 
+- While inspecting a snapshot, its provisioning field is set to that of parent volume's provisioning type. In 3PAR however, it is shown is 'snp'.
+
+- Mounting a QoS enabled volume can take longer than a volume without QoS for both FC and iSCSI protocol.
+We have found the following values to work better:
+Min IOPS: 10000 IOs/sec
+Min IOPS: 2000000 IOs/sec
+Min BWS: 30 MB/sec
+Max BWS: 40 MB/sec
+Latency: 500 seconds
+Priority: High, Normal or Low
+
+- For a cloned volume with the same size as source volume, comment field won’t be populated on 3PAR.
 
 # Deploying the HPE Docker Volume Plugin as a Docker Container (Deprecated -- Please use the Managed plugin only)
 
@@ -230,8 +242,3 @@ Make sure to set **MountFlags=shared** in the docker.service. This is required t
 2. CoreOS: make sure to also bind mount /lib/modules. Otherwise, you'll get the following error in the hpedockerpluin logs:
 
 iscsiadm: initiator reported error (12 - iSCSI driver not found. Please make sure it is loaded, and retry the operation)
-
-## Known issues
-- While inspecting a snapshot, its provisioning field is set to that of parent volume's provisioning type. In 3PAR however, it is shown is 'snp'.
-- Mounting a QoS enabled volume can take longer than a volume without QoS for both FC and iSCSI protocol.
-- For a cloned volume with the same size as source volume, comment field won’t be populated on 3PAR.
