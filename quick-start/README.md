@@ -358,7 +358,6 @@ docker-compose version 1.21.0, build 1719ceb
 
 - You should be able to do `docker volume` operations like `docker volume create -d hpe --name sample_vol -o size=1`
 
-
 ## Restarting the plugin
 - docker stop <container_id_of_plugin>
 - IMPORTANT NOTE: The /run/docker/plugins/hpe.sock and /run/docker/plugins/hpe.sock.lock files are not automatically removed when you stop the container. Therefore, these files will need to be removed manually between each run of the plugin.
