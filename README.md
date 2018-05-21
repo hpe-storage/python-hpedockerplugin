@@ -19,6 +19,9 @@ The following diagram illustrates the HPE Docker Volume Plugin configured on mul
 * Release v1.0 - Initial Realease - iSCSI driver for 3PAR
 * Release v1.1 - Support for multipath and key defect fixes around volume mount operations
 * Release v2.0 - Support for secure / unsecure etcd cluster for fault tolerance - Fibre Channel Driver for 3PAR
+* Release v2.1 - Support for creating volumes of type thin, dedup, full, compressed volumes, snapshots, clones, 
+   QoS, snapshot mount, mount_conflict_delay, and multiple container access for a volume on same node.
+   Plugin supports both iscsi and FC drivers.
 
 ## Usage
 
