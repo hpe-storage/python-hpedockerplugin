@@ -359,3 +359,7 @@ docker-compose version 1.21.0, build 1719ceb
 - docker start <container_id_of_plugin>
 
 
+## Known issues
+- While inspecting a snapshot, its provisioning field is set to that of parent volume's provisioning type. In 3PAR however, it is shown is 'snp'.
+- Mounting a QoS enabled volume can take longer than a volume without QoS for both FC and iSCSI protocol.
+- For a cloned volume with the same size as source volume, comment field won’t be populated on 3PAR.
