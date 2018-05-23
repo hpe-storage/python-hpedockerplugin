@@ -12,13 +12,13 @@ ssh_hosts_key_file = <path to known_hosts>
 # Please note this is only supported in managed plugin.
 # Check the plugin version for the support.
 host_etcd_ip_address = <ip-address>
-host_etcd_port_number = <port-number>
+host_etcd_port_number = <port-number> 
 
 # Client certificate and key details for secured etcd cluster
 # Please note this is only supported in managed plugin.
 # Check the plugin version for the support.
-host_etcd_client_cert = /root/plugin/certs/<path to client certificate>.pem
-host_etcd_client_key = /root/plugin/certs/<path to client certificate key>.pem
+# host_etcd_client_cert = /root/plugin/certs/<path to client certificate>.pem
+# host_etcd_client_key = /root/plugin/certs/<path to client certificate key>.pem
 
 # OSLO based Logging level for the plugin.
 logging = <INFO or DEBUG or ERROR or WARNING>
