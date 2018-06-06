@@ -175,8 +175,14 @@ or `` /var/log/messages ``
 - For upgrading the plugin from older version 2.0 or 2.0.2 to 2.1 user needs to unmount all the volumes and follow the standard
  upgrade procedure described in docker guide. 
  
- - Volumes created using older plugins (2.0.2 or below) do not have snp_cpg associated with them, hence when the plugin is upgraded to      2.1 and user wants to perform clone/snapshot operations on these old volumes, he/she must set the snap_cpg for the 
+- Volumes created using older plugins (2.0.2 or below) do not have snp_cpg associated with them, hence when the plugin is upgraded to      2.1 and user wants to perform clone/snapshot operations on these old volumes, he/she must set the snap_cpg for the
    corresponding volumes using 3par cli or any tool before performing clone/snapshot operations.
+
+- While inspecting a snapshot, its provisioning field is set to that of parent volume's provisioning type. In 3PAR however, it is shown as 'snp'.
+
+- Mounting a QoS enabled volume can take longer than a volume without QoS for both FC and iSCSI protocol.
+
+- For a cloned volume with the same size as source volume, comment field won’t be populated on 3PAR.
 
 ## Docker cli commands for various operations are listed in link
    https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/usage.md
@@ -352,10 +358,7 @@ docker-compose version 1.21.0, build 1719ceb
 
 - You should be able to do `docker volume` operations like `docker volume create -d hpe --name sample_vol -o size=1`
 
-
 ## Restarting the plugin
 - docker stop <container_id_of_plugin>
 - IMPORTANT NOTE: The /run/docker/plugins/hpe.sock and /run/docker/plugins/hpe.sock.lock files are not automatically removed when you stop the container. Therefore, these files will need to be removed manually between each run of the plugin.
 - docker start <container_id_of_plugin>
-
-
