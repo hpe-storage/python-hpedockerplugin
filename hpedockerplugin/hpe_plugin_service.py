@@ -73,9 +73,16 @@ class HPEDockerPluginService(object):
             return True
 
     def _cleanup(self):
-        LOG.info(_LI('HPE Docker Volume Plugin Shutdown'))
-        remove(PLUGIN_PATH.path)
-        remove(PLUGIN_PATH.path + ".lock")
+        LOG.info(_LI('_cleanup invoked: HPE Docker Volume Plugin Shutdown'))
+        try:
+            remove(PLUGIN_PATH.path)
+        except:
+            pass
+        try:
+            remove(PLUGIN_PATH.path + ".lock")
+        except:
+            pass
+        LOG.info("Cleanup done!")
 
     """
     Start the Docker plugin.
