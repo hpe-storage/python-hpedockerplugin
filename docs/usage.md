@@ -17,7 +17,7 @@ mounted volume to gracefully unmount from some node before it can be mounted on 
 node. If graceful unmount doesn't happen within mountConflictDelay seconds then a forced
 cleanup of VLUN from the backend is performed so that volume can be mounted on the current
 node.(**introduced in plugin version 2.1**)
-- qos_name -- name of existing VVset on 3PAR where QoS rules are applied.(**introduced in plugin version 2.1**)
+- qos-name -- name of existing VVset on 3PAR where QoS rules are applied.(**introduced in plugin version 2.1**)
 
 Note: Setting flash-cache to True does not gurantee flash-cache will be used. The backend system
 must have the appropriate SSD setup configured too.
