@@ -1,0 +1,9 @@
+---
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+ name: hpe3parsc
+provisioner: hpe.com/hpe
+parameters:
+    provisioning: thin
+
