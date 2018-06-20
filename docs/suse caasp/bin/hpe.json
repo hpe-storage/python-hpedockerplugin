@@ -1,0 +1,10 @@
+{
+  "logFilePath": "/var/log/dory.log",
+  "logDebug": true,
+  "stripK8sFromOptions": true,
+  "dockerVolumePluginSocketPath": "/run/docker/plugins/hpe.sock",
+  "createVolumes": true,
+  "enable1.6": false,
+  "listOfStorageResourceOptions": [ "size", "sizeInGiB" ],
+  "factorForConversion": 1073741824
+}
