@@ -88,206 +88,206 @@ Installing the HPE 3PAR Volume Plug-in for Docker (Containerized Plug-in) for SU
 #####
 
 1.  **Install the iSCSI and Multipath packages**
-```bash
-  $ transactional-update pkg install multipath-tools
-  $ systemctl reboot
-```
+    ```bash
+      $ transactional-update pkg install multipath-tools
+      $ systemctl reboot
+    ```
 2.  **Configure /etc/multipath.conf**
-```bash
-  $ vi /etc/multipath.conf
-```
+    ```bash
+      $ vi /etc/multipath.conf
+    ```
 
-Copy the following into /etc/multipath.conf
-```
-defaults {
-                polling_interval 10
-                max_fds 8192
-        }
+    Copy the following into /etc/multipath.conf
+    ```
+    defaults {
+                    polling_interval 10
+                    max_fds 8192
+            }
 
-        devices {
-                device {
-                        vendor                  "3PARdata"
-                        product                 "VV"
-                        no_path_retry           18
-                        features                "0"
-                        hardware_handler        "0"
-                        path_grouping_policy    multibus
-                        #getuid_callout         "/lib/udev/scsi_id --whitelisted --device=/dev/%n"
-                        path_selector           "round-robin 0"
-                        rr_weight               uniform
-                        rr_min_io_rq            1
-                        path_checker            tur
-                        failback                immediate
-                }
-        }
-```
+            devices {
+                    device {
+                            vendor                  "3PARdata"
+                            product                 "VV"
+                            no_path_retry           18
+                            features                "0"
+                            hardware_handler        "0"
+                            path_grouping_policy    multibus
+                            #getuid_callout         "/lib/udev/scsi_id --whitelisted --device=/dev/%n"
+                            path_selector           "round-robin 0"
+                            rr_weight               uniform
+                            rr_min_io_rq            1
+                            path_checker            tur
+                            failback                immediate
+                    }
+            }
+    ```
 
-Enable the **iscsid** and **multipathd** services
-```bash
-  $ systemctl enable iscsid multipathd
-  $ systemctl start iscsid multipathd
-```
+    Enable the **iscsid** and **multipathd** services
+    ```bash
+      $ systemctl enable iscsid multipathd
+      $ systemctl start iscsid multipathd
+    ```
 3.  **Setup the Docker plugin configuration file**
-```bash
-  $ mkdir –p /etc/hpedockerplugin/
-  $ vi /etc/hpedockerplugin/hpe.conf
-```
-Copy the contents from the sample **hpe.conf** file, based on your
-storage configuration for either **iSCSI** or **Fiber Channel**:
+    ```bash
+      $ mkdir –p /etc/hpedockerplugin/
+      $ vi /etc/hpedockerplugin/hpe.conf
+    ```
+    Copy the contents from the sample **hpe.conf** file, based on your
+    storage configuration for either **iSCSI** or **Fiber Channel**:
 
-**HPE 3PAR iSCSI:**
+    **HPE 3PAR iSCSI:**
 
-<https://github.com/hpe-storage/python-hpedockerplugin/blob/plugin_v2/config/hpe.conf.sample.3parISCSI>
+    <https://github.com/hpe-storage/python-hpedockerplugin/blob/plugin_v2/config/hpe.conf.sample.3parISCSI>
 
-**HPE 3PAR Fiber Channel:**
+    **HPE 3PAR Fiber Channel:**
 
-<https://github.com/hpe-storage/python-hpedockerplugin/blob/plugin_v2/config/hpe.conf.sample.3parFC>
+    <https://github.com/hpe-storage/python-hpedockerplugin/blob/plugin_v2/config/hpe.conf.sample.3parFC>
 
->**Note:** Step 4 is needed for now, since we have not published the latest image
->to the Docker public registry. Once we have published the image, this
-> is no longer necessary.
+    >**Note:** Step 4 is needed for now, since we have not published the latest image
+    >to the Docker public registry. Once we have published the image, this
+    > is no longer necessary.
 
 4.  **Build the containerized image**
-```bash
-  $ cd ~/container_code
-  $ git checkout plugin_v2
-  $ ./containerizer.sh
-```
-Observe the built container image by docker images command
+    ```bash
+      $ cd ~/container_code
+      $ git checkout plugin_v2
+      $ ./containerizer.sh
+    ```
+    Observe the built container image by docker images command
 
-```bash
-$ docker images
-REPOSITORY                           TAG                 IMAGE ID            CREATED             SIZE
-hpe-storage/python-hpedockerplugin   plugin_v2          9b540a18a9b2        4 weeks ago         239MB
-```
+    ```bash
+    $ docker images
+    REPOSITORY                           TAG                 IMAGE ID            CREATED             SIZE
+    hpe-storage/python-hpedockerplugin   plugin_v2          9b540a18a9b2        4 weeks ago         239MB
+    ```
 5.  **Deploy the HPE 3PAR Volume Plug-In for Docker**
 
-```bash
-$ cd ~
-$ vi docker-compose.yml
-```
+    ```bash
+    $ cd ~
+    $ vi docker-compose.yml
+    ```
 
-Copy the content below into the **docker-compose.yml** file:
-```yaml
-hpedockerplugin:
-  image: hpe-storage/python-hpedockerplugin:plugin_v2
-  container_name: volplugin
-  net: host
-  privileged: true
-  volumes:
-     - /dev:/dev
-     - /run/lock:/run/lock
-     - /var/lib:/var/lib
-     - /var/run/docker/plugins:/var/run/docker/plugins:rw
-     - /etc:/etc
-     - /root/.ssh:/root/.ssh
-     - /sys:/sys
-     - /root/plugin/certs:/root/plugin/certs
-     - /sbin/iscsiadm:/sbin/ia
-     - /lib/modules:/lib/modules
-     - /lib64:/lib64
-     - /var/run/docker.sock:/var/run/docker.sock
-     - /opt/hpe/data:/opt/hpe/data:shared
-     - /usr/lib64:/usr/lib64
-```
->
-> **Save and Exit**
->
-> **Note: Please make sure etcd service in running state.**
+    Copy the content below into the **docker-compose.yml** file:
+    ```yaml
+    hpedockerplugin:
+      image: hpe-storage/python-hpedockerplugin:plugin_v2
+      container_name: volplugin
+      net: host
+      privileged: true
+      volumes:
+         - /dev:/dev
+         - /run/lock:/run/lock
+         - /var/lib:/var/lib
+         - /var/run/docker/plugins:/var/run/docker/plugins:rw
+         - /etc:/etc
+         - /root/.ssh:/root/.ssh
+         - /sys:/sys
+         - /root/plugin/certs:/root/plugin/certs
+         - /sbin/iscsiadm:/sbin/ia
+         - /lib/modules:/lib/modules
+         - /lib64:/lib64
+         - /var/run/docker.sock:/var/run/docker.sock
+         - /opt/hpe/data:/opt/hpe/data:shared
+         - /usr/lib64:/usr/lib64
+    ```
+    >
+    > **Save and Exit**
+    >
+    > **Note: Please make sure etcd service in running state.**
 
 6.  **Start the HPE 3PAR Volume Plug-in for Docker
     (Containerized Plug-in)**
 
-  Make sure you are in the location of the **docker-compose.yml** file
+    Make sure you are in the location of the **docker-compose.yml** file
 
-```bash
-$ docker-compose –f docker-compose.yml up  or
-$ docker-compose –f docker-compose.yml up 2>&1 | tee /tmp/plugin_logs.txt
-```
-> **Note:** In case you are missing **docker-compose**, run the
-> following commands:
-```bash
-$ transactional-update shell
-$ curl -L https://github.com/docker/compose/releases/download/1.21.2/docker-compose-$(uname -s)-$(uname -m) --insecure -o /usr/local/bin/docker-compose
-$ chmod +x /usr/local/bin/docker-compose
-$ exit
-$ systemctl reboot
-```
-> **Test the installation**
-```bash
-$ docker-compose --version
-docker-compose version 1.21.2, build a133471
-```
-> **Re-run the above commands.**
->
-> For more information on Docker Compose, go to
-> [https://docs.docker.com/compose/install/\#install-compose](https://docs.docker.com/compose/install/%23install-compose)
+    ```bash
+    $ docker-compose –f docker-compose.yml up  or
+    $ docker-compose –f docker-compose.yml up 2>&1 | tee /tmp/plugin_logs.txt
+    ```
+    > **Note:** In case you are missing **docker-compose**, run the
+    > following commands:
+    ```bash
+    $ transactional-update shell
+    $ curl -L https://github.com/docker/compose/releases/download/1.21.2/docker-compose-$(uname -s)-$(uname -m) --insecure -o /usr/local/bin/docker-compose
+    $ chmod +x /usr/local/bin/docker-compose
+    $ exit
+    $ systemctl reboot
+    ```
+    > **Test the installation**
+    ```bash
+    $ docker-compose --version
+    docker-compose version 1.21.2, build a133471
+    ```
+    > **Re-run the above commands.**
+    >
+    > For more information on Docker Compose, go to
+    > [https://docs.docker.com/compose/install/\#install-compose](https://docs.docker.com/compose/install/%23install-compose)
 
 7.  **Success, you should now be able to test docker volume operations
     like:**
 
-```bash
-$ docker volume create -d hpe --name sample_vol -o size=1
-```
+    ```bash
+    $ docker volume create -d hpe --name sample_vol -o size=1
+    ```
+
 8.  **Install the HPE 3PAR FlexVolume driver:**
+    ```bash
+    $ mkdir downloads && cd downloads
 
-```bash
-$ mkdir downloads && cd downloads
+    $ wget https://github.com/hpe-storage/python-hpedockerplugin/raw/plugin_v2/docs/suse%20caasp/bin/hpe-bin-sles12.tgz
+    $ wget https://raw.githubusercontent.com/hpe-storage/python-hpedockerplugin/plugin_v2/docs/suse%20caasp/bin/hpe.json $ tar –xvzf hpe-bin-sles12.tgz
 
-$ wget https://github.com/hpe-storage/python-hpedockerplugin/raw/plugin_v2/docs/suse%20caasp/bin/hpe-bin-sles12.tgz
-$ wget https://raw.githubusercontent.com/hpe-storage/python-hpedockerplugin/plugin_v2/docs/suse%20caasp/bin/hpe.json $ tar –xvzf hpe-bin-sles12.tgz
-
-$ transactional-update shell
-$ mkdir –p /usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/
-$ mv ~/downloads/hpe /usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/
-$ mv ~/downloads/hpe.json /usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe
-$ chmod u+s /usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/hpe
-```
+    $ transactional-update shell
+    $ mkdir –p /usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/
+    $ mv ~/downloads/hpe /usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/
+    $ mv ~/downloads/hpe.json /usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe
+    $ chmod u+s /usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/hpe
+    ```
 
 9.  **Confirm HPE 3PAR FlexVolume driver installed correctly:**
-```bash
-$ ls -l /usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/
+    ```bash
+    $ ls -l /usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/
 
-total 6572
--rwsr-sr-x 1 root root 6724533 Jun 15 04:38 hpe
--rw-r--r-- 1 root root     317 Jun 15 04:38 hpe.json
+    total 6572
+    -rwsr-sr-x 1 root root 6724533 Jun 15 04:38 hpe
+    -rw-r--r-- 1 root root     317 Jun 15 04:38 hpe.json
 
-$ exit
-$ systemctl reboot
-```
+    $ exit
+    $ systemctl reboot
+    ```
 
 10.  **Deploying the HPE 3PAR FlexVolume dynamic provisioner (doryd):**
 
-> The dynamic provisioner needs to run only on the **master** node.
-> Below we will explain how to deply it as a daemonset. So execute the
-> following commands on the **master** node.
+    > The dynamic provisioner needs to run only on the **master** node.
+    > Below we will explain how to deply it as a daemonset. So execute the
+    > following commands on the **master** node.
 
-```bash
-$ mkdir doryd && cd doryd
-$ wget https://github.com/hpe-storage/python-hpedockerplugin/raw/plugin_v2/docs/suse%20caasp/bin/doryd-bin-sles12.tgz
-$ tar –xvzf doryd-bin-sles12.tgz
-$ wget https://raw.githubusercontent.com/hpe-storage/python-hpedockerplugin/plugin_v2/docs/suse%20caasp/doryd/Dockerfile
-$ docker build –t doryd .
-```
+    ```bash
+    $ mkdir doryd && cd doryd
+    $ wget https://github.com/hpe-storage/python-hpedockerplugin/raw/plugin_v2/docs/suse%20caasp/bin/doryd-bin-sles12.tgz
+    $ tar –xvzf doryd-bin-sles12.tgz
+    $ wget https://raw.githubusercontent.com/hpe-storage/python-hpedockerplugin/plugin_v2/docs/suse%20caasp/doryd/Dockerfile
+    $ docker build –t doryd .
+    ```
 
-**Note: Building the image is needed for now, since we have not published
-the latest image to the Docker public registry. Once we publish the
-image, this is no longer necessary.**
+    **Note: Building the image is needed for now, since we have not published
+    the latest image to the Docker public registry. Once we publish the
+    image, this is no longer necessary.**
 
-Once the image has been successfully built, execute the following
-command to deploy the doryd daemonset:
+    Once the image has been successfully built, execute the following
+    command to deploy the doryd daemonset:
 
-```bash
-$ kubectl create –f https://raw.githubusercontent.com/hpe-storage/python-hpedockerplugin/plugin_v2/docs/suse%20caasp/doryd/ds-doryd.yml
-```
+    ```bash
+    $ kubectl create –f https://raw.githubusercontent.com/hpe-storage/python-hpedockerplugin/plugin_v2/docs/suse%20caasp/doryd/ds-doryd.yml
+    ```
 
-Confirm that the doryd daemonset is running successfully
-```
-$ kc get ds --namespace=kube-system
-NAME           DESIRED   CURRENT   READY     UP-TO-DATE   AVAILABLE   NODE SELECTOR                     AGE
-doryd          1         1         1         1            1           node-role.kubernetes.io/master=   7d
-kube-flannel   4         4         4         4            4           beta.kubernetes.io/arch=amd64     8d
-```
+    Confirm that the doryd daemonset is running successfully
+    ```
+    $ kc get ds --namespace=kube-system
+    NAME           DESIRED   CURRENT   READY     UP-TO-DATE   AVAILABLE   NODE SELECTOR                     AGE
+    doryd          1         1         1         1            1           node-role.kubernetes.io/master=   7d
+    kube-flannel   4         4         4         4            4           beta.kubernetes.io/arch=amd64     8d
+    ```
 11.  **Repeat steps 1-9 on all worker nodes. Step 10 needs to be executed only on the Master node.**
 
 **Upon successful completion of the above steps, you should have a
