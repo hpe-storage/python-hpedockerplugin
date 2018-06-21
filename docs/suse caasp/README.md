@@ -150,9 +150,10 @@ Installing the HPE 3PAR Volume Plug-in for Docker (Containerized Plug-in) for SU
 
 4.  **Build the containerized image**
     ```bash
+     $ git clone https://github.com/hpe-storage/python-hpedockerplugin.git ~/container_code
      $ cd ~/container_code
      $ git checkout plugin_v2
-     $ ./containerizer.sh
+     $ ./containerize.sh
     ```
     Observe the built container image by docker images command
 
