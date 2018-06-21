@@ -257,37 +257,37 @@ Installing the HPE 3PAR Volume Plug-in for Docker (Containerized Plug-in) for SU
     ```
 
 10.  **Deploying the HPE 3PAR FlexVolume dynamic provisioner (doryd):**
+  > The dynamic provisioner needs to run only on the **master** node.
+  > Below we will explain how to deply it as a daemonset. So execute the
+  > following commands on the **master** node.
 
-    > The dynamic provisioner needs to run only on the **master** node.
-    > Below we will explain how to deply it as a daemonset. So execute the
-    > following commands on the **master** node.
+  ```bash
+  $ mkdir doryd && cd doryd
+  $ wget https://github.com/hpe-storage/python-hpedockerplugin/raw/plugin_v2/docs/suse%20caasp/bin/doryd-bin-sles12.tgz
+  $ tar –xvzf doryd-bin-sles12.tgz
+  $ wget https://raw.githubusercontent.com/hpe-storage/python-hpedockerplugin/plugin_v2/docs/suse%20caasp/doryd/Dockerfile
+  $ docker build –t doryd .
+  ```
 
-    ```bash
-    $ mkdir doryd && cd doryd
-    $ wget https://github.com/hpe-storage/python-hpedockerplugin/raw/plugin_v2/docs/suse%20caasp/bin/doryd-bin-sles12.tgz
-    $ tar –xvzf doryd-bin-sles12.tgz
-    $ wget https://raw.githubusercontent.com/hpe-storage/python-hpedockerplugin/plugin_v2/docs/suse%20caasp/doryd/Dockerfile
-    $ docker build –t doryd .
-    ```
+  **Note: Building the image is needed for now, since we have not published
+  the latest image to the Docker public registry. Once we publish the
+  image, this is no longer necessary.**
 
-    **Note: Building the image is needed for now, since we have not published
-    the latest image to the Docker public registry. Once we publish the
-    image, this is no longer necessary.**
+  Once the image has been successfully built, execute the following
+  command to deploy the doryd daemonset:
 
-    Once the image has been successfully built, execute the following
-    command to deploy the doryd daemonset:
+  ```bash
+  $ kubectl create –f https://raw.githubusercontent.com/hpe-storage/python-hpedockerplugin/plugin_v2/docs/suse%20caasp/doryd/ds-doryd.yml
+  ```
 
-    ```bash
-    $ kubectl create –f https://raw.githubusercontent.com/hpe-storage/python-hpedockerplugin/plugin_v2/docs/suse%20caasp/doryd/ds-doryd.yml
-    ```
+  Confirm that the doryd daemonset is running successfully
+  ```bash
+  $ kc get ds --namespace=kube-system
+  NAME           DESIRED   CURRENT   READY     UP-TO-DATE   AVAILABLE   NODE SELECTOR                     AGE
+  doryd          1         1         1         1            1           node-role.kubernetes.io/master=   7d
+  kube-flannel   4         4         4         4            4           beta.kubernetes.io/arch=amd64     8d
+  ```
 
-    Confirm that the doryd daemonset is running successfully
-    ```
-    $ kc get ds --namespace=kube-system
-    NAME           DESIRED   CURRENT   READY     UP-TO-DATE   AVAILABLE   NODE SELECTOR                     AGE
-    doryd          1         1         1         1            1           node-role.kubernetes.io/master=   7d
-    kube-flannel   4         4         4         4            4           beta.kubernetes.io/arch=amd64     8d
-    ```
 11.  **Repeat steps 1-9 on all worker nodes. Step 10 needs to be executed only on the Master node.**
 
 **Upon successful completion of the above steps, you should have a
