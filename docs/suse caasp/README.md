@@ -19,9 +19,8 @@ below for more details.
 
 https://susedoc.github.io/doc-caasp/develop/caasp-deployment/single-html/
 
-**Note:**
-
-Managed Plugin is currently not supported.
+>**Note:**
+>Managed Plugin is currently not supported.
 
 ###
 
@@ -91,12 +90,12 @@ Installing the HPE 3PAR Volume Plug-in for Docker (Containerized Plug-in) for SU
 
 1.  **Install the iSCSI and Multipath packages**
     ```bash
-      $ transactional-update pkg install multipath-tools
-      $ systemctl reboot
+     $ transactional-update pkg install multipath-tools
+     $ systemctl reboot
     ```
 2.  **Configure /etc/multipath.conf**
     ```bash
-      $ vi /etc/multipath.conf
+     $ vi /etc/multipath.conf
     ```
 
     Copy the following into /etc/multipath.conf
@@ -126,13 +125,13 @@ Installing the HPE 3PAR Volume Plug-in for Docker (Containerized Plug-in) for SU
 
     Enable the **iscsid** and **multipathd** services
     ```bash
-      $ systemctl enable iscsid multipathd
-      $ systemctl start iscsid multipathd
+     $ systemctl enable iscsid multipathd
+     $ systemctl start iscsid multipathd
     ```
 3.  **Setup the Docker plugin configuration file**
     ```bash
-      $ mkdir –p /etc/hpedockerplugin/
-      $ vi /etc/hpedockerplugin/hpe.conf
+     $ mkdir –p /etc/hpedockerplugin/
+     $ vi /etc/hpedockerplugin/hpe.conf
     ```
     Copy the contents from the sample **hpe.conf** file, based on your
     storage configuration for either **iSCSI** or **Fiber Channel**:
@@ -151,9 +150,9 @@ Installing the HPE 3PAR Volume Plug-in for Docker (Containerized Plug-in) for SU
 
 4.  **Build the containerized image**
     ```bash
-      $ cd ~/container_code
-      $ git checkout plugin_v2
-      $ ./containerizer.sh
+     $ cd ~/container_code
+     $ git checkout plugin_v2
+     $ ./containerizer.sh
     ```
     Observe the built container image by docker images command
 
@@ -259,36 +258,37 @@ Installing the HPE 3PAR Volume Plug-in for Docker (Containerized Plug-in) for SU
     ```
 
 10.  **Deploying the HPE 3PAR FlexVolume dynamic provisioner (doryd):**
-  > The dynamic provisioner needs to run only on the **master** node.
-  > Below we will explain how to deply it as a daemonset. So execute the
-  > following commands on the **master** node.
 
-  ```bash
-  $ mkdir doryd && cd doryd
-  $ wget https://github.com/hpe-storage/python-hpedockerplugin/raw/plugin_v2/docs/suse%20caasp/bin/doryd-bin-sles12.tgz
-  $ tar –xvzf doryd-bin-sles12.tgz
-  $ wget https://raw.githubusercontent.com/hpe-storage/python-hpedockerplugin/plugin_v2/docs/suse%20caasp/doryd/Dockerfile
-  $ docker build –t doryd .
-  ```
+     > The dynamic provisioner needs to run only on the **master** node.
+     > Below we will explain how to deply it as a daemonset. So execute the
+     > following commands on the **master** node.
 
-  **Note: Building the image is needed for now, since we have not published
-  the latest image to the Docker public registry. Once we publish the
-  image, this is no longer necessary.**
+     ```bash
+     $ mkdir doryd && cd doryd
+     $ wget https://github.com/hpe-storage/python-hpedockerplugin/raw/plugin_v2/docs/suse%20caasp/bin/doryd-bin-sles12.tgz
+     $ tar –xvzf doryd-bin-sles12.tgz
+     $ wget https://raw.githubusercontent.com/hpe-storage/python-hpedockerplugin/plugin_v2/docs/suse%20caasp/doryd/Dockerfile
+     $ docker build –t doryd .
+     ```
 
-  Once the image has been successfully built, execute the following
-  command to deploy the doryd daemonset:
+     **Note: Building the image is needed for now, since we have not published
+     the latest image to the Docker public registry. Once we publish the
+     image, this is no longer necessary.**
 
-  ```bash
-  $ kubectl create –f https://raw.githubusercontent.com/hpe-storage/python-hpedockerplugin/plugin_v2/docs/suse%20caasp/doryd/ds-doryd.yml
-  ```
+     Once the image has been successfully built, execute the following
+     command to deploy the doryd daemonset:
+     ```bash
+     $ kubectl create –f https://raw.githubusercontent.com/hpe-storage/python-hpedockerplugin/plugin_v2/docs/suse%20caasp/doryd/ds-doryd.yml
+     ```
 
-  Confirm that the doryd daemonset is running successfully
-  ```bash
-  $ kc get ds --namespace=kube-system
-  NAME           DESIRED   CURRENT   READY     UP-TO-DATE   AVAILABLE   NODE SELECTOR                     AGE
-  doryd          1         1         1         1            1           node-role.kubernetes.io/master=   7d
-  kube-flannel   4         4         4         4            4           beta.kubernetes.io/arch=amd64     8d
-  ```
+     Confirm that the doryd daemonset is running successfully
+
+     ```bash
+     $ kc get ds --namespace=kube-system
+     NAME           DESIRED   CURRENT   READY     UP-TO-DATE   AVAILABLE   NODE SELECTOR                     AGE
+     doryd          1         1         1         1            1           node-role.kubernetes.io/master=   7d
+     kube-flannel   4         4         4         4            4           beta.kubernetes.io/arch=amd64     8d
+     ```
 
 11.  **Repeat steps 1-9 on all worker nodes. Step 10 needs to be executed only on the Master node.**
 
@@ -458,12 +458,12 @@ Appendix
 
 ### Restarting the plugin
 ```bash
-$ docker stop &lt;container\_id\_of\_plugin&gt;
+$ docker stop <container_id_of_plugin>
 ```
 
 
 ```bash
-$ docker start &lt;container\_id\_of\_plugin&gt;
+$ docker start <container_id_of_plugin>
 ```
 ### Usage 
 
