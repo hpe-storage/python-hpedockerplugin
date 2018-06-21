@@ -19,9 +19,8 @@ below for more details.
 
 https://susedoc.github.io/doc-caasp/develop/caasp-deployment/single-html/
 
-**Note:**
-
-Managed Plugin is currently not supported.
+>**Note:**
+>Managed Plugin is currently not supported.
 
 ###
 
@@ -91,12 +90,12 @@ Installing the HPE 3PAR Volume Plug-in for Docker (Containerized Plug-in) for SU
 
 1.  **Install the iSCSI and Multipath packages**
     ```bash
-      $ transactional-update pkg install multipath-tools
-      $ systemctl reboot
+     $ transactional-update pkg install multipath-tools
+     $ systemctl reboot
     ```
 2.  **Configure /etc/multipath.conf**
     ```bash
-      $ vi /etc/multipath.conf
+     $ vi /etc/multipath.conf
     ```
 
     Copy the following into /etc/multipath.conf
@@ -126,13 +125,13 @@ Installing the HPE 3PAR Volume Plug-in for Docker (Containerized Plug-in) for SU
 
     Enable the **iscsid** and **multipathd** services
     ```bash
-      $ systemctl enable iscsid multipathd
-      $ systemctl start iscsid multipathd
+     $ systemctl enable iscsid multipathd
+     $ systemctl start iscsid multipathd
     ```
 3.  **Setup the Docker plugin configuration file**
     ```bash
-      $ mkdir –p /etc/hpedockerplugin/
-      $ vi /etc/hpedockerplugin/hpe.conf
+     $ mkdir –p /etc/hpedockerplugin/
+     $ vi /etc/hpedockerplugin/hpe.conf
     ```
     Copy the contents from the sample **hpe.conf** file, based on your
     storage configuration for either **iSCSI** or **Fiber Channel**:
@@ -151,9 +150,9 @@ Installing the HPE 3PAR Volume Plug-in for Docker (Containerized Plug-in) for SU
 
 4.  **Build the containerized image**
     ```bash
-      $ cd ~/container_code
-      $ git checkout plugin_v2
-      $ ./containerizer.sh
+     $ cd ~/container_code
+     $ git checkout plugin_v2
+     $ ./containerizer.sh
     ```
     Observe the built container image by docker images command
 
@@ -458,12 +457,12 @@ Appendix
 
 ### Restarting the plugin
 ```bash
-$ docker stop &lt;container\_id\_of\_plugin&gt;
+$ docker stop <container_id_of_plugin>
 ```
 
 
 ```bash
-$ docker start &lt;container\_id\_of\_plugin&gt;
+$ docker start <container_id_of_plugin>
 ```
 ### Usage 
 
