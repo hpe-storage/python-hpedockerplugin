@@ -190,9 +190,9 @@ Installing the HPE 3PAR Volume Plug-in for Docker (Containerized Plug-in) for SU
          - /opt/hpe/data:/opt/hpe/data:shared
          - /usr/lib64:/usr/lib64
     ```
-    >
-    > **Save and Exit**
-    >
+
+    **Save and Exit**
+
     > **Note: Please make sure etcd service in running state.**
 
 6.  **Start the HPE 3PAR Volume Plug-in for Docker
