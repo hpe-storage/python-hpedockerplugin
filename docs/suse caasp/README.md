@@ -285,7 +285,7 @@ Installing the HPE 3PAR Volume Plug-in for Docker (Containerized Plug-in) for SU
      Confirm that the doryd daemonset is running successfully
 
      ```bash
-     $ kc get ds --namespace=kube-system
+     $ kubectl get ds --namespace=kube-system
      NAME           DESIRED   CURRENT   READY     UP-TO-DATE   AVAILABLE   NODE SELECTOR                     AGE
      doryd          1         1         1         1            1           node-role.kubernetes.io/master=   7d
      kube-flannel   4         4         4         4            4           beta.kubernetes.io/arch=amd64     8d
