@@ -146,7 +146,7 @@ class VolumePlugin(object):
                                     'cloneOf', 'virtualCopyOf',
                                     'expirationHours', 'retentionHours',
                                     'qos-name',
-                                    'mountConflictDelay']
+                                    'mountConflictDelay', 'help']
 
         if ('Opts' in contents and contents['Opts']):
             for key in contents['Opts']:
@@ -158,6 +158,14 @@ class VolumePlugin(object):
                             'valid': valid_volume_create_opts, })
                     LOG.error(msg)
                     return json.dumps({u"Err": six.text_type(msg)})
+
+            if ('help' in contents['Opts']):
+                create_help_path = "./config/create_help.txt"
+                create_help_file = open(create_help_path, "r")
+                create_help_content = create_help_file.read()
+                create_help_file.close()
+                LOG.error(create_help_content)
+                return json.dumps({u"Err": create_help_content})
 
             # Populating the values
             if ('size' in contents['Opts'] and
