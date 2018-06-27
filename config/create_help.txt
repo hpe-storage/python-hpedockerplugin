@@ -2,26 +2,28 @@ HPE 3PAR volume plug-in for Docker: Create help
 Create a volume in HPE 3PAR or create a clone of a docker volume or create a snapshot of a docker volume using HPE 3PAR volume plug-in for Docker.
 Default Options:
 -o mountConflictDelay=x 	x is the number of seconds to delay a mount request when there is a conflict(default is 30)
--o size=x 			x is a size of a docker volume to be created, default value is 100GiB
--o provisioning=x 		x is a provision type of a volume that needs to be created, valid values are thin,dedup,full. Default value is thin.
+-o size=x 			x is a size of a docker volume to be created, default value of x is 100 (in GiB)
+-o provisioning=x 		x is a provision type of a volume to be created, valid values are thin,dedup,full. Default value is thin.
 
 
 Create Options:
- -o size=x 			x is a size of a docker volume to be created, deault value is 100GiB
- -o provisioning=x 		x is a provision type of a volume that needs to be created, valid values are thin,dedup,full. Default value is thin.
- -o compression=x 		x is a boolean value, hence x can have true or false. For a compressed volume to be created minimum size of a 
-				volume needs to be 16 GiB, it also requires 3PAR OS version 3.3.1 or more and underlying disks should be SSD.
- -o flash-cache=x 		x specifies whether flash cache should be used or not. Valid vaues are true or false.
- -o qos-name=x 			x is name of existing VVset on 3PAR where QoS rules are applied.
+ -o size=x 			x is a size of a docker volume to be created, deault value of x is 100 (in GiB)
+ -o provisioning=x 		x is a provision type of a volume to be created, valid values are thin,dedup,full. Default value is thin.
+ -o compression=x 		x is a boolean value, hence x can have true or false. To create a compressed volume, minimum size of a 
+				volume should to be 16 GiB. It also requires 3PAR OS version 3.3.1 or more and underlying disks should be SSD.
+ -o flash-cache=x 		x is a boolean value, hence x can have true or false. x specifies whether flash cache should be used or not.
+				Valid vaues are true or false.
+ -o qos-name=x 			x is name of existing VVset on 3PAR on which QoS rules are applied.
  
 
 Clone Options:
- -o cloneOf=x			x is the name of docker volume (source volume) to create a clone of.
- -o size=x 			x is the size of new volume which is getting cloned from a docker volume. x should be greater than size of a source volume.
+ -o cloneOf=x			x is the name of docker volume (source volume) of which clone to be created.
+ -o size=x 			x is the size of cloned volume. x should be greater than or equal to size of a source volume.
  
 Create Snapshot:
- -o virtualCopyOf=x		x is the name of a volume for which snapshot/virtual copy needs to be created.
- -o retentionHours=x 		x is the number of hours a volume needs to be retained. For x hours starting from creation time, volume can not be removed.
- -o expirationHours=x		x is the number of hours after which volume will be removed from 3PAR. If both retentionHours and expirationHours 
-				are used then expirationHours must be greater than retentionHours.
+ -o virtualCopyOf=x		x is the name of a docker volume for which snapshot/virtual copy is to be created.
+ -o retentionHours=x 		x is the number of hours a snapshot will be retained. Snapshot will be retained for x hours from the time of creation.
+                                Snapshot can not be deleted during retention period.
+ -o expirationHours=x		x is the number of hours after which snapshot will be removed from 3PAR. If both retentionHours and expirationHours 
+				are used then expirationHours must be greater than or equal to retentionHours.
 
