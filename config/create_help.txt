@@ -6,7 +6,7 @@ Default Options:
 -o provisioning=x 		x is a provision type of a volume to be created, valid values are thin,dedup,full. Default value is thin.
 
 
-Create Options:
+Create Volume Options:
  -o size=x 			x is a size of a docker volume to be created, deault value of x is 100 (in GiB)
  -o provisioning=x 		x is a provision type of a volume to be created, valid values are thin,dedup,full. Default value is thin.
  -o compression=x 		x is a boolean value, hence x can have true or false. To create a compressed volume, minimum size of a 
@@ -16,11 +16,11 @@ Create Options:
  -o qos-name=x 			x is name of existing VVset on 3PAR on which QoS rules are applied.
  
 
-Clone Options:
+Create Clone Options:
  -o cloneOf=x			x is the name of docker volume (source volume) of which clone to be created.
  -o size=x 			x is the size of cloned volume. x should be greater than or equal to size of a source volume.
  
-Create Snapshot:
+Create Snapshot Options:
  -o virtualCopyOf=x		x is the name of a docker volume for which snapshot/virtual copy is to be created.
  -o retentionHours=x 		x is the number of hours a snapshot will be retained. Snapshot will be retained for x hours from the time of creation.
                                 Snapshot can not be deleted during retention period.
