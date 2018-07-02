@@ -12,13 +12,13 @@ ssh_hosts_key_file = <path to known_hosts>
 # Please note this is only supported in managed plugin.
 # Check the plugin version for the support.
 host_etcd_ip_address = <ip-address>
-host_etcd_port_number = <port-number>
+host_etcd_port_number = <port-number> 
 
 # Client certificate and key details for secured etcd cluster
 # Please note this is only supported in managed plugin.
 # Check the plugin version for the support.
-host_etcd_client_cert = /root/plugin/certs/<path to client certificate>.pem
-host_etcd_client_key = /root/plugin/certs/<path to client certificate key>.pem
+# host_etcd_client_cert = /root/plugin/certs/<path to client certificate>.pem
+# host_etcd_client_key = /root/plugin/certs/<path to client certificate key>.pem
 
 # OSLO based Logging level for the plugin.
 logging = <INFO or DEBUG or ERROR or WARNING>
@@ -48,7 +48,7 @@ hpe3par_cpg = <CPG name used for volume creation>
 hpe3par_snapcpg = <CPG name used for snapshot creation>
 # hpe3par_snapcpg is optional. If not provided, it defaults to hpe3par_cpg value
 
-iscsi_ip_address = <iSCSI IP address>
+# iscsi_ip_address = <iSCSI IP address>
 hpe3par_iscsi_chap_enabled = <True or False>
 hpe3par_iscsi_ips = <iSCSI IP addresses separated by comma>
 use_multipath = <True or False>

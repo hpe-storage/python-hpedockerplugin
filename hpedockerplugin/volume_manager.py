@@ -140,6 +140,7 @@ class VolumeManager(object):
                      size=None):
         # Check if volume is present in database
         src_vol = self._etcd.get_vol_byname(src_vol_name)
+        mnt_conf_delay = volume.DEFAULT_MOUNT_CONFLICT_DELAY
         if src_vol is None:
             msg = 'source volume: %s does not exist' % src_vol_name
             LOG.debug(msg)
@@ -162,6 +163,13 @@ class VolumeManager(object):
             LOG.debug(msg)
             response = json.dumps({u"Err": msg})
             return response
+
+        if 'snapshots' not in src_vol:
+            src_vol['compression'] = None
+            src_vol['qos_name'] = None
+            src_vol['mount_conflict_delay'] = mnt_conf_delay
+            src_vol['snapshots'] = []
+            self._etcd.save_vol(src_vol)
 
         return self._clone_volume(clone_name, src_vol, size)
 
@@ -205,6 +213,11 @@ class VolumeManager(object):
             vol_snap_flag = volume.DEFAULT_TO_SNAP_TYPE
             vol['is_snap'] = vol_snap_flag
             self._etcd.update_vol(volid, 'is_snap', vol_snap_flag)
+        if 'snapshots' not in vol:
+            vol['snapshots'] = []
+            vol['compression'] = None
+            vol['qos_name'] = None
+            vol['mount_conflict_delay'] = mount_conflict_delay
 
         # Check if instead of specifying parent volume, user incorrectly
         # specified snapshot as virtualCopyOf parameter. If yes, return error.

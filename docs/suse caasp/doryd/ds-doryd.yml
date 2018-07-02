@@ -1,0 +1,120 @@
+---
+apiVersion: extensions/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: psp.hpe3par.privileged
+  annotations:
+    seccomp.security.alpha.kubernetes.io/allowedProfileNames: '*'
+spec:
+  privileged: true
+  allowPrivilegeEscalation: true
+  allowedCapabilities:
+  - '*'
+  volumes:
+  - '*'
+  hostNetwork: true
+  hostPorts:
+  - min: 0
+    max: 65535
+  hostIPC: true
+  hostPID: true
+  runAsUser:
+    rule: 'RunAsAny'
+  seLinux:
+    rule: 'RunAsAny'
+  supplementalGroups:
+    rule: 'RunAsAny'
+  fsGroup:
+    rule: 'RunAsAny'
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ds-admin
+rules:
+- apiGroups: ["extensions"]
+  resources: ["daemonsets"]
+  verbs: ["create", "get", "list", "watch", "delete", "update"]
+- apiGroups: ["extensions"]
+  resources: ["podsecuritypolicies"]
+  resourceNames: ["suse.caasp.psp.privileged"]
+  verbs: ["use"]
+- apiGroups: ["storage.k8s.io"]
+  resources: ["storageclasses"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["persistentvolumeclaims"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["persistentvolumes"]
+  verbs: ["get", "list", "watch", "create", "delete"]
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["create"]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: binding-hpe3par
+  namespace: kube-system
+subjects:
+- kind: ServiceAccount
+  name: sa-hpe3par
+  namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: ds-admin
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sa-hpe3par
+  namespace: kube-system
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: doryd
+  namespace: kube-system
+  labels:
+    k8s-app: hpe3par-doryd
+spec:
+  selector:
+    matchLabels:
+      name: doryd
+  template:
+    metadata:
+      labels:
+        name: doryd
+    spec:
+      restartPolicy: Always
+      tolerations:
+       -
+          effect: NoSchedule
+          operator: Exists
+      serviceAccountName: sa-hpe3par
+      containers:
+        -
+          image: doryd:latest
+          imagePullPolicy: Never
+          name: dory
+          volumeMounts:
+             - name: k8s
+               mountPath: /etc/kubernetes
+             - name: flexvolumedriver
+               mountPath: /usr/libexec/kubernetes/kubelet-plugins/volume/exec
+             - name: dockersocket
+               mountPath: /run/docker/plugins/
+      nodeSelector:
+         node-role.kubernetes.io/master: ""
+      volumes:
+        - name: k8s
+          hostPath:
+             path: /etc/kubernetes/
+        - name: flexvolumedriver
+          hostPath:
+             path: /usr/libexec/kubernetes/kubelet-plugins/volume/exec
+        - name: dockersocket
+          hostPath:
+              path: /run/docker/plugins/
