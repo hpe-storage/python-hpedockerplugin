@@ -150,9 +150,10 @@ Installing the HPE 3PAR Volume Plug-in for Docker (Containerized Plug-in) for SU
 
 4.  **Build the containerized image**
     ```bash
+     $ git clone https://github.com/hpe-storage/python-hpedockerplugin.git ~/container_code
      $ cd ~/container_code
      $ git checkout plugin_v2
-     $ ./containerizer.sh
+     $ ./containerize.sh
     ```
     Observe the built container image by docker images command
 
@@ -284,7 +285,7 @@ Installing the HPE 3PAR Volume Plug-in for Docker (Containerized Plug-in) for SU
      Confirm that the doryd daemonset is running successfully
 
      ```bash
-     $ kc get ds --namespace=kube-system
+     $ kubectl get ds --namespace=kube-system
      NAME           DESIRED   CURRENT   READY     UP-TO-DATE   AVAILABLE   NODE SELECTOR                     AGE
      doryd          1         1         1         1            1           node-role.kubernetes.io/master=   7d
      kube-flannel   4         4         4         4            4           beta.kubernetes.io/arch=amd64     8d
