@@ -595,6 +595,8 @@ class VolumeManager(object):
             vol_detail['provisioning'] = volinfo.get('provisioning')
             vol_detail['mountConflictDelay'] = volinfo.get(
                 'mount_conflict_delay')
+            vol_detail['cpg'] = volinfo.get('cpg')
+            vol_detail['snap_cpg'] = volinfo.get('snap_cpg')
             volume['Status'].update({'volume_detail': vol_detail})
 
         response = json.dumps({u"Err": err, u"Volume": volume})
