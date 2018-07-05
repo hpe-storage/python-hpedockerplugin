@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-with open("requirements.txt") as requirements:
+with open("requirements-py3.txt") as requirements:
         install_requires = requirements.readlines()
 
 setup(name='python-hpedockerplugin',
