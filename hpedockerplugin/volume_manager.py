@@ -180,7 +180,7 @@ class VolumeManager(object):
                            'msg': "Cleaning up snapshot record for '%s'"
                                   " from ETCD..." % snapshot_name})
 
-    @synchronization.synchronized('{snapshot_name}')
+    @synchronization.synchronized('{snapshot_name}','{src_vol_name}')
     def create_snapshot(self, src_vol_name, snapshot_name,
                         expiration_hrs, retention_hrs,
                         mount_conflict_delay):
@@ -196,7 +196,6 @@ class VolumeManager(object):
                                      expiration_hrs, retention_hrs,
                                      mount_conflict_delay)
 
-    @synchronization.synchronized('{src_vol_name}')
     def _create_snapshot(self, src_vol_name, snapshot_name,
                          expiration_hrs, retention_hrs,
                          mount_conflict_delay):
