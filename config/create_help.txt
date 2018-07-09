@@ -1,0 +1,31 @@
+HPE 3PAR volume plug-in for Docker: Create help
+Create a volume in HPE 3PAR or create a clone of a docker volume or create a snapshot of a docker volume using HPE 3PAR volume plug-in for Docker.
+Default Options:
+-o mountConflictDelay=x 	x is the number of seconds to delay a mount request when there is a conflict(default is 30)
+-o size=x 			x is a size of a docker volume to be created, default value of x is 100 (in GiB)
+-o provisioning=x 		x is a provision type of a volume to be created, valid values are thin,dedup,full. Default value is thin.
+
+
+Create Volume Options:
+ -o cpg=x           x is the Usr CPG used for provisioning the volume
+ -o snap-cpg=x      x is the Snap CPG used for provisioning the snapshots of the volume
+ -o size=x 			x is a size of a docker volume to be created, deault value of x is 100 (in GiB)
+ -o provisioning=x 		x is a provision type of a volume to be created, valid values are thin,dedup,full. Default value is thin.
+ -o compression=x 		x is a boolean value, hence x can have true or false. To create a compressed volume, minimum size of a 
+				volume should to be 16 GiB. It also requires 3PAR OS version 3.3.1 or more and underlying disks should be SSD.
+ -o flash-cache=x 		x is a boolean value, hence x can have true or false. x specifies whether flash cache should be used or not.
+				Valid vaues are true or false.
+ -o qos-name=x 			x is name of existing VVset on 3PAR on which QoS rules are applied.
+ 
+
+Create Clone Options:
+ -o cloneOf=x			x is the name of docker volume (source volume) of which clone to be created.
+ -o size=x 			x is the size of cloned volume. x should be greater than or equal to size of a source volume.
+ 
+Create Snapshot Options:
+ -o virtualCopyOf=x		x is the name of a docker volume for which snapshot/virtual copy is to be created.
+ -o retentionHours=x 		x is the number of hours a snapshot will be retained. Snapshot will be retained for x hours from the time of creation.
+                                Snapshot can not be deleted during retention period.
+ -o expirationHours=x		x is the number of hours after which snapshot will be removed from 3PAR. If both retentionHours and expirationHours 
+				are used then expirationHours must be greater than or equal to retentionHours.
+
