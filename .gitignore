@@ -5,3 +5,4 @@
 *twistd.pid
 .tox
 v2plugin
+/.idea/

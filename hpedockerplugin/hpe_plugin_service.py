@@ -76,11 +76,11 @@ class HPEDockerPluginService(object):
         LOG.info(_LI('_cleanup invoked: HPE Docker Volume Plugin Shutdown'))
         try:
             remove(PLUGIN_PATH.path)
-        except:
+        except OSError:
             pass
         try:
             remove(PLUGIN_PATH.path + ".lock")
-        except:
+        except OSError:
             pass
         LOG.info("Cleanup done!")
 
