@@ -5,25 +5,25 @@ import time
 import uuid
 
 
-import etcdutil as util
+import hpedockerplugin.etcdutil as util
 from os_brick.initiator import connector
 from oslo_log import log as logging
 from oslo_utils import importutils
 from oslo_utils import netutils
 from twisted.python.filepath import FilePath
 
-import exception
-import fileutil
-from hpe import volume
-from hpe import utils
-from i18n import _, _LE, _LI, _LW
-import synchronization
+import hpedockerplugin.exception as exception
+import hpedockerplugin.fileutil as fileutil
+from hpedockerplugin.hpe import volume
+from hpedockerplugin.hpe import utils
+from hpedockerplugin.i18n import _, _LE, _LI, _LW
+import hpedockerplugin.synchronization as synchronization
 
 LOG = logging.getLogger(__name__)
 
 
 class VolumeManager(object):
-    def __init__(self, hpepluginconfig):
+    def __init__(self, hpepluginconfig, default_config):
         self._hpepluginconfig = hpepluginconfig
         self._my_ip = netutils.get_my_ipv4()
 
@@ -36,7 +36,7 @@ class VolumeManager(object):
 
         self._initialize_driver(hpepluginconfig)
         self._connector = self._get_connector(hpepluginconfig)
-        self._etcd = self._get_etcd_util(hpepluginconfig)
+        self._etcd = self._get_etcd_util(hpepluginconfig, default_config)
 
         # Volume fencing requirement
         self._node_id = self._get_node_id()
@@ -84,12 +84,12 @@ class VolumeManager(object):
         return node_id
 
     @staticmethod
-    def _get_etcd_util(hpepluginconfig):
+    def _get_etcd_util(hpepluginconfig, default_config):
         return util.EtcdUtil(
-            hpepluginconfig.host_etcd_ip_address,
-            hpepluginconfig.host_etcd_port_number,
-            hpepluginconfig.host_etcd_client_cert,
-            hpepluginconfig.host_etcd_client_key)
+            default_config.host_etcd_ip_address,
+            default_config.host_etcd_port_number,
+            default_config.host_etcd_client_cert,
+            default_config.host_etcd_client_key)
 
     @synchronization.synchronized('{volname}')
     def create_volume(self, volname, vol_size, vol_prov,
@@ -720,7 +720,7 @@ class VolumeManager(object):
 
     def _replace_node_mount_info(self, node_mount_info, mount_id):
         # Remove previous node info from volume meta-data
-        old_node_id = node_mount_info.keys()[0]
+        old_node_id = list(node_mount_info.keys())[0]
         node_mount_info.pop(old_node_id)
 
         # Add new node information to volume meta-data

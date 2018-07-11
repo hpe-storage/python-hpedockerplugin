@@ -140,7 +140,7 @@ class HPEPLUGINTESTS(unittest.TestCase):
         setup_logging('test_hpe_plugin', logging_level)
 
         # Start HPE Docker Plugin
-        bashcommand = "/usr/bin/twistd hpe_plugin_service"
+        bashcommand = "/bin/twistd hpe_plugin_service"
         try:
             subprocess.check_output(['sh', '-c', bashcommand], cwd=TEST_DIR)
         except Exception:

@@ -21,7 +21,7 @@ import subprocess
 from sh import rm
 from oslo_log import log as logging
 from hpedockerplugin.i18n import _, _LI
-import exception
+import hpedockerplugin.exception as exception
 import six
 
 from twisted.python.filepath import FilePath

@@ -1,6 +1,6 @@
 import copy
-import fake_3par_data as data
-import hpe_docker_unit_test as hpedockerunittest
+import test.fake_3par_data as data
+import test.hpe_docker_unit_test as hpedockerunittest
 
 
 class RemoveSnapshotUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):

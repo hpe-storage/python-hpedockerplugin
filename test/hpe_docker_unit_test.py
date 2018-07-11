@@ -2,12 +2,12 @@ import abc
 import json
 import mock
 
-from cStringIO import StringIO
+from io import StringIO
 from twisted.internet import reactor
 
-import fake_3par_data as data
+import test.fake_3par_data as data
 from hpedockerplugin import hpe_storage_api as api
-import setup_mock
+import test.setup_mock as setup_mock
 
 
 class RequestBody:
