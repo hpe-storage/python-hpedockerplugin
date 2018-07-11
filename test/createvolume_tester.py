@@ -1,7 +1,7 @@
 # import mock
-import fake_3par_data as data
+import test.fake_3par_data as data
 from hpedockerplugin import exception as hpe_exc
-import hpe_docker_unit_test as hpedockerunittest
+import test.hpe_docker_unit_test as hpedockerunittest
 from hpe3parclient import exceptions
 from oslo_config import cfg
 CONF = cfg.CONF

@@ -1,7 +1,7 @@
 import copy
 
-import fake_3par_data as data
-import hpe_docker_unit_test as hpedockerunittest
+import test.fake_3par_data as data
+import test.hpe_docker_unit_test as hpedockerunittest
 from oslo_config import cfg
 CONF = cfg.CONF
 
@@ -41,9 +41,9 @@ class TestQosVolume(GetVolumeUnitTest):
                     u'qos_detail': {
                         u'Latency': u'10 sec',
                         u'enabled': None,
-                        u'maxBWS': u'40 MB/sec',
+                        u'maxBWS': u'40.0 MB/sec',
                         u'maxIOPS': u'2000000 IOs/sec',
-                        u'minBWS': u'30 MB/sec',
+                        u'minBWS': u'30.0 MB/sec',
                         u'minIOPS': u'10000 IOs/sec',
                         u'priority': u'Normal',
                         u'vvset_name': u'vvk_vvset'
