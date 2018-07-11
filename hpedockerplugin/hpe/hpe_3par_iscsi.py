@@ -309,7 +309,7 @@ class HPE3PARISCSIDriver(object):
                 if least_used_nsp is None:
                     LOG.warning(_LW("Least busy iSCSI port not found, "
                                     "using first iSCSI port in list."))
-                    iscsi_ip = self.iscsi_ips.keys()[0]
+                    iscsi_ip = list(self.iscsi_ips.keys())[0]
                 else:
                     iscsi_ip = self._get_ip_using_nsp(least_used_nsp)
 

@@ -40,7 +40,7 @@ RUN apk add --virtual /tmp/.temp --no-cache --update \
     libffi-dev \
     linux-headers \
     make \
-    openssl \
+    libssl1.0 \
 	openssh-client \
 	openssl-dev \
     python3-dev \
