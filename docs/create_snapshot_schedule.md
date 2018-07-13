@@ -1,4 +1,4 @@
-Following is an example to create a snapshot schedule for a volume of name dcv-efuosj9.-mks@wdcx:
+Following is an example to create a snapshot schedule for a volume of name volume1:
 Below are the options which can be passed while creating a snapshot schedule.
 
 - -o virtualCopyOf=x          This option is mandetory. x is the name of the volume for which snapshot schedule has to be created.
@@ -27,7 +27,7 @@ Below are the options which can be passed while creating a snapshot schedule.
 
 docker command to create a snapshot schedule:
 ```
-docker volume create -d hpe --name <snapshot_name> -o virtualCopyOf=dcv-efuosj9.-mks@wdcx 
+docker volume create -d hpe --name <snapshot_name> -o virtualCopyOf=volume1 
 -o scheduleFrequency="10 2 * * *" -o scheduleName=dailyOnceSchedule -o retentionHours=58 
 -o snaphotPrefix=pqr -o expHrs=5 -o retHrs=3
 ```
