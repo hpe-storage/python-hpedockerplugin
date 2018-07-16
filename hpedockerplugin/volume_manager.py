@@ -4,6 +4,7 @@ import six
 import time
 import uuid
 
+
 import etcdutil as util
 from os_brick.initiator import connector
 from oslo_log import log as logging
@@ -93,7 +94,7 @@ class VolumeManager(object):
     @synchronization.synchronized('{volname}')
     def create_volume(self, volname, vol_size, vol_prov,
                       vol_flash, compression_val, vol_qos,
-                      mount_conflict_delay):
+                      mount_conflict_delay,current_backend):
         LOG.info('In _volumedriver_create')
 
         # NOTE: Since Docker passes user supplied names and not a unique
@@ -115,7 +116,7 @@ class VolumeManager(object):
         undo_steps = []
         vol = volume.createvol(volname, vol_size, vol_prov,
                                vol_flash, compression_val, vol_qos,
-                               mount_conflict_delay)
+                               mount_conflict_delay, False, current_backend)
         try:
             self._create_volume(vol, undo_steps)
             self._apply_volume_specs(vol, undo_steps)

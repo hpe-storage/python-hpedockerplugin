@@ -22,6 +22,7 @@ import six
 import re
 
 from oslo_log import log as logging
+from config import setupcfg
 
 import exception
 from i18n import _, _LE, _LI
@@ -31,6 +32,11 @@ import volume_manager as mgr
 
 LOG = logging.getLogger(__name__)
 
+CONFIG_FILE = '/etc/hpedockerplugin/hpe.conf'
+
+CONFIG = ['--config-file', CONFIG_FILE]
+
+DEFAULT_BACKEND_NAME = "DEFAULT"
 
 class VolumePlugin(object):
     """
@@ -47,10 +53,21 @@ class VolumePlugin(object):
         LOG.info(_LI('Initialize Volume Plugin'))
 
         self._reactor = reactor
+        self.conf = setupcfg.CONF
 
         # TODO: make device_scan_attempts configurable
         # see nova/virt/libvirt/volume/iscsi.py
-        self._manager = mgr.VolumeManager(hpepluginconfig)
+        self._manager = self.initialize_manager_objects()
+            #mgr.VolumeManager(hpepluginconfig)
+
+    def initialize_manager_objects(self):
+        manager_objs = {}
+
+        for backend_name in setupcfg.get_all_backends(CONFIG):
+            manager_objs[backend_name] = mgr.VolumeManager(
+                setupcfg.backend_config(CONFIG, backend_name))
+
+        return manager_objs
 
     def disconnect_volume_callback(self, connector_info):
         LOG.info(_LI('In disconnect_volume_callback: connector info is %s'),
@@ -77,9 +94,10 @@ class VolumePlugin(object):
 
         :return: Result indicating success.
         """
+
         contents = json.loads(name.content.getvalue())
         volname = contents['Name']
-        return self._manager.remove_volume(volname)
+        return self._manager[DEFAULT_BACKEND_NAME].remove_volume(volname)
 
     @app.route("/VolumeDriver.Unmount", methods=["POST"])
     def volumedriver_unmount(self, name):
@@ -102,7 +120,7 @@ class VolumePlugin(object):
             vol_mount = str(contents['Opts']['mount-volume'])
 
         mount_id = contents['ID']
-        return self._manager.unmount_volume(volname, vol_mount, mount_id)
+        return self._manager[DEFAULT_BACKEND_NAME].unmount_volume(volname, vol_mount, mount_id)
 
     @app.route("/VolumeDriver.Create", methods=["POST"])
     def volumedriver_create(self, name, opts=None):
@@ -146,7 +164,7 @@ class VolumePlugin(object):
                                     'cloneOf', 'virtualCopyOf',
                                     'expirationHours', 'retentionHours',
                                     'qos-name',
-                                    'mountConflictDelay', 'help']
+                                    'mountConflictDelay', 'help','backend']
 
         if ('Opts' in contents and contents['Opts']):
             for key in contents['Opts']:
@@ -199,6 +217,10 @@ class VolumePlugin(object):
                                               "for mountConflictDelay. Please"
                                               "specify an integer value." %
                                               mount_conflict_delay_str})
+            current_backend = DEFAULT_BACKEND_NAME
+            if ('backend' in contents['Opts'] and
+                    contents['Opts']['backend'] != ""):
+                current_backend = str(contents['Opts']['backend'])
 
             # mutually exclusive options check
             mutually_exclusive_list = ['virtualCopyOf', 'cloneOf', 'qos-name']
@@ -226,10 +248,10 @@ class VolumePlugin(object):
                 LOG.error(msg)
                 return json.dumps({u"Err": six.text_type(msg)})
 
-        return self._manager.create_volume(volname, vol_size,
+        return self._manager[DEFAULT_BACKEND_NAME].create_volume(volname, vol_size,
                                            vol_prov, vol_flash,
                                            compression_val, vol_qos,
-                                           mount_conflict_delay)
+                                           mount_conflict_delay,current_backend)
 
     def volumedriver_clone_volume(self, name, opts=None):
         # Repeating the validation here in anticipation that when
@@ -276,7 +298,7 @@ class VolumePlugin(object):
         if 'Opts' in contents and contents['Opts'] and \
                 'retentionHours' in contents['Opts']:
             retention_hrs = int(contents['Opts']['retentionHours'])
-        return self._manager.create_snapshot(src_vol_name,
+        return self._manager[DEFAULT_BACKEND_NAME].create_snapshot(src_vol_name,
                                              snapshot_name,
                                              expiration_hrs,
                                              retention_hrs,
@@ -308,7 +330,7 @@ class VolumePlugin(object):
             vol_mount = str(contents['Opts']['mount-volume'])
 
         mount_id = contents['ID']
-        return self._manager.mount_volume(volname, vol_mount, mount_id)
+        return self._manager[DEFAULT_BACKEND_NAME].mount_volume(volname, vol_mount, mount_id)
 
     @app.route("/VolumeDriver.Path", methods=["POST"])
     def volumedriver_path(self, name):
@@ -321,7 +343,7 @@ class VolumePlugin(object):
         """
         contents = json.loads(name.content.getvalue())
         volname = contents['Name']
-        return self._manager.get_path(volname)
+        return self._manager[DEFAULT_BACKEND_NAME].get_path(volname)
 
     @app.route("/VolumeDriver.Capabilities", methods=["POST"])
     def volumedriver_getCapabilities(self, body):
@@ -355,7 +377,7 @@ class VolumePlugin(object):
         if token_cnt == 2:
             snapname = tokens[1]
 
-        return self._manager.get_volume_snap_details(
+        return self._manager[DEFAULT_BACKEND_NAME].get_volume_snap_details(
             volname, snapname, qualified_name)
 
     @app.route("/VolumeDriver.List", methods=["POST"])
@@ -367,4 +389,4 @@ class VolumePlugin(object):
 
         :return: Result indicating success.
         """
-        return self._manager.list_volumes()
+        return self._manager[DEFAULT_BACKEND_NAME].list_volumes()

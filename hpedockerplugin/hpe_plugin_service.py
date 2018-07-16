@@ -130,7 +130,7 @@ class HPEDockerPluginService(object):
 
         # Set Logging level
         logging_level = hpedefaultconfig.logging
-        setup_logging('hpe_storage_api', logging_level)
+        #setup_logging('hpe_storage_api', logging_level)
 
         self._create_listening_directory(PLUGIN_PATH.parent())
         endpoint = serverFromString(self._reactor, "unix:{}:mode=600".

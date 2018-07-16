@@ -27,33 +27,32 @@ host_opts = [
                 default=2379,
                 help='Host Port Number to use for etcd communication'),
     cfg.StrOpt('host_etcd_ca_cert',
-                default=None,
-                help='CA certificate location'),
+               default=None,
+               help='CA certificate location'),
     cfg.StrOpt('host_etcd_client_cert',
-                default=None,
-                help='Client certificate location'),
+               default=None,
+               help='Client certificate location'),
     cfg.StrOpt('host_etcd_client_key',
-                default=None,
-                help='Client certificate key location'),
+               default=None,
+               help='Client certificate key location'),
     cfg.StrOpt('logging',
                default='WARNING',
                help='Debug level for hpe docker volume plugin'),
     cfg.BoolOpt('use_multipath',
-               default=False,
-               help='Toggle use of multipath for volume attachments.'),
+                default=False,
+                help='Toggle use of multipath for volume attachments.'),
     cfg.BoolOpt('enforce_multipath',
-               default=False,
-               help='Toggle enforcing of multipath for volume attachments.'),
+                default=False,
+                help='Toggle enforcing of multipath for volume attachments.'),
 ]
 
 CONF = cfg.CONF
-logging.register_options(CONF)
 
-CONF.register_opts(host_opts)
+
+# logging.register_options(CONF)
 
 
 def setup_logging(name, level):
-
     logging.setup(CONF, name)
     LOG = logging.getLogger(None)
 
@@ -69,6 +68,28 @@ def setup_logging(name, level):
 
 def getdefaultconfig(configfile):
     CONF(configfile, project='hpedockerplugin', version='1.0.0')
+    sections = CONF.list_all_sections()
+    print "WILLIAM -- SECTION NAME: %s" % sections
+    for section in sections:
+        opt_group = cfg.OptGroup(name=section,
+                                 title=section)
+        CONF.register_group(opt_group)
+        CONF.register_opts(host_opts, group=section)
+
     configuration = conf.Configuration(host_opts, config_group='DEFAULT')
 
     return configuration
+
+
+def backend_config(configfile, backend_name):
+    CONF(configfile, project='hpedockerplugin', version='1.0.0')
+    backend_configuration = conf.Configuration(host_opts, config_group=backend_name)
+
+    return backend_configuration
+
+def get_all_backends(configfile):
+    CONF(configfile, project='hpedockerplugin', version='1.0.0')
+    sections = CONF.list_all_sections()
+
+    return sections
+
