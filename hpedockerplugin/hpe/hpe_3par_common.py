@@ -422,6 +422,40 @@ class HPE3PARCommon(object):
                               vlun_info['lun_id'],
                               nsp)
 
+    # Swapnil
+    def create_snap_schedule(self, src_vol_name, schedName, snapPrefix,
+                                               exphrs, rethrs, schedFrequency):
+        expHr = str(exphrs)
+        retHr = str(rethrs)
+
+        cmd = ['creatresched']
+        createsnapstring = []
+        createsnapstring.append('"createsv ')
+        if exphrs is not None:
+            createsnapstring.append('-exp '+expHr+'h ')
+        if rethrs is not None:
+            createsnapstring.append('-retain '+retHr+'h ')
+        snap_string  =".@y@@m@@d@@H@@M@@S@"
+        dynamic_snap_name = snapPrefix+snap_string
+        createsnapstring.append(dynamic_snap_name+' '+src_vol_name+'"')
+
+        snapstring = ''.join(createsnapstring)
+        schedFreq= '"'+schedFrequency+'"'
+
+        cmd.append(snapstring)
+        cmd.append(schedFreq)
+        cmd.append(schedName)
+        cmd.append('\r')
+        try:
+            LOG.info("Creating a snapshot schedule, command is %s..." % cmd)
+            resp = self.client._run(cmd)
+            LOG.info("Create a snapshot schedule - command is: %s..." % cmd)
+        except Exception as ex:
+            LOG.error("Failed to create snapshot schedule - Command is: %s..." % cmd)
+            LOG.error(ex)
+            raise exception.HPEDriverCreateScheduleFailed(
+                reason=ex)
+
     def force_remove_volume_vlun(self, vol_name):
         # Assuming that a volume for a given host would have at most
         # two VLUNs if multipath is enabled. If we support shared volume
