@@ -15,6 +15,8 @@
 """
 Command to start up the Docker plugin.
 """
+import socket
+
 from config.setupcfg import getdefaultconfig, setup_logging
 from hpe_storage_api import VolumePlugin
 
@@ -51,13 +53,36 @@ class HPEDockerPluginService(object):
         self._reactor = reactor
         self._config_file = cfg
 
+        if not self._sock_in_use():
+            self._cleanup()
+
         # Set a cleanup function when reactor stops
         reactor.addSystemEventTrigger("before", "shutdown", self._cleanup)
 
+    @staticmethod
+    def _sock_in_use():
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        try:
+            sock.connect(PLUGIN_PATH.path)
+        except socket.error:
+            LOG.info("hpe.sock not in use")
+            return False
+        else:
+            LOG.info("hpe.sock in use")
+            sock.close()
+            return True
+
     def _cleanup(self):
-        LOG.info(_LI('HPE Docker Volume Plugin Shutdown'))
-        remove(PLUGIN_PATH.path)
-        remove(PLUGIN_PATH.path + ".lock")
+        LOG.info(_LI('_cleanup invoked: HPE Docker Volume Plugin Shutdown'))
+        try:
+            remove(PLUGIN_PATH.path)
+        except OSError:
+            pass
+        try:
+            remove(PLUGIN_PATH.path + ".lock")
+        except OSError:
+            pass
+        LOG.info("Cleanup done!")
 
     """
     Start the Docker plugin.
