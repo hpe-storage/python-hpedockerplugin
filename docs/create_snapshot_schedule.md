@@ -39,3 +39,100 @@ docker volume create -d hpe --name <snapshot_name> -o virtualCopyOf=volume1
 4. Docker snapshot has retentionHours of 58
 5. Snapshot created via scheduled snapshots will have prefix 'pqr' to its name and these snapshots will have ratiantion period of 3 hours
 as well expiration period of 5 hours
+
+###Inspect on volume and snapshot having a schedule associated with it.
+Consider volume1 is a volume for which snapshot schedule with name "ThisNewSnapSchedule" is created, for creating this schedule
+a docker snapshot with name snapshot1 is created.
+
+```
+docker volume inspect volume1
+````
+Output:
+```json
+[
+    {
+        "CreatedAt": "0001-01-01T00:00:00Z",
+        "Driver": "hpe:latest",
+        "Labels": {},
+        "Mountpoint": "/var/lib/docker/plugins/b31d0cf162f23852b2733671de48a81aacf078ec6e529d936ae99f2aec0a57d6/rootfs ",
+        "Name": " volume1",
+        "Options": {
+            "size": "9"
+        },
+        "Scope": "global",
+        "Status": {
+            "Snapshots": [
+                {
+                    "Name": "snapshot1",
+                    "ParentName": "volume1",
+                    "snap_schedule": {
+                      "schedule_name": "ThisNewSnapSchedule",
+                      "sched_Frequency": "5 2 * * *",
+                      "snap_name_prefix": "pqr",
+                      "sched_snap_exp_hrs": null,
+                      "sched_snap_exp_hrs": null
+                    }
+                }
+            ],
+            "volume_detail": {
+                "compression": null,
+                "flash_cache": null,
+                "mountConflictDelay": 30,
+                "provisioning": "thin",
+                "size": 9
+            }
+        }
+    }
+]
+```
+```
+docker volume inspect snapshot1
+````
+Output:
+``` json
+[
+    {
+        "CreatedAt": "0001-01-01T00:00:00Z",
+        "Driver": "hpe:latest",
+        "Labels": {},
+        "Mountpoint": "/var/lib/docker/plugins/b31d0cf162f23852b2733671de48a81aacf078ec6e529d936ae99f2aec0a57d6/rootfs",
+        "Name": "snapshot1",
+        "Options": {
+            "virtualCopyOf": "volume1"
+        },
+        "Scope": "global",
+        "Status": {
+            "snap_detail": {
+                "compression": null,
+                "expiration_hours": null,
+                "is_snap": true,
+                "mountConflictDelay": 30,
+                "parent_id": "36084710-851b-49db-93f2-5d9a71e49423",
+                "parent_volume": "volume1",
+                "provisioning": "thin",
+                "retention_hours": null,
+                "has_schedule": true,
+                "size": 5,
+                "snap_schedule": {
+                  "schedule_name": "ThisNewSnapSchedule",
+                  "sched_Frequency": "5 2 * * *",
+                  "snap_name_prefix": "pqr",
+                  "sched_snap_exp_hrs": null,
+                  "sched_snap_exp_hrs": null
+                  }
+            }
+        }
+    }
+]
+```
+
+#### Note:
+
+If the above snapshot snapshot1 is removed, associated schedule will also be removed from 3PAR. In other words, to remove the schedule 
+"ThisNewSnapSchedule" use snapshot name associated with this schedule.
+
+Removing a snapshot and associated schedule:
+
+```
+docker volume rm snapshot1
+```
