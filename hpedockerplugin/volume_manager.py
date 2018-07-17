@@ -563,6 +563,11 @@ class VolumeManager(object):
                 response = json.dumps({u"Err": msg})
                 return response
             else:
+                if 'has_schedule' in vol and vol['has_schedule']:
+                    schedule_info = vol['snap_metadata']['snap_schedule']
+                    sched_name = schedule_info['schedule_name']
+                    self._hpeplugin_driver.force_remove_3par_schedule(sched_name)
+
                 self._hpeplugin_driver.delete_volume(vol, is_snap)
                 LOG.info(_LI('volume: %(name)s,' 'was successfully deleted'),
                          {'name': volname})

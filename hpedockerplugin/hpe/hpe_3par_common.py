@@ -491,11 +491,25 @@ class HPE3PARCommon(object):
         try:
             LOG.info("Creating a snapshot schedule, command is %s..." % cmd)
             resp = self.client._run(cmd)
-            LOG.info("Create a snapshot schedule - command is: %s..." % cmd)
+            LOG.info("Created a snapshot schedule - command is: %s..." % cmd)
         except Exception as ex:
             LOG.error("Failed to create snapshot schedule - Command is: %s..." % cmd)
             LOG.error(ex)
             raise exception.HPEDriverCreateScheduleFailed(
+                reason=ex)
+
+    def force_remove_3par_schedule(self, schedule_name):
+        cmd = ['removesched', '-f']
+        cmd.append(schedule_name)
+        cmd.append('\r')
+        try:
+            LOG.info("Removing a snapshot schedule, command is %s..." % cmd)
+            resp = self.client._run(cmd)
+            LOG.info("Removed a snapshot schedule - command is: %s..." % cmd)
+        except Exception as ex:
+            LOG.error("Failed to remove snapshot schedule - Command is: %s..." % cmd)
+            LOG.error(ex)
+            raise exception.HPEDriverRemoveScheduleFailed(
                 reason=ex)
 
     def force_remove_volume_vlun(self, vol_name):
