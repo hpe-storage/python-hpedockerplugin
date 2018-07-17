@@ -4,6 +4,7 @@ import six
 import time
 import uuid
 
+
 import etcdutil as util
 from os_brick.initiator import connector
 from oslo_log import log as logging
@@ -93,7 +94,7 @@ class VolumeManager(object):
     @synchronization.synchronized('{volname}')
     def create_volume(self, volname, vol_size, vol_prov,
                       vol_flash, compression_val, vol_qos,
-                      mount_conflict_delay):
+                      mount_conflict_delay,current_backend):
         LOG.info('In _volumedriver_create')
 
         # NOTE: Since Docker passes user supplied names and not a unique
@@ -115,7 +116,7 @@ class VolumeManager(object):
         undo_steps = []
         vol = volume.createvol(volname, vol_size, vol_prov,
                                vol_flash, compression_val, vol_qos,
-                               mount_conflict_delay)
+                               mount_conflict_delay, False, current_backend)
         try:
             self._create_volume(vol, undo_steps)
             self._apply_volume_specs(vol, undo_steps)
@@ -137,7 +138,7 @@ class VolumeManager(object):
 
     @synchronization.synchronized('{src_vol_name}')
     def clone_volume(self, src_vol_name, clone_name,
-                     size=None):
+                     size=None,current_backend='DEFAULT'):
         # Check if volume is present in database
         src_vol = self._etcd.get_vol_byname(src_vol_name)
         mnt_conf_delay = volume.DEFAULT_MOUNT_CONFLICT_DELAY
@@ -169,9 +170,10 @@ class VolumeManager(object):
             src_vol['qos_name'] = None
             src_vol['mount_conflict_delay'] = mnt_conf_delay
             src_vol['snapshots'] = []
+            
             self._etcd.save_vol(src_vol)
 
-        return self._clone_volume(clone_name, src_vol, size)
+        return self._clone_volume(clone_name, src_vol, size, current_backend)
 
     def _create_snapshot_record(self, snap_vol, snapshot_name, undo_steps):
         self._etcd.save_vol(snap_vol)
@@ -183,7 +185,7 @@ class VolumeManager(object):
     @synchronization.synchronized('{snapshot_name}')
     def create_snapshot(self, src_vol_name, snapshot_name,
                         expiration_hrs, retention_hrs,
-                        mount_conflict_delay):
+                        mount_conflict_delay, current_backend='DEFAULT'):
         # Check if volume is present in database
         snap = self._etcd.get_vol_byname(snapshot_name)
         if snap:
@@ -194,12 +196,12 @@ class VolumeManager(object):
 
         return self._create_snapshot(src_vol_name, snapshot_name,
                                      expiration_hrs, retention_hrs,
-                                     mount_conflict_delay)
+                                     mount_conflict_delay, current_backend)
 
     @synchronization.synchronized('{src_vol_name}')
     def _create_snapshot(self, src_vol_name, snapshot_name,
                          expiration_hrs, retention_hrs,
-                         mount_conflict_delay):
+                         mount_conflict_delay, current_backend):
         vol = self._etcd.get_vol_byname(src_vol_name)
         if vol is None:
             msg = 'source volume: %s does not exist' % src_vol_name
@@ -218,6 +220,7 @@ class VolumeManager(object):
             vol['compression'] = None
             vol['qos_name'] = None
             vol['mount_conflict_delay'] = mount_conflict_delay
+            vol['backend'] = current_backend
 
         # Check if instead of specifying parent volume, user incorrectly
         # specified snapshot as virtualCopyOf parameter. If yes, return error.
@@ -237,7 +240,7 @@ class VolumeManager(object):
         is_snap = True
         snap_vol = volume.createvol(snapshot_name, snap_size, snap_prov,
                                     snap_flash, snap_compression, snap_qos,
-                                    mount_conflict_delay, is_snap)
+                                    mount_conflict_delay, is_snap, current_backend)
 
         snapshot_id = snap_vol['id']
 
@@ -393,7 +396,7 @@ class VolumeManager(object):
                 return response
 
     @synchronization.synchronized('{clone_name}')
-    def _clone_volume(self, clone_name, src_vol, size):
+    def _clone_volume(self, clone_name, src_vol, size, current_backend):
         # Create clone volume specification
         undo_steps = []
         clone_vol = volume.createvol(clone_name, size,
@@ -401,7 +404,7 @@ class VolumeManager(object):
                                      src_vol['flash_cache'],
                                      src_vol['compression'],
                                      src_vol['qos_name'],
-                                     src_vol['mount_conflict_delay'])
+                                     src_vol['mount_conflict_delay'], current_backend)
         try:
             self.__clone_volume__(src_vol, clone_vol, undo_steps)
             self._apply_volume_specs(clone_vol, undo_steps)
