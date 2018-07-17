@@ -286,7 +286,7 @@ class VolumePlugin(object):
 
         LOG.debug("WILLIAM : current_backend clone %s " % current_backend)
         clone_name = contents['Name']
-        return self._manager[current_backend].clone_volume(src_vol_name, clone_name, size)
+        return self._manager[current_backend].clone_volume(src_vol_name, clone_name, size, current_backend)
 
     def volumedriver_create_snapshot(self, name, mount_conflict_delay,
                                      opts=None):
@@ -327,7 +327,7 @@ class VolumePlugin(object):
                                              snapshot_name,
                                              expiration_hrs,
                                              retention_hrs,
-                                             mount_conflict_delay)
+                                             mount_conflict_delay, current_backend)
 
     @app.route("/VolumeDriver.Mount", methods=["POST"])
     def volumedriver_mount(self, name):
@@ -402,7 +402,14 @@ class VolumePlugin(object):
         if token_cnt == 2:
             snapname = tokens[1]
 
-        return self._manager[DEFAULT_BACKEND_NAME].get_volume_snap_details(
+        etcd_util = mgr.VolumeManager._get_etcd_util(self.default_config)
+        vol = etcd_util.get_vol_byname(volname)
+        current_backend = DEFAULT_BACKEND_NAME
+    
+        if 'backend' in vol:
+          current_backend = vol['backend']
+
+        return self._manager[current_backend].get_volume_snap_details(
             volname, snapname, qualified_name)
 
     @app.route("/VolumeDriver.List", methods=["POST"])
