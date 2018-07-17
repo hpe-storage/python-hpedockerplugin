@@ -59,7 +59,7 @@ class VolumePlugin(object):
         # TODO: make device_scan_attempts configurable
         # see nova/virt/libvirt/volume/iscsi.py
         self._manager = self.initialize_manager_objects(self.default_config)
-            #mgr.VolumeManager(hpepluginconfig)
+    
     def initialize_manager_objects(self, defaultconfig):
         manager_objs = {}
 
