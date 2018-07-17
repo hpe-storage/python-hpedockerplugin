@@ -54,12 +54,12 @@ class VolumePlugin(object):
 
         self._reactor = reactor
         self.conf = setupcfg.CONF
+        self.default_config = hpepluginconfig
 
         # TODO: make device_scan_attempts configurable
         # see nova/virt/libvirt/volume/iscsi.py
         self._manager = self.initialize_manager_objects()
             #mgr.VolumeManager(hpepluginconfig)
-
     def initialize_manager_objects(self):
         manager_objs = {}
 
@@ -97,7 +97,14 @@ class VolumePlugin(object):
 
         contents = json.loads(name.content.getvalue())
         volname = contents['Name']
-        return self._manager[DEFAULT_BACKEND_NAME].remove_volume(volname)
+
+        etcd_util = mgr.VolumeManager._get_etcd_util(self.default_config)
+        vol = etcd_util.get_vol_byname(volname)
+        current_backend = DEFAULT_BACKEND_NAME
+        if 'backend' in vol:
+           current_backend = vol['backend']
+
+        return self._manager[current_backend].remove_volume(volname)
 
     @app.route("/VolumeDriver.Unmount", methods=["POST"])
     def volumedriver_unmount(self, name):
@@ -165,7 +172,7 @@ class VolumePlugin(object):
                                     'expirationHours', 'retentionHours',
                                     'qos-name',
                                     'mountConflictDelay', 'help','backend']
-
+	current_backend = DEFAULT_BACKEND_NAME
         if ('Opts' in contents and contents['Opts']):
             for key in contents['Opts']:
                 if key not in valid_volume_create_opts:
@@ -217,7 +224,6 @@ class VolumePlugin(object):
                                               "for mountConflictDelay. Please"
                                               "specify an integer value." %
                                               mount_conflict_delay_str})
-            current_backend = DEFAULT_BACKEND_NAME
             if ('backend' in contents['Opts'] and
                     contents['Opts']['backend'] != ""):
                 current_backend = str(contents['Opts']['backend'])
@@ -231,6 +237,7 @@ class VolumePlugin(object):
                          'time') % {'exclusive': mutually_exclusive_list, })
                 LOG.error(msg)
                 return json.dumps({u"Err": six.text_type(msg)})
+
 
             if ('virtualCopyOf' in contents['Opts']):
                 return self.volumedriver_create_snapshot(name,
@@ -248,7 +255,7 @@ class VolumePlugin(object):
                 LOG.error(msg)
                 return json.dumps({u"Err": six.text_type(msg)})
 
-        return self._manager[DEFAULT_BACKEND_NAME].create_volume(volname, vol_size,
+        return self._manager[current_backend].create_volume(volname, vol_size,
                                            vol_prov, vol_flash,
                                            compression_val, vol_qos,
                                            mount_conflict_delay,current_backend)
@@ -269,8 +276,17 @@ class VolumePlugin(object):
             size = int(contents['Opts']['size'])
 
         src_vol_name = str(contents['Opts']['cloneOf'])
+
+        etcd_util = mgr.VolumeManager._get_etcd_util(self.default_config)
+        vol_object = etcd_util.get_vol_byname(src_vol_name)
+        current_backend = DEFAULT_BACKEND_NAME
+
+        if 'backend' in vol_object:
+          current_backend = vol_object['backend']
+
+        LOG.debug("WILLIAM : current_backend clone %s " % current_backend)
         clone_name = contents['Name']
-        return self._manager.clone_volume(src_vol_name, clone_name, size)
+        return self._manager[current_backend].clone_volume(src_vol_name, clone_name, size)
 
     def volumedriver_create_snapshot(self, name, mount_conflict_delay,
                                      opts=None):
@@ -287,6 +303,15 @@ class VolumePlugin(object):
             raise exception.HPEPluginCreateException(reason=msg)
 
         src_vol_name = str(contents['Opts']['virtualCopyOf'])
+
+        etcd_util = mgr.VolumeManager._get_etcd_util(self.default_config)
+        vol_object = etcd_util.get_vol_byname(src_vol_name)
+        current_backend = DEFAULT_BACKEND_NAME
+
+        if 'backend' in vol_object:
+          current_backend = vol_object['backend']
+
+        LOG.debug("WILLIAM : current_backend snapshot %s " % current_backend)
         snapshot_name = contents['Name']
 
         expiration_hrs = None
@@ -298,7 +323,7 @@ class VolumePlugin(object):
         if 'Opts' in contents and contents['Opts'] and \
                 'retentionHours' in contents['Opts']:
             retention_hrs = int(contents['Opts']['retentionHours'])
-        return self._manager[DEFAULT_BACKEND_NAME].create_snapshot(src_vol_name,
+        return self._manager[current_backend].create_snapshot(src_vol_name,
                                              snapshot_name,
                                              expiration_hrs,
                                              retention_hrs,
