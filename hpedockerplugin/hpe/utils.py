@@ -68,6 +68,27 @@ def _encode_name(name):
     return vol_encoded
 
 
+def _decode_name(name):
+
+    name = name.replace('dcv-', '')
+    name = name.replace('.', '+')
+    name = name.replace('-', '/')
+    name = name + "=="
+
+    vol_decoded = uuid.UUID(bytes=base64.decode_as_bytes(name))
+    return str(vol_decoded)
+
+
+def get_vol_id(volume_name):
+    """Get vol_id from 3PAR volume_name
+       get 'acd437e7-f1bb-4e44-bfee-ff86510b900e'
+       from 'dcv-rNQ35-G7TkS-7v.GUQuQDg'
+       vol_id was created by uuid.uuid4()
+    """
+    volume_id = _decode_name(volume_name)
+    return volume_id
+
+
 def get_3par_vol_name(volume_id):
     """Get converted 3PAR volume name.
 

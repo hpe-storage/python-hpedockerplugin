@@ -194,6 +194,20 @@ class HPEPluginUMountException(PluginException):
     message = _("HPE Docker Volume Plugin Unmount Failed: %(reason)s")
 
 
+class HPEPluginMapHourException(PluginException):
+    message = _("HPE Docker Volume Plugin Failed to map expiration hours:"
+                "%(reason)s")
+
+
+class HPEPluginMapSizeException(PluginException):
+    message = _("HPE Docker Volume Plugin Failed to map size: %(reason)s")
+
+
+class HPEPluginMapProvisioningException(PluginException):
+    message = _("HPE Docker Volume Plugin Failed to map provisioning:"
+                "%(reason)s")
+
+
 class HPEPluginMakeDirException(PluginException):
     message = _("HPE Docker Volume Plugin Makedir Failed: %(reason)s")
 
@@ -240,6 +254,11 @@ class HPEDriverInvalidSizeForCompressedVolume(HPEDriverException):
 
 class HPEDriverInvalidDedupVersion(HPEDriverException):
     message = _("Invalid input received: %(reason)s")
+
+
+class HPEDriverManageVolumeAttached(HPEDriverException):
+    message = _("Failed to manage volume/snapshot because its attached:"
+                "%(reason)s")
 
 
 class HPEDriverCreateVolumeWithQosFailed(HPEDriverException):

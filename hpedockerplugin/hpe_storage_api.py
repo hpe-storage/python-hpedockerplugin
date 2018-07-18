@@ -140,15 +140,15 @@ class VolumePlugin(object):
         valid_compression_opts = ['true', 'false']
         mount_conflict_delay = volume.DEFAULT_MOUNT_CONFLICT_DELAY
 
-        # Verify valid Opts arguments.
-        valid_volume_create_opts = ['mount-volume', 'compression',
-                                    'size', 'provisioning', 'flash-cache',
-                                    'cloneOf', 'virtualCopyOf',
-                                    'expirationHours', 'retentionHours',
-                                    'qos-name',
-                                    'mountConflictDelay', 'help']
-
         if ('Opts' in contents and contents['Opts']):
+            # Verify valid Opts arguments.
+            valid_compression_opts = ['true', 'false']
+            valid_volume_create_opts = ['mount-volume', 'compression',
+                                        'size', 'provisioning', 'flash-cache',
+                                        'cloneOf', 'virtualCopyOf',
+                                        'expirationHours', 'retentionHours',
+                                        'qos-name', 'mountConflictDelay',
+                                        'help', 'importVol']
             for key in contents['Opts']:
                 if key not in valid_volume_create_opts:
                     msg = (_('create volume/snapshot/clone failed, error is: '
@@ -158,6 +158,26 @@ class VolumePlugin(object):
                             'valid': valid_volume_create_opts, })
                     LOG.error(msg)
                     return json.dumps({u"Err": six.text_type(msg)})
+
+            # mutually exclusive options check
+            mutually_exclusive_list = ['virtualCopyOf', 'cloneOf', 'qos-name']
+            input_list = contents['Opts'].keys()
+            if (len(list(set(input_list) &
+                         set(mutually_exclusive_list))) >= 2):
+                msg = (_('%(exclusive)s cannot be specified at the same '
+                         'time') % {'exclusive': mutually_exclusive_list, })
+                LOG.error(msg)
+                return json.dumps({u"Err": six.text_type(msg)})
+
+            if 'importVol' in input_list:
+                if not len(input_list) == 1:
+                    msg = (_('%(input_list)s cannot be specified at the same '
+                             'time') % {'input_list': input_list, })
+                    LOG.error(msg)
+                    return json.dumps({u"Err": six.text_type(msg)})
+
+                existing_ref = str(contents['Opts']['importVol'])
+                return self._manager.manage_existing(volname, existing_ref)
 
             if ('help' in contents['Opts']):
                 create_help_path = "./config/create_help.txt"
@@ -179,6 +199,15 @@ class VolumePlugin(object):
             if ('compression' in contents['Opts'] and
                     contents['Opts']['compression'] != ""):
                 compression_val = str(contents['Opts']['compression'])
+                if compression_val is not None:
+                    if compression_val.lower() not in valid_compression_opts:
+                        msg = (_(
+                            'create volume failed, error is:'
+                            'passed compression parameter do not have a valid '
+                            'value. Valid vaues are: %(valid)s') %
+                            {'valid': valid_compression_opts, })
+                        LOG.error(msg)
+                        return json.dumps({u"Err": six.text_type(msg)})
 
             if ('flash-cache' in contents['Opts'] and
                     contents['Opts']['flash-cache'] != ""):
@@ -200,31 +229,12 @@ class VolumePlugin(object):
                                               "specify an integer value." %
                                               mount_conflict_delay_str})
 
-            # mutually exclusive options check
-            mutually_exclusive_list = ['virtualCopyOf', 'cloneOf', 'qos-name']
-            input_list = contents['Opts'].keys()
-            if (len(list(set(input_list) &
-                         set(mutually_exclusive_list))) >= 2):
-                msg = (_('%(exclusive)s cannot be specified at the same '
-                         'time') % {'exclusive': mutually_exclusive_list, })
-                LOG.error(msg)
-                return json.dumps({u"Err": six.text_type(msg)})
-
             if ('virtualCopyOf' in contents['Opts']):
                 return self.volumedriver_create_snapshot(name,
                                                          mount_conflict_delay,
                                                          opts)
             elif ('cloneOf' in contents['Opts']):
                 return self.volumedriver_clone_volume(name, opts)
-
-        if compression_val is not None:
-            if compression_val.lower() not in valid_compression_opts:
-                msg = (_('create volume failed, error is:'
-                         'passed compression parameter do not have a valid '
-                         'value. Valid vaues are: %(valid)s') %
-                       {'valid': valid_compression_opts, })
-                LOG.error(msg)
-                return json.dumps({u"Err": six.text_type(msg)})
 
         return self._manager.create_volume(volname, vol_size,
                                            vol_prov, vol_flash,

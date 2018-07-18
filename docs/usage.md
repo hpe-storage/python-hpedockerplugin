@@ -36,6 +36,12 @@ docker volume create -d hpe --name <target_vol_name> -o qos-name=<vvset_name>
 ```
 Note -- 'vvset_name' should be present in 3par
 
+#### Managing a legacy volume & snapshot
+
+```
+docker volume create -d hpe --name <target_vol_name> -o importVol=<3par_volume|3par_snapshot>
+```
+
 #### Deleting a volume
 
 ```
