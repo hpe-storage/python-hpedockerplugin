@@ -31,7 +31,7 @@ import webob.exc
 from webob.util import status_generic_reasons
 from webob.util import status_reasons
 
-from i18n import _, _LE
+from hpedockerplugin.i18n import _, _LE
 
 
 LOG = logging.getLogger(__name__)
