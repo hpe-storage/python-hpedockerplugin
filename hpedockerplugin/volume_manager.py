@@ -4,19 +4,19 @@ import six
 import time
 import uuid
 
-import etcdutil as util
+import hpedockerplugin.etcdutil as util
 from os_brick.initiator import connector
 from oslo_log import log as logging
 from oslo_utils import importutils
 from oslo_utils import netutils
 from twisted.python.filepath import FilePath
 
-import exception
-import fileutil
-from hpe import volume
-from hpe import utils
-from i18n import _, _LE, _LI, _LW
-import synchronization
+import hpedockerplugin.exception as exception
+import hpedockerplugin.fileutil as fileutil
+from hpedockerplugin.hpe import volume
+from hpedockerplugin.hpe import utils
+from hpedockerplugin.i18n import _, _LE, _LI, _LW
+import hpedockerplugin.synchronization as synchronization
 
 LOG = logging.getLogger(__name__)
 
@@ -717,7 +717,7 @@ class VolumeManager(object):
 
     def _replace_node_mount_info(self, node_mount_info, mount_id):
         # Remove previous node info from volume meta-data
-        old_node_id = node_mount_info.keys()[0]
+        old_node_id = list(node_mount_info.keys())[0]
         node_mount_info.pop(old_node_id)
 
         # Add new node information to volume meta-data

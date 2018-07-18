@@ -3,7 +3,7 @@ import json
 
 from oslo_log import log as logging
 
-import exception
+import hpedockerplugin.exception as exception
 
 LOG = logging.getLogger(__name__)
 

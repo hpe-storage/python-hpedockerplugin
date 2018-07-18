@@ -1,14 +1,14 @@
 import logging
 import testtools
 
-import createvolume_tester
-import clonevolume_tester
-import createsnapshot_tester
-import getvolume_tester
-import mountvolume_tester
-import removesnapshot_tester
+import test.createvolume_tester as createvolume_tester
+import test.clonevolume_tester as clonevolume_tester
+import test.createsnapshot_tester as createsnapshot_tester
+import test.getvolume_tester as getvolume_tester
+import test.mountvolume_tester as mountvolume_tester
+import test.removesnapshot_tester as removesnapshot_tester
 # import revertsnapshot_tester
-import unmountvolume_tester
+import test.unmountvolume_tester as unmountvolume_tester
 
 logger = logging.getLogger('hpedockerplugin')
 logger.level = logging.DEBUG

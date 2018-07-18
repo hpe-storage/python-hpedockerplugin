@@ -16,8 +16,8 @@ import etcd
 import json
 from oslo_log import log as logging
 import six
-from i18n import _, _LI
-import exception
+from hpedockerplugin.i18n import _, _LI
+import hpedockerplugin.exception as exception
 
 LOG = logging.getLogger(__name__)
 

@@ -23,11 +23,11 @@ import re
 
 from oslo_log import log as logging
 
-import exception
-from i18n import _, _LE, _LI
+import hpedockerplugin.exception as exception
+from hpedockerplugin.i18n import _, _LE, _LI
 from klein import Klein
-from hpe import volume
-import volume_manager as mgr
+from hpedockerplugin.hpe import volume
+import hpedockerplugin.volume_manager as mgr
 
 LOG = logging.getLogger(__name__)
 
