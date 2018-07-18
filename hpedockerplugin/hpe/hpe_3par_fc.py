@@ -415,6 +415,30 @@ class HPE3PARFCDriver(object):
         finally:
             self._logout(common)
 
+    def get_vvset_name(self, volume):
+        common = self._login()
+        try:
+            return common.get_vvset_name(volume)
+        finally:
+            self._logout(common)
+
+    def get_volume_detail(self, volume):
+        common = self._login()
+        try:
+            return common.get_volume_detail(volume)
+        finally:
+            self._logout(common)
+
+    def manage_existing(self, volume, existing_ref, is_snap=False,
+                        target_vol_name=None, comment=None):
+        common = self._login()
+        try:
+            return common.manage_existing(
+                volume, existing_ref, is_snap=is_snap,
+                target_vol_name=target_vol_name, comment=comment)
+        finally:
+            self._logout(common)
+
     def create_vvs(self, id):
         common = self._login()
         try:

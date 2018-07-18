@@ -10,6 +10,9 @@ DEFAULT_MOUNT_CONFLICT_DELAY = 30
 DEFAULT_TO_SNAP_TYPE = False
 
 QOS_PRIORITY = {1: 'Low', 2: 'Normal', 3: 'High'}
+PROVISIONING = {1: 'full', 2: 'thin', 6: 'dedup'}
+COMPRESSION = {1: 'true'}
+COPYTYPE = {1: 'base', 2: 'physical', 3: 'virtual'}
 
 
 def createvol(name, size=DEFAULT_SIZE, prov=DEFAULT_PROV,

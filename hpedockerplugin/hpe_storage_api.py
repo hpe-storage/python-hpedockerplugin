@@ -58,14 +58,14 @@ class VolumePlugin(object):
 
         # TODO: make device_scan_attempts configurable
         # see nova/virt/libvirt/volume/iscsi.py
-        self._manager = self.initialize_manager_objects()
+        self._manager = self.initialize_manager_objects(self.default_config)
             #mgr.VolumeManager(hpepluginconfig)
-    def initialize_manager_objects(self):
+    def initialize_manager_objects(self, defaultconfig):
         manager_objs = {}
 
         for backend_name in setupcfg.get_all_backends(CONFIG):
             manager_objs[backend_name] = mgr.VolumeManager(
-                setupcfg.backend_config(CONFIG, backend_name))
+                setupcfg.backend_config(CONFIG, backend_name), defaultconfig)
 
         return manager_objs
 
@@ -98,7 +98,7 @@ class VolumePlugin(object):
         contents = json.loads(name.content.getvalue())
         volname = contents['Name']
 
-        etcd_util = mgr.VolumeManager._get_etcd_util(self.default_config)
+        etcd_util = mgr.VolumeManager._get_etcd_util(self.default_config, self.default_config)
         vol = etcd_util.get_vol_byname(volname)
         current_backend = DEFAULT_BACKEND_NAME
         if 'backend' in vol:
@@ -165,15 +165,17 @@ class VolumePlugin(object):
         valid_compression_opts = ['true', 'false']
         mount_conflict_delay = volume.DEFAULT_MOUNT_CONFLICT_DELAY
 
-        # Verify valid Opts arguments.
-        valid_volume_create_opts = ['mount-volume', 'compression',
-                                    'size', 'provisioning', 'flash-cache',
-                                    'cloneOf', 'virtualCopyOf',
-                                    'expirationHours', 'retentionHours',
-                                    'qos-name',
-                                    'mountConflictDelay', 'help','backend']
-	current_backend = DEFAULT_BACKEND_NAME
+        current_backend = DEFAULT_BACKEND_NAME
         if ('Opts' in contents and contents['Opts']):
+            # Verify valid Opts arguments.
+            valid_compression_opts = ['true', 'false']
+            valid_volume_create_opts = ['mount-volume', 'compression',
+                                        'size', 'provisioning', 'flash-cache',
+                                        'cloneOf', 'virtualCopyOf',
+                                        'expirationHours', 'retentionHours',
+                                        'qos-name', 'mountConflictDelay',
+                                        'help', 'importVol','backend']
+
             for key in contents['Opts']:
                 if key not in valid_volume_create_opts:
                     msg = (_('create volume/snapshot/clone failed, error is: '
@@ -183,6 +185,26 @@ class VolumePlugin(object):
                             'valid': valid_volume_create_opts, })
                     LOG.error(msg)
                     return json.dumps({u"Err": six.text_type(msg)})
+
+            # mutually exclusive options check
+            mutually_exclusive_list = ['virtualCopyOf', 'cloneOf', 'qos-name']
+            input_list = list(contents['Opts'].keys())
+            if (len(list(set(input_list) &
+                         set(mutually_exclusive_list))) >= 2):
+                msg = (_('%(exclusive)s cannot be specified at the same '
+                         'time') % {'exclusive': mutually_exclusive_list, })
+                LOG.error(msg)
+                return json.dumps({u"Err": six.text_type(msg)})
+
+            if 'importVol' in input_list:
+                if not len(input_list) == 1:
+                    msg = (_('%(input_list)s cannot be specified at the same '
+                             'time') % {'input_list': input_list, })
+                    LOG.error(msg)
+                    return json.dumps({u"Err": six.text_type(msg)})
+
+                existing_ref = str(contents['Opts']['importVol'])
+                return self._manager.manage_existing(volname, existing_ref)
 
             if ('help' in contents['Opts']):
                 create_help_path = "./config/create_help.txt"
@@ -204,6 +226,15 @@ class VolumePlugin(object):
             if ('compression' in contents['Opts'] and
                     contents['Opts']['compression'] != ""):
                 compression_val = str(contents['Opts']['compression'])
+                if compression_val is not None:
+                    if compression_val.lower() not in valid_compression_opts:
+                        msg = (_(
+                            'create volume failed, error is:'
+                            'passed compression parameter do not have a valid '
+                            'value. Valid vaues are: %(valid)s') %
+                            {'valid': valid_compression_opts, })
+                        LOG.error(msg)
+                        return json.dumps({u"Err": six.text_type(msg)})
 
             if ('flash-cache' in contents['Opts'] and
                     contents['Opts']['flash-cache'] != ""):
@@ -277,7 +308,7 @@ class VolumePlugin(object):
 
         src_vol_name = str(contents['Opts']['cloneOf'])
 
-        etcd_util = mgr.VolumeManager._get_etcd_util(self.default_config)
+        etcd_util = mgr.VolumeManager._get_etcd_util(self.default_config, self.default_config)
         vol_object = etcd_util.get_vol_byname(src_vol_name)
         current_backend = DEFAULT_BACKEND_NAME
 
@@ -304,7 +335,7 @@ class VolumePlugin(object):
 
         src_vol_name = str(contents['Opts']['virtualCopyOf'])
 
-        etcd_util = mgr.VolumeManager._get_etcd_util(self.default_config)
+        etcd_util = mgr.VolumeManager._get_etcd_util(self.default_config, self.default_config)
         vol_object = etcd_util.get_vol_byname(src_vol_name)
         current_backend = DEFAULT_BACKEND_NAME
 
@@ -402,11 +433,11 @@ class VolumePlugin(object):
         if token_cnt == 2:
             snapname = tokens[1]
 
-        etcd_util = mgr.VolumeManager._get_etcd_util(self.default_config)
+        etcd_util = mgr.VolumeManager._get_etcd_util(self.default_config, self.default_config)
         vol = etcd_util.get_vol_byname(volname)
         current_backend = DEFAULT_BACKEND_NAME
     
-        if 'backend' in vol:
+        if vol is not None and 'backend' in vol:
           current_backend = vol['backend']
 
         return self._manager[current_backend].get_volume_snap_details(
