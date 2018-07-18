@@ -576,7 +576,7 @@ class VolumeManager(object):
                     if vol['has_schedule']:
                         # remove the sncpshot schedule from 3par
                         # self._hpeplugin_driver.remove_schedule(vol['snap_metadata']['schedule_name'])
-                    self.remove_snapshot(parent_name, volname)
+                        self.remove_snapshot(parent_name, volname)
         except Exception as ex:
             msg = (_LE('Err: Failed to remove volume %s, error is %s'),
                    volname, six.text_type(ex))
