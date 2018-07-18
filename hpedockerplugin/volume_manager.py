@@ -248,8 +248,7 @@ class VolumeManager(object):
         #Swapnil
         snap_vol = volume.createvol(snapshot_name, snap_size, snap_prov,
                                     snap_flash, snap_compression, snap_qos,
-                                    mount_conflict_delay, is_snap, has_schedule,
-                                    schedFrequency)
+                                    mount_conflict_delay, is_snap, has_schedule)
         snapshot_id = snap_vol['id']
 
         if snap_vol[has_schedule]:
