@@ -343,7 +343,7 @@ class VolumePlugin(object):
                             return response
 
                 if 'scheduleName' not in contents['Opts'] or \
-                                'schedPrefix' not in contents['Opts']:
+                                'snaphotPrefix' not in contents['Opts']:
                     msg = ('Please make sure that valid schedule name is passed '
                            'or please provide a 3 letter prefix for this schedule ')
                     LOG.info(msg)
