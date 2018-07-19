@@ -428,7 +428,7 @@ class HPE3PARCommon(object):
         expHr = str(exphrs)
         retHr = str(rethrs)
 
-        cmd = ['creatresched']
+        cmd = ['createsched']
         createsnapstring = []
         createsnapstring.append('"createsv ')
         if exphrs is not None:
