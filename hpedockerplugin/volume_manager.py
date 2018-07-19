@@ -459,7 +459,8 @@ class VolumeManager(object):
 
         if snap_vol['has_schedule']:
             try:
-                self._hpeplugin_driver.create_snap_schedule(src_vol_name,
+                src_3par_vol_name = utils.get_3par_vol_name(vol['id'])
+                self._hpeplugin_driver.create_snap_schedule(src_3par_vol_name,
                     schedName, snapPrefix, exphrs, rethrs, schedFrequency)
             except Exception as ex:
                 msg = (_('create snapshot failed, error is: %s'),
