@@ -93,7 +93,7 @@ class VolumeManager(object):
     @synchronization.synchronized('{volname}')
     def create_volume(self, volname, vol_size, vol_prov,
                       vol_flash, compression_val, vol_qos,
-                      mount_conflict_delay):
+                      mount_conflict_delay, cpg, snap_cpg):
         LOG.info('In _volumedriver_create')
 
         # NOTE: Since Docker passes user supplied names and not a unique
@@ -115,7 +115,7 @@ class VolumeManager(object):
         undo_steps = []
         vol = volume.createvol(volname, vol_size, vol_prov,
                                vol_flash, compression_val, vol_qos,
-                               mount_conflict_delay)
+                               mount_conflict_delay, False, cpg, snap_cpg)
         try:
             self._create_volume(vol, undo_steps)
             self._apply_volume_specs(vol, undo_steps)
@@ -595,6 +595,8 @@ class VolumeManager(object):
             vol_detail['provisioning'] = volinfo.get('provisioning')
             vol_detail['mountConflictDelay'] = volinfo.get(
                 'mount_conflict_delay')
+            vol_detail['cpg'] = volinfo.get('cpg')
+            vol_detail['snap_cpg'] = volinfo.get('snap_cpg')
             volume['Status'].update({'volume_detail': vol_detail})
 
         response = json.dumps({u"Err": err, u"Volume": volume})

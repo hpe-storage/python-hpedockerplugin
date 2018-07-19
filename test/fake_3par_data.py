@@ -91,7 +91,9 @@ volume = {
     'compression': None,
     'snapshots': [],
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
-    'is_snap': False
+    'is_snap': False,
+    "cpg": None,
+    "snap_cpg": None
 }
 
 json_path_info = \
