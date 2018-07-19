@@ -457,7 +457,7 @@ class VolumeManager(object):
                                     mount_conflict_delay, is_snap, has_schedule)
         snapshot_id = snap_vol['id']
 
-        if snap_vol[has_schedule]:
+        if snap_vol['has_schedule']:
             try:
                 self._hpeplugin_driver.create_snap_schedule(src_vol_name,
                     schedName, snapPrefix, exphrs, rethrs, schedFrequency)
@@ -823,9 +823,9 @@ class VolumeManager(object):
                 for s in snapshots:
                     snapshot = {'Name': s['name'],
                                 'ParentName': volname}
-                    metadata = s['snap_metadata']
-                    if 'snap_schedule' in metadata:
-                        snapshot['snap_schedule'] = metadata['snap_schedule']
+                    # metadata = s['snap_metadata']
+                    if 'snap_schedule' in s:
+                        snapshot['snap_schedule'] = s['snap_schedule']
                     ss_list_to_show.append(snapshot)
                 volume['Status'].update({'Snapshots': ss_list_to_show})
 
