@@ -507,7 +507,7 @@ class VolumeManager(object):
                 'snap_name_prefix': snapPrefix,
                 'sched_Frequency': schedFrequency,
                 'sched_snap_exp_hrs': exphrs,
-                'sched_snap_exp_hrs': rethrs}
+                'sched_snap_ret_hrs': rethrs}
             db_snapshot['snap_schedule'] = snap_schedule
 
         # Swapnil Add schedule in above dictionary i.e 'schedule' : schedule
