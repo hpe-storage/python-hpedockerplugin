@@ -250,6 +250,7 @@ class VolumePlugin(object):
         i = 0
         for sched in sched_list:
             reg_expr_res = re.match(reg_exp_list[i], sched)
+            i = i+1
             if not reg_expr_res:
                 msg = (_LE("%s is not a valid string present at %s position"
                            %(sched, i)))
