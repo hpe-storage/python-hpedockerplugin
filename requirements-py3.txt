@@ -17,7 +17,7 @@ enum34==1.1.6
 eventlet==0.18.2
 fasteners==0.14.1
 funcsigs==1.0.2
-futures==3.2.0
+futures==3.1.1
 futurist==1.7.0
 greenlet==0.4.13
 hyperlink==18.0.0
