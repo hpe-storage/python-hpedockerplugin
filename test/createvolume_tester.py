@@ -41,6 +41,45 @@ class TestCreateVolumeDefault(CreateVolumeUnitTest):
         mock_etcd.get_vol_byname.return_value = None
 
 
+class TestImportVolume(CreateVolumeUnitTest):
+    def check_response(self, resp):
+        self._test_case.assertEqual(resp, {u"Err": ''})
+
+        # Check if these functions were actually invoked
+        # in the flow or not
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.getWsApiVersion.assert_called()
+        mock_3parclient.getVolume.assert_called()
+        mock_3parclient.getVLUN.assert_called()
+        mock_3parclient.modifyVolume.assert_called()
+
+    def get_request_params(self):
+        return {"Name": "abc_vol",
+                "Opts": {'importVol': "vvk_vol"}}
+
+    def setup_mock_objects(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.return_value = None
+
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.getVLUN.side_effect = \
+            [exceptions.HTTPNotFound('fake')]
+
+
+class TestImportVolumeOtherOption(CreateVolumeUnitTest):
+    def check_response(self, resp):
+        self._test_case.assertNotEqual(resp, {u"Err": ''})
+
+    def get_request_params(self):
+        return {"Name": "abc_vol",
+                "Opts": {"importVol": "vvk_vol",
+                         "size": "2"}}
+
+    def setup_mock_objects(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.return_value = None
+
+
 class TestCreateVolumeInvalidName(CreateVolumeUnitTest):
     def check_response(self, resp):
         self._test_case.assertEqual(resp, {u"Err": 'Invalid volume '
