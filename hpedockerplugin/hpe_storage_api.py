@@ -161,7 +161,7 @@ class VolumePlugin(object):
 
             # mutually exclusive options check
             mutually_exclusive_list = ['virtualCopyOf', 'cloneOf', 'qos-name']
-            input_list = contents['Opts'].keys()
+            input_list = list(contents['Opts'].keys())
             if (len(list(set(input_list) &
                          set(mutually_exclusive_list))) >= 2):
                 msg = (_('%(exclusive)s cannot be specified at the same '
