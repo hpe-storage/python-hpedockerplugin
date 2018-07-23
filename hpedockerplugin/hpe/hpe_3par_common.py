@@ -446,11 +446,23 @@ class HPE3PARCommon(object):
         cmd.append(schedFreq)
         cmd.append(schedName)
         cmd.append('\r')
+        err_resp = ""
         try:
             LOG.info("Creating a snapshot schedule, command is %s..." % cmd)
             resp = self.client._run(cmd)
             LOG.info("Created a snapshot schedule - command is: %s..." % cmd)
-        except Exception as ex:
+            LOG.info("Create schedule response is: %s..." % resp)
+
+            for r in resp:
+                if 'Error' in r:
+                    err_resp = r
+            if err_resp:
+                err = (_("Create snapschedule failed Error response "
+                         "while creating schedule is '%(err_resp)s '")
+                         %{'err_resp':err_resp})
+                LOG.error(err)
+                raise exception.HPEDriverCreateScheduleFailed(reason=err)
+        except hpeexceptions.SSHException as ex:
             LOG.error("Failed to create snapshot schedule - Command is: %s..." % cmd)
             LOG.error(ex)
             raise exception.HPEDriverCreateScheduleFailed(
@@ -460,11 +472,23 @@ class HPE3PARCommon(object):
         cmd = ['removesched', '-f']
         cmd.append(schedule_name)
         cmd.append('\r')
+        err_resp = ""
         try:
             LOG.info("Removing a snapshot schedule, command is %s..." % cmd)
             resp = self.client._run(cmd)
             LOG.info("Removed a snapshot schedule - command is: %s..." % cmd)
-        except Exception as ex:
+            LOG.info("Remove schedule response is: %s..." % resp)
+
+            for r in resp:
+                if 'Error' in r:
+                    err_resp = r
+            if err_resp:
+                err = (_("Remove snapschedule failed Error response "
+                         "while removing schedule is '%(err_resp)'")
+                         %{'err_resp':err_resp})
+                LOG.error(err)
+                raise exception.HPEDriverCreateScheduleFailed(reason=err)
+        except hpeexceptions.SSHException as ex:
             LOG.error("Failed to remove snapshot schedule - Command is: %s..." % cmd)
             LOG.error(ex)
             raise exception.HPEDriverRemoveScheduleFailed(
