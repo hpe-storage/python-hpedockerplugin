@@ -49,7 +49,7 @@ host_opts = [
 CONF = cfg.CONF
 
 
-# logging.register_options(CONF)
+logging.register_options(CONF)
 
 
 def setup_logging(name, level):
