@@ -60,6 +60,16 @@ class HpeDockerUnitTestsBase(object):
         test.run_test(self)
 
     @tc_banner_decorator
+    def test_import_volume(self):
+        test = createvolume_tester.TestImportVolume()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_import_volume_with_other_option(self):
+        test = createvolume_tester.TestImportVolumeOtherOption()
+        test.run_test(self)
+
+    @tc_banner_decorator
     def test_create_volume_with_qos(self):
         test = createvolume_tester.TestCreateVolumeWithQOS()
         test.run_test(self)
