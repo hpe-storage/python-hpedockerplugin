@@ -57,6 +57,7 @@ class VolumePlugin(object):
         # see nova/virt/libvirt/volume/iscsi.py
         self.orchestrator = orchestrator.Orchestrator(hpepluginconfig)
 
+
     def disconnect_volume_callback(self, connector_info):
         LOG.info(_LI('In disconnect_volume_callback: connector info is %s'),
                  json.dumps(connector_info))
@@ -302,8 +303,8 @@ class VolumePlugin(object):
             raise exception.HPEPluginCreateException(reason=msg)
 
         src_vol_name = str(contents['Opts']['virtualCopyOf'])
-
         snapshot_name = contents['Name']
+
         has_schedule = False
         expiration_hrs = None
         schedFrequency = None
@@ -407,6 +408,7 @@ class VolumePlugin(object):
             vol_mount = str(contents['Opts']['mount-volume'])
 
         mount_id = contents['ID']
+
         return self.orchestrator.mount_volume(volname, vol_mount, mount_id)
 
     @app.route("/VolumeDriver.Path", methods=["POST"])
