@@ -282,11 +282,11 @@ class HPEDriverAddVvToVvSetFailed(HPEDriverException):
 
 
 class HPEDriverCreateScheduleFailed(HPEDriverException):
-    message = "Creation of snapshot schedule failed: %(reason)s"
+    message = _("Creation of snapshot schedule failed: %(reason)s")
 
 
 class HPEDriverRemoveScheduleFailed(HPEDriverException):
-    message = "Removal of snapshot schedule failed: %(reason)s"
+    message = _("Removal of snapshot schedule failed: %(reason)s")
 
 
 class HPEDriverForceRemoveVLUNFailed(HPEDriverException):
