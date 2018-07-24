@@ -354,14 +354,14 @@ class VolumePlugin(object):
                             return response
 
                 if 'scheduleName' not in contents['Opts'] or \
-                                'snaphotPrefix' not in contents['Opts']:
+                                'snapshotPrefix' not in contents['Opts']:
                     msg = ('Please make sure that valid schedule name is passed '
                            'or please provide a 3 letter prefix for this schedule ')
                     LOG.info(msg)
                     response = json.dumps({'Err': msg})
                     return response
                 schedName = str(contents['Opts']['scheduleName'])
-                snapPrefix = str(contents['Opts']['snaphotPrefix'])
+                snapPrefix = str(contents['Opts']['snapshotPrefix'])
             try:
                 self._check_schedule_frequency(schedFrequency)
             except Exception as ex:
