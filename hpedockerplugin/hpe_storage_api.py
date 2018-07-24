@@ -139,6 +139,8 @@ class VolumePlugin(object):
         compression_val = volume.DEFAULT_COMPRESSION_VAL
         valid_compression_opts = ['true', 'false']
         mount_conflict_delay = volume.DEFAULT_MOUNT_CONFLICT_DELAY
+        cpg = None
+        snap_cpg = None
 
         if ('Opts' in contents and contents['Opts']):
             # Verify valid Opts arguments.
@@ -148,7 +150,7 @@ class VolumePlugin(object):
                                         'cloneOf', 'virtualCopyOf',
                                         'expirationHours', 'retentionHours',
                                         'qos-name', 'mountConflictDelay',
-                                        'help', 'importVol']
+                                        'help', 'importVol','cpg', 'snap-cpg' ]
             for key in contents['Opts']:
                 if key not in valid_volume_create_opts:
                     msg = (_('create volume/snapshot/clone failed, error is: '
@@ -216,6 +218,13 @@ class VolumePlugin(object):
             if ('qos-name' in contents['Opts'] and
                     contents['Opts']['qos-name'] != ""):
                 vol_qos = str(contents['Opts']['qos-name'])
+            if ('cpg' in contents['Opts'] and
+                        contents['Opts']['cpg'] != ""):
+                cpg = str(contents['Opts']['cpg'])
+
+            if ('snap-cpg' in contents['Opts'] and
+                        contents['Opts']['snap-cpg'] != ""):
+                snap_cpg = str(contents['Opts']['snap-cpg'])
 
             if ('mountConflictDelay' in contents['Opts'] and
                     contents['Opts']['mountConflictDelay'] != ""):
@@ -246,7 +255,8 @@ class VolumePlugin(object):
         return self._manager.create_volume(volname, vol_size,
                                            vol_prov, vol_flash,
                                            compression_val, vol_qos,
-                                           mount_conflict_delay)
+                                           mount_conflict_delay,
+                                           cpg, snap_cpg)
 
     def volumedriver_clone_volume(self, name, opts=None):
         # Repeating the validation here in anticipation that when

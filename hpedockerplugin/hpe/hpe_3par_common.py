@@ -719,7 +719,11 @@ class HPE3PARCommon(object):
 
         # TODO(leeantho): Choose the first CPG for now. In the future
         # support selecting different CPGs if multiple are provided.
-        cpg = self.config.hpe3par_cpg[0]
+        if volume['cpg'] is not None:
+            cpg = volume['cpg']
+        else:
+            cpg = self.config.hpe3par_cpg[0]
+            volume['cpg'] = cpg
 
         # check for valid provisioning type
         prov_value = volume['provisioning']
@@ -757,10 +761,16 @@ class HPE3PARCommon(object):
         extras = {'comment': json.dumps(comments),
                   'tpvv': tpvv, }
 
-        if len(self.config.hpe3par_snapcpg):
-            extras['snapCPG'] = self.config.hpe3par_snapcpg[0]
+        if volume['snap_cpg'] is not None:
+            extras['snapCPG'] = volume['snap_cpg']
         else:
-            extras['snapCPG'] = cpg
+            if len(self.config.hpe3par_snapcpg):
+                snap_cpg = self.config.hpe3par_snapcpg[0]
+                extras['snapCPG'] = snap_cpg
+                volume['snap_cpg'] = snap_cpg
+            else:
+                extras['snapCPG'] = cpg
+                volume['snap_cpg'] = cpg
 
             # Only set the dedup option if the backend supports it.
         if self.API_VERSION >= DEDUP_API_VERSION:
