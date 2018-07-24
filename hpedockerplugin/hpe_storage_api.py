@@ -148,7 +148,9 @@ class VolumePlugin(object):
                                         'cloneOf', 'virtualCopyOf',
                                         'expirationHours', 'retentionHours',
                                         'qos-name', 'mountConflictDelay',
-                                        'help', 'importVol']
+                                        'help', 'importVol', 'scheduleName',
+                                        'scheduleFrequency', 'snaphotPrefix',
+                                        'expHrs', 'retHrs']
             for key in contents['Opts']:
                 if key not in valid_volume_create_opts:
                     msg = (_('create volume/snapshot/clone failed, error is: '
@@ -241,6 +243,30 @@ class VolumePlugin(object):
                                            compression_val, vol_qos,
                                            mount_conflict_delay)
 
+    # Swapnil
+    def _check_schedule_frequency(self, schedFrequency):
+        freq_sched = schedFrequency
+        sched_list = freq_sched.split(' ')
+        if len(sched_list) != 5:
+            msg = (_('clone volume failed, error is: Name is required.'))
+            LOG.error(msg)
+            raise exception.HPEPluginCreateException(reason=msg)
+        min_reg = "^([0-9]|[1-5][0-9])$"
+        hour_reg = "^(\*|[0-9]|[1-2][0-3]|[0-1]?[0-9]?-[0-1]?[0-9]?)$"
+        dom_reg = "^(\*|[1-9]|[1-2][0-9]|3[0-1]|[1-2]?[0-9]?-[0-2]?[0-9]?)$"
+        month_reg = "^(\*|[1-9]|1[0-2]|[1-9]-[[2-9]|[1-9]-1[0-2])$"
+        dow_reg = "^(\*|[0-6]|[0-5]-[1-6])$"
+        reg_exp_list = [min_reg,hour_reg,dom_reg,month_reg,dow_reg]
+        i = 0
+        for sched in sched_list:
+            reg_expr_res = re.match(reg_exp_list[i], sched)
+            i = i+1
+            if not reg_expr_res:
+                msg = (_LE("%s is not a valid string present at %s position"
+                           %(sched, i)))
+                LOG.error(msg)
+                raise exception.HPEPluginCreateException(reason=msg)
+
     def volumedriver_clone_volume(self, name, opts=None):
         # Repeating the validation here in anticipation that when
         # actual REST call for clone is added, this
@@ -276,21 +302,80 @@ class VolumePlugin(object):
 
         src_vol_name = str(contents['Opts']['virtualCopyOf'])
         snapshot_name = contents['Name']
-
+        has_schedule = False
         expiration_hrs = None
+        schedFrequency = None
+        schedName =  None
+        snapPrefix = None
+        exphrs = None
+        rethrs = None
+
+        if 'Opts' in contents and contents['Opts'] and \
+                        'scheduleName' in contents['Opts']:
+            has_schedule = True
+
         if 'Opts' in contents and contents['Opts'] and \
                 'expirationHours' in contents['Opts']:
             expiration_hrs = int(contents['Opts']['expirationHours'])
+            #Swapnil Schedule
+            if has_schedule:
+                msg = ('create schedule failed, error is: setting '
+                         'expiration_hours for docker snapshot is not'
+                         ' allowed while creating a schedule.')
+                LOG.info(msg)
+                response = json.dumps({'Err': msg})
+                return response
 
         retention_hrs = None
         if 'Opts' in contents and contents['Opts'] and \
                 'retentionHours' in contents['Opts']:
             retention_hrs = int(contents['Opts']['retentionHours'])
-        return self._manager.create_snapshot(src_vol_name,
-                                             snapshot_name,
-                                             expiration_hrs,
-                                             retention_hrs,
-                                             mount_conflict_delay)
+
+        if has_schedule:
+            if 'scheduleFrequency' not in contents['Opts']:
+                msg = ('create schedule failed, error is: user  '
+                         'has not passed scheduleFrequency to create'
+                         ' snapshot schedule.')
+                LOG.info(msg)
+                response = json.dumps({'Err': msg})
+                return response
+            else:
+                schedFrequency = str(contents['Opts']['scheduleFrequency'])
+                if 'expHrs' in contents['Opts']:
+                    exphrs = int(contents['Opts']['expHrs'])
+                if 'retHrs' in contents['Opts']:
+                    rethrs = int(contents['Opts']['retHrs'])
+                    if exphrs is not None:
+                        if rethrs > exphrs:
+                            msg = ('create schedule failed, error is: expiration hours  '
+                                     'cannot be greater than retention hours')
+                            LOG.info(msg)
+                            response = json.dumps({'Err': msg})
+                            return response
+
+                if 'scheduleName' not in contents['Opts'] or \
+                                'snapshotPrefix' not in contents['Opts']:
+                    msg = ('Please make sure that valid schedule name is passed '
+                           'or please provide a 3 letter prefix for this schedule ')
+                    LOG.info(msg)
+                    response = json.dumps({'Err': msg})
+                    return response
+                schedName = str(contents['Opts']['scheduleName'])
+                snapPrefix = str(contents['Opts']['snapshotPrefix'])
+            try:
+                self._check_schedule_frequency(schedFrequency)
+            except Exception as ex:
+                msg = (_('Invalid schedule string is passed '),
+                six.text_type(ex))
+                LOG.error(msg)
+                return json.dumps({u"Err": six.text_type(ex)})
+
+        return self._manager.create_snapshot(src_vol_name, schedName,
+                                             snapshot_name, snapPrefix,
+                                             expiration_hrs, exphrs,
+                                             retention_hrs, rethrs,
+                                             mount_conflict_delay, has_schedule,
+                                             schedFrequency)
 
     @app.route("/VolumeDriver.Mount", methods=["POST"])
     def volumedriver_mount(self, name):
