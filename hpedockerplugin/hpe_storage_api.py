@@ -271,7 +271,7 @@ class VolumePlugin(object):
 
         src_vol_name = str(contents['Opts']['cloneOf'])
         clone_name = contents['Name']
-        self.orchestrator.clone_volume(src_vol_name, clone_name, size)
+        return self.orchestrator.clone_volume(src_vol_name, clone_name, size)
 
     def volumedriver_create_snapshot(self, name, mount_conflict_delay,
                                      opts=None):
