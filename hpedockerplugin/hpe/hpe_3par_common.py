@@ -455,18 +455,17 @@ class HPE3PARCommon(object):
 
             for r in resp:
                 if 'Error' in r:
-                    err_resp = r
+                    err_resp = r.strip()
             if err_resp:
-                err = (_("Create snapschedule failed Error response "
-                         "while creating schedule is '%(err_resp)s '")
-                         %{'err_resp':err_resp})
+                err = (_("Create snapschedule failed Error is"
+                         " '%(err_resp)s' ") %
+                       {'err_resp':err_resp})
                 LOG.error(err)
                 raise exception.HPEDriverCreateScheduleFailed(reason=err)
         except hpeexceptions.SSHException as ex:
-            LOG.error("Failed to create snapshot schedule - Command is: %s..." % cmd)
+            LOG.error("Failed to create snapshot schedule ")
             LOG.error(ex)
-            raise exception.HPEDriverCreateScheduleFailed(
-                reason=ex)
+            raise exception.HPEDriverCreateScheduleFailed(reason=ex)
 
     def force_remove_3par_schedule(self, schedule_name):
         cmd = ['removesched', '-f']
@@ -481,15 +480,15 @@ class HPE3PARCommon(object):
 
             for r in resp:
                 if 'Error' in r:
-                    err_resp = r
+                    err_resp = r.strip()
             if err_resp:
-                err = (_("Remove snapschedule failed Error response "
-                         "while removing schedule is '%(err_resp)'")
-                         %{'err_resp':err_resp})
+                err = (_("Removing snapschedule failed. Error is"
+                         " '%(err_resp)s' ") %
+                       {'err_resp':err_resp})
                 LOG.error(err)
                 raise exception.HPEDriverCreateScheduleFailed(reason=err)
         except hpeexceptions.SSHException as ex:
-            LOG.error("Failed to remove snapshot schedule - Command is: %s..." % cmd)
+            LOG.error("Failed to remove snapshot schedule ")
             LOG.error(ex)
             raise exception.HPEDriverRemoveScheduleFailed(
                 reason=ex)
