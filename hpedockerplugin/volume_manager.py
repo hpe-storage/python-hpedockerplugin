@@ -26,7 +26,7 @@ LOG = logging.getLogger(__name__)
 
 
 class VolumeManager(object):
-    def __init__(self, hpepluginconfig):
+    def __init__(self, hpepluginconfig, default_config):
         self._hpepluginconfig = hpepluginconfig
         self._my_ip = netutils.get_my_ipv4()
 
@@ -39,7 +39,7 @@ class VolumeManager(object):
 
         self._initialize_driver(hpepluginconfig)
         self._connector = self._get_connector(hpepluginconfig)
-        self._etcd = self._get_etcd_util(hpepluginconfig)
+        self._etcd = self._get_etcd_util(hpepluginconfig, default_config)
 
         # Volume fencing requirement
         self._node_id = self._get_node_id()
@@ -87,17 +87,17 @@ class VolumeManager(object):
         return node_id
 
     @staticmethod
-    def _get_etcd_util(hpepluginconfig):
+    def _get_etcd_util(hpepluginconfig, default_config):
         return util.EtcdUtil(
-            hpepluginconfig.host_etcd_ip_address,
-            hpepluginconfig.host_etcd_port_number,
-            hpepluginconfig.host_etcd_client_cert,
-            hpepluginconfig.host_etcd_client_key)
+            default_config.host_etcd_ip_address,
+            default_config.host_etcd_port_number,
+            default_config.host_etcd_client_cert,
+            default_config.host_etcd_client_key)
 
     @synchronization.synchronized('{volname}')
     def create_volume(self, volname, vol_size, vol_prov,
                       vol_flash, compression_val, vol_qos,
-                      mount_conflict_delay):
+                      mount_conflict_delay,current_backend):
         LOG.info('In _volumedriver_create')
 
         # NOTE: Since Docker passes user supplied names and not a unique
@@ -119,7 +119,7 @@ class VolumeManager(object):
         undo_steps = []
         vol = volume.createvol(volname, vol_size, vol_prov,
                                vol_flash, compression_val, vol_qos,
-                               mount_conflict_delay)
+                               mount_conflict_delay, False, current_backend)
         try:
             self._create_volume(vol, undo_steps)
             self._apply_volume_specs(vol, undo_steps)
@@ -349,7 +349,7 @@ class VolumeManager(object):
 
     @synchronization.synchronized('{src_vol_name}')
     def clone_volume(self, src_vol_name, clone_name,
-                     size=None):
+                     size=None,current_backend='DEFAULT'):
         # Check if volume is present in database
         src_vol = self._etcd.get_vol_byname(src_vol_name)
         mnt_conf_delay = volume.DEFAULT_MOUNT_CONFLICT_DELAY
@@ -383,7 +383,7 @@ class VolumeManager(object):
             src_vol['snapshots'] = []
             self._etcd.save_vol(src_vol)
 
-        return self._clone_volume(clone_name, src_vol, size)
+        return self._clone_volume(clone_name, src_vol, size, current_backend)
 
     # def _create_snapshot_schedule(self, )
 
@@ -398,7 +398,7 @@ class VolumeManager(object):
     def create_snapshot(self, src_vol_name, schedName, snapshot_name,
                         snapPrefix, expiration_hrs, exphrs, retention_hrs,
                         rethrs, mount_conflict_delay, has_schedule,
-                        schedFrequency):
+                        schedFrequency, current_backend='DEFAULT'):
 
         # Check if volume is present in database
         snap = self._etcd.get_vol_byname(snapshot_name)
@@ -412,13 +412,13 @@ class VolumeManager(object):
                                      snapPrefix, expiration_hrs, exphrs,
                                      retention_hrs, rethrs,
                                      mount_conflict_delay, has_schedule,
-                                     schedFrequency)
+                                     schedFrequency, current_backend)
 
     @synchronization.synchronized('{src_vol_name}')
     def _create_snapshot(self, src_vol_name, schedName, snapshot_name,
                          snapPrefix, expiration_hrs, exphrs, retention_hrs,
                          rethrs, mount_conflict_delay, has_schedule,
-                         schedFrequency):
+                         schedFrequency, current_backend):
 
         vol = self._etcd.get_vol_byname(src_vol_name)
         if vol is None:
@@ -442,6 +442,7 @@ class VolumeManager(object):
             vol['compression'] = None
             vol['qos_name'] = None
             vol['mount_conflict_delay'] = mount_conflict_delay
+            vol['backend'] = current_backend
 
         # Check if instead of specifying parent volume, user incorrectly
         # specified snapshot as virtualCopyOf parameter. If yes, return error.
@@ -463,7 +464,8 @@ class VolumeManager(object):
         snap_vol = volume.createvol(snapshot_name, snap_size, snap_prov,
                                     snap_flash, snap_compression, snap_qos,
                                     mount_conflict_delay, is_snap,
-                                    has_schedule)
+                                    has_schedule, current_backend)
+
         snapshot_id = snap_vol['id']
 
         if snap_vol['has_schedule']:
@@ -649,7 +651,7 @@ class VolumeManager(object):
                 return response
 
     @synchronization.synchronized('{clone_name}')
-    def _clone_volume(self, clone_name, src_vol, size):
+    def _clone_volume(self, clone_name, src_vol, size, current_backend):
         # Create clone volume specification
         undo_steps = []
         clone_vol = volume.createvol(clone_name, size,
@@ -657,7 +659,7 @@ class VolumeManager(object):
                                      src_vol['flash_cache'],
                                      src_vol['compression'],
                                      src_vol['qos_name'],
-                                     src_vol['mount_conflict_delay'])
+                                     src_vol['mount_conflict_delay'], current_backend)
         try:
             self.__clone_volume__(src_vol, clone_vol, undo_steps)
             self._apply_volume_specs(clone_vol, undo_steps)
