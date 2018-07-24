@@ -343,7 +343,7 @@ class VolumeManager(object):
 
     @synchronization.synchronized('{src_vol_name}')
     def clone_volume(self, src_vol_name, clone_name,
-                     size=None):
+                     size=None, cpg=None, snap_cpg=None):
         # Check if volume is present in database
         src_vol = self._etcd.get_vol_byname(src_vol_name)
         mnt_conf_delay = volume.DEFAULT_MOUNT_CONFLICT_DELAY
@@ -355,6 +355,10 @@ class VolumeManager(object):
 
         if not size:
             size = src_vol['size']
+        if not cpg:
+            cpg = src_vol['cpg']
+        if not snap_cpg:
+            snap_cpg = src_vol['snap_cpg']
 
         if size < src_vol['size']:
             msg = 'clone volume size %s is less than source ' \
@@ -377,7 +381,7 @@ class VolumeManager(object):
             src_vol['snapshots'] = []
             self._etcd.save_vol(src_vol)
 
-        return self._clone_volume(clone_name, src_vol, size)
+        return self._clone_volume(clone_name, src_vol, size, cpg, snap_cpg)
 
     def _create_snapshot_record(self, snap_vol, snapshot_name, undo_steps):
         self._etcd.save_vol(snap_vol)
@@ -599,7 +603,7 @@ class VolumeManager(object):
                 return response
 
     @synchronization.synchronized('{clone_name}')
-    def _clone_volume(self, clone_name, src_vol, size):
+    def _clone_volume(self, clone_name, src_vol, size, cpg, snap_cpg):
         # Create clone volume specification
         undo_steps = []
         clone_vol = volume.createvol(clone_name, size,
@@ -607,7 +611,8 @@ class VolumeManager(object):
                                      src_vol['flash_cache'],
                                      src_vol['compression'],
                                      src_vol['qos_name'],
-                                     src_vol['mount_conflict_delay'])
+                                     src_vol['mount_conflict_delay']
+                                     ,False , cpg, snap_cpg)
         try:
             self.__clone_volume__(src_vol, clone_vol, undo_steps)
             self._apply_volume_specs(clone_vol, undo_steps)
