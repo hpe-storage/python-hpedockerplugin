@@ -39,7 +39,7 @@ class VolumeManager(object):
 
         self._initialize_driver(hpepluginconfig)
         self._connector = self._get_connector(hpepluginconfig)
-        self._etcd = self._get_etcd_util(hpepluginconfig, default_config)
+        self._etcd = self._get_etcd_util(default_config)
 
         # Volume fencing requirement
         self._node_id = self._get_node_id()
@@ -87,7 +87,7 @@ class VolumeManager(object):
         return node_id
 
     @staticmethod
-    def _get_etcd_util(hpepluginconfig, default_config):
+    def _get_etcd_util(default_config):
         return util.EtcdUtil(
             default_config.host_etcd_ip_address,
             default_config.host_etcd_port_number,
