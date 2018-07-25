@@ -92,8 +92,8 @@ volume = {
     'snapshots': [],
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
     'is_snap': False,
-    'cpg': None,
-    'snap_cpg': None    
+    'cpg': HPE3PAR_CPG,
+    'snap_cpg': HPE3PAR_CPG2    
 }
 
 json_path_info = \
@@ -335,7 +335,9 @@ volume_compression = {
     'qos_name': None,
     'snapshots': [],
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
-    'is_snap': False
+    'is_snap': False,
+    'cpg': None,
+    'snap_cpg': None
 }
 
 volume_dedup = {
@@ -350,7 +352,9 @@ volume_dedup = {
     'compression': None,
     'snapshots': [],
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
-    'is_snap': False
+    'is_snap': False,
+    'cpg': None,
+    'snap_cpg': None
 }
 
 volume_qos = {
@@ -365,7 +369,9 @@ volume_qos = {
     'compression': None,
     'snapshots': [],
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
-    'is_snap': False
+    'is_snap': False,
+    'cpg': HPE3PAR_CPG,
+    'snap_cpg': HPE3PAR_CPG2
 }
 
 volume_flash_cache = {
@@ -380,7 +386,9 @@ volume_flash_cache = {
     'compression': None,
     'snapshots': [],
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
-    'is_snap': False
+    'is_snap': False,
+    'cpg': None,
+    'snap_cpg': None
 }
 
 volume_flash_cache_and_qos = {
@@ -395,7 +403,9 @@ volume_flash_cache_and_qos = {
     'compression': None,
     'snapshots': [],
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
-    'is_snap': False
+    'is_snap': False,
+    'cpg': None,
+    'snap_cpg': None
 }
 
 wwn = ["123456789012345", "123456789054321", "unassigned-wwn1"]
