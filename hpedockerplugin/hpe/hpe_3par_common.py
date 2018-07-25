@@ -353,16 +353,20 @@ class HPE3PARCommon(object):
             LOG.error(msg)
             raise exception.HPEDriverGetQosFromVvSetFailed(ex)
 
-    def get_vvset_name(self, volume):
-        return self.client.findVolumeSet(volume)
+    def get_vvset_detail(self, volume):
+        vvset_name = self.client.findVolumeSet(volume)
+        if vvset_name is not None:
+            return self.client.getVolumeSet(vvset_name)
+        return None
 
     def get_volume_detail(self, volume):
         return self.client.getVolume(volume)
 
-    def manage_existing(self, volume, existing_ref, is_snap=False,
+    def manage_existing(self, volume, existing_ref_details, is_snap=False,
                         target_vol_name=None, comment=None):
 
         # check for volume/snap attachment, if attached raise error
+        existing_ref = existing_ref_details.get('name')
         try:
             self.client.getVLUN(existing_ref)
         except hpeexceptions.HTTPNotFound:
@@ -388,6 +392,10 @@ class HPE3PARCommon(object):
             comment = json.dumps(comment)
 
         new_vals = {'newName': target_vol_name, 'comment': comment}
+
+        if('userCPG' in existing_ref_details and
+           'snapCPG' not in existing_ref_details):
+            new_vals['snapCPG'] = existing_ref_details['userCPG']
 
         self.client.modifyVolume(existing_ref, new_vals)
 
