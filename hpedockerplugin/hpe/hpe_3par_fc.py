@@ -493,7 +493,8 @@ class HPE3PARFCDriver(object):
                              exphrs, rethrs, schedFrequency):
         common = self._login()
         try:
-            return common.create_snap_schedule(src_vol_name, schedName, snapPrefix,
-                             exphrs, rethrs, schedFrequency)
+            return common.create_snap_schedule(src_vol_name, schedName,
+                                               snapPrefix, exphrs, rethrs,
+                                               schedFrequency)
         finally:
             self._logout(common)

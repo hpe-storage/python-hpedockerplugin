@@ -179,6 +179,7 @@ snap1 = {
     'parent_id': VOLUME_ID,
     'ParentName': VOLUME_NAME,
     'is_snap': True,
+    'has_schedule': False,
     'size': 2,
     'snap_metadata': snap1_metadata,
     'snapshots': [],
@@ -201,6 +202,7 @@ snap2 = {
     'parent_id': VOLUME_ID,
     'ParentName': VOLUME_NAME,
     'is_snap': True,
+    'has_schedule': False,
     'size': 2,
     'snap_metadata': snap2_metadata,
     'snapshots': [],
@@ -275,7 +277,8 @@ volume_with_snapshots = {
     'compression': None,
     'snapshots': [ref_to_snap1, ref_to_snap2],
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
-    'is_snap': False
+    'is_snap': False,
+    'has_schedule': False
 }
 
 
