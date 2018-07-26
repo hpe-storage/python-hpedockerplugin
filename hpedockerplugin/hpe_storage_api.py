@@ -149,7 +149,7 @@ class VolumePlugin(object):
                                         'expirationHours', 'retentionHours',
                                         'qos-name', 'mountConflictDelay',
                                         'help', 'importVol', 'scheduleName',
-                                        'scheduleFrequency', 'snaphotPrefix',
+                                        'scheduleFrequency', 'snapshotPrefix',
                                         'expHrs', 'retHrs']
             for key in contents['Opts']:
                 if key not in valid_volume_create_opts:

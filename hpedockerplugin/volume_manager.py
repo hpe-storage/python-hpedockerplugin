@@ -578,8 +578,7 @@ class VolumeManager(object):
                 LOG.info(_LI('volume: %(name)s,' 'was successfully deleted'),
                          {'name': volname})
                 if is_snap:
-                    if vol['has_schedule']:
-                        self.remove_snapshot(parent_name, volname)
+                    self.remove_snapshot(parent_name, volname)
         except Exception as ex:
             msg = (_LE('Err: Failed to remove volume %s, error is %s'),
                    volname, six.text_type(ex))
@@ -770,6 +769,7 @@ class VolumeManager(object):
     def get_volume_snap_details(self, volname, snapname, qualified_name):
 
         volinfo = self._etcd.get_vol_byname(volname)
+        LOG.info("Value of volinfo is: %s", volinfo)
         if volinfo is None:
             msg = (_LE('Volume Get: Volume name not found %s'), volname)
             LOG.warning(msg)
