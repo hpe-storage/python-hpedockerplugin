@@ -802,6 +802,7 @@ class TestVolFencingGracefulUnmount(MountVolumeUnitTest):
             self._vol_mounted_on_other_node['is_snap'] = True
             self._vol_mounted_on_other_node['display_name'] = \
                 data.SNAPSHOT_NAME1
+            self._vol_mounted_on_other_node['snap_metadata'] = data.snap1_metadata
             self._vol_mounted_on_other_node['id'] = data.SNAPSHOT_ID1
             self._unmounted_vol['is_snap'] = True
             self._unmounted_vol['display_name'] = data.SNAPSHOT_NAME1
@@ -874,6 +875,7 @@ class TestVolFencingForcedUnmount(MountVolumeUnitTest):
             self._vol_mounted_on_other_node['display_name'] = \
                 data.SNAPSHOT_NAME1
             self._vol_mounted_on_other_node['id'] = data.SNAPSHOT_ID1
+            self._vol_mounted_on_other_node['snap_metadata'] = data.snap1_metadata
 
     def setup_mock_etcd(self):
         mock_etcd = self.mock_objects['mock_etcd']

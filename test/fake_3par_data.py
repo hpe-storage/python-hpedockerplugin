@@ -89,6 +89,8 @@ volume = {
     'flash_cache': None,
     'qos_name': None,
     'compression': None,
+    'fsMode': None,
+    'fsOwner': None,
     'snapshots': [],
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
     'is_snap': False
@@ -122,6 +124,8 @@ vol_mounted_on_this_node = {
     'flash_cache': None,
     'qos_name': None,
     'compression': None,
+    'fsOwner': None,
+    'fsMode': None,
     'snapshots': [],
     'node_mount_info': {THIS_NODE_ID: ['Fake-Mount-ID']},
     'path_info': json_path_info,
@@ -139,6 +143,8 @@ vol_mounted_on_other_node = {
     'flash_cache': None,
     'qos_name': None,
     'compression': None,
+    'fsOwner': None,
+    'fsMode': None,
     'snapshots': [],
     'node_mount_info': {OTHER_NODE_ID: ['Fake-Mount-ID']},
     'path_info': path_info,
@@ -156,6 +162,8 @@ volume_mounted_twice_on_this_node = {
     'flash_cache': None,
     'qos_name': None,
     'compression': None,
+    'fsOwner': None,
+    'fsMode': None,
     'snapshots': [],
     'node_mount_info': {THIS_NODE_ID: ['Fake-Mount-ID', 'Fake-Mount-ID']},
     'path_info': path_info,
@@ -169,7 +177,9 @@ snap1_metadata = {
     'parent_name': VOLUME_NAME,
     'parent_id': VOLUME_ID,
     'expiration_hours': '10',
-    'retention_hours': '10'
+    'retention_hours': '10',
+    'fsOwner': None,
+    'fsMode': None
 }
 
 snap1 = {
@@ -182,7 +192,7 @@ snap1 = {
     'size': 2,
     'snap_metadata': snap1_metadata,
     'snapshots': [],
-    'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
+    'mount_conflict_delay': MOUNT_CONFLICT_DELAY
 }
 
 snap2_metadata = {
@@ -191,7 +201,9 @@ snap2_metadata = {
     'parent_name': VOLUME_NAME,
     'parent_id': VOLUME_ID,
     'expiration_hours': '10',
-    'retention_hours': '10'
+    'retention_hours': '10',
+    'fsOwner': None,
+    'fsMode': None
 }
 
 snap2 = {
@@ -213,7 +225,9 @@ snap3_metadata = {
     'parent_name': SNAPSHOT_NAME1,
     'parent_id': SNAPSHOT_ID1,
     'expiration_hours': '10',
-    'retention_hours': '10'
+    'retention_hours': '10',
+    'fsOwner': None,
+    'fsMode': None
 }
 snap3 = {
     'name': SNAPSHOT_NAME3,
@@ -233,7 +247,7 @@ ref_to_snap1 = {
     'name': SNAPSHOT_NAME1,
     'id': SNAPSHOT_ID1,
     'parent_id': VOLUME_ID,
-    'ParentName': VOLUME_NAME
+    'ParentName': VOLUME_NAME,
 }
 
 ref_to_snap2 = {
