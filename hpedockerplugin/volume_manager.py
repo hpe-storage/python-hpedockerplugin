@@ -420,8 +420,6 @@ class VolumeManager(object):
             LOG.debug(msg)
             response = json.dumps({u"Err": msg})
             return response
-        # Swapnil
-        # rethink whether vol needs a has_schedule field to be polulated
         volid = vol['id']
         if 'has_schedule' not in vol:
             vol_sched_flag = volume.DEFAULT_SCHEDULE
@@ -471,8 +469,8 @@ class VolumeManager(object):
                                                             exphrs, rethrs,
                                                             schedFrequency)
             except Exception as ex:
-                msg = (_('create snapshot failed, error is: %s'),
-                       six.text_type(ex))
+                msg = (_('create snapshot failed, error is: %s')
+                       % six.text_type(ex))
                 LOG.error(msg)
                 return json.dumps({u"Err": six.text_type(ex)})
 
@@ -496,8 +494,8 @@ class VolumeManager(object):
                  'msg': 'Cleaning up backend snapshot: %s...'
                         % bkend_snap_name})
         except Exception as ex:
-            msg = (_('create snapshot failed, error is: %s'),
-                   six.text_type(ex))
+            msg = (_('create snapshot failed, error is: %s')
+                   % six.text_type(ex))
             LOG.error(msg)
             return json.dumps({u"Err": six.text_type(ex)})
 
@@ -513,7 +511,7 @@ class VolumeManager(object):
             snap_schedule = {
                 'schedule_name': schedName,
                 'snap_name_prefix': snapPrefix,
-                'sched_Frequency': schedFrequency,
+                'sched_frequency': schedFrequency,
                 'sched_snap_exp_hrs': exphrs,
                 'sched_snap_ret_hrs': rethrs}
             db_snapshot['snap_schedule'] = snap_schedule

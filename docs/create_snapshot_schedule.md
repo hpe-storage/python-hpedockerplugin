@@ -18,12 +18,12 @@ Below are the options which can be passed while creating a snapshot schedule.
                                month         * or 1-12
                                day-of-week   * or 0-6 (0 is Sunday)
 
-- -o scheduleName=x           This option is mandetory. x is a string which indicates name for the schedule on 3PAR.
-- -o retentionHours=x         This option is not mandetory option. x is an integer, indicates number of hours this snapshot will be retained.
-- -o snaphotPrefix=x          This option is mandetory. x is prefix string for the scheduled snapshots which will get created on 3PAR
-- -o expHrs=x                 This option is not mandetory option. x is an integer, indicates number of hours after which snapshot created
+- -o scheduleName=x           This option is mandatory. x is a string which indicates name for the schedule on 3PAR.
+- -o retentionHours=x         This option is not mandatory option. x is an integer, indicates number of hours this snapshot will be retained.
+- -o snaphotPrefix=x          This option is mandatory. x is prefix string for the scheduled snapshots which will get created on 3PAR
+- -o expHrs=x                 This option is not mandatory option. x is an integer, indicates number of hours after which snapshot created
                               via snapshot schedule will be deleted from 3PAR.
-- -o retHrs=x                 This option is not mandetory option. x is an integer, indicates number of hours this snapshot will be retained.
+- -o retHrs=x                 This option is not mandatory option. x is an integer, indicates number of hours this snapshot will be retained.
 
 docker command to create a snapshot schedule:
 ```
@@ -33,7 +33,7 @@ docker volume create -d hpe --name <snapshot_name> -o virtualCopyOf=volume1
 ```
 
 #### Note:
-1. Abvove command creates a docker snapshot with name snapshot_name.
+1. Above command creates a docker snapshot with name snapshot_name.
 2. It creates a snapshot schedule on 3PAR with name for schedule as dailyOnceSchedule. 
 3. scheduleFrequency string specifies that task has to be created daily for each month and on each day at 10 minutes passed 2 O'clock.
 4. Docker snapshot has retentionHours of 58

@@ -464,7 +464,6 @@ class HPE3PARCommon(object):
                               vlun_info['lun_id'],
                               nsp)
 
-    # Swapnil
     def create_snap_schedule(self, src_vol_name, schedName, snapPrefix,
                              exphrs, rethrs, schedFrequency):
         expHr = str(exphrs)
@@ -505,14 +504,13 @@ class HPE3PARCommon(object):
                 LOG.error(err)
                 raise exception.HPEDriverCreateScheduleFailed(reason=err)
         except hpeexceptions.SSHException as ex:
-            LOG.error("Failed to create snapshot schedule ")
-            LOG.error(ex)
+            LOG.error("Failed to create snapshot schedule error is %s" % ex)
             raise exception.HPEDriverCreateScheduleFailed(reason=ex)
 
     def force_remove_3par_schedule(self, schedule_name):
-        cmd = ['removesched', '-f']
-        cmd.append(schedule_name)
-        cmd.append('\r')
+        cmd = ['removesched', '-f', '%s' % schedule_name, '\r']
+        # cmd.append(schedule_name)
+        # cmd.append('\r')
         err_resp = ""
         try:
             LOG.info("Removing a snapshot schedule, command is %s..." % cmd)
@@ -528,10 +526,9 @@ class HPE3PARCommon(object):
                          " '%(err_resp)s' ") %
                        {'err_resp': err_resp})
                 LOG.error(err)
-                raise exception.HPEDriverCreateScheduleFailed(reason=err)
+                raise exception.HPEDriverRemoveScheduleFailed(reason=err)
         except hpeexceptions.SSHException as ex:
-            LOG.error("Failed to remove snapshot schedule ")
-            LOG.error(ex)
+            LOG.error("Failed to remove snapshot schedule error is %s" % ex)
             raise exception.HPEDriverRemoveScheduleFailed(
                 reason=ex)
 

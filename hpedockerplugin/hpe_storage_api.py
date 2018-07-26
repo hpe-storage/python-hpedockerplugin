@@ -243,18 +243,18 @@ class VolumePlugin(object):
                                            compression_val, vol_qos,
                                            mount_conflict_delay)
 
-    # Swapnil
     def _check_schedule_frequency(self, schedFrequency):
         freq_sched = schedFrequency
         sched_list = freq_sched.split(' ')
         if len(sched_list) != 5:
-            msg = (_('clone volume failed, error is: Name is required.'))
+            msg = (_('create schedule failed, error is:'
+                     ' Improper string passed.'))
             LOG.error(msg)
             raise exception.HPEPluginCreateException(reason=msg)
         min_reg = "^([0-9]|[1-5][0-9])$"
         hour_reg = "^(\*|[0-9]|[1-2][0-3]|[0-1]?[0-9]?-[0-1]?[0-9]?)$"
         dom_reg = "^(\*|[1-9]|[1-2][0-9]|3[0-1]|[1-2]?[0-9]?-[0-2]?[0-9]?)$"
-        month_reg = "^(\*|[1-9]|1[0-2]|[1-9]-[[2-9]|[1-9]-1[0-2])$"
+        month_reg = "^(\*|[1-9]|1[0-2]|[1-9]-[2-9]|[1-9]-1[0-2])$"
         dow_reg = "^(\*|[0-6]|[0-5]-[1-6])$"
         reg_exp_list = [min_reg, hour_reg, dom_reg, month_reg, dow_reg]
         i = 0
@@ -366,8 +366,8 @@ class VolumePlugin(object):
             try:
                 self._check_schedule_frequency(schedFrequency)
             except Exception as ex:
-                msg = (_('Invalid schedule string is passed: %s '),
-                       six.text_type(ex))
+                msg = (_('Invalid schedule string is passed: %s ')
+                       % six.text_type(ex))
                 LOG.error(msg)
                 return json.dumps({u"Err": six.text_type(msg)})
 
