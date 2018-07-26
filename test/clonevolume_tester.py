@@ -1,6 +1,6 @@
 # import mock
-import fake_3par_data as data
-import createvolume_tester as createvolume
+import test.fake_3par_data as data
+import test.createvolume_tester as createvolume
 from hpedockerplugin import exception as hpe_exc
 from hpe3parclient import exceptions
 
@@ -66,6 +66,7 @@ class TestCloneOfflineCopy(CloneVolumeUnitTest):
         mock_3parclient.createVolume.assert_called()
         mock_3parclient.copyVolume.assert_called()
         mock_3parclient.getTask.assert_called()
+        mock_3parclient.modifyVolume.assert_called()
 
     def get_request_params(self):
         return {"Name": "clone-vol-001",

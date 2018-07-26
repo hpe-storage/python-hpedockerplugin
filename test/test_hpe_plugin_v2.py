@@ -1,14 +1,14 @@
 import logging
 import testtools
 
-import createvolume_tester
-import clonevolume_tester
-import createsnapshot_tester
-import getvolume_tester
-import mountvolume_tester
-import removesnapshot_tester
+import test.createvolume_tester as createvolume_tester
+import test.clonevolume_tester as clonevolume_tester
+import test.createsnapshot_tester as createsnapshot_tester
+import test.getvolume_tester as getvolume_tester
+import test.mountvolume_tester as mountvolume_tester
+import test.removesnapshot_tester as removesnapshot_tester
 # import revertsnapshot_tester
-import unmountvolume_tester
+import test.unmountvolume_tester as unmountvolume_tester
 
 logger = logging.getLogger('hpedockerplugin')
 logger.level = logging.DEBUG
@@ -57,6 +57,16 @@ class HpeDockerUnitTestsBase(object):
     @tc_banner_decorator
     def test_create_dedup_volume(self):
         test = createvolume_tester.TestCreateDedupVolume()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_import_volume(self):
+        test = createvolume_tester.TestImportVolume()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_import_volume_with_other_option(self):
+        test = createvolume_tester.TestImportVolumeOtherOption()
         test.run_test(self)
 
     @tc_banner_decorator

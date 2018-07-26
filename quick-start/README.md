@@ -85,7 +85,7 @@ hpedockerplugin:
      - /root/plugin/certs:/root/plugin/certs
      - /sbin/iscsiadm:/sbin/ia
      - /lib/modules:/lib/modules
-     - /lib/x86_64-linux-gnu:/lib64
+     - /lib64:/lib64
      - /var/run/docker.sock:/var/run/docker.sock
      - /opt/hpe/data:/opt/hpe/data:rshared
   ```

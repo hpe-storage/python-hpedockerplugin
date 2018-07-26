@@ -1,8 +1,8 @@
 # import mock
 import copy
 
-import createvolume_tester as createvolume
-import fake_3par_data as data
+import test.createvolume_tester as createvolume
+import test.fake_3par_data as data
 from hpedockerplugin import exception as hpe_exc
 
 

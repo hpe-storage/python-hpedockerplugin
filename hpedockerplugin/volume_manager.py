@@ -4,19 +4,23 @@ import six
 import time
 import uuid
 
-import etcdutil as util
+import hpedockerplugin.etcdutil as util
 from os_brick.initiator import connector
 from oslo_log import log as logging
 from oslo_utils import importutils
 from oslo_utils import netutils
+from oslo_utils import units
 from twisted.python.filepath import FilePath
 
-import exception
-import fileutil
-from hpe import volume
-from hpe import utils
-from i18n import _, _LE, _LI, _LW
-import synchronization
+import hpedockerplugin.exception as exception
+import hpedockerplugin.fileutil as fileutil
+import math
+import re
+import datetime
+from hpedockerplugin.hpe import volume
+from hpedockerplugin.hpe import utils
+from hpedockerplugin.i18n import _, _LE, _LI, _LW
+import hpedockerplugin.synchronization as synchronization
 
 LOG = logging.getLogger(__name__)
 
@@ -135,11 +139,214 @@ class VolumeManager(object):
                      {'name': volname})
             return json.dumps({u"Err": ''})
 
+    def map_3par_volume_time_to_docker(self, vol, expiration=True):
+        try:
+
+            date_format = "%Y-%m-%d %H:%M:%S"
+            if expiration:
+                find_flag = "expirationTime8601"
+            else:
+                find_flag = "retentionTime8601"
+
+            start_groups = re.search('(\d+\-\d+\-\d+)[A-z](\d+:\d+:\d+)',
+                                     str(vol["creationTime8601"]))
+            startdate = start_groups.group(1) + " " + start_groups.group(2)
+            startt = datetime.datetime.strptime(startdate, date_format)
+
+            end_groups = re.search('(\d+\-\d+\-\d+)[A-z](\d+:\d+:\d+)',
+                                   str(vol[find_flag]))
+            enddate = end_groups.group(1) + " " + end_groups.group(2)
+            endd = datetime.datetime.strptime(enddate, date_format)
+
+            diff = endd - startt
+            diff_hour = diff.seconds / 3600
+            return diff_hour
+
+        except Exception as ex:
+            msg = (_(
+                'Failed to map expiration hours of 3par volume: %(vol)s error'
+                ' is: %(ex)s'), {'vol': vol, 'ex': six.text_type(ex)})
+            LOG.error(msg)
+            raise exception.HPEPluginMapHourException(reason=msg)
+
+    def map_3par_volume_size_to_docker(self, vol):
+        try:
+            return int(math.ceil(float(vol['sizeMiB']) / units.Ki))
+        except Exception as ex:
+            msg = (_('Failed to map size of 3par volume: %(vol)s, error is: '
+                     '%(ex)s'), {'vol': vol, 'ex': six.text_type(ex)})
+            LOG.error(msg)
+            raise exception.HPEPluginMapSizeException(reason=msg)
+
+    def map_3par_volume_prov_to_docker(self, vol):
+        try:
+            prov = volume.PROVISIONING.get(vol.get('provisioningType'))
+            if not prov:
+                return volume.DEFAULT_PROV
+            return prov
+        except Exception as ex:
+            msg = (_(
+                'Failed to map provisioning of 3par volume: %(vol)s, error'
+                ' is: %(ex)s'), {'vol': vol, 'ex': six.text_type(ex)})
+            LOG.error(msg)
+            raise exception.HPEPluginMapProvisioningException(reason=msg)
+
+    def map_3par_volume_compression_to_docker(self, vol):
+        # no need to raise exception here, because compression in docker
+        # environment can be either True or False
+        if volume.COMPRESSION.get(vol.get('compressionState')):
+            return True
+        return volume.DEFAULT_COMPRESSION_VAL
+
+    def manage_existing(self, volname, existing_ref):
+        LOG.info('Managing a %(existing_ref)s', {'existing_ref': existing_ref})
+
+        # NOTE: Since Docker passes user supplied names and not a unique
+        # uuid, we can't allow duplicate volume names to exist
+        vol = self._etcd.get_vol_byname(volname)
+        if vol is not None:
+            return json.dumps({u"Err": ''})
+
+        is_snap = False
+
+        # Make sure the reference is not in use.
+        if existing_ref.startswith('dcv-') or existing_ref.startswith('dcs-'):
+            msg = (_('target: %s is already in-use'), existing_ref)
+            LOG.error(msg)
+            return json.dumps({u"Err": six.text_type(msg)})
+
+        vol = volume.createvol(volname)
+        parent_vol = ""
+        try:
+            # check target volume exists in 3par
+            volume_detail_3par_old = \
+                self._hpeplugin_driver.get_volume_detail(existing_ref)
+        except Exception as ex:
+            msg = (_(
+                'Volume:%(existing_ref)s does not exists Error: %(ex)s'),
+                {'existing_ref': existing_ref, 'ex': six.text_type(ex)})
+            LOG.exception(msg)
+            return json.dumps({u"Err": six.text_type(msg)})
+
+        vvset_name = self._hpeplugin_driver.get_vvset_name(
+            volume_detail_3par_old['name'])
+        if vvset_name is not None:
+            LOG.info('vvset_name: %(vvset_name)s', {'vvset_name': vvset_name})
+            try:
+                self._hpeplugin_driver.get_qos_detail(vvset_name)
+                LOG.info('Volume:%(existing_ref)s is in vvset_name:'
+                         '%(vvset_name)s associated with QOS',
+                         {'existing_ref': existing_ref,
+                          'vvset_name': vvset_name})
+                vol["qos_name"] = vvset_name
+            except Exception as ex:
+                msg = (_(
+                    'volume is in vvset:%(vvset_name)s and not associated with'
+                    ' QOS error:%(ex)s'), {
+                        'vvset_name': vvset_name,
+                        'ex': six.text_type(ex)})
+                LOG.error(msg)
+                return json.dumps({u"Err": six.text_type(msg)})
+
+        # since we have only 'importVol' option for importing,
+        # both volume and snapshot
+        # throw error when user tries to manage snapshot,
+        # before managing parent
+        copyType = volume_detail_3par_old.get('copyType')
+        if volume.COPYTYPE.get(copyType) == 'virtual':
+            # it's a snapshot, so check whether its parent is managed or not ?
+            try:
+                # convert parent volume name to its uuid,
+                # which is then check in etcd for existence
+                vol_id = utils.get_vol_id(volume_detail_3par_old["copyOf"])
+                LOG.info('parent volume ID: %(parent_vol_id)s',
+                         {'parent_vol_id': vol_id})
+                # check parent uuid is present in etcd, or not ?
+                parent_vol = self._etcd.get_vol_by_id(vol_id)
+                # parent vol is present so manage a snapshot now
+                is_snap = True
+            except Exception as ex:
+                msg = (_(
+                    'Manage snapshot failed because parent volume: '
+                    '%(parent_volume)s is unmanaged Error: %(error)s'), {
+                        'error': six.text_type(ex),
+                        'parent_volume': volume_detail_3par_old["copyOf"]})
+                LOG.exception(msg)
+                return json.dumps({u"Err": six.text_type(msg)})
+
+        try:
+            volume_detail_3par = self._hpeplugin_driver.manage_existing(
+                vol, existing_ref, is_snap=is_snap)
+        except Exception as ex:
+            msg = (_('Manage volume failed Error: %s'), six.text_type(ex))
+            LOG.exception(msg)
+            return json.dumps({u"Err": six.text_type(ex)})
+
+        try:
+            # mapping
+            vol['size'] = \
+                self.map_3par_volume_size_to_docker(volume_detail_3par)
+            vol['provisioning'] = \
+                self.map_3par_volume_prov_to_docker(volume_detail_3par)
+            vol['compression'] = \
+                self.map_3par_volume_compression_to_docker(volume_detail_3par)
+            vol['qos_name'] = vvset_name
+            # TODO(sonivi): map flash_cache
+            vol['flash_cache'] = volume.DEFAULT_FLASH_CACHE
+
+            if is_snap:
+                # managing a snapshot
+                if volume_detail_3par.get("expirationTime8601"):
+                    expiration_hours = \
+                        self.map_3par_volume_time_to_docker(volume_detail_3par)
+                else:
+                    expiration_hours = None
+
+                if volume_detail_3par.get("retentionTime8601"):
+                    retention_hours = self.map_3par_volume_time_to_docker(
+                        volume_detail_3par, expiration=False)
+                else:
+                    retention_hours = None
+
+                db_snapshot = {
+                    'name': volname,
+                    'id': vol['id'],
+                    'parent_name': parent_vol['display_name'],
+                    'parent_id': parent_vol['id'],
+                    'expiration_hours': expiration_hours,
+                    'retention_hours': retention_hours}
+                if 'snapshots' not in parent_vol:
+                    parent_vol['snapshots'] = []
+                parent_vol['snapshots'].append(db_snapshot)
+                vol['is_snap'] = is_snap
+                vol['snap_metadata'] = db_snapshot
+                self._etcd.save_vol(parent_vol)
+
+            self._etcd.save_vol(vol)
+        except Exception as ex:
+            msg = (_('Manage volume failed Error: %s'), six.text_type(ex))
+            LOG.exception(msg)
+            undo_steps = []
+            undo_steps.append(
+                {'undo_func': self._hpeplugin_driver.manage_existing,
+                 'params': {
+                     'volume': volume_detail_3par,
+                     'existing_ref': volume_detail_3par.get('name'),
+                     'is_snap': is_snap,
+                     'target_vol_name': volume_detail_3par_old.get('name'),
+                     'comment': volume_detail_3par_old.get('comment')},
+                 'msg': 'Cleaning up manage'})
+            self._rollback(undo_steps)
+            return json.dumps({u"Err": six.text_type(ex)})
+
+        return json.dumps({u"Err": ''})
+
     @synchronization.synchronized('{src_vol_name}')
     def clone_volume(self, src_vol_name, clone_name,
                      size=None):
         # Check if volume is present in database
         src_vol = self._etcd.get_vol_byname(src_vol_name)
+        mnt_conf_delay = volume.DEFAULT_MOUNT_CONFLICT_DELAY
         if src_vol is None:
             msg = 'source volume: %s does not exist' % src_vol_name
             LOG.debug(msg)
@@ -162,6 +369,13 @@ class VolumeManager(object):
             LOG.debug(msg)
             response = json.dumps({u"Err": msg})
             return response
+
+        if 'snapshots' not in src_vol:
+            src_vol['compression'] = None
+            src_vol['qos_name'] = None
+            src_vol['mount_conflict_delay'] = mnt_conf_delay
+            src_vol['snapshots'] = []
+            self._etcd.save_vol(src_vol)
 
         return self._clone_volume(clone_name, src_vol, size)
 
@@ -205,6 +419,11 @@ class VolumeManager(object):
             vol_snap_flag = volume.DEFAULT_TO_SNAP_TYPE
             vol['is_snap'] = vol_snap_flag
             self._etcd.update_vol(volid, 'is_snap', vol_snap_flag)
+        if 'snapshots' not in vol:
+            vol['snapshots'] = []
+            vol['compression'] = None
+            vol['qos_name'] = None
+            vol['mount_conflict_delay'] = mount_conflict_delay
 
         # Check if instead of specifying parent volume, user incorrectly
         # specified snapshot as virtualCopyOf parameter. If yes, return error.
@@ -301,7 +520,7 @@ class VolumeManager(object):
             parent_name = vol['snap_metadata']['parent_name']
 
         try:
-            if vol['snapshots']:
+            if 'snapshots' in vol and vol['snapshots']:
                 msg = (_LE('Err: Volume %s has one or more child '
                            'snapshots - volume cannot be deleted!'
                            % volname))
@@ -529,7 +748,7 @@ class VolumeManager(object):
                   'Devicename': devicename,
                   'Status': {}}
 
-        if volinfo['snapshots']:
+        if volinfo.get('snapshots') and volinfo.get('snapshots') != '':
             self._sync_snapshots_from_array(volinfo['id'],
                                             volinfo['snapshots'])
         # Is this request for snapshot inspect?
@@ -704,7 +923,7 @@ class VolumeManager(object):
 
     def _replace_node_mount_info(self, node_mount_info, mount_id):
         # Remove previous node info from volume meta-data
-        old_node_id = node_mount_info.keys()[0]
+        old_node_id = list(node_mount_info.keys())[0]
         node_mount_info.pop(old_node_id)
 
         # Add new node information to volume meta-data

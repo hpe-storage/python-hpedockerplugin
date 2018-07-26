@@ -94,10 +94,14 @@ fi
 
 # Patch the os-bricks code
 
-sudo rm ./v2plugin/rootfs/usr/lib/python2.7/site-packages/os_brick/initiator/linuxscsi.pyc
-sudo rm ./v2plugin/rootfs/usr/lib/python2.7/site-packages/os_brick/privileged/rootwrap.pyc
-sudo cp ./patch_os_bricks/linuxscsi.py ./v2plugin/rootfs/usr/lib/python2.7/site-packages/os_brick/initiator/linuxscsi.py
-sudo cp ./patch_os_bricks/rootwrap.py ./v2plugin/rootfs/usr/lib/python2.7/site-packages/os_brick/privileged/rootwrap.py
+sudo rm ./v2plugin/rootfs/usr/lib/python3.6/site-packages/os_brick-1.13.1-py3.6.egg/os_brick/initiator/linuxscsi.pyc
+sudo rm ./v2plugin/rootfs/usr/lib/python3.6/site-packages/os_brick-1.13.1-py3.6.egg/os_brick/privileged/rootwrap.pyc
+sudo cp ./patch_os_bricks/linuxscsi.py ./v2plugin/rootfs/usr/lib/python3.6/site-packages/os_brick-1.13.1-py3.6.egg/os_brick/initiator/linuxscsi.py
+sudo cp ./patch_os_bricks/rootwrap.py ./v2plugin/rootfs/usr/lib/python3.6/site-packages/os_brick-1.13.1-py3.6.egg/os_brick/privileged/rootwrap.py
+sudo cp ./patch_os_bricks/compat.py ./v2plugin/rootfs/usr/lib/python3.6/site-packages/Twisted-18.7.0rc1-py3.6-linux-x86_64.egg/twisted/python/compat.py
 
 # end of patch for os-bricks
+# minor modification to remove the .git folder from getting packaged
+# into v2plugin folder
+rm -rf ./v2plugin/rootfs/python-hpedockerplugin/.git
 docker plugin create ${pluginName} v2plugin

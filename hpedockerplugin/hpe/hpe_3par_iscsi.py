@@ -309,7 +309,7 @@ class HPE3PARISCSIDriver(object):
                 if least_used_nsp is None:
                     LOG.warning(_LW("Least busy iSCSI port not found, "
                                     "using first iSCSI port in list."))
-                    iscsi_ip = self.iscsi_ips.keys()[0]
+                    iscsi_ip = list(self.iscsi_ips.keys())[0]
                 else:
                     iscsi_ip = self._get_ip_using_nsp(least_used_nsp)
 
@@ -640,6 +640,30 @@ class HPE3PARISCSIDriver(object):
         common = self._login()
         try:
             return common.get_qos_detail(vvset)
+        finally:
+            self._logout(common)
+
+    def get_vvset_name(self, volume):
+        common = self._login()
+        try:
+            return common.get_vvset_name(volume)
+        finally:
+            self._logout(common)
+
+    def get_volume_detail(self, volume):
+        common = self._login()
+        try:
+            return common.get_volume_detail(volume)
+        finally:
+            self._logout(common)
+
+    def manage_existing(self, volume, existing_ref, is_snap=False,
+                        target_vol_name=None, comment=None):
+        common = self._login()
+        try:
+            return common.manage_existing(
+                volume, existing_ref, is_snap=is_snap,
+                target_vol_name=target_vol_name, comment=comment)
         finally:
             self._logout(common)
 

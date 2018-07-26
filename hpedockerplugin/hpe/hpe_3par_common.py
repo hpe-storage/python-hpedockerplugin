@@ -353,6 +353,48 @@ class HPE3PARCommon(object):
             LOG.error(msg)
             raise exception.HPEDriverGetQosFromVvSetFailed(ex)
 
+    def get_vvset_name(self, volume):
+        return self.client.findVolumeSet(volume)
+
+    def get_volume_detail(self, volume):
+        return self.client.getVolume(volume)
+
+    def manage_existing(self, volume, existing_ref, is_snap=False,
+                        target_vol_name=None, comment=None):
+
+        # check for volume/snap attachment, if attached raise error
+        try:
+            self.client.getVLUN(existing_ref)
+        except hpeexceptions.HTTPNotFound:
+            # volume not attached so its good to manage
+            msg = (_("Volume: (%s) doesn't have vluns"
+                     " so can be manage.") % existing_ref)
+            LOG.info(msg)
+            pass
+        else:
+            msg = _("Managing volume %s failed because its attached.") %\
+                   (existing_ref)
+            LOG.error(msg)
+            raise exception.HPEDriverManageVolumeAttached(reason=msg)
+
+        if target_vol_name is None:
+            target_vol_name = utils.get_3par_name(volume['id'], is_snap)
+
+        if comment is None:
+            comment = {'volume_id': volume.get('id'),
+                       'name': volume.get('name'),
+                       'type': 'Docker',
+                       'display_name': volume.get('display_name')}
+            comment = json.dumps(comment)
+
+        new_vals = {'newName': target_vol_name, 'comment': comment}
+
+        self.client.modifyVolume(existing_ref, new_vals)
+
+        # we can get the latest 3par volume details now
+        volume_detail_3par = self.get_volume_detail(target_vol_name)
+        return volume_detail_3par
+
     def get_active_target_ports(self):
         ports = self.get_ports()
         target_ports = []
@@ -1160,6 +1202,16 @@ class HPE3PARCommon(object):
                     LOG.debug('Copy volume completed: create_cloned_volume: '
                               'id=%s.', dst_volume['id'])
 
+                comments = {'volume_id': dst_volume['id'],
+                            'name': dst_volume['name'],
+                            'type': 'Docker'}
+
+                name = dst_volume.get('display_name', None)
+                if name:
+                    comments['display_name'] = name
+
+                self.client.modifyVolume(dst_3par_vol_name,
+                                         {'comment': json.dumps(comments)})
                 return dst_3par_vol_name
 
         except hpeexceptions.HTTPForbidden:
