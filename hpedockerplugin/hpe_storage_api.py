@@ -138,6 +138,8 @@ class VolumePlugin(object):
         vol_qos = volume.DEFAULT_QOS
         compression_val = volume.DEFAULT_COMPRESSION_VAL
         valid_compression_opts = ['true', 'false']
+        fs_owner = None
+        fs_mode = None
         mount_conflict_delay = volume.DEFAULT_MOUNT_CONFLICT_DELAY
 
         if ('Opts' in contents and contents['Opts']):
@@ -147,8 +149,10 @@ class VolumePlugin(object):
                                         'size', 'provisioning', 'flash-cache',
                                         'cloneOf', 'virtualCopyOf',
                                         'expirationHours', 'retentionHours',
-                                        'qos-name', 'mountConflictDelay',
+                                        'qos-name', 'fsOwner', 'fsMode',
+                                        'mountConflictDelay',
                                         'help', 'importVol']
+
             for key in contents['Opts']:
                 if key not in valid_volume_create_opts:
                     msg = (_('create volume/snapshot/clone failed, error is: '
@@ -217,6 +221,50 @@ class VolumePlugin(object):
                     contents['Opts']['qos-name'] != ""):
                 vol_qos = str(contents['Opts']['qos-name'])
 
+            if ('fsOwner' in contents['Opts'] and
+                    contents['Opts']['fsOwner'] != ""):
+                fs_owner = contents['Opts']['fsOwner']
+                try:
+                    mode = fs_owner.split(':')
+                    uid = mode[0]
+                    gid = mode[1]
+                    fs_uid = int(uid)
+                    fs_gid = int(gid)
+                except ValueError as ex:
+                    return json.dumps({'Err': "Invalid value '%s' specified "
+                                       "for fsOwner. Please "
+                                       "specify a correct value." %
+                                       fs_owner})
+                except IndexError as ex:
+                    return json.dumps({'Err': "Invalid value '%s' specified "
+                                       "for fsOwner. Please "
+                                       "specify both uid and gid." %
+                                       fs_owner})
+
+
+            if ('fsMode' in contents['Opts'] and
+                    contents['Opts']['fsMode'] != ""):
+                fs_mode_str = contents['Opts']['fsMode']
+                try:
+                    fs_mode = int(fs_mode_str)
+                except ValueError as ex:
+                    return json.dumps({'Err': "Invalid value '%s' specified "
+                                       "for fsMode. Please "
+                                       "specify an integer value." %
+                                       fs_mode_str})
+                if fs_mode_str[0] != '0':
+                    return json.dumps({'Err': "Invalid value '%s' specified "
+                                              "for fsMode. Please "
+                                              "specify an octal value." %
+                                              fs_mode_str})
+                for mode in fs_mode_str:
+                    if int(mode) > 7:
+                        return json.dumps({'Err': "Invalid value '%s' specified "
+                                          "for fsMode. Please "
+                                          "specify an octal value." %
+                                          fs_mode_str})
+                fs_mode = fs_mode_str
+
             if ('mountConflictDelay' in contents['Opts'] and
                     contents['Opts']['mountConflictDelay'] != ""):
                 mount_conflict_delay_str = str(contents['Opts']
@@ -239,6 +287,7 @@ class VolumePlugin(object):
         return self._manager.create_volume(volname, vol_size,
                                            vol_prov, vol_flash,
                                            compression_val, vol_qos,
+                                           fs_owner, fs_mode,
                                            mount_conflict_delay)
 
     def volumedriver_clone_volume(self, name, opts=None):

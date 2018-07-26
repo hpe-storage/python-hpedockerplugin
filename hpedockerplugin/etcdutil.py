@@ -179,3 +179,6 @@ class EtcdUtil(object):
             if 'path_info' in info and info['path_info'] is not None:
                 return json.loads(info['path_info'])
         return None
+
+    def read(self, key):
+        return self.client.read(key)
