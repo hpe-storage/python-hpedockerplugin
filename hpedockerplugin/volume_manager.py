@@ -1086,7 +1086,6 @@ class VolumeManager(object):
 
         if vol['fsMode'] is not None:
             mode = str(vol['fsMode'])
-            mode = '0' + mode
             chmod(mode, mount_dir)
 
         path_info = {}
