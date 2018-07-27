@@ -139,8 +139,9 @@ class VolumePlugin(object):
         compression_val = volume.DEFAULT_COMPRESSION_VAL
         valid_compression_opts = ['true', 'false']
         mount_conflict_delay = volume.DEFAULT_MOUNT_CONFLICT_DELAY
+        rcg_name = None
 
-        if ('Opts' in contents and contents['Opts']):
+        if 'Opts' in contents and contents['Opts']:
             # Verify valid Opts arguments.
             valid_compression_opts = ['true', 'false']
             valid_volume_create_opts = ['mount-volume', 'compression',
@@ -148,7 +149,8 @@ class VolumePlugin(object):
                                         'cloneOf', 'virtualCopyOf',
                                         'expirationHours', 'retentionHours',
                                         'qos-name', 'mountConflictDelay',
-                                        'help', 'importVol']
+                                        'help', 'importVol',
+                                        'replicationGroup']
             for key in contents['Opts']:
                 if key not in valid_volume_create_opts:
                     msg = (_('create volume/snapshot/clone failed, error is: '
@@ -160,7 +162,8 @@ class VolumePlugin(object):
                     return json.dumps({u"Err": six.text_type(msg)})
 
             # mutually exclusive options check
-            mutually_exclusive_list = ['virtualCopyOf', 'cloneOf', 'qos-name']
+            mutually_exclusive_list = ['virtualCopyOf', 'cloneOf', 'qos-name',
+                                       'replicationGroup']
             input_list = list(contents['Opts'].keys())
             if (len(list(set(input_list) &
                          set(mutually_exclusive_list))) >= 2):
@@ -179,7 +182,7 @@ class VolumePlugin(object):
                 existing_ref = str(contents['Opts']['importVol'])
                 return self._manager.manage_existing(volname, existing_ref)
 
-            if ('help' in contents['Opts']):
+            if 'help' in contents['Opts']:
                 create_help_path = "./config/create_help.txt"
                 create_help_file = open(create_help_path, "r")
                 create_help_content = create_help_file.read()
@@ -229,17 +232,19 @@ class VolumePlugin(object):
                                               "specify an integer value." %
                                               mount_conflict_delay_str})
 
-            if ('virtualCopyOf' in contents['Opts']):
+            if 'virtualCopyOf' in contents['Opts']:
                 return self.volumedriver_create_snapshot(name,
                                                          mount_conflict_delay,
                                                          opts)
-            elif ('cloneOf' in contents['Opts']):
+            elif 'cloneOf' in contents['Opts']:
                 return self.volumedriver_clone_volume(name, opts)
+
+        rcg_name = contents['Opts'].get('replicationGroup', None)
 
         return self._manager.create_volume(volname, vol_size,
                                            vol_prov, vol_flash,
                                            compression_val, vol_qos,
-                                           mount_conflict_delay)
+                                           mount_conflict_delay, rcg_name)
 
     def volumedriver_clone_volume(self, name, opts=None):
         # Repeating the validation here in anticipation that when

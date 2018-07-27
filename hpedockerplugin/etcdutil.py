@@ -22,6 +22,8 @@ import hpedockerplugin.exception as exception
 LOG = logging.getLogger(__name__)
 
 VOLUMEROOT = '/volumes'
+RCROOT = '/remote-copy'
+RC_KEY_FMT_STR = "%s/%s#%s"
 LOCKROOT = '/volumes-lock'
 
 
@@ -179,3 +181,42 @@ class EtcdUtil(object):
             if 'path_info' in info and info['path_info'] is not None:
                 return json.loads(info['path_info'])
         return None
+
+    def get_active_driver_info(self, pri_bkend_id, sec_bkend_id):
+        rc_key = RC_KEY_FMT_STR %(RCROOT, pri_bkend_id, sec_bkend_id)
+        try:
+            result = self.client.read(rc_key)
+            return json.loads(result.value)
+        except Exception as ex:
+            raise exception.HPEPluginActiveDriverEntryNotFound(key=rc_key)
+
+    def save_active_driver_info(self, pri_bkend_id, sec_bkend_id, info):
+        rc_key = RC_KEY_FMT_STR %(RCROOT, pri_bkend_id, sec_bkend_id)
+        rc_val = json.dumps(info)
+        try:
+            self.client.write(rc_key, rc_val)
+        except Exception as ex:
+            msg = 'Failed to save RC info to ETCD: %s'\
+                  % six.text_type(ex)
+            LOG.error(msg)
+            raise exception.HPEPluginSaveFailed(obj=rc_key)
+        else:
+            LOG.info('Write key: %s to etc, value is: %s', rc_key, rc_val)
+
+    def update_active_driver_info(self, pri_bkend_id, sec_bkend_id, key, val):
+        rc_key = RC_KEY_FMT_STR %(RCROOT, pri_bkend_id, sec_bkend_id)
+        result = self.client.read(rc_key)
+        rc_val = json.loads(result.value)
+        rc_val[key] = val
+        rc_val = json.dumps(rc_val)
+        result.value = rc_val
+        self.client.update(result)
+        LOG.info(_LI('Update key: %s to etcd, value is: %s'), rc_key, rc_val)
+
+    def delete_active_driver_info(self, pri_bkend_id, sec_bkend_id):
+        rc_key = RC_KEY_FMT_STR %(RCROOT, pri_bkend_id, sec_bkend_id)
+        try:
+            self.client.delete(rc_key)
+            LOG.info(_LI('Deleted key: %s from etcd'), rc_key)
+        except Exception:
+            pass

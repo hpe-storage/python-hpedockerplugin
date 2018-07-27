@@ -14,6 +14,7 @@
 
 """Volume-related Utilities and helpers."""
 
+import six
 import uuid
 
 from Crypto.Random import random
@@ -138,3 +139,13 @@ def get_3par_snap_name(snapshot_id):
 def get_3par_vvs_name(volume_id):
     vvs_name = _encode_name(volume_id)
     return "vvs-%s" % vvs_name
+
+
+def get_3par_rcg_name(id):
+    rcg_name = _encode_name(id)
+    return ("rcg-%s" % rcg_name)[:22]
+
+
+def get_remote3par_rcg_name(id, array_id):
+    return get_3par_rcg_name(id) + ".r" + (
+        six.text_type(array_id))

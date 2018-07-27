@@ -14,6 +14,7 @@
 
 import json
 import math
+import six
 import uuid
 
 from oslo_utils import importutils
@@ -37,64 +38,10 @@ MIN_CLIENT_VERSION = '4.0.0'
 DEDUP_API_VERSION = 30201120
 FLASH_CACHE_API_VERSION = 30201200
 COMPRESSION_API_VERSION = 30301215
+REMOTE_COPY_API_VERSION = 30202290
 TIME_OUT = 30
 
-hpe3par_opts = [
-    cfg.StrOpt('hpe3par_api_url',
-               default='',
-               help="3PAR WSAPI Server Url like "
-                    "https://<3par ip>:8080/api/v1",
-               deprecated_name='hp3par_api_url'),
-    cfg.StrOpt('hpe3par_username',
-               default='',
-               help="3PAR username with the 'edit' role",
-               deprecated_name='hp3par_username'),
-    cfg.StrOpt('hpe3par_password',
-               default='',
-               help="3PAR password for the user specified in hpe3par_username",
-               secret=True,
-               deprecated_name='hp3par_password'),
-    cfg.ListOpt('hpe3par_cpg',
-                default=["OpenStack"],
-                help="List of the CPG(s) to use for volume creation",
-                deprecated_name='hp3par_cpg'),
-    cfg.ListOpt('hpe3par_snapcpg',
-                default=[],
-                help="List of the CPG(s) to use for snapshot creation",
-                deprecated_name='hp3par_snapcpg'),
-    cfg.BoolOpt('hpe3par_debug',
-                default=False,
-                help="Enable HTTP debugging to 3PAR",
-                deprecated_name='hp3par_debug'),
-    cfg.ListOpt('hpe3par_iscsi_ips',
-                default=[],
-                help="List of target iSCSI addresses to use.",
-                deprecated_name='hp3par_iscsi_ips'),
-    cfg.BoolOpt('hpe3par_iscsi_chap_enabled',
-                default=False,
-                help="Enable CHAP authentication for iSCSI connections.",
-                deprecated_name='hp3par_iscsi_chap_enabled'),
-    cfg.BoolOpt('strict_ssh_host_key_policy',
-                default=False,
-                help='Option to enable strict host key checking.  When '
-                     'set to "True" the plugin will only connect to systems '
-                     'with a host key present in the configured '
-                     '"ssh_hosts_key_file".  When set to "False" the host key '
-                     'will be saved upon first connection and used for '
-                     'subsequent connections.  Default=False'),
-    cfg.StrOpt('ssh_hosts_key_file',
-               default='$state_path/ssh_known_hosts',
-               help='File containing SSH host keys for the systems with which '
-                    'the plugin needs to communicate.  OPTIONAL: '
-                    'Default=$state_path/ssh_known_hosts'),
-    cfg.BoolOpt('suppress_requests_ssl_warnings',
-                default=False,
-                help='Suppress requests library SSL certificate warnings.'),
-]
-
-
 CONF = cfg.CONF
-CONF.register_opts(hpe3par_opts)
 
 
 class HPE3PARCommon(object):
@@ -128,6 +75,9 @@ class HPE3PARCommon(object):
     CONVERT_TO_FULL = 2
     CONVERT_TO_DEDUP = 3
 
+    SYNC = 1
+    PERIODIC = 2
+
     # License values for reported capabilities
     COMPRESSION_LIC = "Compression"
 
@@ -151,8 +101,10 @@ class HPE3PARCommon(object):
     hpe3par_valid_keys = ['cpg', 'snap_cpg', 'provisioning', 'persona', 'vvs',
                           'flash_cache']
 
-    def __init__(self, config):
+    def __init__(self, config, src_bkend_config, tgt_bkend_config=None):
         self.config = config
+        self.src_bkend_config = src_bkend_config
+        self.tgt_bkend_config = tgt_bkend_config
         self.client = None
         self.uuid = uuid.uuid4()
 
@@ -169,15 +121,16 @@ class HPE3PARCommon(object):
     def _create_client(self, timeout=TIME_OUT):
         try:
             cl = client.HPE3ParClient(
-                self.config.hpe3par_api_url, timeout=timeout,
-                suppress_ssl_warnings=CONF.suppress_requests_ssl_warnings)
+                self.src_bkend_config.hpe3par_api_url, timeout=timeout,
+                suppress_ssl_warnings=self.config.suppress_requests_ssl_warnings)
+                # suppress_ssl_warnings=False)
         except Exception as ex:
             msg = (_('Failed to connect to the array using %(url)s.'
                      'Please ensure the following \n'
                      '1.Value of IP and port specified for '
                      'hpe3par_api_url in hpe.conf is correct and \n'
                      '2. The array is reachable from the host.\n')
-                   % {'url': self.config.hpe3par_api_url})
+                   % {'url': self.src_bkend_config.hpe3par_api_url})
             LOG.error(msg)
             raise exception.ConnectionError(ex)
 
@@ -198,22 +151,22 @@ class HPE3PARCommon(object):
     def client_login(self):
         try:
             LOG.debug("Connecting to 3PAR")
-            self.client.login(self.config.hpe3par_username,
-                              self.config.hpe3par_password)
+            self.client.login(self.src_bkend_config.hpe3par_username,
+                              self.src_bkend_config.hpe3par_password)
         except hpeexceptions.HTTPUnauthorized as ex:
             msg = (_("Failed to Login to 3PAR (%(url)s) because %(err)s") %
-                   {'url': self.config.hpe3par_api_url, 'err': ex})
+                   {'url': self.src_bkend_config.hpe3par_api_url, 'err': ex})
             LOG.error(msg)
             raise exception.InvalidInput(reason=msg)
 
         known_hosts_file = self.config.ssh_hosts_key_file
         policy = "AutoAddPolicy"
-        if CONF.strict_ssh_host_key_policy:
+        if self.config.strict_ssh_host_key_policy:
             policy = "RejectPolicy"
         self.client.setSSHOptions(
-            self.config.san_ip,
-            self.config.san_login,
-            self.config.san_password,
+            self.src_bkend_config.san_ip,
+            self.src_bkend_config.san_login,
+            self.src_bkend_config.san_password,
             port=self.config.san_ssh_port,
             conn_timeout=self.config.ssh_conn_timeout,
             privatekey=self.config.san_private_key,
@@ -248,7 +201,7 @@ class HPE3PARCommon(object):
 
         self.client_login()
         try:
-            cpg_names = self.config.hpe3par_cpg
+            cpg_names = self.src_bkend_config.hpe3par_cpg
             for cpg_name in cpg_names:
                 self.validate_cpg(cpg_name)
 
@@ -634,7 +587,7 @@ class HPE3PARCommon(object):
         elif allowSnap and 'snapCPG' in vol:
             return vol['snapCPG']
         else:
-            return self.config.hpe3par_cpg[0]
+            return self.src_bkend_config.hpe3par_cpg[0]
         return None
 
     def _get_3par_vol_comment(self, volume_name):
@@ -677,7 +630,7 @@ class HPE3PARCommon(object):
 
         # TODO(leeantho): Choose the first CPG for now. In the future
         # support selecting different CPGs if multiple are provided.
-        cpg = self.config.hpe3par_cpg[0]
+        cpg = self.src_bkend_config.hpe3par_cpg[0]
         domain = self.get_domain(cpg)
         try:
             self.client.createVolumeSet(vvs_name, domain)
@@ -719,7 +672,7 @@ class HPE3PARCommon(object):
 
         # TODO(leeantho): Choose the first CPG for now. In the future
         # support selecting different CPGs if multiple are provided.
-        cpg = self.config.hpe3par_cpg[0]
+        cpg = self.src_bkend_config.hpe3par_cpg[0]
 
         # check for valid provisioning type
         prov_value = volume['provisioning']
@@ -757,8 +710,8 @@ class HPE3PARCommon(object):
         extras = {'comment': json.dumps(comments),
                   'tpvv': tpvv, }
 
-        if len(self.config.hpe3par_snapcpg):
-            extras['snapCPG'] = self.config.hpe3par_snapcpg[0]
+        if len(self.src_bkend_config.hpe3par_snapcpg):
+            extras['snapCPG'] = self.src_bkend_config.hpe3par_snapcpg[0]
         else:
             extras['snapCPG'] = cpg
 
@@ -1133,7 +1086,7 @@ class HPE3PARCommon(object):
             vol_chap_enabled = False
 
             # Check whether a volume is ISCSI and CHAP enabled on it.
-            if self.config.hpe3par_iscsi_chap_enabled:
+            if self.src_bkend_config.hpe3par_iscsi_chap_enabled:
                 try:
                     vol_chap_enabled = self.client.getVolumeMetaData(
                         src_3par_vol_name, 'HPQ-docker-CHAP-name')['value']
@@ -1151,10 +1104,10 @@ class HPE3PARCommon(object):
                     (vol_chap_enabled):
                 LOG.info("Creating a clone of volume, using online copy.")
 
-                cpg = self.config.hpe3par_cpg[0]
+                cpg = self.src_bkend_config.hpe3par_cpg[0]
                 snap_cpg = cpg
-                if len(self.config.hpe3par_snapcpg):
-                    snap_cpg = self.config.hpe3par_snapcpg[0]
+                if len(self.src_bkend_config.hpe3par_snapcpg):
+                    snap_cpg = self.src_bkend_config.hpe3par_snapcpg[0]
 
                 # check for valid provisioning type
                 prov_value = src_vref['provisioning']
@@ -1266,9 +1219,9 @@ class HPE3PARCommon(object):
 
     def get_snapshots_by_vol(self, vol_id):
         bkend_vol_name = utils.get_3par_vol_name(vol_id)
-        cpg_name = self.config.hpe3par_cpg[0]
-        if len(self.config.hpe3par_snapcpg):
-            cpg_name = self.config.hpe3par_snapcpg[0]
+        cpg_name = self.src_bkend_config.hpe3par_cpg[0]
+        if len(self.src_bkend_config.hpe3par_snapcpg):
+            cpg_name = self.src_bkend_config.hpe3par_snapcpg[0]
         LOG.debug("Querying snapshots for %s in %s cpg "
                   % (bkend_vol_name, cpg_name))
         return self.client.getSnapshotsOfVolume(cpg_name, bkend_vol_name)
@@ -1276,3 +1229,230 @@ class HPE3PARCommon(object):
     def delete_vvset(self, id):
         vvset_name = utils.get_3par_vvs_name(id)
         self.client.deleteVolumeSet(vvset_name)
+
+    def get_rcg(self, rcg_name):
+        try:
+            rcg = self.client.getRemoteCopyGroup(rcg_name)
+            return rcg
+        except hpeexceptions.HTTPNotFound:
+            raise exception.HPEDriverRemoteCopyGroupNotFound(name=rcg_name)
+
+    def _get_remote_copy_mode_num(self, mode):
+        ret_mode = None
+        if mode == "sync":
+            ret_mode = self.SYNC
+        if mode == "periodic":
+            ret_mode = self.PERIODIC
+        return ret_mode
+
+    def _check_replication_target(self):
+        dev = self.config.replication_device
+        # Override and set defaults for certain entries
+        replication_target = dict()
+        replication_target['managed_backend_name'] = (
+            dev.get('managed_backend_name'))
+        replication_target['replication_mode'] = (
+            self._get_remote_copy_mode_num(
+                dev.get('replication_mode')))
+        replication_target['san_ssh_port'] = (
+            dev.get('san_ssh_port', self.src_bkend_config.san_ssh_port))
+        replication_target['ssh_conn_timeout'] = (
+            dev.get('ssh_conn_timeout', self.src_bkend_config.ssh_conn_timeout))
+        replication_target['san_private_key'] = (
+            dev.get('san_private_key', self.src_bkend_config.san_private_key))
+        # Format iscsi IPs correctly
+        iscsi_ips = dev.get('hpe3par_iscsi_ips')
+        if iscsi_ips:
+            replication_target['hpe3par_iscsi_ips'] = iscsi_ips.split(' ')
+            # Format hpe3par_iscsi_chap_enabled as a bool
+            replication_target['hpe3par_iscsi_chap_enabled'] = (
+                dev.get('hpe3par_iscsi_chap_enabled') == 'True')
+        replication_target['array_name'] = dev['backend_id']
+        self._replication_target = replication_target
+
+        #     # Make sure we can log into the array, that it has been
+        #     # correctly configured, and its API version meets the
+        #     # minimum requirement.
+        #     cl = None
+        #     try:
+        #         cl = self._create_replication_client(replication_target)
+        #         array_id = six.text_type(cl.getStorageSystemInfo()['id'])
+        #         replication_target['id'] = array_id
+        #         wsapi_version = cl.getWsApiVersion()['build']
+        #
+        #         if wsapi_version < REMOTE_COPY_API_VERSION:
+        #             LOG.warning("The secondary array must have an API "
+        #                         "version of %(min_ver)s or higher. Array "
+        #                         "'%(target)s' is on %(target_ver)s, "
+        #                         "therefore it will not be added as a "
+        #                         "valid replication target.",
+        #                         {'target': array_name,
+        #                          'min_ver': REMOTE_COPY_API_VERSION,
+        #                          'target_ver': wsapi_version})
+        #         elif not self._is_valid_replication_array(replication_target):
+        #             LOG.warning("'%s' is not a valid replication array. "
+        #                         "In order to be valid, backend_id, "
+        #                         "replication_mode, "
+        #                         "hpe3par_api_url, hpe3par_username, "
+        #                         "hpe3par_password, cpg_map, san_ip, "
+        #                         "san_login, and san_password "
+        #                         "must be specified. If the target is "
+        #                         "managed, managed_backend_name must be "
+        #                         "set as well.", array_name)
+        #         else:
+        #             replication_targets.append(replication_target)
+        #     except Exception:
+        #         LOG.error("Could not log in to 3PAR array (%s) with the "
+        #                   "provided credentials.", array_name)
+        #     finally:
+        #         self._destroy_replication_client(cl)
+        #
+        # self._replication_targets = replication_targets
+        # if self._is_replication_configured_correct():
+        #     self._replication_enabled = True
+
+    def add_volume_to_rcg(self, **kwargs):
+        bkend_vol_name = kwargs['bkend_vol_name']
+        rcg_name = kwargs['rcg_name']
+
+        # LOG.info(self.config.replication_device)
+
+        # Add volume to remote copy group.
+        rcg_targets = []
+        rcg_target = {'targetName': self.tgt_bkend_config['backend_id'],
+                      'secVolumeName': bkend_vol_name}
+        rcg_targets.append(rcg_target)
+        optional = {'volumeAutoCreation': True}
+        try:
+            self.client.stopRemoteCopy(rcg_name)
+            self.client.addVolumeToRemoteCopyGroup(rcg_name, bkend_vol_name,
+                                                   rcg_targets,
+                                                   optional=optional)
+            self.client.startRemoteCopy(rcg_name)
+        except Exception as ex:
+            msg = (_("Error occurred while adding volume '%s' to the remote "
+                     "copy group '%s': %s") % (bkend_vol_name, rcg_name,
+                                               six.text_type(ex)))
+            LOG.error(msg)
+            raise exception.VolumeBackendAPIException(data=msg)
+
+    def remove_volume_from_rcg(self, **kwargs):
+        bkend_vol_name = kwargs['bkend_vol_name']
+        rcg_name = kwargs['rcg_name']
+        try:
+            self.client.removeVolumeFromRemoteCopyGroup(rcg_name,
+                                                        bkend_vol_name)
+        except Exception as ex:
+            msg = (_("Error occurred while removing volume '%s' from the "
+                     "remote copy group '%s': %s") %
+                   (bkend_vol_name, rcg_name, six.text_type(ex)))
+            LOG.error(msg)
+            raise exception.VolumeBackendAPIException(data=msg)
+
+    def _get_bkend_replication_mode(self, mode):
+        mode_map = {
+            'synchronous': 1,
+            'periodic': 2,
+            'streaming': 3}
+        ret_mode = mode_map.get(mode, None)
+        return ret_mode
+
+    def _check_rcg_already_exists(self, rcg_name):
+        LOG.info("Checking if RCG %s exists..." % rcg_name)
+        try:
+            self.client.getRemoteCopyGroup(rcg_name)
+        except hpeexceptions.HTTPNotFound:
+            LOG.info("RCG %s does not exist" % rcg_name)
+            return False
+        except Exception as ex:
+            msg = "Unknown exception occured while trying to fetch remote"\
+                  "copy group %s: %s" % (rcg_name, six.text_type(ex))
+            LOG.error(msg)
+            raise exception.PluginException(msg)
+        return True
+
+    def create_rcg(self, **kwargs):
+        rcg_name = kwargs['rcg_name']
+        if self._check_rcg_already_exists(rcg_name):
+            return None
+
+        LOG.info("Creating RCG %s..." % rcg_name)
+        src_config = self.src_bkend_config
+        tgt_config = self.tgt_bkend_config
+        bkend_replication_mode = self._get_bkend_replication_mode(
+            src_config.replication_mode)
+
+        cpg = tgt_config.hpe3par_cpg
+        if isinstance(cpg, list):
+            cpg = cpg[0]
+
+        snap_cpg = tgt_config.hpe3par_snapcpg
+        if isinstance(snap_cpg, list):
+            snap_cpg = snap_cpg[0]
+        rcg_target = {'targetName': tgt_config.backend_id,
+                      'mode': bkend_replication_mode,
+                      'snapCPG': snap_cpg,
+                      'userCPG': cpg}
+        rcg_targets = [rcg_target]
+
+        src_cpg = src_config.hpe3par_cpg
+        if isinstance(src_cpg, list):
+            src_cpg = src_cpg[0]
+
+        src_snap_cpg = src_config.hpe3par_snapcpg
+        if isinstance(src_snap_cpg, list):
+            src_snap_cpg = src_snap_cpg[0]
+
+        optional = {'localSnapCPG': src_snap_cpg,
+                    'localUserCPG': src_cpg}
+
+        domain = self.get_domain(src_cpg)
+        if domain:
+            optional['domain'] = domain
+        try:
+            self.client.createRemoteCopyGroup(rcg_name, rcg_targets,
+                                              optional)
+            LOG.info("Remote Copy Group %s created successfully!" % rcg_name)
+        except Exception as ex:
+            msg = (_("There was an error creating the remote copy "
+                     "group: %s.") %
+                   six.text_type(ex))
+            LOG.error(msg)
+            raise exception.HPERemoteCopyGroupBackendAPIException(data=msg)
+
+        if src_config['quorum_witness_ip']:
+            pp_params = {'targets': [
+                {'targetName': tgt_config.backend_id,
+                 'policies': {'autoFailover': True,
+                              'pathManagement': True,
+                              'autoRecover': True}}]} # TODO: Check if this is required
+            self.client.modifyRemoteCopyGroup(rcg_name, pp_params)
+
+        rcg = self.client.getRemoteCopyGroup(rcg_name)
+        ret_val = {'local_rcg_name': rcg_name,
+                   'remote_rcg_name': rcg['remoteGroupName']}
+        return ret_val
+
+    def delete_rcg(self, **kwargs):
+        rcg_name = kwargs['rcg_name']
+        try:
+            self.client.removeRemoteCopyGroup(rcg_name)
+        except Exception as ex:
+            msg = (_("Error occurred while removing the "
+                     "remote copy group '%s': %s") %
+                   (rcg_name, six.text_type(ex)))
+            LOG.error(msg)
+            raise exception.HPERemoteCopyGroupBackendAPIException(data=msg)
+
+    def check_if_op_allowed(self, rcg_name):
+        try:
+            rcg = self.client.getRemoteCopyGroup(rcg_name)
+        except hpeexceptions.HTTPNotFound:
+            return
+        except Exception as ex:
+            msg = "Unknown error occurred: %s" % six.text_type(ex)
+            LOG.error(msg)
+            raise exception.HPEDriverUnknownException(ex=six.text_type(ex))
+        else:
+            if rcg['role'] != 1:
+                raise exception.HPERemoteCopyGroupNotPrimary(rcg_name=rcg_name)
