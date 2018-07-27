@@ -115,7 +115,7 @@ Output:
                 "size": 5,
                 "snap_schedule": {
                   "schedule_name": "ThisNewSnapSchedule",
-                  "sched_Frequency": "5 2 * * *",
+                  "sched_frequency": "5 2 * * *",
                   "snap_name_prefix": "pqr",
                   "sched_snap_exp_hrs": null,
                   "sched_snap_exp_hrs": null
