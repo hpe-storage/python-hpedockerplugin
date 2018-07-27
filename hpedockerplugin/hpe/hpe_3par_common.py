@@ -472,6 +472,77 @@ class HPE3PARCommon(object):
                               vlun_info['lun_id'],
                               nsp)
 
+    # Swapnil
+    def create_snap_schedule(self, src_vol_name, schedName, snapPrefix,
+                                               exphrs, rethrs, schedFrequency):
+        expHr = str(exphrs)
+        retHr = str(rethrs)
+
+        cmd = ['createsched']
+        createsnapstring = []
+        createsnapstring.append('"createsv ')
+        if exphrs is not None:
+            createsnapstring.append('-exp '+expHr+'h ')
+        if rethrs is not None:
+            createsnapstring.append('-retain '+retHr+'h ')
+        snap_string  =".@y@@m@@d@@H@@M@@S@"
+        dynamic_snap_name = snapPrefix+snap_string
+        createsnapstring.append(dynamic_snap_name+' '+src_vol_name+'"')
+
+        snapstring = ''.join(createsnapstring)
+        schedFreq= '"'+schedFrequency+'"'
+
+        cmd.append(snapstring)
+        cmd.append(schedFreq)
+        cmd.append(schedName)
+        cmd.append('\r')
+        err_resp = ""
+        try:
+            LOG.info("Creating a snapshot schedule, command is %s..." % cmd)
+            resp = self.client._run(cmd)
+            LOG.info("Created a snapshot schedule - command is: %s..." % cmd)
+            LOG.info("Create schedule response is: %s..." % resp)
+
+            for r in resp:
+                if 'Error' in r:
+                    err_resp = r.strip()
+            if err_resp:
+                err = (_("Create snapschedule failed Error is"
+                         " '%(err_resp)s' ") %
+                       {'err_resp':err_resp})
+                LOG.error(err)
+                raise exception.HPEDriverCreateScheduleFailed(reason=err)
+        except hpeexceptions.SSHException as ex:
+            LOG.error("Failed to create snapshot schedule ")
+            LOG.error(ex)
+            raise exception.HPEDriverCreateScheduleFailed(reason=ex)
+
+    def force_remove_3par_schedule(self, schedule_name):
+        cmd = ['removesched', '-f']
+        cmd.append(schedule_name)
+        cmd.append('\r')
+        err_resp = ""
+        try:
+            LOG.info("Removing a snapshot schedule, command is %s..." % cmd)
+            resp = self.client._run(cmd)
+            LOG.info("Removed a snapshot schedule - command is: %s..." % cmd)
+            LOG.info("Remove schedule response is: %s..." % resp)
+
+            for r in resp:
+                if 'Error' in r:
+                    err_resp = r.strip()
+            if err_resp:
+                err = (_("Removing snapschedule failed. Error is"
+                         " '%(err_resp)s' ") %
+                       {'err_resp':err_resp})
+                LOG.error(err)
+                raise exception.HPEDriverCreateScheduleFailed(reason=err)
+        except hpeexceptions.SSHException as ex:
+            LOG.error("Failed to remove snapshot schedule ")
+            LOG.error(ex)
+            raise exception.HPEDriverRemoveScheduleFailed(
+                reason=ex)
+
     def force_remove_volume_vlun(self, vol_name):
         # Assuming that a volume for a given host would have at most
         # two VLUNs if multipath is enabled. If we support shared volume

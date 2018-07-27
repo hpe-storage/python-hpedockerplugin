@@ -385,6 +385,8 @@ class VolumeManager(object):
 
         return self._clone_volume(clone_name, src_vol, size)
 
+    # def _create_snapshot_schedule(self, )
+
     def _create_snapshot_record(self, snap_vol, snapshot_name, undo_steps):
         self._etcd.save_vol(snap_vol)
         undo_steps.append({'undo_func': self._etcd.delete_vol,
@@ -393,9 +395,10 @@ class VolumeManager(object):
                                   " from ETCD..." % snapshot_name})
 
     @synchronization.synchronized('{snapshot_name}')
-    def create_snapshot(self, src_vol_name, snapshot_name,
-                        expiration_hrs, retention_hrs,
-                        mount_conflict_delay):
+    def create_snapshot(self, src_vol_name, schedName, snapshot_name, snapPrefix,
+                        expiration_hrs, exphrs, retention_hrs, rethrs,
+                        mount_conflict_delay, has_schedule, schedFrequency):
+
         # Check if volume is present in database
         snap = self._etcd.get_vol_byname(snapshot_name)
         if snap:
@@ -404,20 +407,26 @@ class VolumeManager(object):
             response = json.dumps({'Err': msg})
             return response
 
-        return self._create_snapshot(src_vol_name, snapshot_name,
-                                     expiration_hrs, retention_hrs,
-                                     mount_conflict_delay)
+        # Here to modify the defenition to include schedule_name, hours, min etc
+        return self._create_snapshot(src_vol_name, schedName, snapshot_name, snapPrefix,
+                                     expiration_hrs, exphrs,  retention_hrs, rethrs,
+                                     mount_conflict_delay, has_schedule, schedFrequency)
 
     @synchronization.synchronized('{src_vol_name}')
-    def _create_snapshot(self, src_vol_name, snapshot_name,
-                         expiration_hrs, retention_hrs,
-                         mount_conflict_delay):
+    def _create_snapshot(self, src_vol_name, schedName, snapshot_name, snapPrefix,
+                         expiration_hrs, exphrs, retention_hrs, rethrs,
+                         mount_conflict_delay, has_schedule, schedFrequency):
+
         vol = self._etcd.get_vol_byname(src_vol_name)
         if vol is None:
             msg = 'source volume: %s does not exist' % src_vol_name
             LOG.debug(msg)
             response = json.dumps({u"Err": msg})
             return response
+        # Swapnil
+        # rethink whether vol needs a has_schedule field to be polulated
+        if 'has_schedule' not in vol:
+            vol['has_schedule'] = has_schedule
 
         volid = vol['id']
         # Check if this is an old volume type. If yes, add is_snap flag to it
@@ -447,12 +456,25 @@ class VolumeManager(object):
         snap_qos = volume.DEFAULT_QOS
 
         is_snap = True
+
+        #Swapnil
         snap_vol = volume.createvol(snapshot_name, snap_size, snap_prov,
                                     snap_flash, snap_compression, snap_qos,
-                                    mount_conflict_delay, is_snap)
-
+                                    mount_conflict_delay, is_snap, has_schedule)
         snapshot_id = snap_vol['id']
 
+        if snap_vol['has_schedule']:
+            try:
+                src_3par_vol_name = utils.get_3par_vol_name(vol['id'])
+                self._hpeplugin_driver.create_snap_schedule(src_3par_vol_name,
+                    schedName, snapPrefix, exphrs, rethrs, schedFrequency)
+            except Exception as ex:
+                msg = (_('create snapshot failed, error is: %s'),
+                       six.text_type(ex))
+                LOG.error(msg)
+                return json.dumps({u"Err": six.text_type(ex)})
+
+        # this 'snapshot dict'is for creating snap at 3par
         snapshot = {'id': snapshot_id,
                     'display_name': snapshot_name,
                     'volume_id': vol['id'],
@@ -478,13 +500,26 @@ class VolumeManager(object):
             return json.dumps({u"Err": six.text_type(ex)})
 
         # Add back reference to child snapshot in volume metadata
+
         db_snapshot = {'name': snapshot_name,
                        'id': snapshot_id,
                        'parent_name': src_vol_name,
                        'parent_id': vol['id'],
                        'expiration_hours': expiration_hrs,
                        'retention_hours': retention_hrs}
+        if has_schedule:
+            snap_schedule = {
+                'schedule_name': schedName,
+                'snap_name_prefix': snapPrefix,
+                'sched_Frequency': schedFrequency,
+                'sched_snap_exp_hrs': exphrs,
+                'sched_snap_ret_hrs': rethrs}
+            db_snapshot['snap_schedule'] = snap_schedule
+
+        # Swapnil Add schedule in above dictionary i.e 'schedule' : schedule
         vol['snapshots'].append(db_snapshot)
+
+
         snap_vol['snap_metadata'] = db_snapshot
 
         try:
@@ -534,11 +569,20 @@ class VolumeManager(object):
                 response = json.dumps({u"Err": msg})
                 return response
             else:
+                if 'has_schedule' in vol and vol['has_schedule']:
+                    schedule_info = vol['snap_metadata']['snap_schedule']
+                    sched_name = schedule_info['schedule_name']
+                    self._hpeplugin_driver.force_remove_3par_schedule(sched_name)
+
                 self._hpeplugin_driver.delete_volume(vol, is_snap)
                 LOG.info(_LI('volume: %(name)s,' 'was successfully deleted'),
                          {'name': volname})
                 if is_snap:
-                    self.remove_snapshot(parent_name, volname)
+                    # Swapnil check if snapshot has schedule associated with it
+                    if vol['has_schedule']:
+                        # remove the sncpshot schedule from 3par
+                        # self._hpeplugin_driver.remove_schedule(vol['snap_metadata']['schedule_name'])
+                        self.remove_snapshot(parent_name, volname)
         except Exception as ex:
             msg = (_LE('Err: Failed to remove volume %s, error is %s'),
                    volname, six.text_type(ex))
@@ -694,6 +738,8 @@ class VolumeManager(object):
         snap_detail['retention_hours'] = retention_hours
         snap_detail['mountConflictDelay'] = snapinfo.get(
             'mount_conflict_delay')
+        if 'snap_schedule' in metadata:
+            snap_detail['snap_schedule'] = metadata['snap_schedule']
 
         snapshot['Status'].update({'snap_detail': snap_detail})
 
@@ -784,6 +830,9 @@ class VolumeManager(object):
                 for s in snapshots:
                     snapshot = {'Name': s['name'],
                                 'ParentName': volname}
+                    # metadata = s['snap_metadata']
+                    if 'snap_schedule' in s:
+                        snapshot['snap_schedule'] = s['snap_schedule']
                     ss_list_to_show.append(snapshot)
                 volume['Status'].update({'Snapshots': ss_list_to_show})
 
