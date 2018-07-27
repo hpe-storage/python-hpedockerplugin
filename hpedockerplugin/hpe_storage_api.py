@@ -251,21 +251,6 @@ class VolumePlugin(object):
                      ' Improper string passed.'))
             LOG.error(msg)
             raise exception.HPEPluginCreateException(reason=msg)
-        min_reg = "^([0-9]|[1-5][0-9])$"
-        hour_reg = "^(\*|[0-9]|[1-2][0-3]|[0-1]?[0-9]?-[0-1]?[0-9]?)$"
-        dom_reg = "^(\*|[1-9]|[1-2][0-9]|3[0-1]|[1-2]?[0-9]?-[0-2]?[0-9]?)$"
-        month_reg = "^(\*|[1-9]|1[0-2]|[1-9]-[2-9]|[1-9]-1[0-2])$"
-        dow_reg = "^(\*|[0-6]|[0-5]-[1-6])$"
-        reg_exp_list = [min_reg, hour_reg, dom_reg, month_reg, dow_reg]
-        i = 0
-        for sched in sched_list:
-            reg_expr_res = re.match(reg_exp_list[i], sched)
-            i = i + 1
-            if not reg_expr_res:
-                msg = (_LE("%s is not a valid string present at %s position"
-                           % (sched, i)))
-                LOG.error(msg)
-                raise exception.HPEPluginCreateException(reason=msg)
 
     def volumedriver_clone_volume(self, name, opts=None):
         # Repeating the validation here in anticipation that when

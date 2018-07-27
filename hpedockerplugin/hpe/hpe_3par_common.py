@@ -509,8 +509,6 @@ class HPE3PARCommon(object):
 
     def force_remove_3par_schedule(self, schedule_name):
         cmd = ['removesched', '-f', '%s' % schedule_name, '\r']
-        # cmd.append(schedule_name)
-        # cmd.append('\r')
         err_resp = ""
         try:
             LOG.info("Removing a snapshot schedule, command is %s..." % cmd)
