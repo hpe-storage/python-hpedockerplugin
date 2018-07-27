@@ -150,7 +150,7 @@ class VolumePlugin(object):
                                         'cloneOf', 'virtualCopyOf',
                                         'expirationHours', 'retentionHours',
                                         'qos-name', 'mountConflictDelay',
-                                        'help', 'importVol','cpg', 'snap-cpg' ]
+                                        'help', 'importVol', 'cpg', 'snap-cpg']
             for key in contents['Opts']:
                 if key not in valid_volume_create_opts:
                     msg = (_('create volume/snapshot/clone failed, error is: '
@@ -219,17 +219,17 @@ class VolumePlugin(object):
                     contents['Opts']['qos-name'] != ""):
                 vol_qos = str(contents['Opts']['qos-name'])
             if ('cpg' in contents['Opts'] and
-                        contents['Opts']['cpg'] != ""):
+                    contents['Opts']['cpg'] != ""):
                 cpg = str(contents['Opts']['cpg'])
 
             if ('snap-cpg' in contents['Opts'] and
-                        contents['Opts']['snap-cpg'] != ""):
+                    contents['Opts']['snap-cpg'] != ""):
                 snap_cpg = str(contents['Opts']['snap-cpg'])
 
             if ('mountConflictDelay' in contents['Opts'] and
                     contents['Opts']['mountConflictDelay'] != ""):
                 mountConflictDelay = str(contents['Opts']
-                                               ['mountConflictDelay'])
+                                         ['mountConflictDelay'])
                 try:
                     mount_conflict_delay = int(mountConflictDelay)
                 except ValueError as ex:
@@ -239,10 +239,13 @@ class VolumePlugin(object):
                                               str(mountConflictDelay)})
 
             if ('virtualCopyOf' in contents['Opts']):
-                if (('cpg' in contents['Opts'] and contents['Opts']['cpg'] is not None) or (
-                        'snap-cpg' in contents['Opts'] and contents['Opts']['snap-cpg'] is not None)):
-                    msg = (
-                    _('Virtual copy creation failed, error is: cpg or snap-cpg not allowed for virtual copy creation. '))
+                if (('cpg' in contents['Opts'] and
+                     contents['Opts']['cpg'] is not None) or
+                    ('snap-cpg' in contents['Opts'] and
+                     contents['Opts']['snap-cpg'] is not None)):
+                    msg = (_('''Virtual copy creation failed, error is:
+                           cpg or snap - cpg not allowed for
+                           virtual copy creation. '''))
                     LOG.error(msg)
                     response = json.dumps({u"Err": msg})
                     return response
@@ -274,16 +277,17 @@ class VolumePlugin(object):
                 'size' in contents['Opts']):
             size = int(contents['Opts']['size'])
         if ('Opts' in contents and contents['Opts'] and
-                    'cpg' in contents['Opts']):
+                'cpg' in contents['Opts']):
             cpg = str(contents['Opts']['cpg'])
 
         if ('Opts' in contents and contents['Opts'] and
-                    'snap-cpg' in contents['Opts']):
+                'snap-cpg' in contents['Opts']):
             snap_cpg = str(contents['Opts']['snap-cpg'])
 
         src_vol_name = str(contents['Opts']['cloneOf'])
         clone_name = contents['Name']
-        return self._manager.clone_volume(src_vol_name, clone_name, size, cpg, snap_cpg)
+        return self._manager.clone_volume(src_vol_name, clone_name, size, cpg,
+                                          snap_cpg)
 
     def volumedriver_create_snapshot(self, name, mount_conflict_delay,
                                      opts=None):

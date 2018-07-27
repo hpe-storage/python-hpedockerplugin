@@ -93,7 +93,7 @@ volume = {
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
     'is_snap': False,
     'cpg': HPE3PAR_CPG,
-    'snap_cpg': HPE3PAR_CPG2    
+    'snap_cpg': HPE3PAR_CPG2
 }
 
 json_path_info = \
