@@ -199,7 +199,7 @@ class VolumeManager(object):
         return volume.DEFAULT_COMPRESSION_VAL
 
     def manage_existing(self, volname, existing_ref):
-        LOG.info('Managing a %(existing_ref)s', {'existing_ref': existing_ref})
+        LOG.info('Managing a %(vol)s' % {'vol': existing_ref})
 
         # NOTE: Since Docker passes user supplied names and not a unique
         # uuid, we can't allow duplicate volume names to exist
@@ -211,7 +211,7 @@ class VolumeManager(object):
 
         # Make sure the reference is not in use.
         if existing_ref.startswith('dcv-') or existing_ref.startswith('dcs-'):
-            msg = (_('target: %s is already in-use'), existing_ref)
+            msg = (_('target: %s is already in-use') % existing_ref)
             LOG.error(msg)
             return json.dumps({u"Err": six.text_type(msg)})
 
@@ -219,68 +219,77 @@ class VolumeManager(object):
         parent_vol = ""
         try:
             # check target volume exists in 3par
-            volume_detail_3par_old = \
+            existing_ref_details = \
                 self._hpeplugin_driver.get_volume_detail(existing_ref)
         except Exception as ex:
             msg = (_(
-                'Volume:%(existing_ref)s does not exists Error: %(ex)s'),
-                {'existing_ref': existing_ref, 'ex': six.text_type(ex)})
+                'Volume:%(existing_ref)s does not exists Error: %(ex)s')
+                % {'existing_ref': existing_ref, 'ex': six.text_type(ex)})
             LOG.exception(msg)
             return json.dumps({u"Err": six.text_type(msg)})
 
-        vvset_name = self._hpeplugin_driver.get_vvset_name(
-            volume_detail_3par_old['name'])
-        if vvset_name is not None:
-            LOG.info('vvset_name: %(vvset_name)s', {'vvset_name': vvset_name})
+        vvset_detail = self._hpeplugin_driver.get_vvset_detail(
+            existing_ref_details['name'])
+        if vvset_detail is not None:
+            vvset_name = vvset_detail.get('name')
+            LOG.info('vvset_name: %(vvset)s' % {'vvset': vvset_name})
+
+            # check and set the flash-cache if exists
+            if(vvset_detail.get('flashCachePolicy') is not None and
+               vvset_detail.get('flashCachePolicy') == 1):
+                vol['flash_cache'] = True
+
             try:
                 self._hpeplugin_driver.get_qos_detail(vvset_name)
                 LOG.info('Volume:%(existing_ref)s is in vvset_name:'
-                         '%(vvset_name)s associated with QOS',
-                         {'existing_ref': existing_ref,
-                          'vvset_name': vvset_name})
+                         '%(vvset_name)s associated with QOS'
+                         % {'existing_ref': existing_ref,
+                            'vvset_name': vvset_name})
                 vol["qos_name"] = vvset_name
             except Exception as ex:
                 msg = (_(
                     'volume is in vvset:%(vvset_name)s and not associated with'
-                    ' QOS error:%(ex)s'), {
+                    ' QOS error:%(ex)s') % {
                         'vvset_name': vvset_name,
                         'ex': six.text_type(ex)})
                 LOG.error(msg)
-                return json.dumps({u"Err": six.text_type(msg)})
+                if not vol['flash_cache']:
+                    return json.dumps({u"Err": six.text_type(msg)})
 
         # since we have only 'importVol' option for importing,
         # both volume and snapshot
         # throw error when user tries to manage snapshot,
         # before managing parent
-        copyType = volume_detail_3par_old.get('copyType')
+        copyType = existing_ref_details.get('copyType')
         if volume.COPYTYPE.get(copyType) == 'virtual':
             # it's a snapshot, so check whether its parent is managed or not ?
             try:
                 # convert parent volume name to its uuid,
                 # which is then check in etcd for existence
-                vol_id = utils.get_vol_id(volume_detail_3par_old["copyOf"])
-                LOG.info('parent volume ID: %(parent_vol_id)s',
-                         {'parent_vol_id': vol_id})
+                vol_id = utils.get_vol_id(existing_ref_details["copyOf"])
+                LOG.info('parent volume ID: %(parent_vol_id)s'
+                         % {'parent_vol_id': vol_id})
                 # check parent uuid is present in etcd, or not ?
                 parent_vol = self._etcd.get_vol_by_id(vol_id)
+                vol['flash_cache'] = parent_vol['flash_cache']
                 # parent vol is present so manage a snapshot now
                 is_snap = True
             except Exception as ex:
                 msg = (_(
                     'Manage snapshot failed because parent volume: '
-                    '%(parent_volume)s is unmanaged Error: %(error)s'), {
+                    '%(parent_volume)s is unmanaged Error: %(error)s') % {
                         'error': six.text_type(ex),
-                        'parent_volume': volume_detail_3par_old["copyOf"]})
+                        'parent_volume': existing_ref_details["copyOf"]})
                 LOG.exception(msg)
                 return json.dumps({u"Err": six.text_type(msg)})
 
         try:
             volume_detail_3par = self._hpeplugin_driver.manage_existing(
-                vol, existing_ref, is_snap=is_snap)
+                vol, existing_ref_details, is_snap=is_snap)
         except Exception as ex:
-            msg = (_('Manage volume failed Error: %s'), six.text_type(ex))
+            msg = (_('Manage volume failed Error: %s') % six.text_type(ex))
             LOG.exception(msg)
-            return json.dumps({u"Err": six.text_type(ex)})
+            return json.dumps({u"Err": six.text_type(msg)})
 
         try:
             # mapping
@@ -290,9 +299,6 @@ class VolumeManager(object):
                 self.map_3par_volume_prov_to_docker(volume_detail_3par)
             vol['compression'] = \
                 self.map_3par_volume_compression_to_docker(volume_detail_3par)
-            vol['qos_name'] = vvset_name
-            # TODO(sonivi): map flash_cache
-            vol['flash_cache'] = volume.DEFAULT_FLASH_CACHE
 
             if is_snap:
                 # managing a snapshot
@@ -324,7 +330,7 @@ class VolumeManager(object):
 
             self._etcd.save_vol(vol)
         except Exception as ex:
-            msg = (_('Manage volume failed Error: %s'), six.text_type(ex))
+            msg = (_('Manage volume failed Error: %s') % six.text_type(ex))
             LOG.exception(msg)
             undo_steps = []
             undo_steps.append(
@@ -333,8 +339,8 @@ class VolumeManager(object):
                      'volume': volume_detail_3par,
                      'existing_ref': volume_detail_3par.get('name'),
                      'is_snap': is_snap,
-                     'target_vol_name': volume_detail_3par_old.get('name'),
-                     'comment': volume_detail_3par_old.get('comment')},
+                     'target_vol_name': existing_ref_details.get('name'),
+                     'comment': existing_ref_details.get('comment')},
                  'msg': 'Cleaning up manage'})
             self._rollback(undo_steps)
             return json.dumps({u"Err": six.text_type(ex)})
