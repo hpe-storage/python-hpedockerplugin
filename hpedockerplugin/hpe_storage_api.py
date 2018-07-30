@@ -306,7 +306,7 @@ class VolumePlugin(object):
                 msg = ('create schedule failed, error is: setting '
                        'expiration_hours for docker snapshot is not'
                        ' allowed while creating a schedule.')
-                LOG.info(msg)
+                LOG.error(msg)
                 response = json.dumps({'Err': msg})
                 return response
 
@@ -320,7 +320,7 @@ class VolumePlugin(object):
                 msg = ('create schedule failed, error is: user  '
                        'has not passed scheduleFrequency to create'
                        ' snapshot schedule.')
-                LOG.info(msg)
+                LOG.error(msg)
                 response = json.dumps({'Err': msg})
                 return response
             else:
@@ -343,7 +343,7 @@ class VolumePlugin(object):
                     msg = ('Please make sure that valid schedule name is '
                            'passed or please provide a 3 letter prefix for '
                            'this schedule ')
-                    LOG.info(msg)
+                    LOG.error(msg)
                     response = json.dumps({'Err': msg})
                     return response
                 schedName = str(contents['Opts']['scheduleName'])
