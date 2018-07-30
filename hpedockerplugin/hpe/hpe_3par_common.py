@@ -464,6 +464,13 @@ class HPE3PARCommon(object):
                               vlun_info['lun_id'],
                               nsp)
 
+    def check_response(self, resp):
+        for r in resp:
+            if 'Error' in r:
+                err_resp = r.strip()
+                return err_resp
+        return ""
+
     def create_snap_schedule(self, src_vol_name, schedName, snapPrefix,
                              exphrs, rethrs, schedFrequency):
         expHr = str(exphrs)
@@ -494,9 +501,7 @@ class HPE3PARCommon(object):
             LOG.info("Created a snapshot schedule - command is: %s..." % cmd)
             LOG.info("Create schedule response is: %s..." % resp)
 
-            for r in resp:
-                if 'Error' in r:
-                    err_resp = r.strip()
+            err_resp = self.check_response(resp)
             if err_resp:
                 err = (_("Create snapschedule failed Error is"
                          " '%(err_resp)s' ") %
@@ -516,9 +521,7 @@ class HPE3PARCommon(object):
             LOG.info("Removed a snapshot schedule - command is: %s..." % cmd)
             LOG.info("Remove schedule response is: %s..." % resp)
 
-            for r in resp:
-                if 'Error' in r:
-                    err_resp = r.strip()
+            err_resp = self.check_response(resp)
             if err_resp:
                 err = (_("Removing snapschedule failed. Error is"
                          " '%(err_resp)s' ") %
