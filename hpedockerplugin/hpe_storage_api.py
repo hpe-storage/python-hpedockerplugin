@@ -334,7 +334,7 @@ class VolumePlugin(object):
                             msg = ('create schedule failed, error is: '
                                    'expiration hours cannot be greater than '
                                    'retention hours')
-                            LOG.info(msg)
+                            LOG.error(msg)
                             response = json.dumps({'Err': msg})
                             return response
 
