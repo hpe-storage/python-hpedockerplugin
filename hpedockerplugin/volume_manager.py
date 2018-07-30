@@ -307,11 +307,12 @@ class VolumeManager(object):
         if vol is not None:
             return json.dumps({u"Err": ''})
 
-        if rcg_name and not self._hpepluginconfig.replication_device:
-            msg = "Request to create replicated volume cannot be fulfilled" \
-                  "without defining 'replication_device' entry in hpe.conf" \
-                  "for the desired or default backend. Please add it and then" \
-                  "execute the request again."
+        if (rcg_name and not self._hpepluginconfig.replication_device) or \
+            (self._hpepluginconfig.replication_device and not rcg_name):
+            msg = "Request to create replicated volume cannot be fulfilled " \
+                  "without defining 'replication_device' entry in hpe.conf " \
+                  "for the desired or default backend. Please add it and " \
+                  "then execute the request again."
             return json.dumps({u"Err": msg})
 
         # if qos-name is given, check vvset is associated with qos or not
