@@ -241,7 +241,6 @@ class VolumePlugin(object):
                                        "specify both uid and gid." %
                                        fs_owner})
 
-
             if ('fsMode' in contents['Opts'] and
                     contents['Opts']['fsMode'] != ""):
                 fs_mode_str = contents['Opts']['fsMode']
@@ -259,10 +258,10 @@ class VolumePlugin(object):
                                               fs_mode_str})
                 for mode in fs_mode_str:
                     if int(mode) > 7:
-                        return json.dumps({'Err': "Invalid value '%s' specified "
-                                          "for fsMode. Please "
-                                          "specify an octal value." %
-                                          fs_mode_str})
+                        return json.dumps({'Err': "Invalid value '%s' "
+                                           "specified for fsMode. Please "
+                                           "specify an octal value." %
+                                           fs_mode_str})
                 fs_mode = fs_mode_str
 
             if ('mountConflictDelay' in contents['Opts'] and

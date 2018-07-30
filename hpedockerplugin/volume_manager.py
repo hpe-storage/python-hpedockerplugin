@@ -1078,13 +1078,13 @@ class VolumeManager(object):
         else:
             mount_dir = ''
 
-        if vol['fsOwner'] is not None:
+        if 'fsOwner' in vol and vol['fsOwner']:
             fs_owner = vol['fsOwner'].split(":")
             uid = int(fs_owner[0])
             gid = int(fs_owner[1])
             os.chown(mount_dir, uid, gid)
 
-        if vol['fsMode'] is not None:
+        if 'fsMode' in vol and vol['fsMode']:
             mode = str(vol['fsMode'])
             chmod(mode, mount_dir)
 
@@ -1391,6 +1391,7 @@ class VolumeManager(object):
             passphrase = result.value
         except Exception as ex:
             LOG.info("Using Plain Text")
+            return hpepluginconfig.hpe3par_password
         else:
             passphrase = self.key_check(passphrase)
             return self._decrypt(hpepluginconfig.hpe3par_password,
