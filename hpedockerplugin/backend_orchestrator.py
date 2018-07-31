@@ -114,6 +114,10 @@ class Orchestrator(object):
         return self._manager[backend].get_volume_snap_details(volname,
                                                               snapname, qualified_name)
 
+    def manage_existing(self, volname, existing_ref):
+        backend = self.get_volume_backend_details(volname)
+        return self._manager[backend].manage_existing(volname, existing_ref)
+
     def volumedriver_list(self):
         return self._manager[DEFAULT_BACKEND_NAME].list_volumes()
 
