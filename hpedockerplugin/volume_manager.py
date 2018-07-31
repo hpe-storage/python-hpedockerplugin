@@ -97,7 +97,7 @@ class VolumeManager(object):
     @synchronization.synchronized('{volname}')
     def create_volume(self, volname, vol_size, vol_prov,
                       vol_flash, compression_val, vol_qos,
-                      mount_conflict_delay,current_backend):
+                      mount_conflict_delay, current_backend):
         LOG.info('In _volumedriver_create')
 
         # NOTE: Since Docker passes user supplied names and not a unique
@@ -243,8 +243,8 @@ class VolumeManager(object):
                 msg = (_(
                     'volume is in vvset:%(vvset_name)s and not associated with'
                     ' QOS error:%(ex)s'), {
-                        'vvset_name': vvset_name,
-                        'ex': six.text_type(ex)})
+                    'vvset_name': vvset_name,
+                    'ex': six.text_type(ex)})
                 LOG.error(msg)
                 return json.dumps({u"Err": six.text_type(msg)})
 
@@ -269,8 +269,8 @@ class VolumeManager(object):
                 msg = (_(
                     'Manage snapshot failed because parent volume: '
                     '%(parent_volume)s is unmanaged Error: %(error)s'), {
-                        'error': six.text_type(ex),
-                        'parent_volume': volume_detail_3par_old["copyOf"]})
+                    'error': six.text_type(ex),
+                    'parent_volume': volume_detail_3par_old["copyOf"]})
                 LOG.exception(msg)
                 return json.dumps({u"Err": six.text_type(msg)})
 
@@ -343,7 +343,7 @@ class VolumeManager(object):
 
     @synchronization.synchronized('{src_vol_name}')
     def clone_volume(self, src_vol_name, clone_name,
-                     size=None,current_backend='DEFAULT'):
+                     size=None, current_backend='DEFAULT'):
         # Check if volume is present in database
         src_vol = self._etcd.get_vol_byname(src_vol_name)
         mnt_conf_delay = volume.DEFAULT_MOUNT_CONFLICT_DELAY
@@ -444,7 +444,8 @@ class VolumeManager(object):
         is_snap = True
         snap_vol = volume.createvol(snapshot_name, snap_size, snap_prov,
                                     snap_flash, snap_compression, snap_qos,
-                                    mount_conflict_delay, is_snap, current_backend)
+                                    mount_conflict_delay, is_snap,
+                                    current_backend)
 
         snapshot_id = snap_vol['id']
 
@@ -608,7 +609,8 @@ class VolumeManager(object):
                                      src_vol['flash_cache'],
                                      src_vol['compression'],
                                      src_vol['qos_name'],
-                                     src_vol['mount_conflict_delay'], False, current_backend)
+                                     src_vol['mount_conflict_delay'], False,
+                                     current_backend)
         try:
             self.__clone_volume__(src_vol, clone_vol, undo_steps)
             self._apply_volume_specs(clone_vol, undo_steps)

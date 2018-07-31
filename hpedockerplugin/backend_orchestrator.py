@@ -35,12 +35,12 @@ CONFIG_FILE = '/etc/hpedockerplugin/hpe.conf'
 CONFIG = ['--config-file', CONFIG_FILE]
 DEFAULT_BACKEND_NAME = "DEFAULT"
 
+
 class Orchestrator(object):
     def __init__(self, hpedefaultconfig):
         self.default_config = hpedefaultconfig
         self._manager = self.initialize_manager_objects(
             self.default_config)
-
 
     def initialize_manager_objects(self, defaultconfig):
         manager_objs = {}
@@ -66,7 +66,6 @@ class Orchestrator(object):
         backend = self.get_volume_backend_details(volname)
         return self._manager[backend].remove_volume(volname)
 
-
     def volumedriver_unmount(self, volname, vol_mount, mount_id):
         backend = self.get_volume_backend_details(volname)
         return self._manager[backend].unmount_volume(volname,
@@ -74,36 +73,41 @@ class Orchestrator(object):
                                                      mount_id)
 
     def volumedriver_create(self, volname, vol_size,
-                                           vol_prov, vol_flash,
-                                           compression_val, vol_qos,
-                                           mount_conflict_delay,current_backend):
+                            vol_prov, vol_flash,
+                            compression_val, vol_qos,
+                            mount_conflict_delay, current_backend):
 
-        backend = self.get_volume_backend_details(volname)
-        return self._manager[current_backend].create_volume(volname, vol_size, vol_prov,
-                                                            vol_flash, compression_val,
-                                                            vol_qos, mount_conflict_delay,
-                                                            current_backend)
+        return self._manager[current_backend].create_volume(
+            volname,
+            vol_size,
+            vol_prov,
+            vol_flash,
+            compression_val,
+            vol_qos,
+            mount_conflict_delay,
+            current_backend)
 
     def clone_volume(self, src_vol_name, clone_name, size):
         backend = self.get_volume_backend_details(src_vol_name)
         return self._manager[backend].clone_volume(src_vol_name, clone_name,
                                                    size)
 
-    def create_snapshot(self, src_vol_name,  snapshot_name,
-                        expiration_hrs,retention_hrs,
+    def create_snapshot(self, src_vol_name, snapshot_name,
+                        expiration_hrs, retention_hrs,
                         mount_conflict_delay):
 
         backend = self.get_volume_backend_details(src_vol_name)
         return self._manager[backend].create_snapshot(src_vol_name,
-                                               snapshot_name,
-                                               expiration_hrs,
-                                               retention_hrs,
-                                               mount_conflict_delay,
-                                               backend)
+                                                      snapshot_name,
+                                                      expiration_hrs,
+                                                      retention_hrs,
+                                                      mount_conflict_delay,
+                                                      backend)
 
     def mount_volume(self, volname, vol_mount, mount_id):
         backend = self.get_volume_backend_details(volname)
-        return self._manager[backend].mount_volume(volname, vol_mount, mount_id)
+        return self._manager[backend].mount_volume(volname,
+                                                   vol_mount, mount_id)
 
     def get_path(self, volname):
         backend = self.get_volume_backend_details(volname)
@@ -112,7 +116,8 @@ class Orchestrator(object):
     def get_volume_snap_details(self, volname, snapname, qualified_name):
         backend = self.get_volume_backend_details(volname)
         return self._manager[backend].get_volume_snap_details(volname,
-                                                              snapname, qualified_name)
+                                                              snapname,
+                                                              qualified_name)
 
     def manage_existing(self, volname, existing_ref):
         backend = self.get_volume_backend_details(volname)
@@ -120,4 +125,3 @@ class Orchestrator(object):
 
     def volumedriver_list(self):
         return self._manager[DEFAULT_BACKEND_NAME].list_volumes()
-

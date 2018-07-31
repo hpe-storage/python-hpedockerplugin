@@ -28,14 +28,13 @@ import hpedockerplugin.exception as exception
 from hpedockerplugin.i18n import _, _LE, _LI
 from klein import Klein
 from hpedockerplugin.hpe import volume
-import hpedockerplugin.volume_manager as mgr
-import hpedockerplugin.backend_orchestrator as orchestrator
 
+import hpedockerplugin.backend_orchestrator as orchestrator
 
 LOG = logging.getLogger(__name__)
 
-
 DEFAULT_BACKEND_NAME = "DEFAULT"
+
 
 class VolumePlugin(object):
     """
@@ -111,7 +110,8 @@ class VolumePlugin(object):
 
         mount_id = contents['ID']
 
-        return self.orchestrator.volumedriver_unmount(volname, vol_mount, mount_id)
+        return self.orchestrator.volumedriver_unmount(volname,
+                                                      vol_mount, mount_id)
 
     @app.route("/VolumeDriver.Create", methods=["POST"])
     def volumedriver_create(self, name, opts=None):
@@ -158,7 +158,7 @@ class VolumePlugin(object):
                                         'cloneOf', 'virtualCopyOf',
                                         'expirationHours', 'retentionHours',
                                         'qos-name', 'mountConflictDelay',
-                                        'help', 'importVol','backend']
+                                        'help', 'importVol', 'backend']
             for key in contents['Opts']:
                 if key not in valid_volume_create_opts:
                     msg = (_('create volume/snapshot/clone failed, error is: '
@@ -211,13 +211,14 @@ class VolumePlugin(object):
                 compression_val = str(contents['Opts']['compression'])
                 if compression_val is not None:
                     if compression_val.lower() not in valid_compression_opts:
-                        msg = (_(
-                            'create volume failed, error is:'
-                            'passed compression parameter do not have a valid '
-                            'value. Valid vaues are: %(valid)s') %
-                            {'valid': valid_compression_opts, })
+                        msg = \
+                            _('create volume failed, error is:'
+                              'passed compression parameter'
+                              ' do not have a valid value. '
+                              ' Valid vaues are: %(valid)s') % {
+                                'valid': valid_compression_opts}
                         LOG.error(msg)
-                        return json.dumps({u"Err": six.text_type(msg)})
+                        return json.dumps({u'Err': six.text_type(msg)})
 
             if ('flash-cache' in contents['Opts'] and
                     contents['Opts']['flash-cache'] != ""):
@@ -249,9 +250,12 @@ class VolumePlugin(object):
             elif ('cloneOf' in contents['Opts']):
                 return self.volumedriver_clone_volume(name, opts)
 
-        return self.orchestrator.volumedriver_create(volname, vol_size, vol_prov,
-                                                     vol_flash, compression_val,
-                                                     vol_qos, mount_conflict_delay,
+        return self.orchestrator.volumedriver_create(volname, vol_size,
+                                                     vol_prov,
+                                                     vol_flash,
+                                                     compression_val,
+                                                     vol_qos,
+                                                     mount_conflict_delay,
                                                      current_backend)
 
     def volumedriver_clone_volume(self, name, opts=None):
@@ -303,7 +307,6 @@ class VolumePlugin(object):
         return self.orchestrator.create_snapshot(src_vol_name, snapshot_name,
                                                  expiration_hrs, retention_hrs,
                                                  mount_conflict_delay)
-
 
     @app.route("/VolumeDriver.Mount", methods=["POST"])
     def volumedriver_mount(self, name):
@@ -380,10 +383,10 @@ class VolumePlugin(object):
         if token_cnt == 2:
             snapname = tokens[1]
 
-        #return self._manager[current_backend].get_volume_snap_details(
+        # return self._manager[current_backend].get_volume_snap_details(
         #    volname, snapname, qualified_name)
-        return self.orchestrator.get_volume_snap_details(volname, snapname, qualified_name)
-
+        return self.orchestrator.get_volume_snap_details(volname, snapname,
+                                                         qualified_name)
 
     @app.route("/VolumeDriver.List", methods=["POST"])
     def volumedriver_list(self, body):
@@ -394,6 +397,5 @@ class VolumePlugin(object):
 
         :return: Result indicating success.
         """
-        #return self._manager[DEFAULT_BACKEND_NAME].list_volumes()
+        # return self._manager[DEFAULT_BACKEND_NAME].list_volumes()
         return self.orchestrator.volumedriver_list()
-
