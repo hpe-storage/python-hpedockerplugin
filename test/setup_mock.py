@@ -10,10 +10,10 @@ CONF = cfg.CONF
 
 
 def mock_decorator(func):
-    #@mock.patch(
+    # @mock.patch(
     #    'hpedockerplugin.backend_orchestrator.Orchestrator',
     #    spec=True,
-    #)
+    # )
     @mock.patch(
         'hpedockerplugin.volume_manager.connector.FibreChannelConnector',
         spec=True
@@ -52,37 +52,43 @@ def mock_decorator(func):
             mock_protocol_connector = mock_fc_connector
 
         with mock.patch.object(hpecommon.HPE3PARCommon, '_create_client') \
-            as mock_create_client, \
-            mock.patch.object(mgr.VolumeManager, '_get_etcd_util') \
-            as mock_get_etcd_util, \
-            mock.patch.object(orchestrator.Orchestrator, 'initialize_manager_objects') \
-            as mock_orchestrator, \
-            mock.patch.object(mgr.VolumeManager, '_get_connector') \
+                as mock_create_client, \
+                mock.patch.object(mgr.VolumeManager, '_get_etcd_util') \
+                as mock_get_etcd_util, \
+                mock.patch.object(orchestrator.Orchestrator,
+                                  'initialize_manager_objects') \
+                as mock_orchestrator, \
+                mock.patch.object(mgr.VolumeManager, '_get_connector') \
                 as mock_get_connector, \
                 mock.patch('hpedockerplugin.volume_manager.connector') \
                 as mock_osbricks_connector, \
                 mock.patch.object(mgr.VolumeManager, '_get_node_id') \
                 as mock_get_node_id:
-                mock_create_client.return_value = mock_3parclient
-                mock_get_etcd_util.return_value = mock_etcd
-                mock_get_connector.return_value = mock_protocol_connector
-                mock_get_node_id.return_value = data.THIS_NODE_ID
-                #mock_orchestrator.return_value = mock_orchestrat
-                config = create_configuration(self._protocol)
-                mock_orchestrator.return_value = {'DEFAULT': mgr.VolumeManager(config,config)}
-                mock_objects = \
-                    {'mock_3parclient': mock_3parclient,
-                     'mock_fileutil': mock_fileutil,
-                     'mock_osbricks_connector': mock_osbricks_connector,
-                     'mock_protocol_connector': mock_protocol_connector,
-                     'mock_etcd': mock_etcd,
-                     'mock_orchestrator': mock_orchestrator}
-                return func(self, mock_objects, *args, **kwargs)
+            mock_create_client.return_value = mock_3parclient
+            mock_get_etcd_util.return_value = mock_etcd
+            mock_get_connector.return_value = mock_protocol_connector
+            mock_get_node_id.return_value = data.THIS_NODE_ID
+            # mock_orchestrator.return_value = mock_orchestrat
+            config = create_configuration(self._protocol)
+            mock_orchestrator.return_value = {'DEFAULT':
+                                              mgr.VolumeManager(config,
+                                                                config)}
+            mock_objects = \
+                {'mock_3parclient': mock_3parclient,
+                 'mock_fileutil': mock_fileutil,
+                 'mock_osbricks_connector': mock_osbricks_connector,
+                 'mock_protocol_connector': mock_protocol_connector,
+                 'mock_etcd': mock_etcd,
+                 'mock_orchestrator': mock_orchestrator}
+            return func(self, mock_objects, *args, **kwargs)
+
     return setup_mock_wrapper
+
+
 def create_configuration(protocol):
     config = mock.Mock()
     config.ssh_hosts_key_file = "/root/.ssh/known_hosts"
-#    config.ssh_hosts_key_file = "/home/docker/.ssh/known_hosts"
+    #    config.ssh_hosts_key_file = "/home/docker/.ssh/known_hosts"
     config.host_etcd_ip_address = "10.50.3.140"
     config.host_etcd_port_number = 2379
     config.logging = "DEBUG"

@@ -24,7 +24,7 @@ class TestQosVolume(GetVolumeUnitTest):
                 "Opts": {"provisioning": "thin",
                          "qos-name": "vvk_vvset",
                          "size": "2",
-                         "backend":"DEFAULT"}}
+                         "backend": "DEFAULT"}}
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']

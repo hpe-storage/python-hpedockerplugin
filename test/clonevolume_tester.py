@@ -385,7 +385,8 @@ class TestCloneWithCHAP(CloneVolumeUnitTest):
         config.hpe3par_iscsi_chap_enabled = True
         config.use_multipath = False
         mock_orchestrator = self.mock_objects['mock_orchestrator']
-        mock_orchestrator.return_value = {'DEFAULT': mgr.VolumeManager(config,config)}
+        mock_orchestrator.return_value = \
+            {'DEFAULT': mgr.VolumeManager(config, config)}
 
 
 # TODO: Compression related TCs to be added later

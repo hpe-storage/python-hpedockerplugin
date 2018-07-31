@@ -34,9 +34,9 @@ class MountVolumeUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):
             mock_etcd.get_vol_byname.return_value = self._vol
             # Allow child class to make changes
             self.setup_mock_etcd()
-            #mock_orchestrator_obj = self.mock_objects['mock_orchestrator']
-            #config = super(type(self), self)._get_configuration()
-            #mock_orchestrator_obj.initialize_manager_objects.return_value = \
+            # mock_orchestrator_obj = self.mock_objects['mock_orchestrator']
+            # config = super(type(self), self)._get_configuration()
+            # mock_orchestrator_obj.initialize_manager_objects.return_value = \
             #    {'DEFAULT': mgr.VolumeManager(config,config)}
 
         def _setup_mock_fileutil():
@@ -525,13 +525,13 @@ class TestMountVolumeISCSIHostChapOn(MountVolumeUnitTest):
         config.hpe3par_iscsi_chap_enabled = True
         config.use_multipath = False
         mock_orchestrator = self.mock_objects['mock_orchestrator']
-        mock_orchestrator.return_value = {'DEFAULT': mgr.VolumeManager(config,config)}
+        mock_orchestrator.return_value = {'DEFAULT':
+                                          mgr.VolumeManager(config,
+                                                            config)}
 
     def override_configuration(self, config):
         config.hpe3par_iscsi_chap_enabled = True
         config.use_multipath = False
-        #mock_orchestrator = self.mock_objects['mock_orchestrator']
-        #mock_orchestrator.return_value = {'DEFAULT': mgr.VolumeManager(config,config)}
 
     def check_response(self, resp):
         # resp -> {u'Mountpoint': u'/tmp', u'Name': u'test-vol-001',
@@ -1106,7 +1106,6 @@ class TestMountPreviousVersionVolumeFCHost(MountVolumeUnitTest):
 
         mock_protocol_connector = self.mock_objects['mock_protocol_connector']
         mock_protocol_connector.connect_volume.assert_called()
-
 
 # class TestMountVolumeWithChap(MountVolumeUnitTest):
 #     def setup_mock_objects(self):

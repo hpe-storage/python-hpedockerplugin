@@ -31,10 +31,10 @@ from hpedockerplugin.hpe import volume
 
 import hpedockerplugin.backend_orchestrator as orchestrator
 
-
 LOG = logging.getLogger(__name__)
 
 DEFAULT_BACKEND_NAME = "DEFAULT"
+
 
 class VolumePlugin(object):
     """
@@ -212,13 +212,14 @@ class VolumePlugin(object):
                 compression_val = str(contents['Opts']['compression'])
                 if compression_val is not None:
                     if compression_val.lower() not in valid_compression_opts:
-                        msg = (_(
-                            'create volume failed, error is:'
-                            'passed compression parameter do not have a valid '
-                            'value. Valid vaues are: %(valid)s') %
-                            {'valid': valid_compression_opts, })
+                        msg = \
+                            _('create volume failed, error is:'
+                              'passed compression parameter'
+                              ' do not have a valid value. '
+                              ' Valid vaues are: %(valid)s') % {
+                                'valid': valid_compression_opts}
                         LOG.error(msg)
-                        return json.dumps({u"Err": six.text_type(msg)})
+                        return json.dumps({u'Err': six.text_type(msg)})
 
             if ('flash-cache' in contents['Opts'] and
                     contents['Opts']['flash-cache'] != ""):
@@ -249,7 +250,6 @@ class VolumePlugin(object):
                                                          opts)
             elif ('cloneOf' in contents['Opts']):
                 return self.volumedriver_clone_volume(name, opts)
-
 
         return self.orchestrator.volumedriver_create(volname, vol_size,
                                                      vol_prov,
