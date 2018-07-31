@@ -187,7 +187,7 @@ class VolumePlugin(object):
                     return json.dumps({u"Err": six.text_type(msg)})
 
                 existing_ref = str(contents['Opts']['importVol'])
-                return self._manager.manage_existing(volname, existing_ref)
+                return self.orchestrator.manage_existing(volname, existing_ref)
 
             if ('help' in contents['Opts']):
                 create_help_path = "./config/create_help.txt"
