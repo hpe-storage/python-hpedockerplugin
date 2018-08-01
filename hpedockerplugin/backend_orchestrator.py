@@ -92,17 +92,22 @@ class Orchestrator(object):
         return self._manager[backend].clone_volume(src_vol_name, clone_name,
                                                    size)
 
-    def create_snapshot(self, src_vol_name, snapshot_name,
-                        expiration_hrs, retention_hrs,
-                        mount_conflict_delay):
-
+    def create_snapshot(self, src_vol_name, schedName, snapshot_name,
+                        snapPrefix, expiration_hrs, exphrs, retention_hrs,
+                        rethrs, mount_conflict_delay, has_schedule,
+                        schedFrequency):
         backend = self.get_volume_backend_details(src_vol_name)
         return self._manager[backend].create_snapshot(src_vol_name,
+                                                      schedName,
                                                       snapshot_name,
+                                                      snapPrefix,
                                                       expiration_hrs,
+                                                      exphrs,
                                                       retention_hrs,
+                                                      rethrs,
                                                       mount_conflict_delay,
-                                                      backend)
+                                                      has_schedule,
+                                                      schedFrequency)
 
     def mount_volume(self, volname, vol_mount, mount_id):
         backend = self.get_volume_backend_details(volname)

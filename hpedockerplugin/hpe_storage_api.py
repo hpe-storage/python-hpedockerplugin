@@ -57,7 +57,6 @@ class VolumePlugin(object):
         # see nova/virt/libvirt/volume/iscsi.py
         self.orchestrator = orchestrator.Orchestrator(hpepluginconfig)
 
-
     def disconnect_volume_callback(self, connector_info):
         LOG.info(_LI('In disconnect_volume_callback: connector info is %s'),
                  json.dumps(connector_info))
@@ -188,7 +187,8 @@ class VolumePlugin(object):
                     return json.dumps({u"Err": six.text_type(msg)})
 
                 existing_ref = str(contents['Opts']['importVol'])
-                return self.orchestrator.manager_existing(volname, existing_ref)
+                return self.orchestrator.manage_existing(volname,
+                                                         existing_ref)
 
             if ('help' in contents['Opts']):
                 create_help_path = "./config/create_help.txt"
@@ -258,7 +258,6 @@ class VolumePlugin(object):
                                                      vol_qos,
                                                      mount_conflict_delay,
                                                      current_backend)
-
 
     def _check_schedule_frequency(self, schedFrequency):
         freq_sched = schedFrequency
@@ -375,12 +374,12 @@ class VolumePlugin(object):
                 return json.dumps({u"Err": six.text_type(msg)})
 
         return self.orchestrator.create_snapshot(src_vol_name, schedName,
-                                             snapshot_name, snapPrefix,
-                                             expiration_hrs, exphrs,
-                                             retention_hrs, rethrs,
-                                             mount_conflict_delay,
-                                             has_schedule, schedFrequency)
-                                             mount_conflict_delay)
+                                                 snapshot_name, snapPrefix,
+                                                 expiration_hrs, exphrs,
+                                                 retention_hrs, rethrs,
+                                                 mount_conflict_delay,
+                                                 has_schedule,
+                                                 schedFrequency)
 
     @app.route("/VolumeDriver.Mount", methods=["POST"])
     def volumedriver_mount(self, name):

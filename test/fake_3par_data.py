@@ -283,7 +283,7 @@ volume_with_snapshots = {
     'snapshots': [ref_to_snap1, ref_to_snap2],
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
     'is_snap': False,
-    'has_schedule': False
+    'has_schedule': False,
     'backend': 'DEFAULT'
 }
 
