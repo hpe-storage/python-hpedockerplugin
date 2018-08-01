@@ -385,8 +385,6 @@ class VolumeManager(object):
 
         return self._clone_volume(clone_name, src_vol, size, current_backend)
 
-    # def _create_snapshot_schedule(self, )
-
     def _create_snapshot_record(self, snap_vol, snapshot_name, undo_steps):
         self._etcd.save_vol(snap_vol)
         undo_steps.append({'undo_func': self._etcd.delete_vol,
