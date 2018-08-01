@@ -39,6 +39,7 @@ DEFAULT_BACKEND_NAME = "DEFAULT"
 class Orchestrator(object):
     def __init__(self, hpedefaultconfig):
         self.default_config = hpedefaultconfig
+        LOG.info('calling initialize manager objs')
         self._manager = self.initialize_manager_objects(
             self.default_config)
 
@@ -46,6 +47,7 @@ class Orchestrator(object):
         manager_objs = {}
 
         for backend_name in setupcfg.get_all_backends(CONFIG):
+            LOG.info('INITIALIZING backend  : %s' % backend_name)
             manager_objs[backend_name] = mgr.VolumeManager(
                 setupcfg.backend_config(CONFIG, backend_name),
                 defaultconfig)
@@ -53,6 +55,7 @@ class Orchestrator(object):
         return manager_objs
 
     def get_volume_backend_details(self, volname):
+        LOG.info('Getting details for volume : %s ' % (volname))
         etcd_util = mgr.VolumeManager._get_etcd_util(self.default_config)
         vol = etcd_util.get_vol_byname(volname)
 
@@ -107,7 +110,7 @@ class Orchestrator(object):
                                                       rethrs,
                                                       mount_conflict_delay,
                                                       has_schedule,
-                                                      schedFrequency)
+                                                      schedFrequency, backend)
 
     def mount_volume(self, volname, vol_mount, mount_id):
         backend = self.get_volume_backend_details(volname)

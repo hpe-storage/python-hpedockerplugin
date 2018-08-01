@@ -525,6 +525,7 @@ class VolumeManager(object):
 
         vol['snapshots'].append(db_snapshot)
         snap_vol['snap_metadata'] = db_snapshot
+        snap_vol['backend'] = current_backend
 
         try:
             self._create_snapshot_record(snap_vol, snapshot_name, undo_steps)
