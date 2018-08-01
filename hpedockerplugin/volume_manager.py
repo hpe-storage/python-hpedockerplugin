@@ -119,7 +119,8 @@ class VolumeManager(object):
         undo_steps = []
         vol = volume.createvol(volname, vol_size, vol_prov,
                                vol_flash, compression_val, vol_qos,
-                               mount_conflict_delay, False, current_backend)
+                               mount_conflict_delay, False, False,
+                               current_backend)
         try:
             self._create_volume(vol, undo_steps)
             self._apply_volume_specs(vol, undo_steps)
@@ -658,6 +659,7 @@ class VolumeManager(object):
                                      src_vol['compression'],
                                      src_vol['qos_name'],
                                      src_vol['mount_conflict_delay'], False,
+                                     False,
                                      current_backend)
         try:
             self.__clone_volume__(src_vol, clone_vol, undo_steps)
