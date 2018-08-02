@@ -91,7 +91,8 @@ volume = {
     'compression': None,
     'snapshots': [],
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
-    'is_snap': False
+    'is_snap': False,
+    'backend': 'DEFAULT'
 }
 
 json_path_info = \
@@ -126,7 +127,8 @@ vol_mounted_on_this_node = {
     'node_mount_info': {THIS_NODE_ID: ['Fake-Mount-ID']},
     'path_info': json_path_info,
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
-    'is_snap': False
+    'is_snap': False,
+    'backend': 'DEFAULT'
 }
 
 vol_mounted_on_other_node = {
@@ -143,7 +145,8 @@ vol_mounted_on_other_node = {
     'node_mount_info': {OTHER_NODE_ID: ['Fake-Mount-ID']},
     'path_info': path_info,
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
-    'is_snap': False
+    'is_snap': False,
+    'backend': 'DEFAULT'
 }
 
 volume_mounted_twice_on_this_node = {
@@ -160,7 +163,8 @@ volume_mounted_twice_on_this_node = {
     'node_mount_info': {THIS_NODE_ID: ['Fake-Mount-ID', 'Fake-Mount-ID']},
     'path_info': path_info,
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
-    'is_snap': False
+    'is_snap': False,
+    'backend': 'DEFAULT'
 }
 
 snap1_metadata = {
@@ -184,6 +188,7 @@ snap1 = {
     'snap_metadata': snap1_metadata,
     'snapshots': [],
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
+    'backend': 'DEFAULT'
 }
 
 snap2_metadata = {
@@ -278,9 +283,9 @@ volume_with_snapshots = {
     'snapshots': [ref_to_snap1, ref_to_snap2],
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
     'is_snap': False,
-    'has_schedule': False
+    'has_schedule': False,
+    'backend': 'DEFAULT'
 }
-
 
 volume_with_multilevel_snapshot = {
     'name': VOLUME_NAME,
@@ -293,7 +298,8 @@ volume_with_multilevel_snapshot = {
     'compression': None,
     'snapshots': [ref_to_snap1, ref_to_snap2, ref_to_snap3],
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
-    'is_snap': False
+    'is_snap': False,
+    'backend': 'DEFAULT'
 }
 
 volume_encrypted = {
@@ -307,7 +313,8 @@ volume_encrypted = {
     'flash_cache': None,
     'snapshots': [],
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
-    'is_snap': False
+    'is_snap': False,
+    'backend': 'DEFAULT'
 }
 
 volume_dedup_compression = {
@@ -321,7 +328,8 @@ volume_dedup_compression = {
     'provisioning': DEDUP,
     'snapshots': [],
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
-    'is_snap': False
+    'is_snap': False,
+    'backend': 'DEFAULT'
 }
 
 volume_compression = {
@@ -336,7 +344,8 @@ volume_compression = {
     'qos_name': None,
     'snapshots': [],
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
-    'is_snap': False
+    'is_snap': False,
+    'backend': 'DEFAULT'
 }
 
 volume_dedup = {
@@ -351,7 +360,8 @@ volume_dedup = {
     'compression': None,
     'snapshots': [],
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
-    'is_snap': False
+    'is_snap': False,
+    'backend': 'DEFAULT'
 }
 
 volume_qos = {
@@ -366,7 +376,8 @@ volume_qos = {
     'compression': None,
     'snapshots': [],
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
-    'is_snap': False
+    'is_snap': False,
+    'backend': 'DEFAULT'
 }
 
 volume_flash_cache = {
@@ -381,7 +392,8 @@ volume_flash_cache = {
     'compression': None,
     'snapshots': [],
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
-    'is_snap': False
+    'is_snap': False,
+    'backend': 'DEFAULT'
 }
 
 volume_flash_cache_and_qos = {
@@ -396,7 +408,8 @@ volume_flash_cache_and_qos = {
     'compression': None,
     'snapshots': [],
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
-    'is_snap': False
+    'is_snap': False,
+    'backend': 'DEFAULT'
 }
 
 wwn = ["123456789012345", "123456789054321", "unassigned-wwn1"]

@@ -22,14 +22,18 @@ import six
 import re
 
 from oslo_log import log as logging
+from config import setupcfg
 
 import hpedockerplugin.exception as exception
 from hpedockerplugin.i18n import _, _LE, _LI
 from klein import Klein
 from hpedockerplugin.hpe import volume
-import hpedockerplugin.volume_manager as mgr
+
+import hpedockerplugin.backend_orchestrator as orchestrator
 
 LOG = logging.getLogger(__name__)
+
+DEFAULT_BACKEND_NAME = "DEFAULT"
 
 
 class VolumePlugin(object):
@@ -47,10 +51,11 @@ class VolumePlugin(object):
         LOG.info(_LI('Initialize Volume Plugin'))
 
         self._reactor = reactor
+        self.conf = setupcfg.CONF
 
         # TODO: make device_scan_attempts configurable
         # see nova/virt/libvirt/volume/iscsi.py
-        self._manager = mgr.VolumeManager(hpepluginconfig)
+        self.orchestrator = orchestrator.Orchestrator(hpepluginconfig)
 
     def disconnect_volume_callback(self, connector_info):
         LOG.info(_LI('In disconnect_volume_callback: connector info is %s'),
@@ -79,7 +84,8 @@ class VolumePlugin(object):
         """
         contents = json.loads(name.content.getvalue())
         volname = contents['Name']
-        return self._manager.remove_volume(volname)
+
+        return self.orchestrator.volumedriver_remove(volname)
 
     @app.route("/VolumeDriver.Unmount", methods=["POST"])
     def volumedriver_unmount(self, name):
@@ -102,7 +108,8 @@ class VolumePlugin(object):
             vol_mount = str(contents['Opts']['mount-volume'])
 
         mount_id = contents['ID']
-        return self._manager.unmount_volume(volname, vol_mount, mount_id)
+        return self.orchestrator.volumedriver_unmount(volname,
+                                                      vol_mount, mount_id)
 
     @app.route("/VolumeDriver.Create", methods=["POST"])
     def volumedriver_create(self, name, opts=None):
@@ -140,6 +147,7 @@ class VolumePlugin(object):
         valid_compression_opts = ['true', 'false']
         mount_conflict_delay = volume.DEFAULT_MOUNT_CONFLICT_DELAY
 
+        current_backend = DEFAULT_BACKEND_NAME
         if ('Opts' in contents and contents['Opts']):
             # Verify valid Opts arguments.
             valid_compression_opts = ['true', 'false']
@@ -150,7 +158,7 @@ class VolumePlugin(object):
                                         'qos-name', 'mountConflictDelay',
                                         'help', 'importVol', 'scheduleName',
                                         'scheduleFrequency', 'snapshotPrefix',
-                                        'expHrs', 'retHrs']
+                                        'expHrs', 'retHrs', 'backend']
             for key in contents['Opts']:
                 if key not in valid_volume_create_opts:
                     msg = (_('create volume/snapshot/clone failed, error is: '
@@ -179,7 +187,8 @@ class VolumePlugin(object):
                     return json.dumps({u"Err": six.text_type(msg)})
 
                 existing_ref = str(contents['Opts']['importVol'])
-                return self._manager.manage_existing(volname, existing_ref)
+                return self.orchestrator.manage_existing(volname,
+                                                         existing_ref)
 
             if ('help' in contents['Opts']):
                 create_help_path = "./config/create_help.txt"
@@ -203,13 +212,14 @@ class VolumePlugin(object):
                 compression_val = str(contents['Opts']['compression'])
                 if compression_val is not None:
                     if compression_val.lower() not in valid_compression_opts:
-                        msg = (_(
-                            'create volume failed, error is:'
-                            'passed compression parameter do not have a valid '
-                            'value. Valid vaues are: %(valid)s') %
-                            {'valid': valid_compression_opts, })
+                        msg = \
+                            _('create volume failed, error is:'
+                              'passed compression parameter'
+                              ' do not have a valid value. '
+                              ' Valid vaues are: %(valid)s') % {
+                                'valid': valid_compression_opts}
                         LOG.error(msg)
-                        return json.dumps({u"Err": six.text_type(msg)})
+                        return json.dumps({u'Err': six.text_type(msg)})
 
             if ('flash-cache' in contents['Opts'] and
                     contents['Opts']['flash-cache'] != ""):
@@ -230,6 +240,9 @@ class VolumePlugin(object):
                                               "for mountConflictDelay. Please"
                                               "specify an integer value." %
                                               mount_conflict_delay_str})
+            if ('backend' in contents['Opts'] and
+                    contents['Opts']['backend'] != ""):
+                current_backend = str(contents['Opts']['backend'])
 
             if ('virtualCopyOf' in contents['Opts']):
                 return self.volumedriver_create_snapshot(name,
@@ -238,10 +251,13 @@ class VolumePlugin(object):
             elif ('cloneOf' in contents['Opts']):
                 return self.volumedriver_clone_volume(name, opts)
 
-        return self._manager.create_volume(volname, vol_size,
-                                           vol_prov, vol_flash,
-                                           compression_val, vol_qos,
-                                           mount_conflict_delay)
+        return self.orchestrator.volumedriver_create(volname, vol_size,
+                                                     vol_prov,
+                                                     vol_flash,
+                                                     compression_val,
+                                                     vol_qos,
+                                                     mount_conflict_delay,
+                                                     current_backend)
 
     def _check_schedule_frequency(self, schedFrequency):
         freq_sched = schedFrequency
@@ -269,7 +285,7 @@ class VolumePlugin(object):
 
         src_vol_name = str(contents['Opts']['cloneOf'])
         clone_name = contents['Name']
-        return self._manager.clone_volume(src_vol_name, clone_name, size)
+        return self.orchestrator.clone_volume(src_vol_name, clone_name, size)
 
     def volumedriver_create_snapshot(self, name, mount_conflict_delay,
                                      opts=None):
@@ -287,6 +303,7 @@ class VolumePlugin(object):
 
         src_vol_name = str(contents['Opts']['virtualCopyOf'])
         snapshot_name = contents['Name']
+
         has_schedule = False
         expiration_hrs = None
         schedFrequency = None
@@ -356,12 +373,13 @@ class VolumePlugin(object):
                 LOG.error(msg)
                 return json.dumps({u"Err": six.text_type(msg)})
 
-        return self._manager.create_snapshot(src_vol_name, schedName,
-                                             snapshot_name, snapPrefix,
-                                             expiration_hrs, exphrs,
-                                             retention_hrs, rethrs,
-                                             mount_conflict_delay,
-                                             has_schedule, schedFrequency)
+        return self.orchestrator.create_snapshot(src_vol_name, schedName,
+                                                 snapshot_name, snapPrefix,
+                                                 expiration_hrs, exphrs,
+                                                 retention_hrs, rethrs,
+                                                 mount_conflict_delay,
+                                                 has_schedule,
+                                                 schedFrequency)
 
     @app.route("/VolumeDriver.Mount", methods=["POST"])
     def volumedriver_mount(self, name):
@@ -389,7 +407,8 @@ class VolumePlugin(object):
             vol_mount = str(contents['Opts']['mount-volume'])
 
         mount_id = contents['ID']
-        return self._manager.mount_volume(volname, vol_mount, mount_id)
+
+        return self.orchestrator.mount_volume(volname, vol_mount, mount_id)
 
     @app.route("/VolumeDriver.Path", methods=["POST"])
     def volumedriver_path(self, name):
@@ -402,7 +421,8 @@ class VolumePlugin(object):
         """
         contents = json.loads(name.content.getvalue())
         volname = contents['Name']
-        return self._manager.get_path(volname)
+
+        return self.orchestrator.get_path(volname)
 
     @app.route("/VolumeDriver.Capabilities", methods=["POST"])
     def volumedriver_getCapabilities(self, body):
@@ -436,8 +456,8 @@ class VolumePlugin(object):
         if token_cnt == 2:
             snapname = tokens[1]
 
-        return self._manager.get_volume_snap_details(
-            volname, snapname, qualified_name)
+        return self.orchestrator.get_volume_snap_details(volname, snapname,
+                                                         qualified_name)
 
     @app.route("/VolumeDriver.List", methods=["POST"])
     def volumedriver_list(self, body):
@@ -448,4 +468,4 @@ class VolumePlugin(object):
 
         :return: Result indicating success.
         """
-        return self._manager.list_volumes()
+        return self.orchestrator.volumedriver_list()
