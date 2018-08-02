@@ -96,8 +96,8 @@ class TestCloneVolume(GetVolumeUnitTest):
                         u'provisioning': u'dedup',
                         u'size': 2,
                         u'mountConflictDelay': data.MOUNT_CONFLICT_DELAY,
-                        u'cpg': None,
-                        u'snap_cpg': None
+                        u'cpg': data.HPE3PAR_CPG,
+                        u'snap_cpg': data.HPE3PAR_CPG
                     }
                 },
                 u'Name': u'volume-d03338a9-9115-48a3-8dfc-35cdfcdc15a7',
@@ -153,6 +153,7 @@ class TestSyncSnapshots(GetSnapshotUnitTest):
             u'size': 2,
             u'expiration_hours': '10',
             u'retention_hours': '10',
+            u'snap_cpg': None,
             u'mountConflictDelay': data.MOUNT_CONFLICT_DELAY
         }
 

@@ -437,6 +437,11 @@ class VolumeManager(object):
             LOG.debug(msg)
             response = json.dumps({u"Err": msg})
             return response
+        snap_cpg = None
+        if 'snap_cpg' in vol and vol['snap_cpg']:
+            snap_cpg = vol['snap_cpg']
+        else:
+            snap_cpg = vol['cpg']
 
         snap_size = vol['size']
         snap_prov = vol['provisioning']
@@ -447,7 +452,7 @@ class VolumeManager(object):
         is_snap = True
         snap_vol = volume.createvol(snapshot_name, snap_size, snap_prov,
                                     snap_flash, snap_compression, snap_qos,
-                                    mount_conflict_delay, is_snap)
+                                    mount_conflict_delay, is_snap, None, snap_cpg)
 
         snapshot_id = snap_vol['id']
 
@@ -484,7 +489,6 @@ class VolumeManager(object):
                        'retention_hours': retention_hrs}
         vol['snapshots'].append(db_snapshot)
         snap_vol['snap_metadata'] = db_snapshot
-
         try:
             self._create_snapshot_record(snap_vol, snapshot_name, undo_steps)
 
@@ -693,7 +697,7 @@ class VolumeManager(object):
         snap_detail['retention_hours'] = retention_hours
         snap_detail['mountConflictDelay'] = snapinfo.get(
             'mount_conflict_delay')
-
+        snap_detail['snap_cpg'] = snapinfo.get('snap_cpg')
         snapshot['Status'].update({'snap_detail': snap_detail})
 
         response = json.dumps({u"Err": err, u"Volume": snapshot})
@@ -702,11 +706,11 @@ class VolumeManager(object):
 
     def _get_snapshot_etcd_record(self, parent_volname, snapname):
         volumeinfo = self._etcd.get_vol_byname(parent_volname)
-
         snapshots = volumeinfo.get('snapshots', None)
+        snapshot_cpg = volumeinfo.get('snap_cpg', volumeinfo.get('cpg'))
         if snapshots:
             self._sync_snapshots_from_array(volumeinfo['id'],
-                                            volumeinfo['snapshots'])
+                                            volumeinfo['snapshots'],snapshot_cpg)
             snapinfo = self._etcd.get_vol_byname(snapname)
             LOG.debug('value of snapinfo from etcd read is %s', snapinfo)
             if snapinfo is None:
@@ -737,6 +741,14 @@ class VolumeManager(object):
             parent_volname = snap_metadata['parent_name']
             snapname = snap_metadata['name']
             return self._get_snapshot_etcd_record(parent_volname, snapname)
+        if 'snap_cpg' not in volinfo or not volinfo['snap_cpg']:
+            snap_cpg = self._hpeplugin_driver.get_cpg(volinfo, False, allowSnap=True)
+            if snap_cpg:
+                volinfo['snap_cpg'] = snap_cpg
+                self._etcd.update_vol(volinfo['id'], 'snap_cpg', snap_cpg)
+        if 'cpg' not in volinfo or not volinfo['cpg']:
+            volinfo['cpg'] = self._hpeplugin_driver.get_cpg(volinfo, False, allowSnap=False)
+            self._etcd.update_vol(volinfo['id'], 'cpg', volinfo['cpg'])
 
         err = ''
         mountdir = ''
@@ -752,10 +764,10 @@ class VolumeManager(object):
                   'Mountpoint': mountdir,
                   'Devicename': devicename,
                   'Status': {}}
-
+        snapshot_cpg = volinfo.get('snap_cpg',volinfo.get('cpg'))
         if volinfo.get('snapshots') and volinfo.get('snapshots') != '':
             self._sync_snapshots_from_array(volinfo['id'],
-                                            volinfo['snapshots'])
+                                            volinfo['snapshots'], snapshot_cpg)
         # Is this request for snapshot inspect?
         if snapname:
             # Any snapshots left after synchronization with array?
@@ -1312,9 +1324,9 @@ class VolumeManager(object):
                 ss_list.append(db_ss)
         return ss_list
 
-    def _sync_snapshots_from_array(self, vol_id, db_snapshots):
+    def _sync_snapshots_from_array(self, vol_id, db_snapshots, snap_cpg):
         bkend_snapshots = \
-            self._hpeplugin_driver.get_snapshots_by_vol(vol_id)
+            self._hpeplugin_driver.get_snapshots_by_vol(vol_id, snap_cpg)
         ss_list_remove = self._get_snapshots_to_be_deleted(db_snapshots,
                                                            bkend_snapshots)
         if ss_list_remove:
