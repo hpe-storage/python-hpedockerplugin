@@ -481,3 +481,20 @@ class HPE3PARFCDriver(object):
             return common.force_remove_volume_vlun(vol_name)
         finally:
             self._logout(common)
+
+    def force_remove_3par_schedule(self, schedule_name):
+        common = self._login()
+        try:
+            return common.force_remove_3par_schedule(schedule_name)
+        finally:
+            self._logout(common)
+
+    def create_snap_schedule(self, src_vol_name, schedName, snapPrefix,
+                             exphrs, rethrs, schedFrequency):
+        common = self._login()
+        try:
+            return common.create_snap_schedule(src_vol_name, schedName,
+                                               snapPrefix, exphrs, rethrs,
+                                               schedFrequency)
+        finally:
+            self._logout(common)
