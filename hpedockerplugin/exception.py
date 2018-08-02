@@ -281,6 +281,14 @@ class HPEDriverAddVvToVvSetFailed(HPEDriverException):
     message = ""
 
 
+class HPEDriverCreateScheduleFailed(HPEDriverException):
+    message = _("Creation of snapshot schedule failed: %(reason)s")
+
+
+class HPEDriverRemoveScheduleFailed(HPEDriverException):
+    message = _("Removal of snapshot schedule failed: %(reason)s")
+
+
 class HPEDriverForceRemoveVLUNFailed(HPEDriverException):
     message = "Forced removal of VLUN failed: %(reason)"
 
