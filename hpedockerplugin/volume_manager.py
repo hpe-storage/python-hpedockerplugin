@@ -1447,8 +1447,7 @@ class VolumeManager(object):
 
     def _decrypt_password(self, hpepluginconfig):
         try:
-            result = self._etcd.read('KEY')
-            passphrase = result.value
+            passphrase = self._etcd.get_backend_key('hpepluginconfig.san_ip')
         except Exception as ex:
             LOG.info("Using Plain Text")
             return hpepluginconfig.hpe3par_password
