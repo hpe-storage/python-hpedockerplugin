@@ -54,7 +54,7 @@ class VolumePlugin(object):
 
     def disconnect_volume_callback(self, connector_info):
         LOG.info(_LI('In disconnect_volume_callback: connector info is %s'),
-             json.dumps(connector_info))
+                 json.dumps(connector_info))
 
     def disconnect_volume_error_callback(self, connector_info):
         LOG.info(_LI('In disconnect_volume_error_callback: '
@@ -98,7 +98,7 @@ class VolumePlugin(object):
 
         vol_mount = volume.DEFAULT_MOUNT_VOLUME
         if ('Opts' in contents and contents['Opts'] and
-            'mount-volume' in contents['Opts']):
+                'mount-volume' in contents['Opts']):
             vol_mount = str(contents['Opts']['mount-volume'])
 
         mount_id = contents['ID']
@@ -146,20 +146,21 @@ class VolumePlugin(object):
             # Verify valid Opts arguments.
             valid_compression_opts = ['true', 'false']
             valid_volume_create_opts = ['mount-volume', 'compression',
-                        'size', 'provisioning', 'flash-cache',
-                        'cloneOf', 'virtualCopyOf',
-                        'expirationHours', 'retentionHours',
-                        'qos-name', 'mountConflictDelay',
-                        'help', 'importVol', 'cpg', 'snap-cpg',
-                        'help','scheduleName', 'scheduleFrequency', 
-                        'snapshotPrefix', 'expHrs', 'retHrs']
+                                        'size', 'provisioning', 'flash-cache',
+                                        'cloneOf', 'virtualCopyOf',
+                                        'expirationHours', 'retentionHours',
+                                        'qos-name', 'mountConflictDelay',
+                                        'help', 'importVol', 'cpg', 'snap-cpg',
+                                        'help', 'scheduleName',
+                                        'scheduleFrequency',
+                                        'snapshotPrefix', 'expHrs', 'retHrs']
             for key in contents['Opts']:
                 if key not in valid_volume_create_opts:
                     msg = (_('create volume/snapshot/clone failed, error is: '
-                         '%(key)s is not a valid option. Valid options '
-                         'are: %(valid)s') %
-                       {'key': key,
-                        'valid': valid_volume_create_opts, })
+                             '%(key)s is not a valid option. Valid options '
+                             'are: %(valid)s') %
+                           {'key': key,
+                            'valid': valid_volume_create_opts, })
                     LOG.error(msg)
                     return json.dumps({u"Err": six.text_type(msg)})
 
@@ -167,7 +168,7 @@ class VolumePlugin(object):
             mutually_exclusive_list = ['virtualCopyOf', 'cloneOf', 'qos-name']
             input_list = list(contents['Opts'].keys())
             if (len(list(set(input_list) &
-                 set(mutually_exclusive_list))) >= 2):
+                    set(mutually_exclusive_list))) >= 2):
                 msg = (_('%(exclusive)s cannot be specified at the same '
                          'time') % {'exclusive': mutually_exclusive_list, })
                 LOG.error(msg)
@@ -478,4 +479,3 @@ class VolumePlugin(object):
         :return: Result indicating success.
         """
         return self._manager.list_volumes()
-

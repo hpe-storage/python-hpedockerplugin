@@ -471,7 +471,8 @@ class VolumeManager(object):
 
         snap_vol = volume.createvol(snapshot_name, snap_size, snap_prov,
                                     snap_flash, snap_compression, snap_qos,
-                                    mount_conflict_delay, is_snap, None, snap_cpg,has_schedule)
+                                    mount_conflict_delay, is_snap, None,
+                                    snap_cpg, has_schedule)
 
         snapshot_id = snap_vol['id']
 
@@ -763,7 +764,8 @@ class VolumeManager(object):
         snapshot_cpg = volumeinfo.get('snap_cpg', volumeinfo.get('cpg'))
         if snapshots:
             self._sync_snapshots_from_array(volumeinfo['id'],
-                                            volumeinfo['snapshots'],snapshot_cpg)
+                                            volumeinfo['snapshots'],
+                                            snapshot_cpg)
             snapinfo = self._etcd.get_vol_byname(snapname)
             LOG.debug('value of snapinfo from etcd read is %s', snapinfo)
             if snapinfo is None:
@@ -796,12 +798,14 @@ class VolumeManager(object):
             snapname = snap_metadata['name']
             return self._get_snapshot_etcd_record(parent_volname, snapname)
         if 'snap_cpg' not in volinfo or not volinfo['snap_cpg']:
-            snap_cpg = self._hpeplugin_driver.get_cpg(volinfo, False, allowSnap=True)
+            snap_cpg = self._hpeplugin_driver.get_cpg(volinfo, False,
+                                                      allowSnap=True)
             if snap_cpg:
                 volinfo['snap_cpg'] = snap_cpg
                 self._etcd.update_vol(volinfo['id'], 'snap_cpg', snap_cpg)
         if 'cpg' not in volinfo or not volinfo['cpg']:
-            volinfo['cpg'] = self._hpeplugin_driver.get_cpg(volinfo, False, allowSnap=False)
+            volinfo['cpg'] = self._hpeplugin_driver.get_cpg(volinfo, False,
+                                                            allowSnap=False)
             self._etcd.update_vol(volinfo['id'], 'cpg', volinfo['cpg'])
 
         err = ''
@@ -818,7 +822,7 @@ class VolumeManager(object):
                   'Mountpoint': mountdir,
                   'Devicename': devicename,
                   'Status': {}}
-        snapshot_cpg = volinfo.get('snap_cpg',volinfo.get('cpg'))
+        snapshot_cpg = volinfo.get('snap_cpg', volinfo.get('cpg'))
         if volinfo.get('snapshots') and volinfo.get('snapshots') != '':
             self._sync_snapshots_from_array(volinfo['id'],
                                             volinfo['snapshots'], snapshot_cpg)

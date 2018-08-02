@@ -19,7 +19,8 @@ COPYTYPE = {1: 'base', 2: 'physical', 3: 'virtual'}
 def createvol(name, size=DEFAULT_SIZE, prov=DEFAULT_PROV,
               flash_cache=None, compression_val=None, qos=None,
               mount_conflict_delay=DEFAULT_MOUNT_CONFLICT_DELAY,
-             is_snap=DEFAULT_TO_SNAP_TYPE, cpg=None, snap_cpg=None,has_schedule=DEFAULT_SCHEDULE):
+              is_snap=DEFAULT_TO_SNAP_TYPE, cpg=None, snap_cpg=None,
+              has_schedule=DEFAULT_SCHEDULE):
 
     volume = {}
     volume['id'] = str(uuid.uuid4())

@@ -639,7 +639,7 @@ class HPE3PARISCSIDriver(object):
     def get_snapshots_by_vol(self, vol_id, snp_cpg):
         common = self._login()
         try:
-            return common.get_snapshots_by_vol(vol_id,snp_cpg)
+            return common.get_snapshots_by_vol(vol_id, snp_cpg)
         finally:
             self._logout(common)
 
