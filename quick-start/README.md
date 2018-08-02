@@ -189,11 +189,11 @@ or `` /var/log/messages ``
 
 - For a cloned volume with the same size as source volume, comment field won’t be populated on 3PAR.
 
-- user not allowed to manage attached 3PAR legacy volume
+- User not allowed to manage attached 3PAR legacy volume
 
-- user needs to explicitly manage all the child snapshots, until which managed parent volume cannot be deleted
+- User needs to explicitly manage all the child snapshots, until which managed parent volume cannot be deleted
 
-- user cannot manage already managed volume by other docker host(i.e. volume thats start with 'dcv-')
+- User cannot manage already managed volume by other docker host(i.e. volume thats start with 'dcv-')
 
 ## Docker cli commands for various operations are listed in link
    https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/usage.md
