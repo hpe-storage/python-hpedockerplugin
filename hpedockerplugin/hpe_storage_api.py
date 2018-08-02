@@ -1,173 +1,173 @@
-	# (c) Copyright [2016] Hewlett Packard Enterprise Development LP
-	#
-	#    Licensed under the Apache License, Version 2.0 (the "License");
-	#    you may not use this file except in compliance with the License.
-	#    You may obtain a copy of the License at
-	#
-	#        http://www.apache.org/licenses/LICENSE-2.0
-	#
-	#    Unless required by applicable law or agreed to in writing, software
-	#    distributed under the License is distributed on an "AS IS" BASIS,
-	#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	#    See the License for the specific language governing permissions and
-	#    limitations under the License.
+# (c) Copyright [2016] Hewlett Packard Enterprise Development LP
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#        http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
 
-	"""
-	An HTTP API implementing the Docker Volumes Plugin API.
+"""
+An HTTP API implementing the Docker Volumes Plugin API.
 
-	See https://github.com/docker/docker/tree/master/docs/extend for details.
-	"""
-	import json
-	import six
-	import re
+See https://github.com/docker/docker/tree/master/docs/extend for details.
+"""
+import json
+import six
+import re
 
-	from oslo_log import log as logging
+from oslo_log import log as logging
 
-	import hpedockerplugin.exception as exception
-	from hpedockerplugin.i18n import _, _LE, _LI
-	from klein import Klein
-	from hpedockerplugin.hpe import volume
-	import hpedockerplugin.volume_manager as mgr
+import hpedockerplugin.exception as exception
+from hpedockerplugin.i18n import _, _LE, _LI
+from klein import Klein
+from hpedockerplugin.hpe import volume
+import hpedockerplugin.volume_manager as mgr
 
-	LOG = logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 
-	class VolumePlugin(object):
-	    """
-	    An implementation of the Docker Volumes Plugin API.
+class VolumePlugin(object):
+    """
+    An implementation of the Docker Volumes Plugin API.
 
-	    """
-	    app = Klein()
+    """
+    app = Klein()
 
-	    def __init__(self, reactor, hpepluginconfig):
-		"""
-		:param IReactorTime reactor: Reactor time interface implementation.
-		:param Ihpepluginconfig : hpedefaultconfig configuration
-		"""
-		LOG.info(_LI('Initialize Volume Plugin'))
+    def __init__(self, reactor, hpepluginconfig):
+        """
+        :param IReactorTime reactor: Reactor time interface implementation.
+        :param Ihpepluginconfig : hpedefaultconfig configuration
+        """
+        LOG.info(_LI('Initialize Volume Plugin'))
 
-		self._reactor = reactor
+        self._reactor = reactor
 
-		# TODO: make device_scan_attempts configurable
-		# see nova/virt/libvirt/volume/iscsi.py
-		self._manager = mgr.VolumeManager(hpepluginconfig)
+        # TODO: make device_scan_attempts configurable
+        # see nova/virt/libvirt/volume/iscsi.py
+        self._manager = mgr.VolumeManager(hpepluginconfig)
 
-	    def disconnect_volume_callback(self, connector_info):
-		LOG.info(_LI('In disconnect_volume_callback: connector info is %s'),
-			 json.dumps(connector_info))
+    def disconnect_volume_callback(self, connector_info):
+        LOG.info(_LI('In disconnect_volume_callback: connector info is %s'),
+             json.dumps(connector_info))
 
-	    def disconnect_volume_error_callback(self, connector_info):
-		LOG.info(_LI('In disconnect_volume_error_callback: '
-			     'connector info is %s'), json.dumps(connector_info))
+    def disconnect_volume_error_callback(self, connector_info):
+        LOG.info(_LI('In disconnect_volume_error_callback: '
+                 'connector info is %s'), json.dumps(connector_info))
 
-	    @app.route("/Plugin.Activate", methods=["POST"])
-	    def plugin_activate(self, ignore_body=True):
-		"""
-		Return which Docker plugin APIs this object supports.
-		"""
-		LOG.info(_LI('In Plugin Activate'))
-		return json.dumps({u"Implements": [u"VolumeDriver"]})
+    @app.route("/Plugin.Activate", methods=["POST"])
+    def plugin_activate(self, ignore_body=True):
+        """
+        Return which Docker plugin APIs this object supports.
+        """
+        LOG.info(_LI('In Plugin Activate'))
+        return json.dumps({u"Implements": [u"VolumeDriver"]})
 
-	    @app.route("/VolumeDriver.Remove", methods=["POST"])
-	    def volumedriver_remove(self, name):
-		"""
-		Remove a Docker volume.
+    @app.route("/VolumeDriver.Remove", methods=["POST"])
+    def volumedriver_remove(self, name):
+        """
+        Remove a Docker volume.
 
-		:param unicode name: The name of the volume.
+        :param unicode name: The name of the volume.
 
-		:return: Result indicating success.
-		"""
-		contents = json.loads(name.content.getvalue())
-		volname = contents['Name']
-		return self._manager.remove_volume(volname)
+        :return: Result indicating success.
+        """
+        contents = json.loads(name.content.getvalue())
+        volname = contents['Name']
+        return self._manager.remove_volume(volname)
 
-	    @app.route("/VolumeDriver.Unmount", methods=["POST"])
-	    def volumedriver_unmount(self, name):
-		"""
-		The Docker container is no longer using the given volume,
-		so unmount it.
-		NOTE: Since Docker will automatically call Unmount if the Mount
-		fails, make sure we properly handle partially completed Mounts.
+    @app.route("/VolumeDriver.Unmount", methods=["POST"])
+    def volumedriver_unmount(self, name):
+        """
+        The Docker container is no longer using the given volume,
+        so unmount it.
+        NOTE: Since Docker will automatically call Unmount if the Mount
+        fails, make sure we properly handle partially completed Mounts.
 
-		:param unicode name: The name of the volume.
-		:return: Result indicating success.
-		"""
-		LOG.info(_LI('In volumedriver_unmount'))
-		contents = json.loads(name.content.getvalue())
-		volname = contents['Name']
+        :param unicode name: The name of the volume.
+        :return: Result indicating success.
+        """
+        LOG.info(_LI('In volumedriver_unmount'))
+        contents = json.loads(name.content.getvalue())
+        volname = contents['Name']
 
-		vol_mount = volume.DEFAULT_MOUNT_VOLUME
-		if ('Opts' in contents and contents['Opts'] and
-			'mount-volume' in contents['Opts']):
-		    vol_mount = str(contents['Opts']['mount-volume'])
+        vol_mount = volume.DEFAULT_MOUNT_VOLUME
+        if ('Opts' in contents and contents['Opts'] and
+            'mount-volume' in contents['Opts']):
+            vol_mount = str(contents['Opts']['mount-volume'])
 
-		mount_id = contents['ID']
-		return self._manager.unmount_volume(volname, vol_mount, mount_id)
+        mount_id = contents['ID']
+        return self._manager.unmount_volume(volname, vol_mount, mount_id)
 
-	    @app.route("/VolumeDriver.Create", methods=["POST"])
-	    def volumedriver_create(self, name, opts=None):
-		"""
-		Create a volume with the given name.
+    @app.route("/VolumeDriver.Create", methods=["POST"])
+    def volumedriver_create(self, name, opts=None):
+        """
+        Create a volume with the given name.
 
-		:param unicode name: The name of the volume.
-		:param dict opts: Options passed from Docker for the volume
-		    at creation. ``None`` if not supplied in the request body.
-		    Currently ignored. ``Opts`` is a parameter introduced in the
-		    v2 plugins API introduced in Docker 1.9, it is not supplied
-		    in earlier Docker versions.
+        :param unicode name: The name of the volume.
+        :param dict opts: Options passed from Docker for the volume
+            at creation. ``None`` if not supplied in the request body.
+            Currently ignored. ``Opts`` is a parameter introduced in the
+            v2 plugins API introduced in Docker 1.9, it is not supplied
+            in earlier Docker versions.
 
-		:return: Result indicating success.
-		"""
-		contents = json.loads(name.content.getvalue())
-		if 'Name' not in contents:
-		    msg = (_('create volume failed, error is: Name is required.'))
-		    LOG.error(msg)
-		    raise exception.HPEPluginCreateException(reason=msg)
-		volname = contents['Name']
+        :return: Result indicating success.
+        """
+        contents = json.loads(name.content.getvalue())
+        if 'Name' not in contents:
+            msg = (_('create volume failed, error is: Name is required.'))
+            LOG.error(msg)
+            raise exception.HPEPluginCreateException(reason=msg)
+        volname = contents['Name']
 
-		is_valid_name = re.match("^[A-Za-z0-9]+[A-Za-z0-9_-]+$", volname)
-		if not is_valid_name:
-		    msg = 'Invalid volume name: %s is passed.' % volname
-		    LOG.debug(msg)
-		    response = json.dumps({u"Err": msg})
-		    return response
+        is_valid_name = re.match("^[A-Za-z0-9]+[A-Za-z0-9_-]+$", volname)
+        if not is_valid_name:
+            msg = 'Invalid volume name: %s is passed.' % volname
+            LOG.debug(msg)
+            response = json.dumps({u"Err": msg})
+            return response
 
-		vol_size = volume.DEFAULT_SIZE
-		vol_prov = volume.DEFAULT_PROV
-		vol_flash = volume.DEFAULT_FLASH_CACHE
-		vol_qos = volume.DEFAULT_QOS
-		compression_val = volume.DEFAULT_COMPRESSION_VAL
-		valid_compression_opts = ['true', 'false']
-		mount_conflict_delay = volume.DEFAULT_MOUNT_CONFLICT_DELAY
-		cpg = None
-		snap_cpg = None
+        vol_size = volume.DEFAULT_SIZE
+        vol_prov = volume.DEFAULT_PROV
+        vol_flash = volume.DEFAULT_FLASH_CACHE
+        vol_qos = volume.DEFAULT_QOS
+        compression_val = volume.DEFAULT_COMPRESSION_VAL
+        valid_compression_opts = ['true', 'false']
+        mount_conflict_delay = volume.DEFAULT_MOUNT_CONFLICT_DELAY
+        cpg = None
+        snap_cpg = None
 
-		if ('Opts' in contents and contents['Opts']):
-		    # Verify valid Opts arguments.
-		    valid_compression_opts = ['true', 'false']
-		    valid_volume_create_opts = ['mount-volume', 'compression',
-						'size', 'provisioning', 'flash-cache',
-						'cloneOf', 'virtualCopyOf',
-						'expirationHours', 'retentionHours',
-						'qos-name', 'mountConflictDelay',
-						'help', 'importVol', 'cpg', 'snap-cpg',
-						'help','scheduleName', 'scheduleFrequency', 
-						'snapshotPrefix', 'expHrs', 'retHrs']
-		    for key in contents['Opts']:
-			if key not in valid_volume_create_opts:
-			    msg = (_('create volume/snapshot/clone failed, error is: '
-				     '%(key)s is not a valid option. Valid options '
-				     'are: %(valid)s') %
-				   {'key': key,
-				    'valid': valid_volume_create_opts, })
-			    LOG.error(msg)
-			    return json.dumps({u"Err": six.text_type(msg)})
+        if ('Opts' in contents and contents['Opts']):
+            # Verify valid Opts arguments.
+            valid_compression_opts = ['true', 'false']
+            valid_volume_create_opts = ['mount-volume', 'compression',
+                        'size', 'provisioning', 'flash-cache',
+                        'cloneOf', 'virtualCopyOf',
+                        'expirationHours', 'retentionHours',
+                        'qos-name', 'mountConflictDelay',
+                        'help', 'importVol', 'cpg', 'snap-cpg',
+                        'help','scheduleName', 'scheduleFrequency', 
+                        'snapshotPrefix', 'expHrs', 'retHrs']
+            for key in contents['Opts']:
+                if key not in valid_volume_create_opts:
+                    msg = (_('create volume/snapshot/clone failed, error is: '
+                         '%(key)s is not a valid option. Valid options '
+                         'are: %(valid)s') %
+                       {'key': key,
+                        'valid': valid_volume_create_opts, })
+                    LOG.error(msg)
+                    return json.dumps({u"Err": six.text_type(msg)})
 
-		    # mutually exclusive options check
-		    mutually_exclusive_list = ['virtualCopyOf', 'cloneOf', 'qos-name']
-		    input_list = list(contents['Opts'].keys())
-		    if (len(list(set(input_list) &
-				 set(mutually_exclusive_list))) >= 2):
+            # mutually exclusive options check
+            mutually_exclusive_list = ['virtualCopyOf', 'cloneOf', 'qos-name']
+            input_list = list(contents['Opts'].keys())
+            if (len(list(set(input_list) &
+                 set(mutually_exclusive_list))) >= 2):
                 msg = (_('%(exclusive)s cannot be specified at the same '
                          'time') % {'exclusive': mutually_exclusive_list, })
                 LOG.error(msg)
@@ -478,3 +478,4 @@
         :return: Result indicating success.
         """
         return self._manager.list_volumes()
+
