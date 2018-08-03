@@ -90,7 +90,7 @@ hpedockerplugin:
      - /opt/hpe/data:/opt/hpe/data:rshared
   ```
 
-- Start the plugin container by `docker-compose docker-compose.yml`
+- Start the plugin container by `docker-compose -f docker-compose.yml up`
 - create 2 symbolic links by using these steps
 ```
 mkdir -p /run/docker/plugins/hpe
