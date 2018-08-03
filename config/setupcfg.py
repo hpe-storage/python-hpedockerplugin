@@ -49,7 +49,6 @@ host_opts = [
 CONF = cfg.CONF
 logging.register_options(CONF)
 
-CONF.register_opts(host_opts)
 
 
 def setup_logging(name, level):
@@ -69,6 +68,27 @@ def setup_logging(name, level):
 
 def getdefaultconfig(configfile):
     CONF(configfile, project='hpedockerplugin', version='1.0.0')
+    sections = CONF.list_all_sections()
+    print("WILLIAM -- SECTION NAME: %s" % sections)
+    for section in sections:
+        opt_group = cfg.OptGroup(name=section,
+                                 title=section)
+        CONF.register_group(opt_group)
+        CONF.register_opts(host_opts, group=section)
+
     configuration = conf.Configuration(host_opts, config_group='DEFAULT')
 
     return configuration
+
+def backend_config(configfile, backend_name):
+    CONF(configfile, project='hpedockerplugin', version='1.0.0')
+    backend_configuration = conf.Configuration(host_opts, config_group=backend_name)
+
+    return backend_configuration
+
+def get_all_backends(configfile):
+    CONF(configfile, project='hpedockerplugin', version='1.0.0')
+    sections = CONF.list_all_sections()
+
+    return sections
+

@@ -3,6 +3,8 @@ import test.fake_3par_data as data
 import test.createvolume_tester as createvolume
 from hpedockerplugin import exception as hpe_exc
 from hpe3parclient import exceptions
+from test.setup_mock import create_configuration
+import hpedockerplugin.volume_manager as mgr
 
 
 # Variation of CreateVolumeUnitTest. Nothing specific to do here
@@ -379,6 +381,12 @@ class TestCloneWithCHAP(CloneVolumeUnitTest):
         mock_3parclient.getCPG.return_value = {}
         mock_3parclient.getVolumeMetaData.return_value = {'value': True}
         mock_3parclient.getTask.return_value = {'status': data.TASK_DONE}
+        config = create_configuration('ISCSI')
+        config.hpe3par_iscsi_chap_enabled = True
+        config.use_multipath = False
+        mock_orchestrator = self.mock_objects['mock_orchestrator']
+        mock_orchestrator.return_value = \
+            {'DEFAULT': mgr.VolumeManager(config, config)}
 
 
 # TODO: Compression related TCs to be added later

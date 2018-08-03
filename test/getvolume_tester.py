@@ -23,7 +23,8 @@ class TestQosVolume(GetVolumeUnitTest):
         return {"Name": data.VOLUME_NAME,
                 "Opts": {"provisioning": "thin",
                          "qos-name": "vvk_vvset",
-                         "size": "2"}}
+                         "size": "2",
+                         "backend": "DEFAULT"}}
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
@@ -132,6 +133,7 @@ class TestSyncSnapshots(GetSnapshotUnitTest):
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
         mock_etcd.get_vol_byname.side_effect = [
+            None,
             self._snap1,
             self._vol_with_snaps,
             self._snap2,
