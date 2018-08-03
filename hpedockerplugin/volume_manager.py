@@ -806,13 +806,13 @@ class VolumeManager(object):
             parent_volname = snap_metadata['parent_name']
             snapname = snap_metadata['name']
             return self._get_snapshot_etcd_record(parent_volname, snapname)
-        if 'snap_cpg' not in volinfo or not volinfo['snap_cpg']:
+        if 'snap_cpg' not in volinfo:
             snap_cpg = self._hpeplugin_driver.get_cpg(volinfo, False,
                                                       allowSnap=True)
             if snap_cpg:
                 volinfo['snap_cpg'] = snap_cpg
                 self._etcd.update_vol(volinfo['id'], 'snap_cpg', snap_cpg)
-        if 'cpg' not in volinfo or not volinfo['cpg']:
+        if 'cpg' not in volinfo:
             volinfo['cpg'] = self._hpeplugin_driver.get_cpg(volinfo, False,
                                                             allowSnap=False)
             self._etcd.update_vol(volinfo['id'], 'cpg', volinfo['cpg'])

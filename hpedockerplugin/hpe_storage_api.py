@@ -241,15 +241,15 @@ class VolumePlugin(object):
 
             if ('mountConflictDelay' in contents['Opts'] and
                     contents['Opts']['mountConflictDelay'] != ""):
-                mountConflictDelay = str(contents['Opts']
-                                         ['mountConflictDelay'])
+                mount_conflict_delay_str = str(contents['Opts']
+                                               ['mountConflictDelay'])
                 try:
-                    mount_conflict_delay = int(mountConflictDelay)
+                    mount_conflict_delay = int(mount_conflict_delay_str)
                 except ValueError as ex:
                     return json.dumps({'Err': "Invalid value '%s' specified "
                                               "for mountConflictDelay. Please"
                                               "specify an integer value." %
-                                              mount_conflict_delay})
+                                              mount_conflict_delay_str})
             if ('backend' in contents['Opts'] and
                     contents['Opts']['backend'] != ""):
                 current_backend = str(contents['Opts']['backend'])
