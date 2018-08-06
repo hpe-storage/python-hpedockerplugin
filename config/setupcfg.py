@@ -44,15 +44,6 @@ host_opts = [
     cfg.BoolOpt('enforce_multipath',
                default=False,
                help='Toggle enforcing of multipath for volume attachments.'),
-    cfg.IntOpt('wait_exponential_multiplier',
-                default=1000,
-                help=''),
-    cfg.IntOpt('wait_exponential_max',
-               default=10000,
-               help=''),
-    cfg.IntOpt('stop_max_delay',
-               default=10000,
-               help=''),
 ]
 
 CONF = cfg.CONF

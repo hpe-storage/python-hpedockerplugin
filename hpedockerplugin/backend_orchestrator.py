@@ -78,7 +78,8 @@ class Orchestrator(object):
     def volumedriver_create(self, volname, vol_size,
                             vol_prov, vol_flash,
                             compression_val, vol_qos,
-                            mount_conflict_delay, current_backend):
+                            mount_conflict_delay, current_backend,
+                            rcg_name):
 
         return self._manager[current_backend].create_volume(
             volname,
@@ -88,7 +89,8 @@ class Orchestrator(object):
             compression_val,
             vol_qos,
             mount_conflict_delay,
-            current_backend)
+            current_backend,
+            rcg_name)
 
     def clone_volume(self, src_vol_name, clone_name, size):
         backend = self.get_volume_backend_details(src_vol_name)

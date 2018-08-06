@@ -14,7 +14,6 @@ from twisted.python.filepath import FilePath
 
 import hpedockerplugin.exception as exception
 import hpedockerplugin.fileutil as fileutil
-import hpedockerplugin.heartbeat as hb
 import math
 import re
 import hpedockerplugin.hpe.array_connection_params as acp
@@ -103,7 +102,7 @@ class VolumeManager(object):
             self._etcd.delete_active_driver_info(self.src_bkend_config.backend_id,
                                                  self.tgt_bkend_config.backend_id)
             self._set_active_driver()
-            self._enable_array_heartbeat_monitor()
+            # self._enable_array_heartbeat_monitor()
 
         # Volume fencing requirement
         self._node_id = self._get_node_id()
@@ -195,21 +194,6 @@ class VolumeManager(object):
             hpe3par_cpgs.append(cpgs[1])
 
         return hpe3par_cpgs
-
-    def _enable_array_heartbeat_monitor(self):
-        # TODO: Read from ETCD the currently active storage and
-        # self._active_array_conn_info = \
-        #     self._etcd.get_active_array_conn_info()
-
-        config = self.tgt_bkend_config
-        if self._hpeplugin_driver == self._primary_driver:
-            config = self.src_bkend_config
-
-        # pass appropriate configuration dictionary to HeartbeatChecker
-        self._heartbeat_checker = hb.HeartbeatChecker(
-            config, self)
-        self._hbm_thread = hb.ForeverThread(self._heartbeat_checker)
-        self._hbm_thread.start()
 
     def _swap_active_driver(self):
         active_driver_info = self._etcd.get_active_driver_info(
