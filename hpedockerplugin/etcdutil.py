@@ -22,6 +22,7 @@ import hpedockerplugin.exception as exception
 LOG = logging.getLogger(__name__)
 
 VOLUMEROOT = '/volumes'
+BACKENDROOT = '/backend'
 LOCKROOT = '/volumes-lock'
 
 
@@ -48,6 +49,7 @@ class EtcdUtil(object):
 
         self.volumeroot = VOLUMEROOT + '/'
         self.lockroot = LOCKROOT + '/'
+        self.backendroot = BACKENDROOT + '/'
         if client_cert is not None and client_key is not None:
             if len(host_tuple) > 0:
                 LOG.info('ETCDUTIL host tuple is not None')
@@ -76,6 +78,10 @@ class EtcdUtil(object):
             self.client.read(VOLUMEROOT)
         except etcd.EtcdKeyNotFound:
             self.client.write(VOLUMEROOT, None, dir=True)
+        try:
+            self.client.read(BACKENDROOT)
+        except etcd.EtcdKeyNotFound:
+            self.client.write(BACKENDROOT, None, dir=True)
         except Exception as ex:
             msg = (_('Could not init EtcUtil: %s'), six.text_type(ex))
             LOG.error(msg)
@@ -180,5 +186,7 @@ class EtcdUtil(object):
                 return json.loads(info['path_info'])
         return None
 
-    def read(self, key):
-        return self.client.read(key)
+    def get_backend_key(self, backend):
+        passphrase = self.backendroot + backend
+        result = self.client.read(passphrase)
+        return result.value

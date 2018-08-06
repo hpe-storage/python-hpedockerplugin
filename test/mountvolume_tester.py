@@ -4,6 +4,8 @@ import copy
 import test.fake_3par_data as data
 import test.hpe_docker_unit_test as hpedockerunittest
 from hpe3parclient import exceptions
+import hpedockerplugin.volume_manager as mgr
+from test.setup_mock import create_configuration
 
 
 class MountVolumeUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):
@@ -32,6 +34,10 @@ class MountVolumeUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):
             mock_etcd.get_vol_byname.return_value = self._vol
             # Allow child class to make changes
             self.setup_mock_etcd()
+            # mock_orchestrator_obj = self.mock_objects['mock_orchestrator']
+            # config = super(type(self), self)._get_configuration()
+            # mock_orchestrator_obj.initialize_manager_objects.return_value = \
+            #    {'DEFAULT': mgr.VolumeManager(config,config)}
 
         def _setup_mock_fileutil():
             mock_fileutil = self.mock_objects['mock_fileutil']
@@ -515,6 +521,13 @@ class TestMountVolumeISCSIHostChapOn(MountVolumeUnitTest):
         # Same connector has info for both FC and ISCSI
         mock_connector.get_connector_properties.return_value = \
             data.connector
+        config = create_configuration('ISCSI')
+        config.hpe3par_iscsi_chap_enabled = True
+        config.use_multipath = False
+        mock_orchestrator = self.mock_objects['mock_orchestrator']
+        mock_orchestrator.return_value = {'DEFAULT':
+                                          mgr.VolumeManager(config,
+                                                            config, 'DEFAULT')}
 
     def override_configuration(self, config):
         config.hpe3par_iscsi_chap_enabled = True
@@ -802,7 +815,8 @@ class TestVolFencingGracefulUnmount(MountVolumeUnitTest):
             self._vol_mounted_on_other_node['is_snap'] = True
             self._vol_mounted_on_other_node['display_name'] = \
                 data.SNAPSHOT_NAME1
-            self._vol_mounted_on_other_node['snap_metadata'] = data.snap1_metadata
+            self._vol_mounted_on_other_node['snap_metadata'] = \
+                data.snap1_metadata
             self._vol_mounted_on_other_node['id'] = data.SNAPSHOT_ID1
             self._unmounted_vol['is_snap'] = True
             self._unmounted_vol['display_name'] = data.SNAPSHOT_NAME1
@@ -875,7 +889,8 @@ class TestVolFencingForcedUnmount(MountVolumeUnitTest):
             self._vol_mounted_on_other_node['display_name'] = \
                 data.SNAPSHOT_NAME1
             self._vol_mounted_on_other_node['id'] = data.SNAPSHOT_ID1
-            self._vol_mounted_on_other_node['snap_metadata'] = data.snap1_metadata
+            self._vol_mounted_on_other_node['snap_metadata'] = \
+                data.snap1_metadata
 
     def setup_mock_etcd(self):
         mock_etcd = self.mock_objects['mock_etcd']
@@ -1095,7 +1110,6 @@ class TestMountPreviousVersionVolumeFCHost(MountVolumeUnitTest):
 
         mock_protocol_connector = self.mock_objects['mock_protocol_connector']
         mock_protocol_connector.connect_volume.assert_called()
-
 
 # class TestMountVolumeWithChap(MountVolumeUnitTest):
 #     def setup_mock_objects(self):

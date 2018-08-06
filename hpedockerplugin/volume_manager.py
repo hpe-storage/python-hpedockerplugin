@@ -32,7 +32,7 @@ LOG = logging.getLogger(__name__)
 
 
 class VolumeManager(object):
-    def __init__(self, hpepluginconfig):
+    def __init__(self, hpepluginconfig, default_config, backend_name):
         self._hpepluginconfig = hpepluginconfig
         self._hpepluginconfig.append_config_values(opts.hpe3par_opts)
         self._my_ip = netutils.get_my_ipv4()
@@ -44,9 +44,10 @@ class VolumeManager(object):
         self._use_multipath = True
         self._enforce_multipath = True
 
-        self._etcd = self._get_etcd_util(hpepluginconfig)
+        self._etcd = self._get_etcd_util(default_config)
         hpepluginconfig.hpe3par_password = self._decrypt_password(
-                                                      hpepluginconfig)
+                                               hpepluginconfig, backend_name)
+
         self._initialize_driver(hpepluginconfig)
         self._connector = self._get_connector(hpepluginconfig)
 
@@ -96,18 +97,18 @@ class VolumeManager(object):
         return node_id
 
     @staticmethod
-    def _get_etcd_util(hpepluginconfig):
+    def _get_etcd_util(default_config):
         return util.EtcdUtil(
-            hpepluginconfig.host_etcd_ip_address,
-            hpepluginconfig.host_etcd_port_number,
-            hpepluginconfig.host_etcd_client_cert,
-            hpepluginconfig.host_etcd_client_key)
+            default_config.host_etcd_ip_address,
+            default_config.host_etcd_port_number,
+            default_config.host_etcd_client_cert,
+            default_config.host_etcd_client_key)
 
     @synchronization.synchronized('{volname}')
     def create_volume(self, volname, vol_size, vol_prov,
                       vol_flash, compression_val, vol_qos,
                       fs_owner, fs_mode,
-                      mount_conflict_delay):
+                      mount_conflict_delay, current_backend):
         LOG.info('In _volumedriver_create')
 
         # NOTE: Since Docker passes user supplied names and not a unique
@@ -129,7 +130,8 @@ class VolumeManager(object):
         undo_steps = []
         vol = volume.createvol(volname, vol_size, vol_prov,
                                vol_flash, compression_val, vol_qos,
-                               mount_conflict_delay)
+                               mount_conflict_delay, False, False,
+                               current_backend)
         try:
             self._create_volume(vol, undo_steps)
             self._apply_volume_specs(vol, undo_steps)
@@ -211,7 +213,7 @@ class VolumeManager(object):
         return volume.DEFAULT_COMPRESSION_VAL
 
     def manage_existing(self, volname, existing_ref):
-        LOG.info('Managing a %(existing_ref)s', {'existing_ref': existing_ref})
+        LOG.info('Managing a %(vol)s' % {'vol': existing_ref})
 
         # NOTE: Since Docker passes user supplied names and not a unique
         # uuid, we can't allow duplicate volume names to exist
@@ -223,7 +225,7 @@ class VolumeManager(object):
 
         # Make sure the reference is not in use.
         if existing_ref.startswith('dcv-') or existing_ref.startswith('dcs-'):
-            msg = (_('target: %s is already in-use'), existing_ref)
+            msg = (_('target: %s is already in-use') % existing_ref)
             LOG.error(msg)
             return json.dumps({u"Err": six.text_type(msg)})
 
@@ -231,68 +233,77 @@ class VolumeManager(object):
         parent_vol = ""
         try:
             # check target volume exists in 3par
-            volume_detail_3par_old = \
+            existing_ref_details = \
                 self._hpeplugin_driver.get_volume_detail(existing_ref)
         except Exception as ex:
             msg = (_(
-                'Volume:%(existing_ref)s does not exists Error: %(ex)s'),
-                {'existing_ref': existing_ref, 'ex': six.text_type(ex)})
+                'Volume:%(existing_ref)s does not exists Error: %(ex)s')
+                % {'existing_ref': existing_ref, 'ex': six.text_type(ex)})
             LOG.exception(msg)
             return json.dumps({u"Err": six.text_type(msg)})
 
-        vvset_name = self._hpeplugin_driver.get_vvset_name(
-            volume_detail_3par_old['name'])
-        if vvset_name is not None:
-            LOG.info('vvset_name: %(vvset_name)s', {'vvset_name': vvset_name})
+        vvset_detail = self._hpeplugin_driver.get_vvset_detail(
+            existing_ref_details['name'])
+        if vvset_detail is not None:
+            vvset_name = vvset_detail.get('name')
+            LOG.info('vvset_name: %(vvset)s' % {'vvset': vvset_name})
+
+            # check and set the flash-cache if exists
+            if(vvset_detail.get('flashCachePolicy') is not None and
+               vvset_detail.get('flashCachePolicy') == 1):
+                vol['flash_cache'] = True
+
             try:
                 self._hpeplugin_driver.get_qos_detail(vvset_name)
                 LOG.info('Volume:%(existing_ref)s is in vvset_name:'
-                         '%(vvset_name)s associated with QOS',
-                         {'existing_ref': existing_ref,
-                          'vvset_name': vvset_name})
+                         '%(vvset_name)s associated with QOS'
+                         % {'existing_ref': existing_ref,
+                            'vvset_name': vvset_name})
                 vol["qos_name"] = vvset_name
             except Exception as ex:
                 msg = (_(
                     'volume is in vvset:%(vvset_name)s and not associated with'
-                    ' QOS error:%(ex)s'), {
+                    ' QOS error:%(ex)s') % {
                         'vvset_name': vvset_name,
                         'ex': six.text_type(ex)})
                 LOG.error(msg)
-                return json.dumps({u"Err": six.text_type(msg)})
+                if not vol['flash_cache']:
+                    return json.dumps({u"Err": six.text_type(msg)})
 
         # since we have only 'importVol' option for importing,
         # both volume and snapshot
         # throw error when user tries to manage snapshot,
         # before managing parent
-        copyType = volume_detail_3par_old.get('copyType')
+        copyType = existing_ref_details.get('copyType')
         if volume.COPYTYPE.get(copyType) == 'virtual':
             # it's a snapshot, so check whether its parent is managed or not ?
             try:
                 # convert parent volume name to its uuid,
                 # which is then check in etcd for existence
-                vol_id = utils.get_vol_id(volume_detail_3par_old["copyOf"])
-                LOG.info('parent volume ID: %(parent_vol_id)s',
-                         {'parent_vol_id': vol_id})
+                vol_id = utils.get_vol_id(existing_ref_details["copyOf"])
+                LOG.info('parent volume ID: %(parent_vol_id)s'
+                         % {'parent_vol_id': vol_id})
                 # check parent uuid is present in etcd, or not ?
                 parent_vol = self._etcd.get_vol_by_id(vol_id)
+                vol['flash_cache'] = parent_vol['flash_cache']
                 # parent vol is present so manage a snapshot now
                 is_snap = True
             except Exception as ex:
                 msg = (_(
                     'Manage snapshot failed because parent volume: '
-                    '%(parent_volume)s is unmanaged Error: %(error)s'), {
+                    '%(parent_volume)s is unmanaged Error: %(error)s') % {
                         'error': six.text_type(ex),
-                        'parent_volume': volume_detail_3par_old["copyOf"]})
+                        'parent_volume': existing_ref_details["copyOf"]})
                 LOG.exception(msg)
                 return json.dumps({u"Err": six.text_type(msg)})
 
         try:
             volume_detail_3par = self._hpeplugin_driver.manage_existing(
-                vol, existing_ref, is_snap=is_snap)
+                vol, existing_ref_details, is_snap=is_snap)
         except Exception as ex:
-            msg = (_('Manage volume failed Error: %s'), six.text_type(ex))
+            msg = (_('Manage volume failed Error: %s') % six.text_type(ex))
             LOG.exception(msg)
-            return json.dumps({u"Err": six.text_type(ex)})
+            return json.dumps({u"Err": six.text_type(msg)})
 
         try:
             # mapping
@@ -302,9 +313,6 @@ class VolumeManager(object):
                 self.map_3par_volume_prov_to_docker(volume_detail_3par)
             vol['compression'] = \
                 self.map_3par_volume_compression_to_docker(volume_detail_3par)
-            vol['qos_name'] = vvset_name
-            # TODO(sonivi): map flash_cache
-            vol['flash_cache'] = volume.DEFAULT_FLASH_CACHE
 
             if is_snap:
                 # managing a snapshot
@@ -336,7 +344,7 @@ class VolumeManager(object):
 
             self._etcd.save_vol(vol)
         except Exception as ex:
-            msg = (_('Manage volume failed Error: %s'), six.text_type(ex))
+            msg = (_('Manage volume failed Error: %s') % six.text_type(ex))
             LOG.exception(msg)
             undo_steps = []
             undo_steps.append(
@@ -345,8 +353,8 @@ class VolumeManager(object):
                      'volume': volume_detail_3par,
                      'existing_ref': volume_detail_3par.get('name'),
                      'is_snap': is_snap,
-                     'target_vol_name': volume_detail_3par_old.get('name'),
-                     'comment': volume_detail_3par_old.get('comment')},
+                     'target_vol_name': existing_ref_details.get('name'),
+                     'comment': existing_ref_details.get('comment')},
                  'msg': 'Cleaning up manage'})
             self._rollback(undo_steps)
             return json.dumps({u"Err": six.text_type(ex)})
@@ -355,7 +363,7 @@ class VolumeManager(object):
 
     @synchronization.synchronized('{src_vol_name}')
     def clone_volume(self, src_vol_name, clone_name,
-                     size=None):
+                     size=None, current_backend='DEFAULT'):
         # Check if volume is present in database
         src_vol = self._etcd.get_vol_byname(src_vol_name)
         mnt_conf_delay = volume.DEFAULT_MOUNT_CONFLICT_DELAY
@@ -389,7 +397,7 @@ class VolumeManager(object):
             src_vol['snapshots'] = []
             self._etcd.save_vol(src_vol)
 
-        return self._clone_volume(clone_name, src_vol, size)
+        return self._clone_volume(clone_name, src_vol, size, current_backend)
 
     def _create_snapshot_record(self, snap_vol, snapshot_name, undo_steps):
         self._etcd.save_vol(snap_vol)
@@ -399,9 +407,11 @@ class VolumeManager(object):
                                   " from ETCD..." % snapshot_name})
 
     @synchronization.synchronized('{snapshot_name}')
-    def create_snapshot(self, src_vol_name, snapshot_name,
-                        expiration_hrs, retention_hrs,
-                        mount_conflict_delay):
+    def create_snapshot(self, src_vol_name, schedName, snapshot_name,
+                        snapPrefix, expiration_hrs, exphrs, retention_hrs,
+                        rethrs, mount_conflict_delay, has_schedule,
+                        schedFrequency, current_backend='DEFAULT'):
+
         # Check if volume is present in database
         snap = self._etcd.get_vol_byname(snapshot_name)
         if snap:
@@ -410,22 +420,30 @@ class VolumeManager(object):
             response = json.dumps({'Err': msg})
             return response
 
-        return self._create_snapshot(src_vol_name, snapshot_name,
-                                     expiration_hrs, retention_hrs,
-                                     mount_conflict_delay)
+        return self._create_snapshot(src_vol_name, schedName, snapshot_name,
+                                     snapPrefix, expiration_hrs, exphrs,
+                                     retention_hrs, rethrs,
+                                     mount_conflict_delay, has_schedule,
+                                     schedFrequency, current_backend)
 
     @synchronization.synchronized('{src_vol_name}')
-    def _create_snapshot(self, src_vol_name, snapshot_name,
-                         expiration_hrs, retention_hrs,
-                         mount_conflict_delay):
+    def _create_snapshot(self, src_vol_name, schedName, snapshot_name,
+                         snapPrefix, expiration_hrs, exphrs, retention_hrs,
+                         rethrs, mount_conflict_delay, has_schedule,
+                         schedFrequency, current_backend):
+
         vol = self._etcd.get_vol_byname(src_vol_name)
         if vol is None:
             msg = 'source volume: %s does not exist' % src_vol_name
             LOG.debug(msg)
             response = json.dumps({u"Err": msg})
             return response
-
         volid = vol['id']
+        if 'has_schedule' not in vol:
+            vol_sched_flag = volume.DEFAULT_SCHEDULE
+            vol['has_schedule'] = vol_sched_flag
+            self._etcd.update_vol(volid, 'has_schedule', vol_sched_flag)
+
         # Check if this is an old volume type. If yes, add is_snap flag to it
         if 'is_snap' not in vol:
             vol_snap_flag = volume.DEFAULT_TO_SNAP_TYPE
@@ -436,6 +454,7 @@ class VolumeManager(object):
             vol['compression'] = None
             vol['qos_name'] = None
             vol['mount_conflict_delay'] = mount_conflict_delay
+            vol['backend'] = current_backend
 
         # Check if instead of specifying parent volume, user incorrectly
         # specified snapshot as virtualCopyOf parameter. If yes, return error.
@@ -453,12 +472,29 @@ class VolumeManager(object):
         snap_qos = volume.DEFAULT_QOS
 
         is_snap = True
+
         snap_vol = volume.createvol(snapshot_name, snap_size, snap_prov,
                                     snap_flash, snap_compression, snap_qos,
-                                    mount_conflict_delay, is_snap)
+                                    mount_conflict_delay, is_snap,
+                                    has_schedule, current_backend)
 
         snapshot_id = snap_vol['id']
 
+        if snap_vol['has_schedule']:
+            try:
+                src_3par_vol_name = utils.get_3par_vol_name(vol['id'])
+                self._hpeplugin_driver.create_snap_schedule(src_3par_vol_name,
+                                                            schedName,
+                                                            snapPrefix,
+                                                            exphrs, rethrs,
+                                                            schedFrequency)
+            except Exception as ex:
+                msg = (_('create snapshot failed, error is: %s')
+                       % six.text_type(ex))
+                LOG.error(msg)
+                return json.dumps({u"Err": six.text_type(ex)})
+
+        # this 'snapshot dict'is for creating snap at 3par
         snapshot = {'id': snapshot_id,
                     'display_name': snapshot_name,
                     'volume_id': vol['id'],
@@ -478,12 +514,13 @@ class VolumeManager(object):
                  'msg': 'Cleaning up backend snapshot: %s...'
                         % bkend_snap_name})
         except Exception as ex:
-            msg = (_('create snapshot failed, error is: %s'),
-                   six.text_type(ex))
+            msg = (_('create snapshot failed, error is: %s')
+                   % six.text_type(ex))
             LOG.error(msg)
             return json.dumps({u"Err": six.text_type(ex)})
 
         # Add back reference to child snapshot in volume metadata
+
         db_snapshot = {'name': snapshot_name,
                        'id': snapshot_id,
                        'parent_name': src_vol_name,
@@ -492,8 +529,18 @@ class VolumeManager(object):
                        'fsOwner': vol['fsOwner'],
                        'expiration_hours': expiration_hrs,
                        'retention_hours': retention_hrs}
+        if has_schedule:
+            snap_schedule = {
+                'schedule_name': schedName,
+                'snap_name_prefix': snapPrefix,
+                'sched_frequency': schedFrequency,
+                'sched_snap_exp_hrs': exphrs,
+                'sched_snap_ret_hrs': rethrs}
+            db_snapshot['snap_schedule'] = snap_schedule
+
         vol['snapshots'].append(db_snapshot)
         snap_vol['snap_metadata'] = db_snapshot
+        snap_vol['backend'] = current_backend
 
         try:
             self._create_snapshot_record(snap_vol, snapshot_name, undo_steps)
@@ -542,6 +589,12 @@ class VolumeManager(object):
                 response = json.dumps({u"Err": msg})
                 return response
             else:
+                if 'has_schedule' in vol and vol['has_schedule']:
+                    schedule_info = vol['snap_metadata']['snap_schedule']
+                    sched_name = schedule_info['schedule_name']
+                    self._hpeplugin_driver.force_remove_3par_schedule(
+                        sched_name)
+
                 self._hpeplugin_driver.delete_volume(vol, is_snap)
                 LOG.info(_LI('volume: %(name)s,' 'was successfully deleted'),
                          {'name': volname})
@@ -613,7 +666,7 @@ class VolumeManager(object):
                 return response
 
     @synchronization.synchronized('{clone_name}')
-    def _clone_volume(self, clone_name, src_vol, size):
+    def _clone_volume(self, clone_name, src_vol, size, current_backend):
         # Create clone volume specification
         undo_steps = []
         clone_vol = volume.createvol(clone_name, size,
@@ -621,7 +674,9 @@ class VolumeManager(object):
                                      src_vol['flash_cache'],
                                      src_vol['compression'],
                                      src_vol['qos_name'],
-                                     src_vol['mount_conflict_delay'])
+                                     src_vol['mount_conflict_delay'], False,
+                                     False,
+                                     current_backend)
         try:
             self.__clone_volume__(src_vol, clone_vol, undo_steps)
             self._apply_volume_specs(clone_vol, undo_steps)
@@ -705,6 +760,8 @@ class VolumeManager(object):
         snap_detail['retention_hours'] = retention_hours
         snap_detail['mountConflictDelay'] = snapinfo.get(
             'mount_conflict_delay')
+        if 'snap_schedule' in metadata:
+            snap_detail['snap_schedule'] = metadata['snap_schedule']
 
         snapshot['Status'].update({'snap_detail': snap_detail})
 
@@ -738,6 +795,7 @@ class VolumeManager(object):
     def get_volume_snap_details(self, volname, snapname, qualified_name):
 
         volinfo = self._etcd.get_vol_byname(volname)
+        LOG.info("Value of volinfo is: %s", volinfo)
         if volinfo is None:
             msg = (_LE('Volume Get: Volume name not found %s'), volname)
             LOG.warning(msg)
@@ -795,6 +853,9 @@ class VolumeManager(object):
                 for s in snapshots:
                     snapshot = {'Name': s['name'],
                                 'ParentName': volname}
+                    # metadata = s['snap_metadata']
+                    if 'snap_schedule' in s:
+                        snapshot['snap_schedule'] = s['snap_schedule']
                     ss_list_to_show.append(snapshot)
                 volume['Status'].update({'Snapshots': ss_list_to_show})
 
@@ -1385,10 +1446,9 @@ class VolumeManager(object):
 
         return qos_filter
 
-    def _decrypt_password(self, hpepluginconfig):
+    def _decrypt_password(self, hpepluginconfig, backend_name):
         try:
-            result = self._etcd.read('KEY')
-            passphrase = result.value
+            passphrase = self._etcd.get_backend_key(backend_name)
         except Exception as ex:
             LOG.info("Using Plain Text")
             return hpepluginconfig.hpe3par_password
@@ -1418,4 +1478,4 @@ class VolumeManager(object):
     def _decrypt(self, encrypted, passphrase):
         aes = AES.new(passphrase, AES.MODE_CFB, '1234567812345678')
         decrypt_pass = aes.decrypt(base64.b64decode(encrypted))
-        return decrypt_pass
+        return decrypt_pass.decode('utf-8')
