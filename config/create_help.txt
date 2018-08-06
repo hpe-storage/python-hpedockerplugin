@@ -34,5 +34,40 @@ Create Snapshot Options:
 				are used then expirationHours must be greater than or equal to retentionHours.
 
 Import Volume Options:
- -o importVol=x                 x is the name of 3PAR volume or snapshot which needs to be imported.
+ -o importVol=x                 x is the name of 3PAR volume or snapshot which needs to be imported. Volume or snapshot which needs to be imported
+                                should not be attached to any of the host.
+
+
+Create Snapshot Schedule:
+ -o virtualCopyOf=x             This option is mandatory. x is the name of the volume for which snapshot schedule has to be created.
+ -o scheduleFrequency=x         This option is mandatory. x is the string that indicates the snapshot schedule frequency.
+                                This string will contain 5 values which are seperated by space.
+                                Example x can be replaced with "5 * * * *"
+                                First field in the string is an Integer and represents the number of minutes that should be passed the scheduled
+                                clock hour to exucute the scheduled task.
+                                Second field in the string is an Integer  and represents hour at which task needs to be executed. 
+                                User can specify a valid range ex:2-5.
+                                Third field in the string is an Integer and represents day of the month on which scheduled task has to be executed.
+                                User can specify a valid range ex:12-15.
+                                Fourth field in the string indicates month in which the task needs to be executed.
+                                User can specify a valid range ex:3-5.
+                                Fifth field in the string indicates day of a week on which task should be executed.
+                                User can specify a valid range ex:0-4.
+                                x has to be specified in double quotes. Valid values for these fields are:
+                                Field         Allowed Values
+                                -----         --------------
+                                minute        0-59
+                                hour          * or 0-23
+                                day-of-month  * or 1-31
+                                month         * or 1-12
+                                day-of-week   * or 0-6 (0 is Sunday)
+-o scheduleName=x               This option is mandatory. x is a string which indicates name for the schedule on 3PAR.
+-o retentionHours=x             This option is not mandatory option. x is an integer, indicates number of hours this snapshot will be retained.
+-o snaphotPrefix=x              This option is mandatory. x is prefix string for the scheduled snapshots which will get created on 3PAR.
+                                We recommend to use 3 letter string. If prefix is abc then name of the snapshot which gets created on the 3PAR
+                                will be in the format abc.@y@@m@@d@@H@@M@@S@
+-o expHrs=x                     This option is not mandatory option. x is an integer, indicates number of hours after which snapshot created via
+                                snapshot schedule will be deleted from 3PAR.
+-o retHrs=x                     This option is not mandetory option. x is an integer, indicates number of hours for which snapshot created via 
+                                snapshot schedule will be retained.
 

@@ -306,16 +306,20 @@ class HPE3PARCommon(object):
             LOG.error(msg)
             raise exception.HPEDriverGetQosFromVvSetFailed(ex)
 
-    def get_vvset_name(self, volume):
-        return self.client.findVolumeSet(volume)
+    def get_vvset_detail(self, volume):
+        vvset_name = self.client.findVolumeSet(volume)
+        if vvset_name is not None:
+            return self.client.getVolumeSet(vvset_name)
+        return None
 
     def get_volume_detail(self, volume):
         return self.client.getVolume(volume)
 
-    def manage_existing(self, volume, existing_ref, is_snap=False,
+    def manage_existing(self, volume, existing_ref_details, is_snap=False,
                         target_vol_name=None, comment=None):
 
         # check for volume/snap attachment, if attached raise error
+        existing_ref = existing_ref_details.get('name')
         try:
             self.client.getVLUN(existing_ref)
         except hpeexceptions.HTTPNotFound:
@@ -341,6 +345,10 @@ class HPE3PARCommon(object):
             comment = json.dumps(comment)
 
         new_vals = {'newName': target_vol_name, 'comment': comment}
+
+        if('userCPG' in existing_ref_details and
+           'snapCPG' not in existing_ref_details):
+            new_vals['snapCPG'] = existing_ref_details['userCPG']
 
         self.client.modifyVolume(existing_ref, new_vals)
 
@@ -416,6 +424,75 @@ class HPE3PARCommon(object):
                               host['name'],
                               vlun_info['lun_id'],
                               nsp)
+
+    def check_response(self, resp):
+        for r in resp:
+            if 'Error' in r:
+                err_resp = r.strip()
+                return err_resp
+        return ""
+
+    def create_snap_schedule(self, src_vol_name, schedName, snapPrefix,
+                             exphrs, rethrs, schedFrequency):
+        expHr = str(exphrs)
+        retHr = str(rethrs)
+
+        cmd = ['createsched']
+        createsnapstring = []
+        createsnapstring.append('"createsv ')
+        if exphrs is not None:
+            createsnapstring.append('-exp ' + expHr + 'h ')
+        if rethrs is not None:
+            createsnapstring.append('-retain ' + retHr + 'h ')
+        snap_string = ".@y@@m@@d@@H@@M@@S@"
+        dynamic_snap_name = snapPrefix + snap_string
+        createsnapstring.append(dynamic_snap_name + ' ' + src_vol_name + '"')
+
+        snapstring = ''.join(createsnapstring)
+        schedFreq = '"' + schedFrequency + '"'
+
+        cmd.append(snapstring)
+        cmd.append(schedFreq)
+        cmd.append(schedName)
+        cmd.append('\r')
+        err_resp = ""
+        try:
+            LOG.info("Creating a snapshot schedule, command is %s..." % cmd)
+            resp = self.client._run(cmd)
+            LOG.info("Created a snapshot schedule - command is: %s..." % cmd)
+            LOG.info("Create schedule response is: %s..." % resp)
+
+            err_resp = self.check_response(resp)
+            if err_resp:
+                err = (_("Create snapschedule failed Error is"
+                         " '%(err_resp)s' ") %
+                       {'err_resp': err_resp})
+                LOG.error(err)
+                raise exception.HPEDriverCreateScheduleFailed(reason=err)
+        except hpeexceptions.SSHException as ex:
+            LOG.error("Failed to create snapshot schedule error is %s" % ex)
+            raise exception.HPEDriverCreateScheduleFailed(reason=ex)
+
+    def force_remove_3par_schedule(self, schedule_name):
+        cmd = ['removesched', '-f', '%s' % schedule_name, '\r']
+        err_resp = ""
+        try:
+            LOG.info("Removing a snapshot schedule, command is %s..." % cmd)
+            resp = self.client._run(cmd)
+            LOG.info("Removed a snapshot schedule - command is: %s..." % cmd)
+            LOG.info("Remove schedule response is: %s..." % resp)
+
+            err_resp = self.check_response(resp)
+            if err_resp:
+                err = (_("Removing snapschedule failed. Error is"
+                         " '%(err_resp)s' ") %
+                       {'err_resp': err_resp})
+                LOG.error(err)
+                raise exception.HPEDriverRemoveScheduleFailed(reason=err)
+        except hpeexceptions.SSHException as ex:
+            LOG.error("Failed to remove snapshot schedule error is %s" % ex)
+            raise exception.HPEDriverRemoveScheduleFailed(
+                reason=ex)
 
     def force_remove_volume_vlun(self, vol_name):
         # Assuming that a volume for a given host would have at most

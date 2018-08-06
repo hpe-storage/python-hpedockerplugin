@@ -650,10 +650,10 @@ class HPE3PARISCSIDriver(object):
         finally:
             self._logout(common)
 
-    def get_vvset_name(self, volume):
+    def get_vvset_detail(self, volume):
         common = self._login()
         try:
-            return common.get_vvset_name(volume)
+            return common.get_vvset_detail(volume)
         finally:
             self._logout(common)
 
@@ -664,12 +664,12 @@ class HPE3PARISCSIDriver(object):
         finally:
             self._logout(common)
 
-    def manage_existing(self, volume, existing_ref, is_snap=False,
+    def manage_existing(self, volume, existing_ref_details, is_snap=False,
                         target_vol_name=None, comment=None):
         common = self._login()
         try:
             return common.manage_existing(
-                volume, existing_ref, is_snap=is_snap,
+                volume, existing_ref_details, is_snap=is_snap,
                 target_vol_name=target_vol_name, comment=comment)
         finally:
             self._logout(common)
@@ -749,5 +749,22 @@ class HPE3PARISCSIDriver(object):
         common = self._login()
         try:
             return common.check_if_op_allowed(rcg_name)
+        finally:
+            self._logout(common)
+
+    def force_remove_3par_schedule(self, schedule_name):
+        common = self._login()
+        try:
+            return common.force_remove_3par_schedule(schedule_name)
+        finally:
+            self._logout(common)
+
+    def create_snap_schedule(self, src_vol_name, schedName, snapPrefix,
+                             exphrs, rethrs, schedFrequency):
+        common = self._login()
+        try:
+            return common.create_snap_schedule(src_vol_name, schedName,
+                                               snapPrefix, exphrs, rethrs,
+                                               schedFrequency)
         finally:
             self._logout(common)
