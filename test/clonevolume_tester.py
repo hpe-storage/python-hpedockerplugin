@@ -386,7 +386,7 @@ class TestCloneWithCHAP(CloneVolumeUnitTest):
         config.use_multipath = False
         mock_orchestrator = self.mock_objects['mock_orchestrator']
         mock_orchestrator.return_value = \
-            {'DEFAULT': mgr.VolumeManager(config, config)}
+            {'DEFAULT': mgr.VolumeManager(config, config, 'DEFAULT')}
 
 
 # TODO: Compression related TCs to be added later

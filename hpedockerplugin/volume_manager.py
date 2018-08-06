@@ -32,7 +32,7 @@ LOG = logging.getLogger(__name__)
 
 
 class VolumeManager(object):
-    def __init__(self, hpepluginconfig, default_config):
+    def __init__(self, hpepluginconfig, default_config, backend_name):
         self._hpepluginconfig = hpepluginconfig
         self._hpepluginconfig.append_config_values(opts.hpe3par_opts)
         self._my_ip = netutils.get_my_ipv4()
@@ -46,7 +46,8 @@ class VolumeManager(object):
 
         self._etcd = self._get_etcd_util(default_config)
         hpepluginconfig.hpe3par_password = self._decrypt_password(
-                                                      hpepluginconfig)
+                                               hpepluginconfig, backend_name)
+
         self._initialize_driver(hpepluginconfig)
         self._connector = self._get_connector(hpepluginconfig)
 
@@ -1445,9 +1446,9 @@ class VolumeManager(object):
 
         return qos_filter
 
-    def _decrypt_password(self, hpepluginconfig):
+    def _decrypt_password(self, hpepluginconfig, backend_name):
         try:
-            passphrase = self._etcd.get_backend_key('hpepluginconfig.san_ip')
+            passphrase = self._etcd.get_backend_key(backend_name)
         except Exception as ex:
             LOG.info("Using Plain Text")
             return hpepluginconfig.hpe3par_password
@@ -1477,4 +1478,4 @@ class VolumeManager(object):
     def _decrypt(self, encrypted, passphrase):
         aes = AES.new(passphrase, AES.MODE_CFB, '1234567812345678')
         decrypt_pass = aes.decrypt(base64.b64decode(encrypted))
-        return decrypt_pass
+        return decrypt_pass.decode('utf-8')

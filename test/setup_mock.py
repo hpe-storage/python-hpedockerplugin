@@ -75,7 +75,7 @@ def mock_decorator(func):
                 config = create_configuration(self._protocol)
                 mock_orchestrator.return_value = {'DEFAULT':
                                                   mgr.VolumeManager(config,
-                                                                config)}
+                                                                    config,'DEFAULT')}
                 mock_objects = \
                     {'mock_3parclient': mock_3parclient,
                      'mock_fileutil': mock_fileutil,

@@ -186,10 +186,7 @@ class EtcdUtil(object):
                 return json.loads(info['path_info'])
         return None
 
-    def read(self, key):
-        return self.client.read(key)
-
     def get_backend_key(self, backend):
-        passphrase = self.volumeroot + backend
+        passphrase = self.backendroot + backend
         result = self.client.read(passphrase)
         return result.value
