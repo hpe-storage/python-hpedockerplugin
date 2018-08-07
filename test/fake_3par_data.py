@@ -365,8 +365,8 @@ volume_dedup = {
     'snapshots': [],
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
     'is_snap': False,
-    'cpg': None,
-    'snap_cpg': None,
+    'cpg': HPE3PAR_CPG,
+    'snap_cpg': HPE3PAR_CPG,
     'backend': 'DEFAULT'
 }
 
