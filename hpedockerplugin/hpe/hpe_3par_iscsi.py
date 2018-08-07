@@ -189,6 +189,13 @@ class HPE3PARISCSIDriver(object):
         finally:
             self._logout(common)
 
+    def get_snapcpg(self, volume, is_snap):
+        common = self._login()
+        try:
+            return common.get_snapcpg(volume, is_snap)
+        finally:
+            self._logout(common)
+
     def get_cpg(self, volume, is_snap, allowSnap=False):
         common = self._login()
         try:

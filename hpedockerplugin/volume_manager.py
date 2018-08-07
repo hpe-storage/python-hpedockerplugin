@@ -771,7 +771,11 @@ class VolumeManager(object):
     def _get_snapshot_etcd_record(self, parent_volname, snapname):
         volumeinfo = self._etcd.get_vol_byname(parent_volname)
         snapshots = volumeinfo.get('snapshots', None)
-        snapshot_cpg = volumeinfo.get('snap_cpg', volumeinfo.get('cpg'))
+        if 'snap_cpg' in volumeinfo:
+            snapshot_cpg = volumeinfo.get('snap_cpg')
+        else:
+            snapshot_cpg = self._hpeplugin_driver.get_snapcpg(volumeinfo,
+                                                              False)
         if snapshots:
             self._sync_snapshots_from_array(volumeinfo['id'],
                                             volumeinfo['snapshots'],
@@ -810,8 +814,7 @@ class VolumeManager(object):
             snapname = snap_metadata['name']
             return self._get_snapshot_etcd_record(parent_volname, snapname)
         if 'snap_cpg' not in volinfo:
-            snap_cpg = self._hpeplugin_driver.get_cpg(volinfo, False,
-                                                      allowSnap=True)
+            snap_cpg = self._hpeplugin_driver.get_snapcpg(volinfo, False)
             if snap_cpg:
                 volinfo['snap_cpg'] = snap_cpg
                 self._etcd.update_vol(volinfo['id'], 'snap_cpg', snap_cpg)

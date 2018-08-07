@@ -159,7 +159,7 @@ class VolumePlugin(object):
                                         'expirationHours', 'retentionHours',
                                         'qos-name', 'mountConflictDelay',
                                         'help', 'importVol', 'cpg',
-                                        'snap-cpg', 'scheduleName',
+                                        'snapcpg', 'scheduleName',
                                         'scheduleFrequency', 'snapshotPrefix',
                                         'expHrs', 'retHrs', 'backend']
             for key in contents['Opts']:
@@ -235,9 +235,9 @@ class VolumePlugin(object):
                     contents['Opts']['cpg'] != ""):
                 cpg = str(contents['Opts']['cpg'])
 
-            if ('snap-cpg' in contents['Opts'] and
-                    contents['Opts']['snap-cpg'] != ""):
-                snap_cpg = str(contents['Opts']['snap-cpg'])
+            if ('snapcpg' in contents['Opts'] and
+                    contents['Opts']['snapcpg'] != ""):
+                snap_cpg = str(contents['Opts']['snapcpg'])
 
             if ('mountConflictDelay' in contents['Opts'] and
                     contents['Opts']['mountConflictDelay'] != ""):
@@ -257,8 +257,8 @@ class VolumePlugin(object):
             if ('virtualCopyOf' in contents['Opts']):
                 if (('cpg' in contents['Opts'] and
                      contents['Opts']['cpg'] is not None) or
-                    ('snap-cpg' in contents['Opts'] and
-                     contents['Opts']['snap-cpg'] is not None)):
+                    ('snapcpg' in contents['Opts'] and
+                     contents['Opts']['snapcpg'] is not None)):
                     msg = (_('''Virtual copy creation failed, error is:
                            cpg or snap - cpg not allowed for
                            virtual copy creation. '''))
@@ -309,8 +309,8 @@ class VolumePlugin(object):
             cpg = str(contents['Opts']['cpg'])
 
         if ('Opts' in contents and contents['Opts'] and
-                'snap-cpg' in contents['Opts']):
-            snap_cpg = str(contents['Opts']['snap-cpg'])
+                'snapcpg' in contents['Opts']):
+            snap_cpg = str(contents['Opts']['snapcpg'])
 
         src_vol_name = str(contents['Opts']['cloneOf'])
         clone_name = contents['Name']

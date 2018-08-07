@@ -703,6 +703,13 @@ class HPE3PARCommon(object):
                 hpe3par_keys[key] = value
         return hpe3par_keys
 
+    def get_snapcpg(self, volume, is_snap):
+        volume_name = utils.get_3par_name(volume['id'], is_snap)
+        vol = self.client.getVolume(volume_name)
+        if 'snapCPG' in vol:
+            return vol['snapCPG']
+        return None
+
     def get_cpg(self, volume, is_snap, allowSnap=False):
         volume_name = utils.get_3par_name(volume['id'], is_snap)
         vol = self.client.getVolume(volume_name)
