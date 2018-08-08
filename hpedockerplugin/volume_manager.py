@@ -26,7 +26,7 @@ LOG = logging.getLogger(__name__)
 
 
 class VolumeManager(object):
-    def __init__(self, hpepluginconfig, default_config):
+    def __init__(self, hpepluginconfig, default_config, etcd_util):
         self._hpepluginconfig = hpepluginconfig
         self._my_ip = netutils.get_my_ipv4()
 
@@ -39,7 +39,7 @@ class VolumeManager(object):
 
         self._initialize_driver(hpepluginconfig)
         self._connector = self._get_connector(hpepluginconfig)
-        self._etcd = self._get_etcd_util(default_config)
+        self._etcd = etcd_util
 
         # Volume fencing requirement
         self._node_id = self._get_node_id()

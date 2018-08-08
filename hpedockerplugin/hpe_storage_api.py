@@ -179,16 +179,25 @@ class VolumePlugin(object):
                 LOG.error(msg)
                 return json.dumps({u"Err": six.text_type(msg)})
 
+            if ('backend' in contents['Opts'] and
+                    contents['Opts']['backend'] != ""):
+                current_backend = str(contents['Opts']['backend'])
+
             if 'importVol' in input_list:
                 if not len(input_list) == 1:
-                    msg = (_('%(input_list)s cannot be specified at the same '
-                             'time') % {'input_list': input_list, })
-                    LOG.error(msg)
-                    return json.dumps({u"Err": six.text_type(msg)})
+                    if len(input_list) == 2 and 'backend' in input_list:
+                        pass
+                    else:
+                        msg = (_('%(input_list)s cannot be '
+                                 ' specified at the same '
+                                 'time') % {'input_list': input_list, })
+                        LOG.error(msg)
+                        return json.dumps({u"Err": six.text_type(msg)})
 
                 existing_ref = str(contents['Opts']['importVol'])
                 return self.orchestrator.manage_existing(volname,
-                                                         existing_ref)
+                                                         existing_ref,
+                                                         current_backend)
 
             if ('help' in contents['Opts']):
                 create_help_path = "./config/create_help.txt"
@@ -240,9 +249,6 @@ class VolumePlugin(object):
                                               "for mountConflictDelay. Please"
                                               "specify an integer value." %
                                               mount_conflict_delay_str})
-            if ('backend' in contents['Opts'] and
-                    contents['Opts']['backend'] != ""):
-                current_backend = str(contents['Opts']['backend'])
 
             if ('virtualCopyOf' in contents['Opts']):
                 return self.volumedriver_create_snapshot(name,
