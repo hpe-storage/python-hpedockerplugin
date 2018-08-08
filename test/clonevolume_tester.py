@@ -384,9 +384,10 @@ class TestCloneWithCHAP(CloneVolumeUnitTest):
         config = create_configuration('ISCSI')
         config.hpe3par_iscsi_chap_enabled = True
         config.use_multipath = False
+        mock_etcd = self.mock_objects['mock_etcd']
         mock_orchestrator = self.mock_objects['mock_orchestrator']
         mock_orchestrator.return_value = \
-            {'DEFAULT': mgr.VolumeManager(config, config)}
+            {'DEFAULT': mgr.VolumeManager(config, config, mock_etcd)}
 
 
 # TODO: Compression related TCs to be added later
