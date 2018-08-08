@@ -1244,12 +1244,9 @@ class HPE3PARCommon(object):
             if dst_volume['size'] == src_vref['size'] and not \
                     (vol_chap_enabled):
                 LOG.info("Creating a clone of volume, using online copy.")
-                if dst_volume['cpg'] is not None:
+                if 'cpg' in dst_volume:
                     cpg = dst_volume['cpg']
-                else:
-                    cpg = src_vref['cpg']
-                snap_cpg = src_vref['cpg']
-                if dst_volume['snap_cpg'] is not None:
+                if 'snap_cpg' in dst_volume:
                     snap_cpg = dst_volume['snap_cpg']
 
                 # check for valid provisioning type

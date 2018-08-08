@@ -365,9 +365,11 @@ class VolumeManager(object):
         if not size:
             size = src_vol['size']
         if not cpg:
-            cpg = src_vol['cpg']
+            cpg = src_vol.get('cpg', self._hpeplugin_driver.get_cpg
+                              (src_vol, False, allowSnap=True))
         if not snap_cpg:
-            snap_cpg = src_vol['snap_cpg']
+            snap_cpg = src_vol.get('snap_cpg', self._hpeplugin_driver.
+                                   get_snapcpg(src_vol, False))
 
         if size < src_vol['size']:
             msg = 'clone volume size %s is less than source ' \
@@ -462,8 +464,8 @@ class VolumeManager(object):
         if 'snap_cpg' in vol and vol['snap_cpg']:
             snap_cpg = vol['snap_cpg']
         else:
-            snap_cpg = vol.get('cpg', self._hpeplugin_driver.get_cpg
-                               (vol, False, allowSnap=False))
+            snap_cpg = vol.get('snap_cpg', self._hpeplugin_driver.get_snapcpg
+                               (vol, False))
 
         snap_size = vol['size']
         snap_prov = vol['provisioning']
@@ -781,8 +783,6 @@ class VolumeManager(object):
                                             volumeinfo['snapshots'],
                                             snapshot_cpg)
             snapinfo = self._etcd.get_vol_byname(snapname)
-            snapinfo['snap_cpg'] = snapshot_cpg
-            self._etcd.update_vol(snapinfo['id'], 'snap_cpg', snapshot_cpg)
             LOG.debug('value of snapinfo from etcd read is %s', snapinfo)
             if snapinfo is None:
                 msg = (_LE('Snapshot_get: snapname not found after sync %s'),
@@ -790,6 +790,8 @@ class VolumeManager(object):
                 LOG.debug(msg)
                 response = json.dumps({u"Err": msg})
                 return response
+            snapinfo['snap_cpg'] = snapshot_cpg
+            self._etcd.update_vol(snapinfo['id'], 'snap_cpg', snapshot_cpg)
             return self._get_snapshot_response(snapinfo, snapname)
         else:
             msg = (_LE('Snapshot_get: snapname not found after sync %s'),
