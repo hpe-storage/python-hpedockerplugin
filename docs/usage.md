@@ -35,7 +35,7 @@ Note -- The dedup provisioning and flash-cache options are only supported by the
 #### Creating a volume using cpg and snapcpg
 
 ```
-docker volume create -d hpe --name <target_vol_name> -o cpg=<vvset_name> -o snapcpg=<snapcpg_name>
+docker volume create -d hpe --name <target_vol_name> -o cpg=<cpg_name> -o snapcpg=<snapcpg_name>
 ```
 Note -- 'cpg & snapcpg' should be present in 3par
 
