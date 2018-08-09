@@ -31,6 +31,8 @@ Import Volume Options:
  -o importVol=x                 x is the name of 3PAR volume or snapshot which needs to be imported. Volume or snapshot which needs to be imported
                                 should not be attached to any of the host.
 
+Backend Volume Options:
+ -o backend=x                   x is the backend name on which the operation to be performed.
 
 Create Snapshot Schedule:
  -o virtualCopyOf=x             This option is mandatory. x is the name of the volume for which snapshot schedule has to be created.
