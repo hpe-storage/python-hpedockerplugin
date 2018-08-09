@@ -97,7 +97,8 @@ class VolumeManager(object):
     @synchronization.synchronized('{volname}')
     def create_volume(self, volname, vol_size, vol_prov,
                       vol_flash, compression_val, vol_qos,
-                      mount_conflict_delay, current_backend):
+                      mount_conflict_delay, cpg, snap_cpg,
+                      current_backend):
         LOG.info('In _volumedriver_create')
 
         # NOTE: Since Docker passes user supplied names and not a unique
@@ -119,8 +120,8 @@ class VolumeManager(object):
         undo_steps = []
         vol = volume.createvol(volname, vol_size, vol_prov,
                                vol_flash, compression_val, vol_qos,
-                               mount_conflict_delay, False, False,
-                               current_backend)
+                               mount_conflict_delay, False, cpg, snap_cpg,
+                               False, current_backend)
         try:
             self._create_volume(vol, undo_steps)
             self._apply_volume_specs(vol, undo_steps)
@@ -350,7 +351,8 @@ class VolumeManager(object):
 
     @synchronization.synchronized('{src_vol_name}')
     def clone_volume(self, src_vol_name, clone_name,
-                     size=None, current_backend='DEFAULT'):
+                     size=None, cpg=None, snap_cpg=None,
+                     current_backend='DEFAULT'):
         # Check if volume is present in database
         src_vol = self._etcd.get_vol_byname(src_vol_name)
         mnt_conf_delay = volume.DEFAULT_MOUNT_CONFLICT_DELAY
@@ -362,6 +364,12 @@ class VolumeManager(object):
 
         if not size:
             size = src_vol['size']
+        if not cpg:
+            cpg = src_vol.get('cpg', self._hpeplugin_driver.get_cpg
+                              (src_vol, False, allowSnap=True))
+        if not snap_cpg:
+            snap_cpg = src_vol.get('snap_cpg', self._hpeplugin_driver.
+                                   get_snapcpg(src_vol, False))
 
         if size < src_vol['size']:
             msg = 'clone volume size %s is less than source ' \
@@ -384,7 +392,8 @@ class VolumeManager(object):
             src_vol['snapshots'] = []
             self._etcd.save_vol(src_vol)
 
-        return self._clone_volume(clone_name, src_vol, size, current_backend)
+        return self._clone_volume(clone_name, src_vol, size, cpg,
+                                  snap_cpg, current_backend)
 
     def _create_snapshot_record(self, snap_vol, snapshot_name, undo_steps):
         self._etcd.save_vol(snap_vol)
@@ -451,6 +460,12 @@ class VolumeManager(object):
             LOG.debug(msg)
             response = json.dumps({u"Err": msg})
             return response
+        snap_cpg = None
+        if 'snap_cpg' in vol and vol['snap_cpg']:
+            snap_cpg = vol['snap_cpg']
+        else:
+            snap_cpg = vol.get('snap_cpg', self._hpeplugin_driver.get_snapcpg
+                               (vol, False))
 
         snap_size = vol['size']
         snap_prov = vol['provisioning']
@@ -462,8 +477,9 @@ class VolumeManager(object):
 
         snap_vol = volume.createvol(snapshot_name, snap_size, snap_prov,
                                     snap_flash, snap_compression, snap_qos,
-                                    mount_conflict_delay, is_snap,
-                                    has_schedule, current_backend)
+                                    mount_conflict_delay, is_snap, None,
+                                    snap_cpg, has_schedule,
+                                    current_backend)
 
         snapshot_id = snap_vol['id']
 
@@ -651,7 +667,9 @@ class VolumeManager(object):
                 return response
 
     @synchronization.synchronized('{clone_name}')
-    def _clone_volume(self, clone_name, src_vol, size, current_backend):
+    def _clone_volume(self, clone_name, src_vol, size, cpg,
+                      snap_cpg, current_backend):
+
         # Create clone volume specification
         undo_steps = []
         clone_vol = volume.createvol(clone_name, size,
@@ -659,8 +677,8 @@ class VolumeManager(object):
                                      src_vol['flash_cache'],
                                      src_vol['compression'],
                                      src_vol['qos_name'],
-                                     src_vol['mount_conflict_delay'], False,
-                                     False,
+                                     src_vol['mount_conflict_delay'],
+                                     False, cpg, snap_cpg, False,
                                      current_backend)
         try:
             self.__clone_volume__(src_vol, clone_vol, undo_steps)
@@ -742,6 +760,7 @@ class VolumeManager(object):
         snap_detail['retention_hours'] = retention_hours
         snap_detail['mountConflictDelay'] = snapinfo.get(
             'mount_conflict_delay')
+        snap_detail['snap_cpg'] = snapinfo.get('snap_cpg')
         if 'snap_schedule' in metadata:
             snap_detail['snap_schedule'] = metadata['snap_schedule']
 
@@ -753,11 +772,16 @@ class VolumeManager(object):
 
     def _get_snapshot_etcd_record(self, parent_volname, snapname):
         volumeinfo = self._etcd.get_vol_byname(parent_volname)
-
         snapshots = volumeinfo.get('snapshots', None)
+        if 'snap_cpg' in volumeinfo:
+            snapshot_cpg = volumeinfo.get('snap_cpg')
+        else:
+            snapshot_cpg = self._hpeplugin_driver.get_snapcpg(volumeinfo,
+                                                              False)
         if snapshots:
             self._sync_snapshots_from_array(volumeinfo['id'],
-                                            volumeinfo['snapshots'])
+                                            volumeinfo['snapshots'],
+                                            snapshot_cpg)
             snapinfo = self._etcd.get_vol_byname(snapname)
             LOG.debug('value of snapinfo from etcd read is %s', snapinfo)
             if snapinfo is None:
@@ -766,6 +790,8 @@ class VolumeManager(object):
                 LOG.debug(msg)
                 response = json.dumps({u"Err": msg})
                 return response
+            snapinfo['snap_cpg'] = snapshot_cpg
+            self._etcd.update_vol(snapinfo['id'], 'snap_cpg', snapshot_cpg)
             return self._get_snapshot_response(snapinfo, snapname)
         else:
             msg = (_LE('Snapshot_get: snapname not found after sync %s'),
@@ -789,6 +815,15 @@ class VolumeManager(object):
             parent_volname = snap_metadata['parent_name']
             snapname = snap_metadata['name']
             return self._get_snapshot_etcd_record(parent_volname, snapname)
+        if 'snap_cpg' not in volinfo:
+            snap_cpg = self._hpeplugin_driver.get_snapcpg(volinfo, False)
+            if snap_cpg:
+                volinfo['snap_cpg'] = snap_cpg
+                self._etcd.update_vol(volinfo['id'], 'snap_cpg', snap_cpg)
+        if 'cpg' not in volinfo:
+            volinfo['cpg'] = self._hpeplugin_driver.get_cpg(volinfo, False,
+                                                            allowSnap=False)
+            self._etcd.update_vol(volinfo['id'], 'cpg', volinfo['cpg'])
 
         err = ''
         mountdir = ''
@@ -804,10 +839,10 @@ class VolumeManager(object):
                   'Mountpoint': mountdir,
                   'Devicename': devicename,
                   'Status': {}}
-
+        snapshot_cpg = volinfo.get('snap_cpg', volinfo.get('cpg'))
         if volinfo.get('snapshots') and volinfo.get('snapshots') != '':
             self._sync_snapshots_from_array(volinfo['id'],
-                                            volinfo['snapshots'])
+                                            volinfo['snapshots'], snapshot_cpg)
         # Is this request for snapshot inspect?
         if snapname:
             # Any snapshots left after synchronization with array?
@@ -861,6 +896,8 @@ class VolumeManager(object):
             vol_detail['provisioning'] = volinfo.get('provisioning')
             vol_detail['mountConflictDelay'] = volinfo.get(
                 'mount_conflict_delay')
+            vol_detail['cpg'] = volinfo.get('cpg')
+            vol_detail['snap_cpg'] = volinfo.get('snap_cpg')
             volume['Status'].update({'volume_detail': vol_detail})
 
         response = json.dumps({u"Err": err, u"Volume": volume})
@@ -1365,9 +1402,9 @@ class VolumeManager(object):
                 ss_list.append(db_ss)
         return ss_list
 
-    def _sync_snapshots_from_array(self, vol_id, db_snapshots):
+    def _sync_snapshots_from_array(self, vol_id, db_snapshots, snap_cpg):
         bkend_snapshots = \
-            self._hpeplugin_driver.get_snapshots_by_vol(vol_id)
+            self._hpeplugin_driver.get_snapshots_by_vol(vol_id, snap_cpg)
         ss_list_remove = self._get_snapshots_to_be_deleted(db_snapshots,
                                                            bkend_snapshots)
         if ss_list_remove:

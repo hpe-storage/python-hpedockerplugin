@@ -79,7 +79,8 @@ class Orchestrator(object):
     def volumedriver_create(self, volname, vol_size,
                             vol_prov, vol_flash,
                             compression_val, vol_qos,
-                            mount_conflict_delay, current_backend):
+                            mount_conflict_delay, cpg,
+                            snap_cpg, current_backend):
 
         return self._manager[current_backend].create_volume(
             volname,
@@ -89,12 +90,14 @@ class Orchestrator(object):
             compression_val,
             vol_qos,
             mount_conflict_delay,
+            cpg,
+            snap_cpg,
             current_backend)
 
-    def clone_volume(self, src_vol_name, clone_name, size):
+    def clone_volume(self, src_vol_name, clone_name, size, cpg, snap_cpg):
         backend = self.get_volume_backend_details(src_vol_name)
         return self._manager[backend].clone_volume(src_vol_name, clone_name,
-                                                   size)
+                                                   size, cpg, snap_cpg)
 
     def create_snapshot(self, src_vol_name, schedName, snapshot_name,
                         snapPrefix, expiration_hrs, exphrs, retention_hrs,

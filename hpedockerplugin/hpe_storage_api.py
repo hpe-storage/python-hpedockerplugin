@@ -63,7 +63,7 @@ class VolumePlugin(object):
 
     def disconnect_volume_error_callback(self, connector_info):
         LOG.info(_LI('In disconnect_volume_error_callback: '
-                     'connector info is %s'), json.dumps(connector_info))
+                 'connector info is %s'), json.dumps(connector_info))
 
     @app.route("/Plugin.Activate", methods=["POST"])
     def plugin_activate(self, ignore_body=True):
@@ -146,6 +146,8 @@ class VolumePlugin(object):
         compression_val = volume.DEFAULT_COMPRESSION_VAL
         valid_compression_opts = ['true', 'false']
         mount_conflict_delay = volume.DEFAULT_MOUNT_CONFLICT_DELAY
+        cpg = None
+        snap_cpg = None
 
         current_backend = DEFAULT_BACKEND_NAME
         if ('Opts' in contents and contents['Opts']):
@@ -156,7 +158,8 @@ class VolumePlugin(object):
                                         'cloneOf', 'virtualCopyOf',
                                         'expirationHours', 'retentionHours',
                                         'qos-name', 'mountConflictDelay',
-                                        'help', 'importVol', 'scheduleName',
+                                        'help', 'importVol', 'cpg',
+                                        'snapcpg', 'scheduleName',
                                         'scheduleFrequency', 'snapshotPrefix',
                                         'expHrs', 'retHrs', 'backend']
             for key in contents['Opts']:
@@ -173,7 +176,7 @@ class VolumePlugin(object):
             mutually_exclusive_list = ['virtualCopyOf', 'cloneOf', 'qos-name']
             input_list = list(contents['Opts'].keys())
             if (len(list(set(input_list) &
-                         set(mutually_exclusive_list))) >= 2):
+                    set(mutually_exclusive_list))) >= 2):
                 msg = (_('%(exclusive)s cannot be specified at the same '
                          'time') % {'exclusive': mutually_exclusive_list, })
                 LOG.error(msg)
@@ -237,6 +240,13 @@ class VolumePlugin(object):
             if ('qos-name' in contents['Opts'] and
                     contents['Opts']['qos-name'] != ""):
                 vol_qos = str(contents['Opts']['qos-name'])
+            if ('cpg' in contents['Opts'] and
+                    contents['Opts']['cpg'] != ""):
+                cpg = str(contents['Opts']['cpg'])
+
+            if ('snapcpg' in contents['Opts'] and
+                    contents['Opts']['snapcpg'] != ""):
+                snap_cpg = str(contents['Opts']['snapcpg'])
 
             if ('mountConflictDelay' in contents['Opts'] and
                     contents['Opts']['mountConflictDelay'] != ""):
@@ -251,6 +261,16 @@ class VolumePlugin(object):
                                               mount_conflict_delay_str})
 
             if ('virtualCopyOf' in contents['Opts']):
+                if (('cpg' in contents['Opts'] and
+                     contents['Opts']['cpg'] is not None) or
+                    ('snapcpg' in contents['Opts'] and
+                     contents['Opts']['snapcpg'] is not None)):
+                    msg = (_('''Virtual copy creation failed, error is:
+                           cpg or snap - cpg not allowed for
+                           virtual copy creation. '''))
+                    LOG.error(msg)
+                    response = json.dumps({u"Err": msg})
+                    return response
                 return self.volumedriver_create_snapshot(name,
                                                          mount_conflict_delay,
                                                          opts)
@@ -263,6 +283,7 @@ class VolumePlugin(object):
                                                      compression_val,
                                                      vol_qos,
                                                      mount_conflict_delay,
+                                                     cpg, snap_cpg,
                                                      current_backend)
 
     def _check_schedule_frequency(self, schedFrequency):
@@ -283,15 +304,25 @@ class VolumePlugin(object):
             msg = (_('clone volume failed, error is: Name is required.'))
             LOG.error(msg)
             raise exception.HPEPluginCreateException(reason=msg)
-
+        cpg = None
         size = None
+        snap_cpg = None
         if ('Opts' in contents and contents['Opts'] and
                 'size' in contents['Opts']):
             size = int(contents['Opts']['size'])
+        if ('Opts' in contents and contents['Opts'] and
+                'cpg' in contents['Opts']):
+            cpg = str(contents['Opts']['cpg'])
+
+        if ('Opts' in contents and contents['Opts'] and
+                'snapcpg' in contents['Opts']):
+            snap_cpg = str(contents['Opts']['snapcpg'])
 
         src_vol_name = str(contents['Opts']['cloneOf'])
         clone_name = contents['Name']
-        return self.orchestrator.clone_volume(src_vol_name, clone_name, size)
+
+        return self.orchestrator.clone_volume(src_vol_name, clone_name, size,
+                                              cpg, snap_cpg)
 
     def volumedriver_create_snapshot(self, name, mount_conflict_delay,
                                      opts=None):
