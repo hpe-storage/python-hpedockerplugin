@@ -66,24 +66,26 @@ def mock_decorator(func):
                 as mock_get_node_id, \
                 mock.patch.object(mgr.VolumeManager, '_decrypt_password') \
                 as mock_decrypt_password:
-                mock_create_client.return_value = mock_3parclient
-                mock_get_etcd_util.return_value = mock_etcd
-                mock_get_connector.return_value = mock_protocol_connector
-                mock_get_node_id.return_value = data.THIS_NODE_ID
-                mock_decrypt_password.return_value = data.HPE3PAR_USER_PASS
-                # mock_orchestrator.return_value = mock_orchestrat
-                config = create_configuration(self._protocol)
-                mock_orchestrator.return_value = {'DEFAULT':
-                                                  mgr.VolumeManager(config,
-                                                                    config,'DEFAULT')}
-                mock_objects = \
-                    {'mock_3parclient': mock_3parclient,
-                     'mock_fileutil': mock_fileutil,
-                     'mock_osbricks_connector': mock_osbricks_connector,
-                     'mock_protocol_connector': mock_protocol_connector,
-                     'mock_etcd': mock_etcd,
-                     'mock_orchestrator': mock_orchestrator}
-                return func(self, mock_objects, *args, **kwargs)
+            mock_create_client.return_value = mock_3parclient
+            mock_get_etcd_util.return_value = mock_etcd
+            mock_get_connector.return_value = mock_protocol_connector
+            mock_get_node_id.return_value = data.THIS_NODE_ID
+            mock_decrypt_password.return_value = data.HPE3PAR_USER_PASS
+            # mock_orchestrator.return_value = mock_orchestrat
+            config = create_configuration(self._protocol)
+            mock_orchestrator.return_value = {'DEFAULT':
+                                              mgr.VolumeManager(config,
+                                                                config,
+                                                                mock_etcd,
+                                                                'DEFAULT')}
+            mock_objects = \
+                {'mock_3parclient': mock_3parclient,
+                 'mock_fileutil': mock_fileutil,
+                 'mock_osbricks_connector': mock_osbricks_connector,
+                 'mock_protocol_connector': mock_protocol_connector,
+                 'mock_etcd': mock_etcd,
+                 'mock_orchestrator': mock_orchestrator}
+            return func(self, mock_objects, *args, **kwargs)
     return setup_mock_wrapper
 
 
