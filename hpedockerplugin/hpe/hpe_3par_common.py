@@ -656,6 +656,13 @@ class HPE3PARCommon(object):
                 hpe3par_keys[key] = value
         return hpe3par_keys
 
+    def get_snapcpg(self, volume, is_snap):
+        volume_name = utils.get_3par_name(volume['id'], is_snap)
+        vol = self.client.getVolume(volume_name)
+        if 'snapCPG' in vol:
+            return vol['snapCPG']
+        return None
+
     def get_cpg(self, volume, is_snap, allowSnap=False):
         volume_name = utils.get_3par_name(volume['id'], is_snap)
         vol = self.client.getVolume(volume_name)
@@ -749,7 +756,12 @@ class HPE3PARCommon(object):
 
         # TODO(leeantho): Choose the first CPG for now. In the future
         # support selecting different CPGs if multiple are provided.
-        cpg = self.src_bkend_config.hpe3par_cpg[0]
+        if volume['cpg'] is not None:
+            cpg = volume['cpg']
+        else:
+            # cpg = self.src_bkend_config.hpe3par_cpg[0]
+            cpg = self.config.hpe3par_cpg[0]
+            volume['cpg'] = cpg
 
         # check for valid provisioning type
         prov_value = volume['provisioning']
@@ -787,10 +799,16 @@ class HPE3PARCommon(object):
         extras = {'comment': json.dumps(comments),
                   'tpvv': tpvv, }
 
-        if len(self.src_bkend_config.hpe3par_snapcpg):
-            extras['snapCPG'] = self.src_bkend_config.hpe3par_snapcpg[0]
+        if volume['snap_cpg'] is not None:
+            extras['snapCPG'] = volume['snap_cpg']
         else:
-            extras['snapCPG'] = cpg
+            if len(self.config.hpe3par_snapcpg):
+                snap_cpg = self.config.hpe3par_snapcpg[0]
+                extras['snapCPG'] = snap_cpg
+                volume['snap_cpg'] = snap_cpg
+            else:
+                extras['snapCPG'] = cpg
+                volume['snap_cpg'] = cpg
 
             # Only set the dedup option if the backend supports it.
         if self.API_VERSION >= DEDUP_API_VERSION:
@@ -1180,11 +1198,10 @@ class HPE3PARCommon(object):
             if dst_volume['size'] == src_vref['size'] and not \
                     (vol_chap_enabled):
                 LOG.info("Creating a clone of volume, using online copy.")
-
-                cpg = self.src_bkend_config.hpe3par_cpg[0]
-                snap_cpg = cpg
-                if len(self.src_bkend_config.hpe3par_snapcpg):
-                    snap_cpg = self.src_bkend_config.hpe3par_snapcpg[0]
+                if 'cpg' in dst_volume:
+                    cpg = dst_volume['cpg']
+                if 'snap_cpg' in dst_volume:
+                    snap_cpg = dst_volume['snap_cpg']
 
                 # check for valid provisioning type
                 prov_value = src_vref['provisioning']
@@ -1294,14 +1311,11 @@ class HPE3PARCommon(object):
 
         return self._task_status
 
-    def get_snapshots_by_vol(self, vol_id):
+    def get_snapshots_by_vol(self, vol_id, snap_cpg):
         bkend_vol_name = utils.get_3par_vol_name(vol_id)
-        cpg_name = self.src_bkend_config.hpe3par_cpg[0]
-        if len(self.src_bkend_config.hpe3par_snapcpg):
-            cpg_name = self.src_bkend_config.hpe3par_snapcpg[0]
         LOG.debug("Querying snapshots for %s in %s cpg "
-                  % (bkend_vol_name, cpg_name))
-        return self.client.getSnapshotsOfVolume(cpg_name, bkend_vol_name)
+                  % (bkend_vol_name, snap_cpg))
+        return self.client.getSnapshotsOfVolume(snap_cpg, bkend_vol_name)
 
     def delete_vvset(self, id):
         vvset_name = utils.get_3par_vvs_name(id)

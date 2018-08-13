@@ -40,24 +40,25 @@ class Orchestrator(object):
     def __init__(self, hpedefaultconfig):
         self.default_config = hpedefaultconfig
         LOG.info('calling initialize manager objs')
-        self._manager = self.initialize_manager_objects(
+        self.etcd_util = mgr.VolumeManager._get_etcd_util(
             self.default_config)
+        self._manager = self.initialize_manager_objects(
+            self.default_config, self.etcd_util)
 
-    def initialize_manager_objects(self, defaultconfig):
+    def initialize_manager_objects(self, defaultconfig, etcd_util):
         manager_objs = {}
 
         for backend_name in setupcfg.get_all_backends(CONFIG):
             LOG.info('INITIALIZING backend  : %s' % backend_name)
             manager_objs[backend_name] = mgr.VolumeManager(
                 setupcfg.backend_config(CONFIG, backend_name),
-                defaultconfig)
+                defaultconfig, self.etcd_util)
 
         return manager_objs
 
     def get_volume_backend_details(self, volname):
         LOG.info('Getting details for volume : %s ' % (volname))
-        etcd_util = mgr.VolumeManager._get_etcd_util(self.default_config)
-        vol = etcd_util.get_vol_byname(volname)
+        vol = self.etcd_util.get_vol_byname(volname)
 
         current_backend = DEFAULT_BACKEND_NAME
         if vol is not None and 'backend' in vol:
@@ -78,9 +79,8 @@ class Orchestrator(object):
     def volumedriver_create(self, volname, vol_size,
                             vol_prov, vol_flash,
                             compression_val, vol_qos,
-                            mount_conflict_delay, current_backend,
-                            rcg_name):
-
+                            mount_conflict_delay, cpg,
+                            snap_cpg, current_backend, rcg_name):
         return self._manager[current_backend].create_volume(
             volname,
             vol_size,
@@ -89,13 +89,15 @@ class Orchestrator(object):
             compression_val,
             vol_qos,
             mount_conflict_delay,
+            cpg,
+            snap_cpg,
             current_backend,
             rcg_name)
 
-    def clone_volume(self, src_vol_name, clone_name, size):
+    def clone_volume(self, src_vol_name, clone_name, size, cpg, snap_cpg):
         backend = self.get_volume_backend_details(src_vol_name)
         return self._manager[backend].clone_volume(src_vol_name, clone_name,
-                                                   size)
+                                                   size, cpg, snap_cpg)
 
     def create_snapshot(self, src_vol_name, schedName, snapshot_name,
                         snapPrefix, expiration_hrs, exphrs, retention_hrs,
@@ -129,8 +131,7 @@ class Orchestrator(object):
                                                               snapname,
                                                               qualified_name)
 
-    def manage_existing(self, volname, existing_ref):
-        backend = self.get_volume_backend_details(volname)
+    def manage_existing(self, volname, existing_ref, backend):
         return self._manager[backend].manage_existing(volname, existing_ref)
 
     def volumedriver_list(self):

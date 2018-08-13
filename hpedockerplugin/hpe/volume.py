@@ -19,8 +19,9 @@ COPYTYPE = {1: 'base', 2: 'physical', 3: 'virtual'}
 def createvol(name, size=DEFAULT_SIZE, prov=DEFAULT_PROV,
               flash_cache=None, compression_val=None, qos=None,
               mount_conflict_delay=DEFAULT_MOUNT_CONFLICT_DELAY,
-              is_snap=DEFAULT_TO_SNAP_TYPE, has_schedule=DEFAULT_SCHEDULE,
-              current_backend='DEFAULT', rcg_name=None):
+              is_snap=DEFAULT_TO_SNAP_TYPE, cpg=None, snap_cpg=None,
+              has_schedule=DEFAULT_SCHEDULE, current_backend='DEFAULT',
+              rcg_name=None):
     volume = {}
     volume['id'] = str(uuid.uuid4())
     volume['name'] = volume['id']
@@ -44,6 +45,8 @@ def createvol(name, size=DEFAULT_SIZE, prov=DEFAULT_PROV,
     volume['is_snap'] = is_snap
     volume['backend'] = current_backend
     volume['snap_metadata'] = None
-    volume['rcg_name'] = rcg_name
+    volume['cpg'] = cpg
+    volume['snap_cpg'] = snap_cpg
     volume['has_schedule'] = has_schedule
+    volume['rcg_name'] = rcg_name
     return volume

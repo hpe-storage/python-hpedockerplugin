@@ -7,6 +7,8 @@ Default Options:
 
 
 Create Volume Options:
+ -o cpg=x                       x is the Usr CPG used for provisioning the volume
+ -o snapcpg=x                   x is the Snap CPG used for provisioning the snapshots of the volume
  -o size=x 			x is a size of a docker volume to be created, deault value of x is 100 (in GiB)
  -o provisioning=x 		x is a provision type of a volume to be created, valid values are thin,dedup,full. Default value is thin.
  -o compression=x 		x is a boolean value, hence x can have true or false. To create a compressed volume, minimum size of a 
@@ -25,6 +27,9 @@ Create Volume Options:
 Create Clone Options:
  -o cloneOf=x			x is the name of docker volume (source volume) of which clone to be created.
  -o size=x 			x is the size of cloned volume. x should be greater than or equal to size of a source volume.
+ -o cpg=x                       x is the Usr CPG used for provisioning the volume
+ -o snapcpg=x                   x is the Snap CPG used for provisioning the snapshots of the volume
+
  
 Create Snapshot Options:
  -o virtualCopyOf=x		x is the name of a docker volume for which snapshot/virtual copy is to be created.
