@@ -474,7 +474,7 @@ class HPE3PARCommon(object):
 
     def check_response(self, resp):
         for r in resp:
-            if 'Error' in r:
+            if 'Error' in r or 'Invalid' in r:
                 err_resp = r.strip()
                 return err_resp
         return ""

@@ -162,6 +162,8 @@ class VolumePlugin(object):
                                         'snapcpg', 'scheduleName',
                                         'scheduleFrequency', 'snapshotPrefix',
                                         'expHrs', 'retHrs', 'backend']
+            valid_snap_schedule_opts = ['scheduleName', 'scheduleFrequency',
+                                        'snapshotPrefix', 'expHrs', 'retHrs']
             for key in contents['Opts']:
                 if key not in valid_volume_create_opts:
                     msg = (_('create volume/snapshot/clone failed, error is: '
@@ -276,6 +278,14 @@ class VolumePlugin(object):
                                                          opts)
             elif ('cloneOf' in contents['Opts']):
                 return self.volumedriver_clone_volume(name, opts)
+            for i in input_list:
+                if i in valid_snap_schedule_opts:
+                    if 'virtualCopyOf' not in input_list:
+                        msg = (_('virtualCopyOf is a mandatory parameter for'
+                                 ' creating a snapshot schedule'))
+                        LOG.error(msg)
+                        response = json.dumps({u"Err": msg})
+                        return response
 
         return self.orchestrator.volumedriver_create(volname, vol_size,
                                                      vol_prov,
@@ -395,13 +405,37 @@ class VolumePlugin(object):
                 if 'scheduleName' not in contents['Opts'] or \
                         'snapshotPrefix' not in contents['Opts']:
                     msg = ('Please make sure that valid schedule name is '
-                           'passed or please provide a 3 letter prefix for '
-                           'this schedule ')
+                           'passed and please provide max 15 letter prefix '
+                           'for the scheduled snapshot names ')
+                    LOG.error(msg)
+                    response = json.dumps({'Err': msg})
+                    return response
+                if ('scheduleName' in contents['Opts'] and
+                        contents['Opts']['scheduleName'] == ""):
+                    msg = ('Please make sure that valid schedule name is '
+                           'passed ')
+                    LOG.error(msg)
+                    response = json.dumps({'Err': msg})
+                    return response
+                if ('snapshotPrefix' in contents['Opts'] and
+                        contents['Opts']['snapshotPrefix'] == ""):
+                    msg = ('Please provide a 3 letter prefix for scheduled '
+                           'snapshot names ')
                     LOG.error(msg)
                     response = json.dumps({'Err': msg})
                     return response
                 schedName = str(contents['Opts']['scheduleName'])
                 snapPrefix = str(contents['Opts']['snapshotPrefix'])
+
+                schedNameLength = len(schedName)
+                snapPrefixLength = len(snapPrefix)
+                if schedNameLength > 31 or snapPrefixLength > 15:
+                    msg = ('Please provide a schedlueName with max 31 '
+                           'characters and snapshotPrefix with max '
+                           'length of 15 characters')
+                    LOG.error(msg)
+                    response = json.dumps({'Err': msg})
+                    return response
             try:
                 self._check_schedule_frequency(schedFrequency)
             except Exception as ex:
