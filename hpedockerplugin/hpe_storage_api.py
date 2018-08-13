@@ -145,6 +145,8 @@ class VolumePlugin(object):
         vol_qos = volume.DEFAULT_QOS
         compression_val = volume.DEFAULT_COMPRESSION_VAL
         valid_compression_opts = ['true', 'false']
+        fs_owner = None
+        fs_mode = None
         mount_conflict_delay = volume.DEFAULT_MOUNT_CONFLICT_DELAY
         cpg = None
         snap_cpg = None
@@ -157,7 +159,8 @@ class VolumePlugin(object):
                                         'size', 'provisioning', 'flash-cache',
                                         'cloneOf', 'virtualCopyOf',
                                         'expirationHours', 'retentionHours',
-                                        'qos-name', 'mountConflictDelay',
+                                        'qos-name', 'fsOwner', 'fsMode',
+                                        'mountConflictDelay',
                                         'help', 'importVol', 'cpg',
                                         'snapcpg', 'scheduleName',
                                         'scheduleFrequency', 'snapshotPrefix',
@@ -250,6 +253,45 @@ class VolumePlugin(object):
                     contents['Opts']['snapcpg'] != ""):
                 snap_cpg = str(contents['Opts']['snapcpg'])
 
+            if ('fsOwner' in contents['Opts'] and
+                    contents['Opts']['fsOwner'] != ""):
+                fs_owner = contents['Opts']['fsOwner']
+                try:
+                    mode = fs_owner.split(':')
+                except ValueError as ex:
+                    return json.dumps({'Err': "Invalid value '%s' specified "
+                                       "for fsOwner. Please "
+                                       "specify a correct value." %
+                                       fs_owner})
+                except IndexError as ex:
+                    return json.dumps({'Err': "Invalid value '%s' specified "
+                                       "for fsOwner. Please "
+                                       "specify both uid and gid." %
+                                       fs_owner})
+
+            if ('fsMode' in contents['Opts'] and
+                    contents['Opts']['fsMode'] != ""):
+                fs_mode_str = contents['Opts']['fsMode']
+                try:
+                    fs_mode = int(fs_mode_str)
+                except ValueError as ex:
+                    return json.dumps({'Err': "Invalid value '%s' specified "
+                                       "for fsMode. Please "
+                                       "specify an integer value." %
+                                       fs_mode_str})
+                if fs_mode_str[0] != '0':
+                    return json.dumps({'Err': "Invalid value '%s' specified "
+                                              "for fsMode. Please "
+                                              "specify an octal value." %
+                                              fs_mode_str})
+                for mode in fs_mode_str:
+                    if int(mode) > 7:
+                        return json.dumps({'Err': "Invalid value '%s' "
+                                           "specified for fsMode. Please "
+                                           "specify an octal value." %
+                                           fs_mode_str})
+                fs_mode = fs_mode_str
+
             if ('mountConflictDelay' in contents['Opts'] and
                     contents['Opts']['mountConflictDelay'] != ""):
                 mount_conflict_delay_str = str(contents['Opts']
@@ -292,6 +334,7 @@ class VolumePlugin(object):
                                                      vol_flash,
                                                      compression_val,
                                                      vol_qos,
+                                                     fs_owner, fs_mode,
                                                      mount_conflict_delay,
                                                      cpg, snap_cpg,
                                                      current_backend)

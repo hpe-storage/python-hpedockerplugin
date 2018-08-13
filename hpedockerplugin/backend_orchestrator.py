@@ -52,7 +52,7 @@ class Orchestrator(object):
             LOG.info('INITIALIZING backend  : %s' % backend_name)
             manager_objs[backend_name] = mgr.VolumeManager(
                 setupcfg.backend_config(CONFIG, backend_name),
-                defaultconfig, self.etcd_util)
+                defaultconfig, self.etcd_util, backend_name)
 
         return manager_objs
 
@@ -79,6 +79,7 @@ class Orchestrator(object):
     def volumedriver_create(self, volname, vol_size,
                             vol_prov, vol_flash,
                             compression_val, vol_qos,
+                            fs_mode, fs_owner,
                             mount_conflict_delay, cpg,
                             snap_cpg, current_backend):
 
@@ -89,6 +90,7 @@ class Orchestrator(object):
             vol_flash,
             compression_val,
             vol_qos,
+            fs_mode, fs_owner,
             mount_conflict_delay,
             cpg,
             snap_cpg,

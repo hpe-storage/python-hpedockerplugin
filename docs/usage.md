@@ -14,6 +14,9 @@ There are several optional parameters that can be used during volume creation:
 - snpcpg -- specifies the snap cpg for a volume.
 - provisioning -- specifies the type of provisioning to use (thin, full, dedup).
 - flash-cache -- specifies whether flash cache should be used or not (True, False).
+- fsMode -- Represent the file mode to be applied to the root directory of the filesystem, in the form of octall digits.
+- fsOwner -- Represent user id and group id that should own the root directory of the filesystem,
+in the form of [userId:groupId]
 - mountConflictDelay -- specifies period in seconds. This parameter is used to wait for a
 mounted volume to gracefully unmount from some node before it can be mounted on the current
 node. If graceful unmount doesn't happen within mountConflictDelay seconds then a forced
@@ -158,3 +161,16 @@ docker volume rm <vol_name>
 ```
 
 Note: Same approch similar to volume mount is used for mounting a snapshot to a container.
+
+#### Providing File Permission and File Owner to a Volume.
+
+Use the below command to give ownership to a non-root user by providing UID and GID.
+````
+docker volume create -d hpe --name <vol_name> -o size=<vol_size> -o fsOwner=<userID:groupId>
+````
+
+Use the below command to change the mode.
+````
+docker volume create -d hpe --name <vol_name> -o size=<vol_size> -o fsMode=<file_mode>
+````
+<file_mode> is 1 to 4 octal digits that represent the file mode to be applied.
