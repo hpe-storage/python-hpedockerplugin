@@ -134,7 +134,9 @@ class Orchestrator(object):
                                                               qualified_name)
 
     def manage_existing(self, volname, existing_ref, backend):
-        return self._manager[backend].manage_existing(volname, existing_ref)
+        return self._manager[backend].manage_existing(volname,
+                                                      existing_ref,
+                                                      backend)
 
     def volumedriver_list(self):
         return self._manager[DEFAULT_BACKEND_NAME].list_volumes()
