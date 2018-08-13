@@ -189,6 +189,20 @@ class HPE3PARISCSIDriver(object):
         finally:
             self._logout(common)
 
+    def get_snapcpg(self, volume, is_snap):
+        common = self._login()
+        try:
+            return common.get_snapcpg(volume, is_snap)
+        finally:
+            self._logout(common)
+
+    def get_cpg(self, volume, is_snap, allowSnap=False):
+        common = self._login()
+        try:
+            return common.get_cpg(volume, is_snap, allowSnap)
+        finally:
+            self._logout(common)
+
     def initialize_connection(self, volume, connector, is_snap):
         """Assigns the volume to a server.
 
@@ -629,10 +643,10 @@ class HPE3PARISCSIDriver(object):
         finally:
             self._logout(common)
 
-    def get_snapshots_by_vol(self, vol_id):
+    def get_snapshots_by_vol(self, vol_id, snp_cpg):
         common = self._login()
         try:
-            return common.get_snapshots_by_vol(vol_id)
+            return common.get_snapshots_by_vol(vol_id, snp_cpg)
         finally:
             self._logout(common)
 

@@ -99,6 +99,8 @@ sudo rm ./v2plugin/rootfs/usr/lib/python3.6/site-packages/os_brick-1.13.1-py3.6.
 sudo cp ./patch_os_bricks/linuxscsi.py ./v2plugin/rootfs/usr/lib/python3.6/site-packages/os_brick-1.13.1-py3.6.egg/os_brick/initiator/linuxscsi.py
 sudo cp ./patch_os_bricks/rootwrap.py ./v2plugin/rootfs/usr/lib/python3.6/site-packages/os_brick-1.13.1-py3.6.egg/os_brick/privileged/rootwrap.py
 sudo cp ./patch_os_bricks/compat.py ./v2plugin/rootfs/usr/lib/python3.6/site-packages/Twisted-18.7.0rc1-py3.6-linux-x86_64.egg/twisted/python/compat.py
+sudo cp ./oslo/comm.py ./v2plugin/rootfs/usr/lib/python3.6/site-packages/oslo.privsep-1.29.0-py3.6.egg/oslo_privsep/comm.py
+
 
 # end of patch for os-bricks
 # minor modification to remove the .git folder from getting packaged

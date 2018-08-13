@@ -92,6 +92,8 @@ volume = {
     'snapshots': [],
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
     'is_snap': False,
+    'cpg': HPE3PAR_CPG,
+    'snap_cpg': HPE3PAR_CPG2,
     'backend': 'DEFAULT'
 }
 
@@ -345,6 +347,8 @@ volume_compression = {
     'snapshots': [],
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
     'is_snap': False,
+    'cpg': None,
+    'snap_cpg': None,
     'backend': 'DEFAULT'
 }
 
@@ -361,6 +365,8 @@ volume_dedup = {
     'snapshots': [],
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
     'is_snap': False,
+    'cpg': HPE3PAR_CPG,
+    'snap_cpg': HPE3PAR_CPG,
     'backend': 'DEFAULT'
 }
 
@@ -377,6 +383,8 @@ volume_qos = {
     'snapshots': [],
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
     'is_snap': False,
+    'cpg': HPE3PAR_CPG,
+    'snap_cpg': HPE3PAR_CPG2,
     'backend': 'DEFAULT'
 }
 
@@ -393,7 +401,10 @@ volume_flash_cache = {
     'snapshots': [],
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
     'is_snap': False,
+    'cpg': None,
+    'snap_cpg': None,
     'backend': 'DEFAULT'
+
 }
 
 volume_flash_cache_and_qos = {
@@ -409,6 +420,8 @@ volume_flash_cache_and_qos = {
     'snapshots': [],
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
     'is_snap': False,
+    'cpg': None,
+    'snap_cpg': None,
     'backend': 'DEFAULT'
 }
 
