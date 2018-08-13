@@ -46,8 +46,8 @@ class VolumeManager(object):
         self._enforce_multipath = True
 
         self._etcd = etcd_util
-        hpepluginconfig.hpe3par_password = self._decrypt_password(
-                                               hpepluginconfig, backend_name)
+        hpepluginconfig.hpe3par_password = \
+            self._decrypt_password(hpepluginconfig, backend_name)
 
         self._initialize_driver(hpepluginconfig)
         self._connector = self._get_connector(hpepluginconfig)
