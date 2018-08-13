@@ -10,6 +10,8 @@ docker volume create -d hpe --name <vol_name>
 There are several optional parameters that can be used during volume creation:
 
 - size -- specifies the desired size in GB of the volume.
+- cpg -- specifes the cpg for a volume.
+- snpcpg -- specifies the snap cpg for a volume.
 - provisioning -- specifies the type of provisioning to use (thin, full, dedup).
 - flash-cache -- specifies whether flash cache should be used or not (True, False).
 - fsMode -- Represent the file mode to be applied to the root directory of the filesystem, in the form of octall digits.
@@ -31,6 +33,15 @@ docker volume create -d hpe --name <vol_name> -o size=50 -o provisioning=full
 
 Note -- The dedup provisioning and flash-cache options are only supported by the
 3PAR StoreServ driver currently.
+
+
+#### Creating a volume using cpg and snapcpg
+
+```
+docker volume create -d hpe --name <target_vol_name> -o cpg=<cpg_name> -o snapcpg=<snapcpg_name>
+```
+Note -- 'cpg & snapcpg' should be present in 3par
+
 
 #### Creating a volume using existing QOS
 
