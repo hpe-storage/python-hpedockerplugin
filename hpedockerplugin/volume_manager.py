@@ -1,8 +1,13 @@
 import json
+import string
 import os
 import six
 import time
 import uuid
+from sh import chmod
+from Crypto.Cipher import AES
+import base64
+
 
 import hpedockerplugin.etcdutil as util
 from os_brick.initiator import connector
@@ -23,6 +28,7 @@ from hpedockerplugin.hpe import volume
 from hpedockerplugin.hpe import utils
 from hpedockerplugin.i18n import _, _LE, _LI, _LW
 import hpedockerplugin.synchronization as synchronization
+from hpedockerplugin.hpe import hpe_3par_common as opts
 
 LOG = logging.getLogger(__name__)
 PRIMARY = 1
@@ -30,8 +36,10 @@ SECONDARY = 2
 
 
 class VolumeManager(object):
-    def __init__(self, hpepluginconfig, default_config, etcd_util):
+    def __init__(self, hpepluginconfig, default_config,
+                 etcd_util, backend_name):
         self._hpepluginconfig = hpepluginconfig
+        self._hpepluginconfig.append_config_values(opts.hpe3par_opts)
         self._my_ip = netutils.get_my_ipv4()
 
         # Override the settings of use_multipath3, enforce_multipath
@@ -74,6 +82,11 @@ class VolumeManager(object):
                 LOG.info(msg)
                 raise exception.HPEPluginStartPluginException(reason=msg)
 
+        self._etcd = etcd_util
+        hpepluginconfig.hpe3par_password = \
+            self._decrypt_password(hpepluginconfig, backend_name)
+
+        self._initialize_driver(hpepluginconfig)
         self._connector = self._get_connector(hpepluginconfig)
 
         # Volume fencing requirement
@@ -204,6 +217,7 @@ class VolumeManager(object):
     @synchronization.synchronized('{volname}')
     def create_volume(self, volname, vol_size, vol_prov,
                       vol_flash, compression_val, vol_qos,
+                      fs_owner, fs_mode,
                       mount_conflict_delay, cpg, snap_cpg,
                       current_backend, rcg_name):
         LOG.info('In _volumedriver_create')
@@ -253,6 +267,8 @@ class VolumeManager(object):
             # For now just track volume to uuid mapping internally
             # TODO: Save volume name and uuid mapping in etcd as well
             # This will make get_vol_byname more efficient
+            vol['fsOwner'] = fs_owner
+            vol['fsMode'] = fs_mode
             self._etcd.save_vol(vol)
 
         except Exception as ex:
@@ -324,7 +340,7 @@ class VolumeManager(object):
             return True
         return volume.DEFAULT_COMPRESSION_VAL
 
-    def manage_existing(self, volname, existing_ref):
+    def manage_existing(self, volname, existing_ref, backend='DEFAULT'):
         LOG.info('Managing a %(vol)s' % {'vol': existing_ref})
 
         # NOTE: Since Docker passes user supplied names and not a unique
@@ -342,6 +358,8 @@ class VolumeManager(object):
             return json.dumps({u"Err": six.text_type(msg)})
 
         vol = volume.createvol(volname)
+        vol['backend'] = backend
+
         parent_vol = ""
         try:
             # check target volume exists in 3par
@@ -652,6 +670,8 @@ class VolumeManager(object):
                        'id': snapshot_id,
                        'parent_name': src_vol_name,
                        'parent_id': vol['id'],
+                       'fsMode': vol['fsMode'],
+                       'fsOwner': vol['fsOwner'],
                        'expiration_hours': expiration_hrs,
                        'retention_hours': retention_hrs}
         if has_schedule:
@@ -807,10 +827,11 @@ class VolumeManager(object):
         try:
             self.__clone_volume__(src_vol, clone_vol, undo_steps)
             self._apply_volume_specs(clone_vol, undo_steps)
-
             # For now just track volume to uuid mapping internally
             # TODO: Save volume name and uuid mapping in etcd as well
             # This will make get_vol_byname more efficient
+            clone_vol['fsOwner'] = src_vol.get('fsOwner')
+            clone_vol['fsMode'] = src_vol.get('fsMode')
             self._etcd.save_vol(clone_vol)
 
         except Exception as ex:
@@ -880,6 +901,8 @@ class VolumeManager(object):
         snap_detail['is_snap'] = snapinfo.get('is_snap')
         snap_detail['parent_volume'] = parent_name
         snap_detail['parent_id'] = parent_id
+        snap_detail['fsOwner'] = snapinfo['snap_metadata'].get('fsOwner')
+        snap_detail['fsMode'] = snapinfo['snap_metadata'].get('fsMode')
         snap_detail['expiration_hours'] = expiration_hours
         snap_detail['retention_hours'] = retention_hours
         snap_detail['mountConflictDelay'] = snapinfo.get(
@@ -1018,6 +1041,8 @@ class VolumeManager(object):
             vol_detail['flash_cache'] = volinfo.get('flash_cache')
             vol_detail['compression'] = volinfo.get('compression')
             vol_detail['provisioning'] = volinfo.get('provisioning')
+            vol_detail['fsOwner'] = volinfo.get('fsOwner')
+            vol_detail['fsMode'] = volinfo.get('fsMode')
             vol_detail['mountConflictDelay'] = volinfo.get(
                 'mount_conflict_delay')
             vol_detail['cpg'] = volinfo.get('cpg')
@@ -1165,7 +1190,8 @@ class VolumeManager(object):
             self._etcd.update_vol(volid, 'is_snap', is_snap)
         elif vol['is_snap']:
             is_snap = vol['is_snap']
-
+            vol['fsOwner'] = vol['snap_metadata'].get('fsOwner')
+            vol['fsMode'] = vol['snap_metadata'].get('fsMode')
         # Initialize node-mount-info if volume is being mounted
         # for the first time
         if self._is_vol_not_mounted(vol):
@@ -1315,6 +1341,16 @@ class VolumeManager(object):
                           {'lost': lostfound, 'mount': mount_dir})
         else:
             mount_dir = ''
+
+        if 'fsOwner' in vol and vol['fsOwner']:
+            fs_owner = vol['fsOwner'].split(":")
+            uid = int(fs_owner[0])
+            gid = int(fs_owner[1])
+            os.chown(mount_dir, uid, gid)
+
+        if 'fsMode' in vol and vol['fsMode']:
+            mode = str(vol['fsMode'])
+            chmod(mode, mount_dir)
 
         path_info = {}
         path_info['name'] = volname
@@ -1717,3 +1753,37 @@ class VolumeManager(object):
                         'rcg_name': rcg_name},
              'msg': 'Removing VV %s from Remote Copy Group %s...'
                     % (bkend_vol_name, rcg_name)})
+
+    def _decrypt_password(self, hpepluginconfig, backend_name):
+        try:
+            passphrase = self._etcd.get_backend_key(backend_name)
+        except Exception as ex:
+            LOG.info("Using Plain Text")
+            return hpepluginconfig.hpe3par_password
+        else:
+            passphrase = self.key_check(passphrase)
+            return self._decrypt(hpepluginconfig.hpe3par_password,
+                                 passphrase)
+
+    def key_check(self, key):
+        KEY_LEN = len(key)
+        padding_string = string.ascii_letters
+
+        if KEY_LEN < 16:
+            KEY = key + padding_string[:16 - KEY_LEN]
+
+        elif KEY_LEN > 16 and KEY_LEN < 24:
+            KEY = key + padding_string[:24 - KEY_LEN]
+
+        elif KEY_LEN > 24 and KEY_LEN < 32:
+            KEY = key + padding_string[:32 - KEY_LEN]
+
+        elif KEY_LEN > 32:
+            KEY = key[:32]
+
+        return KEY
+
+    def _decrypt(self, encrypted, passphrase):
+        aes = AES.new(passphrase, AES.MODE_CFB, '1234567812345678')
+        decrypt_pass = aes.decrypt(base64.b64decode(encrypted))
+        return decrypt_pass.decode('utf-8')

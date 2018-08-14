@@ -145,6 +145,8 @@ class VolumePlugin(object):
         vol_qos = volume.DEFAULT_QOS
         compression_val = volume.DEFAULT_COMPRESSION_VAL
         valid_compression_opts = ['true', 'false']
+        fs_owner = None
+        fs_mode = None
         mount_conflict_delay = volume.DEFAULT_MOUNT_CONFLICT_DELAY
         cpg = None
         snap_cpg = None
@@ -158,12 +160,15 @@ class VolumePlugin(object):
                                         'size', 'provisioning', 'flash-cache',
                                         'cloneOf', 'virtualCopyOf',
                                         'expirationHours', 'retentionHours',
-                                        'qos-name', 'mountConflictDelay',
+                                        'qos-name', 'fsOwner', 'fsMode',
+                                        'mountConflictDelay',
                                         'help', 'importVol', 'cpg',
                                         'snapcpg', 'scheduleName',
                                         'scheduleFrequency', 'snapshotPrefix',
                                         'expHrs', 'retHrs', 'backend',
                                         'replicationGroup']
+            valid_snap_schedule_opts = ['scheduleName', 'scheduleFrequency',
+                                        'snapshotPrefix', 'expHrs', 'retHrs']
             for key in contents['Opts']:
                 if key not in valid_volume_create_opts:
                     msg = (_('create volume/snapshot/clone failed, error is: '
@@ -251,6 +256,45 @@ class VolumePlugin(object):
                     contents['Opts']['snapcpg'] != ""):
                 snap_cpg = str(contents['Opts']['snapcpg'])
 
+            if ('fsOwner' in contents['Opts'] and
+                    contents['Opts']['fsOwner'] != ""):
+                fs_owner = contents['Opts']['fsOwner']
+                try:
+                    mode = fs_owner.split(':')
+                except ValueError as ex:
+                    return json.dumps({'Err': "Invalid value '%s' specified "
+                                       "for fsOwner. Please "
+                                       "specify a correct value." %
+                                       fs_owner})
+                except IndexError as ex:
+                    return json.dumps({'Err': "Invalid value '%s' specified "
+                                       "for fsOwner. Please "
+                                       "specify both uid and gid." %
+                                       fs_owner})
+
+            if ('fsMode' in contents['Opts'] and
+                    contents['Opts']['fsMode'] != ""):
+                fs_mode_str = contents['Opts']['fsMode']
+                try:
+                    fs_mode = int(fs_mode_str)
+                except ValueError as ex:
+                    return json.dumps({'Err': "Invalid value '%s' specified "
+                                       "for fsMode. Please "
+                                       "specify an integer value." %
+                                       fs_mode_str})
+                if fs_mode_str[0] != '0':
+                    return json.dumps({'Err': "Invalid value '%s' specified "
+                                              "for fsMode. Please "
+                                              "specify an octal value." %
+                                              fs_mode_str})
+                for mode in fs_mode_str:
+                    if int(mode) > 7:
+                        return json.dumps({'Err': "Invalid value '%s' "
+                                           "specified for fsMode. Please "
+                                           "specify an octal value." %
+                                           fs_mode_str})
+                fs_mode = fs_mode_str
+
             if ('mountConflictDelay' in contents['Opts'] and
                     contents['Opts']['mountConflictDelay'] != ""):
                 mount_conflict_delay_str = str(contents['Opts']
@@ -279,6 +323,14 @@ class VolumePlugin(object):
                                                          opts)
             elif 'cloneOf' in contents['Opts']:
                 return self.volumedriver_clone_volume(name, opts)
+            for i in input_list:
+                if i in valid_snap_schedule_opts:
+                    if 'virtualCopyOf' not in input_list:
+                        msg = (_('virtualCopyOf is a mandatory parameter for'
+                                 ' creating a snapshot schedule'))
+                        LOG.error(msg)
+                        response = json.dumps({u"Err": msg})
+                        return response
 
         rcg_name = contents['Opts'].get('replicationGroup', None)
         return self.orchestrator.volumedriver_create(volname, vol_size,
@@ -286,6 +338,7 @@ class VolumePlugin(object):
                                                      vol_flash,
                                                      compression_val,
                                                      vol_qos,
+                                                     fs_owner, fs_mode,
                                                      mount_conflict_delay,
                                                      cpg, snap_cpg,
                                                      current_backend,
@@ -400,13 +453,37 @@ class VolumePlugin(object):
                 if 'scheduleName' not in contents['Opts'] or \
                         'snapshotPrefix' not in contents['Opts']:
                     msg = ('Please make sure that valid schedule name is '
-                           'passed or please provide a 3 letter prefix for '
-                           'this schedule ')
+                           'passed and please provide max 15 letter prefix '
+                           'for the scheduled snapshot names ')
+                    LOG.error(msg)
+                    response = json.dumps({'Err': msg})
+                    return response
+                if ('scheduleName' in contents['Opts'] and
+                        contents['Opts']['scheduleName'] == ""):
+                    msg = ('Please make sure that valid schedule name is '
+                           'passed ')
+                    LOG.error(msg)
+                    response = json.dumps({'Err': msg})
+                    return response
+                if ('snapshotPrefix' in contents['Opts'] and
+                        contents['Opts']['snapshotPrefix'] == ""):
+                    msg = ('Please provide a 3 letter prefix for scheduled '
+                           'snapshot names ')
                     LOG.error(msg)
                     response = json.dumps({'Err': msg})
                     return response
                 schedName = str(contents['Opts']['scheduleName'])
                 snapPrefix = str(contents['Opts']['snapshotPrefix'])
+
+                schedNameLength = len(schedName)
+                snapPrefixLength = len(snapPrefix)
+                if schedNameLength > 31 or snapPrefixLength > 15:
+                    msg = ('Please provide a schedlueName with max 31 '
+                           'characters and snapshotPrefix with max '
+                           'length of 15 characters')
+                    LOG.error(msg)
+                    response = json.dumps({'Err': msg})
+                    return response
             try:
                 self._check_schedule_frequency(schedFrequency)
             except Exception as ex:
