@@ -123,7 +123,7 @@ class HPE3PARCommon(object):
     def _create_client(self, timeout=TIME_OUT):
         try:
             suppress_ssl_warnings = \
-                self.config.suppress_requests_ssl_warnings
+                CONF.suppress_requests_ssl_warnings
             cl = client.HPE3ParClient(
                 self.src_bkend_config.hpe3par_api_url, timeout=timeout,
                 suppress_ssl_warnings=suppress_ssl_warnings)
