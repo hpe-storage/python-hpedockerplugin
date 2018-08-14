@@ -9,4 +9,3 @@ class ArrayConnectionParams(object):
             object.__getattribute__(self, key)
         except AttributeError:
             return None
-
