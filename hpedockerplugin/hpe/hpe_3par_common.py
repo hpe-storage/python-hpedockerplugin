@@ -484,9 +484,9 @@ class HPE3PARCommon(object):
         expHr = str(exphrs)
         retHr = str(rethrs)
 
-        cmd = ['createsched -f']
+        cmd = ['createsched']
         createsnapstring = []
-        createsnapstring.append('"createsv ')
+        createsnapstring.append('"createsv -f ')
         if exphrs is not None:
             createsnapstring.append('-exp ' + expHr + 'h ')
         if rethrs is not None:
