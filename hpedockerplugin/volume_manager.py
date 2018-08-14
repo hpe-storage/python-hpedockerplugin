@@ -23,12 +23,11 @@ import math
 import re
 import hpedockerplugin.hpe.array_connection_params as acp
 import datetime
-
+from hpedockerplugin.hpe import hpe3par_opts as opts
 from hpedockerplugin.hpe import volume
 from hpedockerplugin.hpe import utils
 from hpedockerplugin.i18n import _, _LE, _LI, _LW
 import hpedockerplugin.synchronization as synchronization
-from hpedockerplugin.hpe import hpe_3par_common as opts
 
 LOG = logging.getLogger(__name__)
 PRIMARY = 1
@@ -90,7 +89,6 @@ class VolumeManager(object):
         hpepluginconfig.hpe3par_password = \
             self._decrypt_password(hpepluginconfig, backend_name)
 
-        self._initialize_driver(hpepluginconfig)
         self._connector = self._get_connector(hpepluginconfig)
 
         # Volume fencing requirement
@@ -135,23 +133,23 @@ class VolumeManager(object):
         LOG.info("Getting source backend configuration...")
         hpeconf = self._hpepluginconfig
         config = acp.ArrayConnectionParams()
-        config['hpedockerplugin_driver'] = hpeconf.hpedockerplugin_driver
-        config['hpe3par_api_url'] = hpeconf.hpe3par_api_url
-        config['hpe3par_username'] = hpeconf.hpe3par_username
-        config['hpe3par_password'] = hpeconf.hpe3par_password
-        config['san_ip'] = hpeconf.san_ip
-        config['san_login'] = hpeconf.san_login
-        config['san_password'] = hpeconf.san_password
-        config['hpe3par_cpg'] = hpeconf.hpe3par_cpg
+        config.hpedockerplugin_driver = hpeconf.hpedockerplugin_driver
+        config.hpe3par_api_url = hpeconf.hpe3par_api_url
+        config.hpe3par_username = hpeconf.hpe3par_username
+        config.hpe3par_password = hpeconf.hpe3par_password
+        config.san_ip = hpeconf.san_ip
+        config.san_login = hpeconf.san_login
+        config.san_password = hpeconf.san_password
+        config.hpe3par_cpg = hpeconf.hpe3par_cpg
         if hpeconf.hpe3par_snapcpg:
-            config['hpe3par_snapcpg'] = hpeconf.hpe3par_snapcpg
+            config.hpe3par_snapcpg = hpeconf.hpe3par_snapcpg
         else:
-            config['hpe3par_snapcpg'] = hpeconf.hpe3par_cpg
+            config.hpe3par_snapcpg = hpeconf.hpe3par_cpg
 
-        config['use_multipath'] = hpeconf.use_multipath
-        config['enforce_multipath'] = hpeconf.enforce_multipath
-        config['quorum_witness_ip'] = hpeconf.quorum_witness_ip
-        config['backend_id'] = hpeconf.backend_id
+        config.use_multipath = hpeconf.use_multipath
+        config.enforce_multipath = hpeconf.enforce_multipath
+        config.quorum_witness_ip = hpeconf.quorum_witness_ip
+        config.backend_id = hpeconf.backend_id
 
         LOG.info("Got source backend configuration!")
         return config

@@ -1347,7 +1347,7 @@ class HPE3PARCommon(object):
 
         # Add volume to remote copy group.
         rcg_targets = []
-        rcg_target = {'targetName': self.tgt_bkend_config['backend_id'],
+        rcg_target = {'targetName': self.tgt_bkend_config.backend_id,
                       'secVolumeName': bkend_vol_name}
         rcg_targets.append(rcg_target)
         optional = {'volumeAutoCreation': True}
