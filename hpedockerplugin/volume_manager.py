@@ -23,7 +23,7 @@ import math
 import re
 import hpedockerplugin.hpe.array_connection_params as acp
 import datetime
-from hpedockerplugin.hpe import hpe3par_opts as opts
+
 from hpedockerplugin.hpe import volume
 from hpedockerplugin.hpe import utils
 from hpedockerplugin.i18n import _, _LE, _LI, _LW
@@ -61,9 +61,11 @@ class VolumeManager(object):
 
             self._hpeplugin_driver = self._primary_driver
             LOG.info("Initialized 3PAR driver!")
-        except:
-            msg = "Failed to initialize 3PAR driver for array: %s!"\
-                  % self.src_bkend_config.hpe3par_api_url
+        except Exception as ex:
+            msg = "Failed to initialize 3PAR driver for array: %s!" \
+                  "Exception: %s"\
+                  % (self.src_bkend_config.hpe3par_api_url,
+                     six.text_type(ex))
             LOG.info(msg)
             raise exception.HPEPluginStartPluginException(
                 reason=msg)
@@ -76,9 +78,11 @@ class VolumeManager(object):
                 self._remote_driver = self._initialize_driver(
                     hpepluginconfig, self.tgt_bkend_config,
                     self.src_bkend_config)
-            except:
-                msg = "Failed to initialize 3PAR driver for remote array %s!"\
-                      % self.tgt_bkend_config.hpe3par_api_url
+            except Exception as ex:
+                msg = "Failed to initialize 3PAR driver for remote array %s!" \
+                      "Exception: %s"\
+                      % (self.tgt_bkend_config.hpe3par_api_url,
+                         six.text_type(ex))
                 LOG.info(msg)
                 raise exception.HPEPluginStartPluginException(reason=msg)
 
@@ -229,7 +233,7 @@ class VolumeManager(object):
             return json.dumps({u"Err": ''})
 
         if (rcg_name and not self._hpepluginconfig.replication_device) or \
-            (self._hpepluginconfig.replication_device and not rcg_name):
+                (self._hpepluginconfig.replication_device and not rcg_name):
             msg = "Request to create replicated volume cannot be fulfilled " \
                   "without defining 'replication_device' entry in hpe.conf " \
                   "for the desired or default backend. Please add it and " \
@@ -1291,12 +1295,14 @@ class VolumeManager(object):
                 # In case failover/failback has happened at the backend, while
                 # mounting the volume, the plugin needs to figure out the
                 # target array
-                driver = self._get_target_driver_to_mount_volume(vol['rcg_info'])
+                driver = self._get_target_driver_to_mount_volume(
+                    vol['rcg_info'])
                 device_info, pri_connection_info = _mount_volume(driver)
         else:
             # hpeplugin_driver will always point to the currently active array
             # Post-failover, it will point to secondary_driver
-            device_info, pri_connection_info = _mount_volume(self._hpeplugin_driver)
+            device_info, pri_connection_info = _mount_volume(
+                self._hpeplugin_driver)
 
         # Make sure the path exists
         path = FilePath(device_info['path']).realpath()

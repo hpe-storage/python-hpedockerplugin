@@ -41,8 +41,6 @@ from hpedockerplugin import exception
 from hpedockerplugin.i18n import _, _LW
 
 from hpedockerplugin.hpe import hpe_3par_common as hpecommon
-
-from hpedockerplugin.hpe import san_driver
 from hpedockerplugin.hpe import utils as volume_utils
 
 LOG = logging.getLogger(__name__)

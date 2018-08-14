@@ -127,7 +127,6 @@ class HPE3PARCommon(object):
             cl = client.HPE3ParClient(
                 self.src_bkend_config.hpe3par_api_url, timeout=timeout,
                 suppress_ssl_warnings=suppress_ssl_warnings)
-                # suppress_ssl_warnings=False)
         except Exception as ex:
             msg = (_('Failed to connect to the array using %(url)s.'
                      'Please ensure the following \n'
@@ -1444,7 +1443,8 @@ class HPE3PARCommon(object):
                 {'targetName': tgt_config.backend_id,
                  'policies': {'autoFailover': True,
                               'pathManagement': True,
-                              'autoRecover': True}}]} # TODO: Check if this is required
+                              # TODO: Check if this is required
+                              'autoRecover': True}}]}
             try:
                 self.client.modifyRemoteCopyGroup(rcg_name, pp_params)
             except Exception as ex:

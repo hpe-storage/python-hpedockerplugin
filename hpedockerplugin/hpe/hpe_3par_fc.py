@@ -37,12 +37,7 @@ from oslo_log import log as logging
 from hpedockerplugin import exception
 # from hpedockerplugin.i18n import _, _LI, _LW, _LE
 from hpedockerplugin.i18n import _, _LE
-
 from hpedockerplugin.hpe import hpe_3par_common as hpecommon
-
-# from hpedockerplugin.hpe import utils
-from hpedockerplugin.hpe import san_driver
-
 from oslo_utils.excutils import save_and_reraise_exception
 
 LOG = logging.getLogger(__name__)
