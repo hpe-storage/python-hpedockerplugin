@@ -21,7 +21,7 @@ def createvol(name, size=DEFAULT_SIZE, prov=DEFAULT_PROV,
               mount_conflict_delay=DEFAULT_MOUNT_CONFLICT_DELAY,
               is_snap=DEFAULT_TO_SNAP_TYPE, cpg=None, snap_cpg=None,
               has_schedule=DEFAULT_SCHEDULE, current_backend='DEFAULT',
-              rcg_name=None):
+              rcg_info=None):
     volume = {}
     volume['id'] = str(uuid.uuid4())
     volume['name'] = volume['id']
@@ -48,5 +48,5 @@ def createvol(name, size=DEFAULT_SIZE, prov=DEFAULT_PROV,
     volume['cpg'] = cpg
     volume['snap_cpg'] = snap_cpg
     volume['has_schedule'] = has_schedule
-    volume['rcg_name'] = rcg_name
+    volume['rcg_info'] = rcg_info
     return volume

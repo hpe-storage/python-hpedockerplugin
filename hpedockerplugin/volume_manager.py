@@ -25,6 +25,8 @@ from hpedockerplugin.i18n import _, _LE, _LI, _LW
 import hpedockerplugin.synchronization as synchronization
 
 LOG = logging.getLogger(__name__)
+PRIMARY = 1
+SECONDARY = 2
 
 
 class VolumeManager(object):
@@ -42,88 +44,40 @@ class VolumeManager(object):
 
         self._initialize_configuration()
 
-        primary_driver_initialized = True
         # TODO: When multiple backends come into picture, consider
         # lazy initialization of individual driver
         try:
-            LOG.info("Initializing primary driver...")
+            LOG.info("Initializing 3PAR driver...")
             self._primary_driver = self._initialize_driver(
                 hpepluginconfig, self.src_bkend_config, self.tgt_bkend_config)
 
-            # TODO: Must get the active driver info from ETCD
-            # Else things may go haywire
-            # Set the active driver as primary driver
             self._hpeplugin_driver = self._primary_driver
-            LOG.info("Initialized primary driver!")
+            LOG.info("Initialized 3PAR driver!")
         except:
-            LOG.info("Failed to initialize primary driver!!!")
-            raise exception.HPEPluginMountException(
-                "Failed to initialize primary driver!")
-
-            # TODO: Uncomment when failover is implemented
-            # # TODO: Primary array might be down and secondary might be in failover
-            # # state. In this case, consider secondary driver to be active one
-            # # Also read active array info just to ensure that secondary array
-            # # indeed is the active array
-            # if hpepluginconfig.replication_device:
-            #     primary_driver_initialized = False
-            #     pass
-            # else:
-            #     raise
+            msg = "Failed to initialize 3PAR driver for array: %s!"\
+                  % self.src_bkend_config.hpe3par_api_url
+            LOG.info(msg)
+            raise exception.HPEPluginStartPluginException(
+                reason=msg)
 
         # If replication enabled, then initialize secondary driver
         if hpepluginconfig.replication_device:
             LOG.info("Replication enabled!")
             try:
-                LOG.info("Initializing secondary driver...")
-                self._secondary_driver = self._initialize_driver(
+                LOG.info("Initializing 3PAR driver for remote array...")
+                self._remote_driver = self._initialize_driver(
                     hpepluginconfig, self.tgt_bkend_config,
                     self.src_bkend_config)
-
-                # TODO: Must get the active driver info from ETCD
-                # Else things may go haywire
-                # Set the active driver as secondary driver
-                if not primary_driver_initialized:
-                    LOG.info("Setting secondary driver as active driver!")
-                    self._hpeplugin_driver = self._secondary_driver
             except:
-                if not primary_driver_initialized:
-                    LOG.info("Failed to initialize both primary and secondary"
-                             "drivers!")
-                    raise Exception('Failed to initialize either of the'
-                                    'primary and secondary drivers')
+                msg = "Failed to initialize 3PAR driver for remote array %s!"\
+                      % self.tgt_bkend_config.hpe3par_api_url
+                LOG.info(msg)
+                raise exception.HPEPluginStartPluginException(reason=msg)
 
         self._connector = self._get_connector(hpepluginconfig)
 
-        # If replication_device is defined, start heartbeat-monitor
-        if hpepluginconfig.replication_device:
-            # Temporary: Cleanup. This must be removed in final implementation
-            self._etcd.delete_active_driver_info(self.src_bkend_config.backend_id,
-                                                 self.tgt_bkend_config.backend_id)
-            self._set_active_driver()
-
         # Volume fencing requirement
         self._node_id = self._get_node_id()
-
-    def _set_active_driver(self):
-        try:
-            active_driver_info = self._etcd.get_active_driver_info(
-                self.src_bkend_config.backend_id,
-                self.tgt_bkend_config.backend_id)
-
-            active_driver = active_driver_info['active']
-
-            self._hpeplugin_driver = self._primary_driver \
-                if active_driver == 'primary' else self._secondary_driver
-
-        except exception.HPEPluginActiveDriverEntryNotFound:
-            rc_entry = {'rcgs': [],
-                        'active': 'primary'}
-            self._etcd.save_active_driver_info(
-                self.src_bkend_config.backend_id,
-                self.tgt_bkend_config.backend_id,
-                rc_entry)
-            self._hpeplugin_driver = self._primary_driver
 
     def _initialize_configuration(self):
         # Initialize default configuration
@@ -138,7 +92,7 @@ class VolumeManager(object):
             self.tgt_bkend_config = acp.ArrayConnectionParams(
                 self._hpepluginconfig.replication_device)
             if self.tgt_bkend_config:
-                self.tgt_bkend_config.hpe3par_cpg = self._parse_cpg_map(
+                self.tgt_bkend_config.hpe3par_cpg = self._extract_remote_cpgs(
                     self.tgt_bkend_config.cpg_map)
                 if not self.tgt_bkend_config.hpe3par_cpg:
                     LOG.exception("Failed to initialize driver - cpg_map not "
@@ -147,8 +101,9 @@ class VolumeManager(object):
                         "Failed to initialize driver - cpg_map not defined for"
                         "replication device")
 
-                self.tgt_bkend_config.hpe3par_snapcpg = self._parse_cpg_map(
-                    self.tgt_bkend_config.snap_cpg_map)
+                self.tgt_bkend_config.hpe3par_snapcpg = \
+                    self._extract_remote_cpgs(
+                        self.tgt_bkend_config.snap_cpg_map)
                 if not self.tgt_bkend_config.hpe3par_snapcpg:
                     self.tgt_bkend_config.hpe3par_snapcpg = \
                         self.tgt_bkend_config.hpe3par_cpg
@@ -184,7 +139,8 @@ class VolumeManager(object):
         LOG.info("Got source backend configuration!")
         return config
 
-    def _parse_cpg_map(self, cpg_map):
+    @staticmethod
+    def _extract_remote_cpgs(cpg_map):
         hpe3par_cpgs = []
         cpg_pairs = cpg_map.split(' ')
         for cpg_pair in cpg_pairs:
@@ -192,38 +148,6 @@ class VolumeManager(object):
             hpe3par_cpgs.append(cpgs[1])
 
         return hpe3par_cpgs
-
-    def _swap_active_driver(self):
-        active_driver_info = self._etcd.get_active_driver_info(
-            self.src_bkend_config.backend_id,
-            self.tgt_bkend_config.backend_id)
-        active_driver = active_driver_info['active']
-
-        # Swap the driver
-        self._hpeplugin_driver = self._primary_driver \
-            if active_driver == 'secondary' \
-            else self._secondary_driver
-
-        self._etcd.update_active_driver_info(
-            self.src_bkend_config.backend_id,
-            self.tgt_bkend_config.backend_id,
-            'active',
-            'primary' if active_driver == 'secondary' else 'secondary'
-        )
-
-    def notify_array_not_reachable(self, config):
-        LOG.debug("volume_manager::notify_array_not_reachable called")
-
-        # Swap driver for subsequent operations
-        self._swap_active_driver()
-
-        # TODO: Should we keep monitoring primary array only or
-        # switch monitoring as well to secondary array?
-        # Start monitoring the NOW active array
-        if self._hpeplugin_driver == self._primary_driver:
-            return self.src_bkend_config
-        else:
-            return self.tgt_bkend_config
 
     @staticmethod
     def _initialize_driver(hpepluginconfig, src_config, tgt_config):
@@ -317,19 +241,14 @@ class VolumeManager(object):
             self._create_volume(vol, undo_steps)
             self._apply_volume_specs(vol, undo_steps)
             if rcg_name:
-                # In case failover  has occurred, the backend RC group name
-                # has primary array ID suffixed after a dot
-                # E.g. rcg01.<primary_array_id>. We have cached this info
-                # in ETCD. Fetch it from there.
-                active_rcg_name = self._get_active_rcg_name_from_etcd(
-                    self.src_bkend_config.backend_id,
-                    self.tgt_bkend_config.backend_id,
-                    rcg_name)
-                if not active_rcg_name:
-                    active_rcg_name = rcg_name
-                self._create_rcg(active_rcg_name, undo_steps)
-                self._add_volume_to_rcg(vol, active_rcg_name, undo_steps)
-                vol['rcg_name'] = active_rcg_name
+                # bkend_rcg_name = self._get_3par_rcg_name(rcg_name)
+                try:
+                    rcg_info = self._find_rcg(rcg_name)
+                except exception.HPEDriverRemoteCopyGroupNotFound:
+                    rcg_info = self._create_rcg(rcg_name, undo_steps)
+
+                self._add_volume_to_rcg(vol, rcg_name, undo_steps)
+                vol['rcg_info'] = rcg_info
 
             # For now just track volume to uuid mapping internally
             # TODO: Save volume name and uuid mapping in etcd as well
@@ -1321,9 +1240,37 @@ class VolumeManager(object):
                 raise exception.HPEPluginMountException(reason=msg)
             return device_info, connection_info
 
-        # hpeplugin_driver will always point to the currently active array
-        # Post-failover, it will point to secondary_driver
-        device_info, connection_info = _mount_volume(self._hpeplugin_driver)
+        pri_connection_info = None
+        sec_connection_info = None
+        # Check if replication is configured
+        if self._hpepluginconfig.replication_device:
+            # TODO: This is where existing volume can be added to RCG
+            # after enabling replication configuration in hpe.conf
+            if 'rcg_info' not in vol or not vol['rcg_info']:
+                msg = "Volume %s is not a replicated volume. It seems" \
+                      "the backend configuration was modified to be a" \
+                      "replication configuration after volume creation."\
+                      % volname
+                LOG.error(msg)
+                raise exception.HPEPluginMountException(reason=msg)
+
+            # Check if this is Active/Passive based replication
+            if self._hpepluginconfig.quorum_witness_ip:
+                # This is Peer Persistence setup
+                device_info, pri_connection_info = _mount_volume(
+                    self._primary_driver)
+                sec_device_info, sec_connection_info = _mount_volume(
+                    self._remote_driver)
+            else:
+                # In case failover/failback has happened at the backend, while
+                # mounting the volume, the plugin needs to figure out the
+                # target array
+                driver = self._get_target_driver_to_mount_volume(vol['rcg_info'])
+                device_info, pri_connection_info = _mount_volume(driver)
+        else:
+            # hpeplugin_driver will always point to the currently active array
+            # Post-failover, it will point to secondary_driver
+            device_info, pri_connection_info = _mount_volume(self._hpeplugin_driver)
 
         # Make sure the path exists
         path = FilePath(device_info['path']).realpath()
@@ -1373,23 +1320,10 @@ class VolumeManager(object):
         path_info['name'] = volname
         path_info['path'] = path.path
         path_info['device_info'] = device_info
-        path_info['connection_info'] = connection_info
+        path_info['connection_info'] = pri_connection_info
         path_info['mount_dir'] = mount_dir
-
-        # If Peer Persistence is enabled, mount volume on secondary array
-        # as well
-        if self._hpepluginconfig.quorum_witness_ip:
-            secondary_driver = self._secondary_driver \
-                if self._hpeplugin_driver == self._primary_driver \
-                else self._primary_driver
-            try:
-                device_info, connection_info = _mount_volume(secondary_driver)
-                path_info['remote_connection_info'] = connection_info
-            except Exception as ex:
-                # This may fail in case the secondary array is down
-                LOG.warning("Secondary array is down and hence cannot mount "
-                            "volume there")
-                pass
+        if sec_connection_info:
+            path_info['remote_connection_info'] = sec_connection_info
 
         LOG.info("Updating node_mount_info in etcd with mount_id %s..."
                  % mount_id)
@@ -1404,6 +1338,57 @@ class VolumeManager(object):
                                u"Mountpoint": mount_dir,
                                u"Devicename": path.path})
         return response
+
+    def _get_target_driver_to_mount_volume(self, rcg_info):
+        local_rcg = None
+        try:
+            rcg_name = rcg_info['local_rcg_name']
+            local_rcg = self._primary_driver.get_rcg(rcg_name)
+            local_role_reversed = local_rcg['targets'][0]['roleReversed']
+        except Exception as ex:
+            msg = (_("There was an error fetching the remote copy "
+                     "group from primary array: %s.") % six.text_type(ex))
+            LOG.error(msg)
+
+        remote_rcg = None
+        try:
+            remote_rcg_name = rcg_info['remote_rcg_name']
+            remote_rcg = self._remote_driver.get_rcg(remote_rcg_name)
+            remote_role_reversed = remote_rcg['targets'][0]['roleReversed']
+        except Exception as ex:
+            msg = (_("There was an error fetching the remote copy "
+                     "group from secondary array: %s.") % six.text_type(ex))
+            LOG.error(msg)
+
+        if not (local_rcg and remote_rcg):
+            msg = (_("Failed to get remote copy group role: %s") % rcg_name)
+            LOG.error(msg)
+            raise exception.HPEPluginMountException(reason=msg)
+
+        # Both arrays are up - this could just be a group fail-over
+        if local_rcg and remote_rcg:
+            # State before to fail-over
+            if local_rcg['role'] == PRIMARY and not local_role_reversed and \
+               remote_rcg['role'] == SECONDARY and not remote_role_reversed:
+                return self._primary_driver
+
+            # State post recover
+            if remote_rcg['role'] == PRIMARY and remote_role_reversed and \
+               local_rcg['role'] == SECONDARY and local_role_reversed:
+                return self._remote_driver
+
+            msg = (_("Cannot perform mount at this time as remote copy group "
+                     " %s is being failed over or failed back. Please try "
+                     "after some time.") % rcg_name)
+            raise exception.HPEPluginMountException(reason=msg)
+
+        if local_rcg:
+            if local_rcg['role'] == PRIMARY and not local_role_reversed:
+                return self._primary_driver
+
+        if remote_rcg:
+            if remote_rcg['role'] == PRIMARY and remote_role_reversed:
+                return self._remote_driver
 
     @synchronization.synchronized('{volname}')
     def unmount_volume(self, volname, vol_mount, mount_id):
@@ -1537,16 +1522,8 @@ class VolumeManager(object):
 
         # In case of Peer Persistence, volume is mounted on the secondary
         # array as well. It should be unmounted too
-        if self._hpepluginconfig.replication_device and \
-                self._hpepluginconfig.quorum_witness_ip:
-            # Ensure that we pick up the right driver instance
-            # TODO: This might fail in case array is down.
-            # Need to think how to keep track if array is alive or dead
-            if self._hpeplugin_driver == self._primary_driver:
-                remote_driver = self._secondary_driver
-            else:
-                remote_driver = self._primary_driver
-            _unmount_volume(remote_driver)
+        if self._hpepluginconfig.replication_device:
+            _unmount_volume(self._remote_driver)
 
         # TODO: Create path_info list as we can mount the volume to multiple
         # hosts at the same time.
@@ -1708,60 +1685,24 @@ class VolumeManager(object):
     def _get_3par_rcg_name(self, rcg_name):
         return rcg_name
 
+    def _find_rcg(self, rcg_name):
+        rcg = self._hpeplugin_driver.get_rcg(rcg_name)
+        rcg_info = {'local_rcg_name': rcg_name,
+                    'remote_rcg_name': rcg['remoteGroupName']}
+        return rcg_info
+
     # TODO: Need RCG lock in different namespace. To be done later
     # @synchronization.synchronized('{rcg_name}')
     def _create_rcg(self, rcg_name, undo_steps):
-        bkend_rcg_name = self._get_3par_rcg_name(rcg_name)
-        try:
-            rcg_info = self._hpeplugin_driver.create_rcg(
-                rcg_name=bkend_rcg_name)
-            if rcg_info is None:
-                return
+        rcg_info = self._hpeplugin_driver.create_rcg(
+            rcg_name=rcg_name)
 
-            undo_steps.append(
-                {'undo_func': self._hpeplugin_driver.delete_rcg,
-                 'params': {'rcg_name': bkend_rcg_name},
-                 'msg': 'Undo create RCG: Deleting Remote Copy Group %s...'
-                        % (bkend_rcg_name)})
-            active_driver_info = self._etcd.get_active_driver_info(
-                self.src_bkend_config.backend_id,
-                self.tgt_bkend_config.backend_id)
-            rcg_map_list = active_driver_info['rcgs']
-            rcg_name_map = '%s#%s' %(rcg_info['local_rcg_name'],
-                                     rcg_info['remote_rcg_name'])
-            if rcg_name_map not in rcg_map_list:
-                rcg_map_list.append(rcg_name_map)
-
-            self._etcd.update_active_driver_info(
-                self.src_bkend_config.backend_id,
-                self.tgt_bkend_config.backend_id,
-                'rcgs', rcg_map_list)
-
-            undo_steps.append(
-                {'undo_func': self._remove_rcg_name_map_from_etcd,
-                 'params': {'rcg_name_map': rcg_name_map},
-                 'msg': 'Removing RCG name map from active driver info %s...'
-                        % (rcg_name_map)})
-        except exception.HPERemoteCopyGroupAlreadyExists as ex:
-            LOG.info(six.text_type(ex))
-            pass
-
-    def _remove_rcg_name_map_from_etcd(self, rcg_name_map=None):
-        try:
-            active_driver_info = self._etcd.get_active_driver_info(
-                self.src_bkend_config.backend_id,
-                self.tgt_bkend_config.backend_id)
-            rcg_map_list = active_driver_info['rcgs']
-            try:
-                rcg_map_list.remove(rcg_name_map)
-                self._etcd.update_active_driver_info(
-                    self.src_bkend_config.backend_id,
-                    self.tgt_bkend_config.backend_id,
-                    'rcgs', rcg_map_list)
-            except ValueError:
-                pass
-        except exception.HPEPluginActiveDriverEntryNotFound as ex:
-            LOG.warning(six.text_type(ex))
+        undo_steps.append(
+            {'undo_func': self._hpeplugin_driver.delete_rcg,
+             'params': {'rcg_name': rcg_name},
+             'msg': 'Undo create RCG: Deleting Remote Copy Group %s...'
+                    % (rcg_name)})
+        return rcg_info
 
     # TODO: Need RCG lock in different namespace. To be done later
     # @synchronization.synchronized('{rcg_name}')
@@ -1776,19 +1717,3 @@ class VolumeManager(object):
                         'rcg_name': rcg_name},
              'msg': 'Removing VV %s from Remote Copy Group %s...'
                     % (bkend_vol_name, rcg_name)})
-
-    def _check_if_op_allowed(self, rcg_name):
-        self._hpeplugin_driver.check_if_op_allowed()
-
-    def _get_active_rcg_name_from_etcd(self, src_backend_id,tgt_backend_id, rcg_name):
-        active_driver_info = self._etcd.get_active_driver_info(src_backend_id,
-                                                               tgt_backend_id)
-        rcg_names_map = active_driver_info['rcgs']
-        for rcg_name_map in rcg_names_map:
-            if rcg_name_map.startswith(rcg_name):
-                rcg_names = rcg_name_map.split('#')
-                if active_driver_info['active'] == 'primary':
-                    return rcg_names[0]
-                else:
-                    return rcg_names[1]
-        return None

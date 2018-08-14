@@ -450,7 +450,10 @@ class VolumePlugin(object):
 
         mount_id = contents['ID']
 
-        return self.orchestrator.mount_volume(volname, vol_mount, mount_id)
+        try:
+            return self.orchestrator.mount_volume(volname, vol_mount, mount_id)
+        except Exception as ex:
+            return {'Err': six.text_type(ex)}
 
     @app.route("/VolumeDriver.Path", methods=["POST"])
     def volumedriver_path(self, name):

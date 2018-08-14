@@ -77,6 +77,8 @@ class HPE3PARCommon(object):
 
     SYNC = 1
     PERIODIC = 2
+    RCG_STARTED = 3
+    RCG_STOPPED = 5
 
     # License values for reported capabilities
     COMPRESSION_LIC = "Compression"
@@ -120,9 +122,11 @@ class HPE3PARCommon(object):
 
     def _create_client(self, timeout=TIME_OUT):
         try:
+            suppress_ssl_warnings = \
+                self.config.suppress_requests_ssl_warnings
             cl = client.HPE3ParClient(
                 self.src_bkend_config.hpe3par_api_url, timeout=timeout,
-                suppress_ssl_warnings=self.config.suppress_requests_ssl_warnings)
+                suppress_ssl_warnings=suppress_ssl_warnings)
                 # suppress_ssl_warnings=False)
         except Exception as ex:
             msg = (_('Failed to connect to the array using %(url)s.'
@@ -802,8 +806,8 @@ class HPE3PARCommon(object):
         if volume['snap_cpg'] is not None:
             extras['snapCPG'] = volume['snap_cpg']
         else:
-            if len(self.config.hpe3par_snapcpg):
-                snap_cpg = self.config.hpe3par_snapcpg[0]
+            if len(self.src_bkend_config.hpe3par_snapcpg):
+                snap_cpg = self.src_bkend_config.hpe3par_snapcpg[0]
                 extras['snapCPG'] = snap_cpg
                 volume['snap_cpg'] = snap_cpg
             else:
@@ -1336,72 +1340,6 @@ class HPE3PARCommon(object):
             ret_mode = self.PERIODIC
         return ret_mode
 
-    def _check_replication_target(self):
-        dev = self.config.replication_device
-        # Override and set defaults for certain entries
-        replication_target = dict()
-        replication_target['managed_backend_name'] = (
-            dev.get('managed_backend_name'))
-        replication_target['replication_mode'] = (
-            self._get_remote_copy_mode_num(
-                dev.get('replication_mode')))
-        replication_target['san_ssh_port'] = (
-            dev.get('san_ssh_port', self.src_bkend_config.san_ssh_port))
-        replication_target['ssh_conn_timeout'] = (
-            dev.get('ssh_conn_timeout', self.src_bkend_config.ssh_conn_timeout))
-        replication_target['san_private_key'] = (
-            dev.get('san_private_key', self.src_bkend_config.san_private_key))
-        # Format iscsi IPs correctly
-        iscsi_ips = dev.get('hpe3par_iscsi_ips')
-        if iscsi_ips:
-            replication_target['hpe3par_iscsi_ips'] = iscsi_ips.split(' ')
-            # Format hpe3par_iscsi_chap_enabled as a bool
-            replication_target['hpe3par_iscsi_chap_enabled'] = (
-                dev.get('hpe3par_iscsi_chap_enabled') == 'True')
-        replication_target['array_name'] = dev['backend_id']
-        self._replication_target = replication_target
-
-        #     # Make sure we can log into the array, that it has been
-        #     # correctly configured, and its API version meets the
-        #     # minimum requirement.
-        #     cl = None
-        #     try:
-        #         cl = self._create_replication_client(replication_target)
-        #         array_id = six.text_type(cl.getStorageSystemInfo()['id'])
-        #         replication_target['id'] = array_id
-        #         wsapi_version = cl.getWsApiVersion()['build']
-        #
-        #         if wsapi_version < REMOTE_COPY_API_VERSION:
-        #             LOG.warning("The secondary array must have an API "
-        #                         "version of %(min_ver)s or higher. Array "
-        #                         "'%(target)s' is on %(target_ver)s, "
-        #                         "therefore it will not be added as a "
-        #                         "valid replication target.",
-        #                         {'target': array_name,
-        #                          'min_ver': REMOTE_COPY_API_VERSION,
-        #                          'target_ver': wsapi_version})
-        #         elif not self._is_valid_replication_array(replication_target):
-        #             LOG.warning("'%s' is not a valid replication array. "
-        #                         "In order to be valid, backend_id, "
-        #                         "replication_mode, "
-        #                         "hpe3par_api_url, hpe3par_username, "
-        #                         "hpe3par_password, cpg_map, san_ip, "
-        #                         "san_login, and san_password "
-        #                         "must be specified. If the target is "
-        #                         "managed, managed_backend_name must be "
-        #                         "set as well.", array_name)
-        #         else:
-        #             replication_targets.append(replication_target)
-        #     except Exception:
-        #         LOG.error("Could not log in to 3PAR array (%s) with the "
-        #                   "provided credentials.", array_name)
-        #     finally:
-        #         self._destroy_replication_client(cl)
-        #
-        # self._replication_targets = replication_targets
-        # if self._is_replication_configured_correct():
-        #     self._replication_enabled = True
-
     def add_volume_to_rcg(self, **kwargs):
         bkend_vol_name = kwargs['bkend_vol_name']
         rcg_name = kwargs['rcg_name']
@@ -1415,7 +1353,14 @@ class HPE3PARCommon(object):
         rcg_targets.append(rcg_target)
         optional = {'volumeAutoCreation': True}
         try:
-            self.client.stopRemoteCopy(rcg_name)
+            rcg = self.get_rcg(rcg_name)
+            original_rcg_state = rcg['targets'][0]['state']
+            if original_rcg_state == self.RCG_STARTED:
+                self.client.stopRemoteCopy(rcg_name)
+            else:
+                LOG.info("Remote copy group %s was in stopped state. However"
+                         "after adding volume to it, it will be started"
+                         % rcg_name)
             self.client.addVolumeToRemoteCopyGroup(rcg_name, bkend_vol_name,
                                                    rcg_targets,
                                                    optional=optional)
@@ -1440,7 +1385,8 @@ class HPE3PARCommon(object):
             LOG.error(msg)
             raise exception.VolumeBackendAPIException(data=msg)
 
-    def _get_bkend_replication_mode(self, mode):
+    @staticmethod
+    def _get_backend_replication_mode(mode):
         mode_map = {
             'synchronous': 1,
             'periodic': 2,
@@ -1448,29 +1394,12 @@ class HPE3PARCommon(object):
         ret_mode = mode_map.get(mode, None)
         return ret_mode
 
-    def _check_rcg_already_exists(self, rcg_name):
-        LOG.info("Checking if RCG %s exists..." % rcg_name)
-        try:
-            self.client.getRemoteCopyGroup(rcg_name)
-        except hpeexceptions.HTTPNotFound:
-            LOG.info("RCG %s does not exist" % rcg_name)
-            return False
-        except Exception as ex:
-            msg = "Unknown exception occured while trying to fetch remote"\
-                  "copy group %s: %s" % (rcg_name, six.text_type(ex))
-            LOG.error(msg)
-            raise exception.PluginException(msg)
-        return True
-
     def create_rcg(self, **kwargs):
         rcg_name = kwargs['rcg_name']
-        if self._check_rcg_already_exists(rcg_name):
-            return None
-
         LOG.info("Creating RCG %s..." % rcg_name)
         src_config = self.src_bkend_config
         tgt_config = self.tgt_bkend_config
-        bkend_replication_mode = self._get_bkend_replication_mode(
+        bkend_replication_mode = self._get_backend_replication_mode(
             src_config.replication_mode)
 
         cpg = tgt_config.hpe3par_cpg
@@ -1506,8 +1435,7 @@ class HPE3PARCommon(object):
             LOG.info("Remote Copy Group %s created successfully!" % rcg_name)
         except Exception as ex:
             msg = (_("There was an error creating the remote copy "
-                     "group: %s.") %
-                   six.text_type(ex))
+                     "group: %s.") % six.text_type(ex))
             LOG.error(msg)
             raise exception.HPERemoteCopyGroupBackendAPIException(data=msg)
 
@@ -1517,12 +1445,25 @@ class HPE3PARCommon(object):
                  'policies': {'autoFailover': True,
                               'pathManagement': True,
                               'autoRecover': True}}]} # TODO: Check if this is required
-            self.client.modifyRemoteCopyGroup(rcg_name, pp_params)
+            try:
+                self.client.modifyRemoteCopyGroup(rcg_name, pp_params)
+            except Exception as ex:
+                msg = (_("There was an error modifying the remote copy "
+                         "group: %s.") % six.text_type(ex))
+                LOG.error(msg)
+                raise exception.HPERemoteCopyGroupBackendAPIException(data=msg)
 
-        rcg = self.client.getRemoteCopyGroup(rcg_name)
-        ret_val = {'local_rcg_name': rcg_name,
-                   'remote_rcg_name': rcg['remoteGroupName']}
-        return ret_val
+        try:
+            rcg = self.client.getRemoteCopyGroup(rcg_name)
+            ret_val = {'local_rcg_name': rcg_name,
+                       'remote_rcg_name': rcg['remoteGroupName']}
+            return ret_val
+
+        except Exception as ex:
+            msg = (_("There was an error fetching the remote copy "
+                     "group after its creation: %s.") % six.text_type(ex))
+            LOG.error(msg)
+            raise exception.HPERemoteCopyGroupBackendAPIException(data=msg)
 
     def delete_rcg(self, **kwargs):
         rcg_name = kwargs['rcg_name']
@@ -1534,16 +1475,3 @@ class HPE3PARCommon(object):
                    (rcg_name, six.text_type(ex)))
             LOG.error(msg)
             raise exception.HPERemoteCopyGroupBackendAPIException(data=msg)
-
-    def check_if_op_allowed(self, rcg_name):
-        try:
-            rcg = self.client.getRemoteCopyGroup(rcg_name)
-        except hpeexceptions.HTTPNotFound:
-            return
-        except Exception as ex:
-            msg = "Unknown error occurred: %s" % six.text_type(ex)
-            LOG.error(msg)
-            raise exception.HPEDriverUnknownException(ex=six.text_type(ex))
-        else:
-            if rcg['role'] != 1:
-                raise exception.HPERemoteCopyGroupNotPrimary(rcg_name=rcg_name)

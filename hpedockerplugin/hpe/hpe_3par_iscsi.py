@@ -759,13 +759,6 @@ class HPE3PARISCSIDriver(object):
         finally:
             self._logout(common)
 
-    def check_if_op_allowed(self, rcg_name):
-        common = self._login()
-        try:
-            return common.check_if_op_allowed(rcg_name)
-        finally:
-            self._logout(common)
-
     def force_remove_3par_schedule(self, schedule_name):
         common = self._login()
         try:
@@ -780,5 +773,12 @@ class HPE3PARISCSIDriver(object):
             return common.create_snap_schedule(src_vol_name, schedName,
                                                snapPrefix, exphrs, rethrs,
                                                schedFrequency)
+        finally:
+            self._logout(common)
+
+    def get_rcg(self, rcg_name):
+        common = self._login()
+        try:
+            return common.get_rcg(rcg_name)
         finally:
             self._logout(common)
