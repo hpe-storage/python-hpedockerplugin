@@ -214,7 +214,7 @@ class VolumeManager(object):
             return True
         return volume.DEFAULT_COMPRESSION_VAL
 
-    def manage_existing(self, volname, existing_ref):
+    def manage_existing(self, volname, existing_ref, backend='DEFAULT'):
         LOG.info('Managing a %(vol)s' % {'vol': existing_ref})
 
         # NOTE: Since Docker passes user supplied names and not a unique
@@ -232,6 +232,8 @@ class VolumeManager(object):
             return json.dumps({u"Err": six.text_type(msg)})
 
         vol = volume.createvol(volname)
+        vol['backend'] = backend
+
         parent_vol = ""
         try:
             # check target volume exists in 3par
