@@ -233,6 +233,8 @@ class VolumeManager(object):
 
         vol = volume.createvol(volname)
         vol['backend'] = backend
+        vol['fsOwner'] = None
+        vol['fsMode'] = None
 
         parent_vol = ""
         try:
@@ -337,6 +339,8 @@ class VolumeManager(object):
                     'id': vol['id'],
                     'parent_name': parent_vol['display_name'],
                     'parent_id': parent_vol['id'],
+                    'fsOwner': parent_vol['fsOwner'],
+                    'fsMode': parent_vol['fsMode'],
                     'expiration_hours': expiration_hours,
                     'retention_hours': retention_hours}
                 if 'snapshots' not in parent_vol:
