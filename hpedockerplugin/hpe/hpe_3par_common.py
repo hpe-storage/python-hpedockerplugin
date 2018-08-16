@@ -79,6 +79,8 @@ class HPE3PARCommon(object):
     PERIODIC = 2
     RCG_STARTED = 3
     RCG_STOPPED = 5
+    ROLE_PRIMARY = 1
+    ROLE_SECONDARY = 2
 
     # License values for reported capabilities
     COMPRESSION_LIC = "Compression"
@@ -870,6 +872,14 @@ class HPE3PARCommon(object):
 
     def delete_volume(self, volume, is_snapshot=False):
         try:
+            LOG.info("DELETE_VOLUME:%(volume)s", {'volume': volume})
+            if volume.get('rcg_info'):
+                # this is replicated volume
+                self._do_volume_replication_destroy(volume)
+                LOG.info("Deletion of replicated volume:%s successfull"
+                         % volume)
+                return
+
             if is_snapshot:
                 volume_name = utils.get_3par_snap_name(volume['id'])
             else:
@@ -932,6 +942,76 @@ class HPE3PARCommon(object):
         except Exception as ex:
             LOG.error(_LE("Exception: %s"), ex)
             raise exception.PluginException(ex)
+
+    def _do_volume_replication_destroy(self, volume):
+        rcg_info = volume.get('rcg_info')
+        rcg_name = rcg_info['local_rcg_name']
+        vol_name = utils.get_3par_name(volume['id'], None)
+        if rcg_name:
+            # TODO(sonivi): avoid volume deletion incase of failover
+            # avoid volume deletion incase of switchover
+            rcg_info = self.client.getRemoteCopyGroup(rcg_name)
+            if rcg_info.get('role') != 1:
+                # it's not primary
+                msg = (_("Failed to delete volume: %(vol)s as rcg: %(rcg)s do"
+                         " not have valid role") % {
+                             'vol': vol_name, 'rcg': rcg_name})
+                LOG.error(msg)
+                raise exception.InvalidRcgRoleForDeleteVolume(reason=msg)
+
+            # stop remote copy
+            try:
+                LOG.info("Stopping RCG: %(rcg_name)s.", {'rcg_name': rcg_name})
+                self.client.stopRemoteCopy(rcg_name)
+                LOG.info("Succesfully stopped RCG: %(rcg_name)s.",
+                         {'rcg_name': rcg_name})
+            except Exception:
+                pass
+
+            # Remove volume from remote copy group
+            # 'removeFromTarget=True' will delete volume from secondary array
+            # TODO(sonivi): Handle 'removeFromTarget=False' also
+            try:
+                LOG.info("Removing vol:%(vol_name)s from RCG: %(rcg_name)s.",
+                         {'vol_name': vol_name, 'rcg_name': rcg_name})
+                self.client.removeVolumeFromRemoteCopyGroup(
+                    rcg_name, vol_name, removeFromTarget=True)
+                LOG.info("vol:%(vol_name)s succesfully removed from RCG: "
+                         "%(rcg_name)s.",
+                         {'vol_name': vol_name, 'rcg_name': rcg_name})
+            except Exception:
+                pass
+
+            # Delete volume
+            try:
+                LOG.info("Deleting volume:%(vol_name)s.",
+                         {'vol_name': vol_name})
+                self.client.deleteVolume(vol_name)
+                LOG.info("Succesfully deleted volume:%(vol_name)s.",
+                         {'vol_name': vol_name})
+            except Exception as ex:
+                msg = "Failed to delete volume: %s Error: %s" % (vol_name, ex)
+                LOG.error(_LE(msg))
+                raise exception.DeleteReplicatedVolumeFailed(reason=msg)
+
+            # check whether we should delete rcg or not ?
+            # it will be deleted if not volume is available in it
+            rcg_info = self.client.getRemoteCopyGroup(rcg_name)
+            LOG.info("Checking RCG Info:%(rcg_info)s.", {'rcg_info': rcg_info})
+            if len(rcg_info.get('volumes')) == 0:
+                # no volume is present so delete rcg also
+                LOG.info("Deleting RCG:%(rcg_info)s.", {'rcg_info': rcg_info})
+                self.client.removeRemoteCopyGroup(rcg_name)
+                LOG.info("Successfully deleted RCG:%(rcg_info)s.",
+                         {'rcg_info': rcg_info})
+            else:
+                # if other volumes are present, then start rcg
+                LOG.info("Other Volumes are present in RCG:%(rcg_info)s",
+                         {'rcg_info': rcg_info})
+                LOG.info("Starting RCG:%(rcg_name)s.", {'rcg_info': rcg_name})
+                self.client.startRemoteCopy(rcg_name)
+                LOG.info("Successfully started RCG:%(rcg_info)s.",
+                         {'rcg_info': rcg_info})
 
     def _get_3par_hostname_from_wwn_iqn(self, wwns, iqns):
         if wwns is not None and not isinstance(wwns, list):
@@ -1355,7 +1435,9 @@ class HPE3PARCommon(object):
             rcg = self.get_rcg(rcg_name)
             original_rcg_state = rcg['targets'][0]['state']
             if original_rcg_state == self.RCG_STARTED:
+                LOG.info("Stopping remote copy group: %s..." % rcg_name)
                 self.client.stopRemoteCopy(rcg_name)
+                LOG.info("Remote copy group stopped: %s" % rcg_name)
             else:
                 LOG.info("Remote copy group %s was in stopped state. However"
                          "after adding volume to it, it will be started"
@@ -1363,7 +1445,9 @@ class HPE3PARCommon(object):
             self.client.addVolumeToRemoteCopyGroup(rcg_name, bkend_vol_name,
                                                    rcg_targets,
                                                    optional=optional)
+            LOG.info("Starting remote copy group: %s..." % rcg_name)
             self.client.startRemoteCopy(rcg_name)
+            LOG.info("Remote copy group started: %s" % rcg_name)
         except Exception as ex:
             msg = (_("Error occurred while adding volume '%s' to the remote "
                      "copy group '%s': %s") % (bkend_vol_name, rcg_name,
@@ -1429,16 +1513,17 @@ class HPE3PARCommon(object):
         if domain:
             optional['domain'] = domain
         try:
+            LOG.info("Creating remote copy group: %s..." % rcg_name)
             self.client.createRemoteCopyGroup(rcg_name, rcg_targets,
                                               optional)
-            LOG.info("Remote Copy Group %s created successfully!" % rcg_name)
+            LOG.info("Remote copy group successfully created: %s!" % rcg_name)
         except Exception as ex:
-            msg = (_("There was an error creating the remote copy "
+            msg = (_("There was an error creating remote copy "
                      "group: %s.") % six.text_type(ex))
             LOG.error(msg)
             raise exception.HPERemoteCopyGroupBackendAPIException(data=msg)
 
-        if src_config['quorum_witness_ip']:
+        if src_config.quorum_witness_ip:
             pp_params = {'targets': [
                 {'targetName': tgt_config.backend_id,
                  'policies': {'autoFailover': True,
@@ -1468,7 +1553,9 @@ class HPE3PARCommon(object):
     def delete_rcg(self, **kwargs):
         rcg_name = kwargs['rcg_name']
         try:
+            LOG.info("Deleting remote copy group: %s..." % rcg_name)
             self.client.removeRemoteCopyGroup(rcg_name)
+            LOG.info("Remote copy group deleted: %s!" % rcg_name)
         except Exception as ex:
             msg = (_("Error occurred while removing the "
                      "remote copy group '%s': %s") %

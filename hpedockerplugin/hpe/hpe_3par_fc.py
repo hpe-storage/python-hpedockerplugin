@@ -61,10 +61,6 @@ class HPE3PARFCDriver(object):
                  tgt_bkend_config=None):
         self.configuration = hpe3parconfig
 
-        # self.configuration.append_config_values(hpecommon.hpe3par_opts)
-        # self.hpe3parconfig.append_config_values(san_driver.san_opts)
-        # self.hpe3parconfig.append_config_values(san_driver.volume_opts)
-
         # Get source and target backend configs as separate dictionaries
         self.src_bkend_config = src_bkend_config
         self.tgt_bkend_config = tgt_bkend_config

@@ -1,7 +1,7 @@
 class ArrayConnectionParams(object):
     def __init__(self, d=None):
         if d and isinstance(d, dict):
-            for k, v in d.iteritems():
+            for k, v in d.items():
                 object.__setattr__(self, k, v)
 
     def __getattr__(self, key):
