@@ -22,6 +22,8 @@ import hpedockerplugin.exception as exception
 LOG = logging.getLogger(__name__)
 
 VOLUMEROOT = '/volumes'
+RCROOT = '/remote-copy'
+RC_KEY_FMT_STR = "%s/%s#%s"
 BACKENDROOT = '/backend'
 LOCKROOT = '/volumes-lock'
 

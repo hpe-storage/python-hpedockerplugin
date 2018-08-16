@@ -81,8 +81,7 @@ class Orchestrator(object):
                             compression_val, vol_qos,
                             fs_mode, fs_owner,
                             mount_conflict_delay, cpg,
-                            snap_cpg, current_backend):
-
+                            snap_cpg, current_backend, rcg_name):
         return self._manager[current_backend].create_volume(
             volname,
             vol_size,
@@ -94,7 +93,8 @@ class Orchestrator(object):
             mount_conflict_delay,
             cpg,
             snap_cpg,
-            current_backend)
+            current_backend,
+            rcg_name)
 
     def clone_volume(self, src_vol_name, clone_name, size, cpg, snap_cpg):
         backend = self.get_volume_backend_details(src_vol_name)

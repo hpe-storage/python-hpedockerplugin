@@ -236,7 +236,11 @@ class HPEPluginLockFailed(HPEPluginEtcdException):
     message = _("ETCD lock failed: %(obj)s")
 
 
-class HPEPluginUnlockFailed(PluginException):
+class HPEPluginActiveDriverEntryNotFound(HPEPluginEtcdException):
+    message = _("ETCD active driver info not found: %(key)s")
+
+
+class HPEPluginUnlockFailed(HPEPluginEtcdException):
     message = _("ETCD unlock failed: %(obj)s")
 
 
@@ -245,7 +249,7 @@ class HPEDriverException(PluginException):
 
 
 class HPEDriverInvalidInput(HPEDriverException):
-    message = _("Invalid input received: %(reason)")
+    message = _("Invalid input received: %(reason)s")
 
 
 class HPEDriverInvalidSizeForCompressedVolume(HPEDriverException):
@@ -295,3 +299,29 @@ class HPEDriverForceRemoveVLUNFailed(HPEDriverException):
 
 class HPEDriverNoVLUNsCreated(HPEDriverException):
     message = "No new VLUN(s) were created!"
+
+
+class HPEDriverRemoteCopyGroupNotFound(HPEDriverException):
+    message = "Remote copy group '%(name)s' not found"
+
+
+class HPEArrayNotReachable(PluginException):
+    message = "Array is not reachable: '%(url)s'"
+    # message = "Array is not reachable: '%(array_ip)'"
+
+
+class HPERemoteCopyGroupBackendAPIException(PluginException):
+    message = _("Bad or unexpected response from the RCG "
+                "backend API: %(data)s")
+
+
+class HPERemoteCopyGroupAlreadyExists(PluginException):
+    message = "Remote copy group %(rcg_name)s already exists"
+
+
+class HPERemoteCopyGroupNotPrimary(PluginException):
+    message = "Remote copy group '%(rcg_name)s' not in Primary role"
+
+
+class HPEDriverUnknownException(HPEDriverException):
+    message = "An unknown exception occurred: %(ex)s"

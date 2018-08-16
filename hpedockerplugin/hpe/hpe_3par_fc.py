@@ -37,12 +37,7 @@ from oslo_log import log as logging
 from hpedockerplugin import exception
 # from hpedockerplugin.i18n import _, _LI, _LW, _LE
 from hpedockerplugin.i18n import _, _LE
-
 from hpedockerplugin.hpe import hpe_3par_common as hpecommon
-
-# from hpedockerplugin.hpe import utils
-from hpedockerplugin.hpe import san_driver
-
 from oslo_utils.excutils import save_and_reraise_exception
 
 LOG = logging.getLogger(__name__)
@@ -62,16 +57,18 @@ class HPE3PARFCDriver(object):
 
     VERSION = "1.0"
 
-    def __init__(self, hpe3parconfig):
-        self.hpe3parconfig = hpe3parconfig
+    def __init__(self, hpe3parconfig, src_bkend_config,
+                 tgt_bkend_config=None):
         self.configuration = hpe3parconfig
-        self.configuration.append_config_values(hpecommon.hpe3par_opts)
 
-        self.hpe3parconfig.append_config_values(san_driver.san_opts)
-        self.hpe3parconfig.append_config_values(san_driver.volume_opts)
+        # Get source and target backend configs as separate dictionaries
+        self.src_bkend_config = src_bkend_config
+        self.tgt_bkend_config = tgt_bkend_config
 
     def _init_common(self):
-        return hpecommon.HPE3PARCommon(self.configuration)
+        return hpecommon.HPE3PARCommon(self.configuration,
+                                       self.src_bkend_config,
+                                       self.tgt_bkend_config)
 
     def _login(self):
         common = self._init_common()
@@ -496,6 +493,34 @@ class HPE3PARFCDriver(object):
         finally:
             self._logout(common)
 
+    def add_volume_to_rcg(self, **kwargs):
+        common = self._login()
+        try:
+            return common.add_volume_to_rcg(**kwargs)
+        finally:
+            self._logout(common)
+
+    def remove_volume_from_rcg(self, **kwargs):
+        common = self._login()
+        try:
+            return common.remove_volume_from_rcg(**kwargs)
+        finally:
+            self._logout(common)
+
+    def create_rcg(self, **kwargs):
+        common = self._login()
+        try:
+            return common.create_rcg(**kwargs)
+        finally:
+            self._logout(common)
+
+    def delete_rcg(self, **kwargs):
+        common = self._login()
+        try:
+            return common.delete_rcg(**kwargs)
+        finally:
+            self._logout(common)
+
     def force_remove_3par_schedule(self, schedule_name):
         common = self._login()
         try:
@@ -510,5 +535,12 @@ class HPE3PARFCDriver(object):
             return common.create_snap_schedule(src_vol_name, schedName,
                                                snapPrefix, exphrs, rethrs,
                                                schedFrequency)
+        finally:
+            self._logout(common)
+
+    def get_rcg(self, rcg_name):
+        common = self._login()
+        try:
+            return common.get_rcg(rcg_name)
         finally:
             self._logout(common)
