@@ -387,7 +387,8 @@ class TestCloneWithCHAP(CloneVolumeUnitTest):
         mock_etcd = self.mock_objects['mock_etcd']
         mock_orchestrator = self.mock_objects['mock_orchestrator']
         mock_orchestrator.return_value = \
-            {'DEFAULT': mgr.VolumeManager(config, config, mock_etcd)}
+            {'DEFAULT': mgr.VolumeManager(config, config, mock_etcd,
+                                          'DEFAULT')}
 
 
 # TODO: Compression related TCs to be added later
