@@ -150,9 +150,10 @@ class VolumePlugin(object):
         mount_conflict_delay = volume.DEFAULT_MOUNT_CONFLICT_DELAY
         cpg = None
         snap_cpg = None
+        rcg_name = None
 
         current_backend = DEFAULT_BACKEND_NAME
-        if ('Opts' in contents and contents['Opts']):
+        if 'Opts' in contents and contents['Opts']:
             # Verify valid Opts arguments.
             valid_compression_opts = ['true', 'false']
             valid_volume_create_opts = ['mount-volume', 'compression',
@@ -164,7 +165,8 @@ class VolumePlugin(object):
                                         'help', 'importVol', 'cpg',
                                         'snapcpg', 'scheduleName',
                                         'scheduleFrequency', 'snapshotPrefix',
-                                        'expHrs', 'retHrs', 'backend']
+                                        'expHrs', 'retHrs', 'backend',
+                                        'replicationGroup']
             valid_snap_schedule_opts = ['scheduleName', 'scheduleFrequency',
                                         'snapshotPrefix', 'expHrs', 'retHrs']
             for key in contents['Opts']:
@@ -178,7 +180,8 @@ class VolumePlugin(object):
                     return json.dumps({u"Err": six.text_type(msg)})
 
             # mutually exclusive options check
-            mutually_exclusive_list = ['virtualCopyOf', 'cloneOf', 'qos-name']
+            mutually_exclusive_list = ['virtualCopyOf', 'cloneOf', 'qos-name',
+                                       'replicationGroup']
             input_list = list(contents['Opts'].keys())
             if (len(list(set(input_list) &
                     set(mutually_exclusive_list))) >= 2):
@@ -207,7 +210,7 @@ class VolumePlugin(object):
                                                          existing_ref,
                                                          current_backend)
 
-            if ('help' in contents['Opts']):
+            if 'help' in contents['Opts']:
                 create_help_path = "./config/create_help.txt"
                 create_help_file = open(create_help_path, "r")
                 create_help_content = create_help_file.read()
@@ -318,7 +321,7 @@ class VolumePlugin(object):
                 return self.volumedriver_create_snapshot(name,
                                                          mount_conflict_delay,
                                                          opts)
-            elif ('cloneOf' in contents['Opts']):
+            elif 'cloneOf' in contents['Opts']:
                 return self.volumedriver_clone_volume(name, opts)
             for i in input_list:
                 if i in valid_snap_schedule_opts:
@@ -329,6 +332,7 @@ class VolumePlugin(object):
                         response = json.dumps({u"Err": msg})
                         return response
 
+        rcg_name = contents['Opts'].get('replicationGroup', None)
         return self.orchestrator.volumedriver_create(volname, vol_size,
                                                      vol_prov,
                                                      vol_flash,
@@ -337,7 +341,8 @@ class VolumePlugin(object):
                                                      fs_owner, fs_mode,
                                                      mount_conflict_delay,
                                                      cpg, snap_cpg,
-                                                     current_backend)
+                                                     current_backend,
+                                                     rcg_name)
 
     def _check_schedule_frequency(self, schedFrequency):
         freq_sched = schedFrequency
@@ -522,7 +527,10 @@ class VolumePlugin(object):
 
         mount_id = contents['ID']
 
-        return self.orchestrator.mount_volume(volname, vol_mount, mount_id)
+        try:
+            return self.orchestrator.mount_volume(volname, vol_mount, mount_id)
+        except Exception as ex:
+            return {'Err': six.text_type(ex)}
 
     @app.route("/VolumeDriver.Path", methods=["POST"])
     def volumedriver_path(self, name):
