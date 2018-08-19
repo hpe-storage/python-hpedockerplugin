@@ -332,7 +332,9 @@ class VolumePlugin(object):
                         response = json.dumps({u"Err": msg})
                         return response
 
-        rcg_name = contents['Opts'].get('replicationGroup', None)
+        rcg_name = None
+        if 'Opts' in contents and contents['Opts']:
+            rcg_name = contents['Opts'].get('replicationGroup', None)
         return self.orchestrator.volumedriver_create(volname, vol_size,
                                                      vol_prov,
                                                      vol_flash,
