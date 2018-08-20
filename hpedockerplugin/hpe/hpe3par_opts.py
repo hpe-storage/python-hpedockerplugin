@@ -1,7 +1,5 @@
 from oslo_config import cfg
 
-from hpedockerplugin import configuration
-
 
 hpe3par_opts = [
     cfg.StrOpt('hpe3par_api_url',

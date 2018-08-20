@@ -141,7 +141,7 @@ class VolumeManager(object):
                     self.tgt_bkend_config.iscsi_ip_address = \
                         CONF.iscsi_ip_address
                 if not self.tgt_bkend_config.iscsi_port:
-                    self.tgt_bkend_config.iscsi_port= \
+                    self.tgt_bkend_config.iscsi_port = \
                         CONF.iscsi_port
                 if not self.tgt_bkend_config.hpe3par_iscsi_chap_enabled:
                     self.tgt_bkend_config.hpe3par_iscsi_chap_enabled = \
