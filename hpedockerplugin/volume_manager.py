@@ -11,6 +11,7 @@ import base64
 
 import hpedockerplugin.etcdutil as util
 from os_brick.initiator import connector
+from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_utils import importutils
 from oslo_utils import netutils
@@ -32,6 +33,8 @@ import hpedockerplugin.synchronization as synchronization
 LOG = logging.getLogger(__name__)
 PRIMARY = 1
 SECONDARY = 2
+
+CONF = cfg.CONF
 
 
 class VolumeManager(object):
@@ -122,8 +125,27 @@ class VolumeManager(object):
                 if not self.tgt_bkend_config.hpe3par_snapcpg:
                     self.tgt_bkend_config.hpe3par_snapcpg = \
                         self.tgt_bkend_config.hpe3par_cpg
-                self.tgt_bkend_config.quorum_witness_ip = \
-                    self._hpepluginconfig.quorum_witness_ip
+                if not self.tgt_bkend_config.quorum_witness_ip:
+                    self.tgt_bkend_config.quorum_witness_ip = \
+                        self._hpepluginconfig.quorum_witness_ip
+
+                if not self.tgt_bkend_config.hpe3par_iscsi_ips:
+                    self.tgt_bkend_config.hpe3par_iscsi_ips = \
+                        CONF.hpe3par_iscsi_ips
+                else:
+                    iscsi_ips = self.tgt_bkend_config.hpe3par_iscsi_ips
+                    self.tgt_bkend_config.hpe3par_iscsi_ips = iscsi_ips.split(
+                        ';')
+
+                if not self.tgt_bkend_config.iscsi_ip_address:
+                    self.tgt_bkend_config.iscsi_ip_address = \
+                        CONF.iscsi_ip_address
+                if not self.tgt_bkend_config.iscsi_port:
+                    self.tgt_bkend_config.iscsi_port= \
+                        CONF.iscsi_port
+                if not self.tgt_bkend_config.hpe3par_iscsi_chap_enabled:
+                    self.tgt_bkend_config.hpe3par_iscsi_chap_enabled = \
+                        CONF.hpe3par_iscsi_chap_enabled
 
             # Additional information from target_device
             self.src_bkend_config.replication_mode = \
@@ -150,6 +172,11 @@ class VolumeManager(object):
         config.enforce_multipath = hpeconf.enforce_multipath
         config.quorum_witness_ip = hpeconf.quorum_witness_ip
         config.backend_id = hpeconf.backend_id
+
+        config.hpe3par_iscsi_ips = hpeconf.hpe3par_iscsi_ips
+        config.iscsi_ip_address = hpeconf.iscsi_ip_address
+        config.iscsi_port = hpeconf.iscsi_port
+        config.hpe3par_iscsi_chap_enabled = hpeconf.hpe3par_iscsi_chap_enabled
 
         LOG.info("Got source backend configuration!")
         return config
@@ -1166,8 +1193,35 @@ class VolumeManager(object):
     def _force_remove_vlun(self, vol, is_snap):
         # Force remove VLUNs for volume from the array
         bkend_vol_name = utils.get_3par_name(vol['id'], is_snap)
+        LOG.info("Removing VLUNs forcefully...")
         self._hpeplugin_driver.force_remove_volume_vlun(
             bkend_vol_name)
+        LOG.info("VLUNs forcefully removed from remote backend!")
+
+        # TODO: Replication with mount-conflict-delay
+        # TODO: To be uncommented later
+        # if self._hpepluginconfig.replication_device:
+        #     if self._hpepluginconfig.quorum_witness_ip:
+        #         LOG.info("Peer Persistence setup: Removing VLUNs "
+        #                  "forcefully from remote backend...")
+        #         self._primary_driver.force_remove_volume_vlun(bkend_vol_name)
+        #         self._remote_driver.force_remove_volume_vlun(bkend_vol_name)
+        #         LOG.info("Peer Persistence setup: VLUNs forcefully "
+        #                  "removed from remote backend!")
+        #     else:
+        #         LOG.info("Active/Passive setup: Getting active driver...")
+        #         driver = self._get_target_driver_to_mount_volume(
+        #             vol['rcg_info'])
+        #         LOG.info("Active/Passive setup: Got active driver!")
+        #         LOG.info("Active/Passive setup: Removing VLUNs "
+        #                  "forcefully from remote backend...")
+        #         driver.force_remove_volume_vlun(bkend_vol_name)
+        #         LOG.info("Active/Passive setup: VLUNs forcefully "
+        #                  "removed from remote backend!")
+        # else:
+        #     LOG.info("Removing VLUNs forcefully from remote backend...")
+        #     self._primary_driver.force_remove_volume_vlun(bkend_vol_name)
+        #     LOG.info("VLUNs forcefully removed from remote backend!")
 
     def _replace_node_mount_info(self, node_mount_info, mount_id):
         # Remove previous node info from volume meta-data
@@ -1223,14 +1277,13 @@ class VolumeManager(object):
                 unmounted = self._wait_for_graceful_vol_unmount(vol)
 
                 if not unmounted:
-                    LOG.info("Volume not gracefully unmounted by other "
-                             "node. Removing VLUNs forcefully from the "
-                             "backend...")
+                    LOG.info("Volume not gracefully unmounted by other node")
                     LOG.info("%s" % vol)
                     self._force_remove_vlun(vol, is_snap)
-                    LOG.info("VLUNs forcefully removed from the backend!")
 
+                LOG.info("Updating node_mount_info...")
                 self._replace_node_mount_info(node_mount_info, mount_id)
+                LOG.info("node_mount_info updated!")
 
         root_helper = 'sudo'
         connector_info = connector.get_connector_properties(
@@ -1272,6 +1325,7 @@ class VolumeManager(object):
         sec_connection_info = None
         # Check if replication is configured
         if self._hpepluginconfig.replication_device:
+            LOG.info("This is a replication setup")
             # TODO: This is where existing volume can be added to RCG
             # after enabling replication configuration in hpe.conf
             if 'rcg_info' not in vol or not vol['rcg_info']:
@@ -1284,11 +1338,16 @@ class VolumeManager(object):
 
             # Check if this is Active/Passive based replication
             if self._hpepluginconfig.quorum_witness_ip:
+                LOG.info("Peer Persistence has been configured")
                 # This is Peer Persistence setup
+                LOG.info("Mounting volume on primary array...")
                 device_info, pri_connection_info = _mount_volume(
                     self._primary_driver)
+                LOG.info("Volume successfully mounted on primary array!")
+                LOG.info("Mounting volume on secondary array...")
                 sec_device_info, sec_connection_info = _mount_volume(
                     self._remote_driver)
+                LOG.info("Volume successfully mounted on secondary array...")
             else:
                 # In case failover/failback has happened at the backend, while
                 # mounting the volume, the plugin needs to figure out the

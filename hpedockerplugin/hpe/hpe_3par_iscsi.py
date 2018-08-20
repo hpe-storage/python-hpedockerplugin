@@ -118,9 +118,9 @@ class HPE3PARISCSIDriver(object):
         temp_iscsi_ip = {}
 
         # use the 3PAR ip_addr list for iSCSI configuration
-        if len(self.configuration.hpe3par_iscsi_ips) > 0:
+        if len(self.src_bkend_config.hpe3par_iscsi_ips) > 0:
             # add port values to ip_addr, if necessary
-            for ip_addr in self.configuration.hpe3par_iscsi_ips:
+            for ip_addr in self.src_bkend_config.hpe3par_iscsi_ips:
                 ip = ip_addr.split(':')
                 if len(ip) == 1:
                     temp_iscsi_ip[ip_addr] = {'ip_port': DEFAULT_ISCSI_PORT}
@@ -132,9 +132,9 @@ class HPE3PARISCSIDriver(object):
         # add the single value iscsi_ip_address option to the IP dictionary.
         # This way we can see if it's a valid iSCSI IP. If it's not valid,
         # we won't use it and won't bother to report it, see below
-        if (self.configuration.iscsi_ip_address not in temp_iscsi_ip):
-            ip = self.configuration.iscsi_ip_address
-            ip_port = self.configuration.iscsi_port
+        if (self.src_bkend_config.iscsi_ip_address not in temp_iscsi_ip):
+            ip = self.src_bkend_config.iscsi_ip_address
+            ip_port = self.src_bkend_config.iscsi_port
             temp_iscsi_ip[ip] = {'ip_port': ip_port}
 
         # get all the valid iSCSI ports from 3PAR
@@ -155,8 +155,8 @@ class HPE3PARISCSIDriver(object):
         # if the single value iscsi_ip_address option is still in the
         # temp dictionary it's because it defaults to $my_ip which doesn't
         # make sense in this context. So, if present, remove it and move on.
-        if (self.configuration.iscsi_ip_address in temp_iscsi_ip):
-            del temp_iscsi_ip[self.configuration.iscsi_ip_address]
+        if (self.src_bkend_config.iscsi_ip_address in temp_iscsi_ip):
+            del temp_iscsi_ip[self.src_bkend_config.iscsi_ip_address]
 
         # lets see if there are invalid iSCSI IPs left in the temp dict
         if len(temp_iscsi_ip) > 0:
@@ -337,7 +337,7 @@ class HPE3PARISCSIDriver(object):
                                  }
                         }
 
-            if self.configuration.hpe3par_iscsi_chap_enabled:
+            if self.src_bkend_config.hpe3par_iscsi_chap_enabled:
                 info['data']['auth_method'] = 'CHAP'
                 info['data']['auth_username'] = username
                 info['data']['auth_password'] = password
@@ -420,7 +420,7 @@ class HPE3PARISCSIDriver(object):
 
     def _set_3par_chaps(self, common, hostname, volume, username, password):
         """Sets a 3PAR host's CHAP credentials."""
-        if not self.configuration.hpe3par_iscsi_chap_enabled:
+        if not self.src_bkend_config.hpe3par_iscsi_chap_enabled:
             return
 
         mod_request = {'chapOperation': common.client.HOST_EDIT_ADD,
@@ -440,7 +440,7 @@ class HPE3PARISCSIDriver(object):
         domain = common.get_domain(cpg)
 
         # Get the CHAP secret if CHAP is enabled
-        if self.configuration.hpe3par_iscsi_chap_enabled:
+        if self.src_bkend_config.hpe3par_iscsi_chap_enabled:
             vol_name = volume_utils.get_3par_name(volume['id'], is_snap)
             username = common.client.getVolumeMetaData(
                 vol_name, CHAP_USER_KEY)['value']
@@ -464,7 +464,7 @@ class HPE3PARISCSIDriver(object):
                     common, hostname,
                     connector['initiator'])
             elif (not host['initiatorChapEnabled'] and
-                    self.configuration.hpe3par_iscsi_chap_enabled):
+                    self.src_bkend_config.hpe3par_iscsi_chap_enabled):
                 LOG.warning(_LW("Host exists without CHAP credentials set and "
                                 "has iSCSI attachments but CHAP is enabled. "
                                 "Updating host with new CHAP credentials."))
@@ -477,7 +477,7 @@ class HPE3PARISCSIDriver(object):
         """Gets the associated account, generates CHAP info and updates."""
         model_update = {}
 
-        if not self.configuration.hpe3par_iscsi_chap_enabled:
+        if not self.src_bkend_config.hpe3par_iscsi_chap_enabled:
             model_update['provider_auth'] = None
             return model_update
 
