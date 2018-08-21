@@ -325,3 +325,11 @@ class HPERemoteCopyGroupNotPrimary(PluginException):
 
 class HPEDriverUnknownException(HPEDriverException):
     message = "An unknown exception occurred: %(ex)s"
+
+
+class InvalidRcgRoleForDeleteVolume(PluginException):
+    message = _("Error: %(reason)s")
+
+
+class DeleteReplicatedVolumeFailed(PluginException):
+    message = _("Delete Replication Volume Failed: %(reason)s")
