@@ -16,13 +16,10 @@
 Volume driver for HPE 3PAR Storage array.
 This driver requires 3.1.3 firmware on the 3PAR array, using
 the 4.x version of the hpe3parclient.
-
 You will need to install the python hpe3parclient.
 sudo pip install --upgrade "hpe3parclient>=4.0"
-
 Set the following in the hpe.conf file to enable the
 3PAR iSCSI Driver along with the required flags:
-
 hpedockerplugin_driver = hpe.hpe_3par_iscsi.HPE3PARISCSIDriver
 """
 
@@ -56,14 +53,10 @@ get registered before hpe_3par_common is called
 
 class HPE3PARISCSIDriver(object):
     """OpenStack iSCSI driver to enable 3PAR storage array.
-
     Version history:
-
     .. code-block:: none
-
         0.0.1 - Initial version of the 3PAR iSCSI driver created.
         0.0.2 - Added support for CHAP.
-
     """
 
     VERSION = "0.0.2"
@@ -71,14 +64,15 @@ class HPE3PARISCSIDriver(object):
     def __init__(self, hpe3parconfig, src_bkend_config,
                  tgt_bkend_config=None):
 
-        self.configuration = hpe3parconfig
+        self.hpe3parconfig = hpe3parconfig
+        self.configuration = src_bkend_config
 
         # Get source and target backend configs as separate dictionaries
         self.src_bkend_config = src_bkend_config
         self.tgt_bkend_config = tgt_bkend_config
 
     def _init_common(self):
-        return hpecommon.HPE3PARCommon(self.configuration,
+        return hpecommon.HPE3PARCommon(self.hpe3parconfig,
                                        self.src_bkend_config,
                                        self.tgt_bkend_config)
 
@@ -96,7 +90,7 @@ class HPE3PARISCSIDriver(object):
         required_flags = ['hpe3par_api_url', 'hpe3par_username',
                           'hpe3par_password', 'san_ip', 'san_login',
                           'san_password']
-        common.check_flags(self.configuration, required_flags)
+        common.check_flags(self.hpe3parconfig, required_flags)
 
     def do_setup(self, timeout):
         common = self._init_common()
@@ -118,9 +112,9 @@ class HPE3PARISCSIDriver(object):
         temp_iscsi_ip = {}
 
         # use the 3PAR ip_addr list for iSCSI configuration
-        if len(self.src_bkend_config.hpe3par_iscsi_ips) > 0:
+        if len(self.configuration.hpe3par_iscsi_ips) > 0:
             # add port values to ip_addr, if necessary
-            for ip_addr in self.src_bkend_config.hpe3par_iscsi_ips:
+            for ip_addr in self.configuration.hpe3par_iscsi_ips:
                 ip = ip_addr.split(':')
                 if len(ip) == 1:
                     temp_iscsi_ip[ip_addr] = {'ip_port': DEFAULT_ISCSI_PORT}
@@ -132,9 +126,9 @@ class HPE3PARISCSIDriver(object):
         # add the single value iscsi_ip_address option to the IP dictionary.
         # This way we can see if it's a valid iSCSI IP. If it's not valid,
         # we won't use it and won't bother to report it, see below
-        if (self.src_bkend_config.iscsi_ip_address not in temp_iscsi_ip):
-            ip = self.src_bkend_config.iscsi_ip_address
-            ip_port = self.src_bkend_config.iscsi_port
+        if (self.configuration.iscsi_ip_address not in temp_iscsi_ip):
+            ip = self.configuration.iscsi_ip_address
+            ip_port = self.configuration.iscsi_port
             temp_iscsi_ip[ip] = {'ip_port': ip_port}
 
         # get all the valid iSCSI ports from 3PAR
@@ -155,8 +149,8 @@ class HPE3PARISCSIDriver(object):
         # if the single value iscsi_ip_address option is still in the
         # temp dictionary it's because it defaults to $my_ip which doesn't
         # make sense in this context. So, if present, remove it and move on.
-        if (self.src_bkend_config.iscsi_ip_address in temp_iscsi_ip):
-            del temp_iscsi_ip[self.src_bkend_config.iscsi_ip_address]
+        if (self.configuration.iscsi_ip_address in temp_iscsi_ip):
+            del temp_iscsi_ip[self.configuration.iscsi_ip_address]
 
         # lets see if there are invalid iSCSI IPs left in the temp dict
         if len(temp_iscsi_ip) > 0:
@@ -204,14 +198,11 @@ class HPE3PARISCSIDriver(object):
 
     def initialize_connection(self, volume, connector, is_snap):
         """Assigns the volume to a server.
-
         Assign any created volume to a compute node/host so that it can be
         used from that host.
-
         This driver returns a driver_volume_type of 'iscsi'.
         The format of the driver data is defined in _get_iscsi_properties.
         Example return value:
-
             {
                 'driver_volume_type': 'iscsi'
                 'data': {
@@ -222,7 +213,6 @@ class HPE3PARISCSIDriver(object):
                     'volume_id': 1,
                 }
             }
-
         Steps to export a volume on 3PAR
           * Get the 3PAR iSCSI iqn
           * Create a host on the 3par
@@ -337,7 +327,7 @@ class HPE3PARISCSIDriver(object):
                                  }
                         }
 
-            if self.src_bkend_config.hpe3par_iscsi_chap_enabled:
+            if self.configuration.hpe3par_iscsi_chap_enabled:
                 info['data']['auth_method'] = 'CHAP'
                 info['data']['auth_username'] = username
                 info['data']['auth_password'] = password
@@ -365,7 +355,6 @@ class HPE3PARISCSIDriver(object):
 
     def _clear_chap_3par(self, common, volume, is_snap):
         """Clears CHAP credentials on a 3par volume.
-
         Ignore exceptions caused by the keys not being present on a volume.
         """
         vol_name = volume_utils.get_3par_name(volume['id'], is_snap)
@@ -387,7 +376,6 @@ class HPE3PARISCSIDriver(object):
     def _create_3par_iscsi_host(self, common, hostname, iscsi_iqn, domain,
                                 persona_id):
         """Create a 3PAR host.
-
         Create a 3PAR host, if there is already a host on the 3par using
         the same iqn but with a different hostname, return the hostname
         used by 3PAR.
@@ -420,7 +408,7 @@ class HPE3PARISCSIDriver(object):
 
     def _set_3par_chaps(self, common, hostname, volume, username, password):
         """Sets a 3PAR host's CHAP credentials."""
-        if not self.src_bkend_config.hpe3par_iscsi_chap_enabled:
+        if not self.configuration.hpe3par_iscsi_chap_enabled:
             return
 
         mod_request = {'chapOperation': common.client.HOST_EDIT_ADD,
@@ -440,7 +428,7 @@ class HPE3PARISCSIDriver(object):
         domain = common.get_domain(cpg)
 
         # Get the CHAP secret if CHAP is enabled
-        if self.src_bkend_config.hpe3par_iscsi_chap_enabled:
+        if self.configuration.hpe3par_iscsi_chap_enabled:
             vol_name = volume_utils.get_3par_name(volume['id'], is_snap)
             username = common.client.getVolumeMetaData(
                 vol_name, CHAP_USER_KEY)['value']
@@ -464,7 +452,7 @@ class HPE3PARISCSIDriver(object):
                     common, hostname,
                     connector['initiator'])
             elif (not host['initiatorChapEnabled'] and
-                    self.src_bkend_config.hpe3par_iscsi_chap_enabled):
+                    self.configuration.hpe3par_iscsi_chap_enabled):
                 LOG.warning(_LW("Host exists without CHAP credentials set and "
                                 "has iSCSI attachments but CHAP is enabled. "
                                 "Updating host with new CHAP credentials."))
@@ -477,7 +465,7 @@ class HPE3PARISCSIDriver(object):
         """Gets the associated account, generates CHAP info and updates."""
         model_update = {}
 
-        if not self.src_bkend_config.hpe3par_iscsi_chap_enabled:
+        if not self.configuration.hpe3par_iscsi_chap_enabled:
             model_update['provider_auth'] = None
             return model_update
 
@@ -554,7 +542,6 @@ class HPE3PARISCSIDriver(object):
 
     def _get_least_used_nsp_for_host(self, common, hostname):
         """Get the least used NSP for the current host.
-
         Steps to determine which NSP to use.
             * If only one iSCSI NSP, return it
             * If there is already an active vlun to this host, return its NSP
