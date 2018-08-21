@@ -703,7 +703,13 @@ class HPE3PARCommon(object):
             LOG.error(err)
             raise exception.InvalidInput(reason=err)
         else:
-            if compression_val.lower() == 'true':
+            if compression_val is None:
+                return None
+
+            # compression_val can be either boolean or string
+            # Explicit conversion to string is done to handle both types
+            compression_val_str = str(compression_val)
+            if compression_val_str.lower() == 'true':
                 if not compression_support:
                     msg = _('Compression is not supported on '
                             'underlying hardware')
@@ -1139,7 +1145,10 @@ class HPE3PARCommon(object):
                 LOG.error(err)
                 raise exception.InvalidInput(reason=err)
             else:
-                if flash_cache.lower() == 'true':
+                # flash_cache can be either boolean or string
+                # Explicit conversion to string is done to handle both types
+                flash_cache_str = str(flash_cache)
+                if flash_cache_str.lower() == 'true':
                     return self.client.FLASH_CACHE_ENABLED
                 else:
                     return self.client.FLASH_CACHE_DISABLED
@@ -1297,7 +1306,10 @@ class HPE3PARCommon(object):
                 compression_val = src_vref['compression']  # None/true/False
                 compression = None
                 if compression_val is not None:
-                    compression = (compression_val.lower() == 'true')
+                    # compression_val can be either boolean or string
+                    # conversion to string is done to handle both types
+                    compression_val_str = str(compression_val)
+                    compression = (compression_val_str.lower() == 'true')
 
                 # make the 3PAR copy the contents.
                 # can't delete the original until the copy is done.
