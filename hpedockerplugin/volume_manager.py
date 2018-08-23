@@ -425,8 +425,7 @@ class VolumeManager(object):
             except Exception as ex:
                 msg = (_(
                     'Manage snapshot failed because parent volume: '
-                    '%(parent_volume)s is unmanaged Error: %(error)s') % {
-                        'error': six.text_type(ex),
+                    '%(parent_volume)s is unmanaged.') % {
                         'parent_volume': existing_ref_details["copyOf"]})
                 LOG.exception(msg)
                 return json.dumps({u"Err": six.text_type(msg)})
@@ -447,6 +446,8 @@ class VolumeManager(object):
                 self.map_3par_volume_prov_to_docker(volume_detail_3par)
             vol['compression'] = \
                 self.map_3par_volume_compression_to_docker(volume_detail_3par)
+            vol['cpg'] = volume_detail_3par.get('userCPG')
+            vol['snap_cpg'] = volume_detail_3par.get('snapCPG')
 
             if is_snap:
                 # managing a snapshot
