@@ -243,7 +243,7 @@ class VolumeManager(object):
             default_config.host_etcd_client_cert,
             default_config.host_etcd_client_key)
 
-    @synchronization.synchronized('{volname}')
+    @synchronization.synchronized_volume('{volname}')
     def create_volume(self, volname, vol_size, vol_prov,
                       vol_flash, compression_val, vol_qos,
                       fs_owner, fs_mode,
@@ -520,7 +520,7 @@ class VolumeManager(object):
 
         return json.dumps({u"Err": ''})
 
-    @synchronization.synchronized('{src_vol_name}')
+    @synchronization.synchronized_volume('{src_vol_name}')
     def clone_volume(self, src_vol_name, clone_name,
                      size=None, cpg=None, snap_cpg=None,
                      current_backend='DEFAULT'):
@@ -573,7 +573,7 @@ class VolumeManager(object):
                            'msg': "Cleaning up snapshot record for '%s'"
                                   " from ETCD..." % snapshot_name})
 
-    @synchronization.synchronized('{snapshot_name}')
+    @synchronization.synchronized_volume('{snapshot_name}')
     def create_snapshot(self, src_vol_name, schedName, snapshot_name,
                         snapPrefix, expiration_hrs, exphrs, retention_hrs,
                         rethrs, mount_conflict_delay, has_schedule,
@@ -593,7 +593,7 @@ class VolumeManager(object):
                                      mount_conflict_delay, has_schedule,
                                      schedFrequency, current_backend)
 
-    @synchronization.synchronized('{src_vol_name}')
+    @synchronization.synchronized_volume('{src_vol_name}')
     def _create_snapshot(self, src_vol_name, schedName, snapshot_name,
                          snapPrefix, expiration_hrs, exphrs, retention_hrs,
                          rethrs, mount_conflict_delay, has_schedule,
@@ -735,7 +735,7 @@ class VolumeManager(object):
             response = json.dumps({u"Err": ''})
         return response
 
-    @synchronization.synchronized('{volname}')
+    @synchronization.synchronized_volume('{volname}')
     def remove_volume(self, volname):
         # Only 1 node in a multinode cluster can try to remove the volume.
         # Grab lock for volume name. If lock is inuse, just return with no
@@ -789,7 +789,7 @@ class VolumeManager(object):
             pass
         return json.dumps({u"Err": ''})
 
-    @synchronization.synchronized('{volname}')
+    @synchronization.synchronized_volume('{volname}')
     def remove_snapshot(self, volname, snapname):
         LOG.info("volumedriver_remove_snapshot - getting volume %s"
                  % volname)
@@ -839,7 +839,7 @@ class VolumeManager(object):
                 response = json.dumps({u"Err": msg})
                 return response
 
-    @synchronization.synchronized('{clone_name}')
+    @synchronization.synchronized_volume('{clone_name}')
     def _clone_volume(self, clone_name, src_vol, size, cpg,
                       snap_cpg, current_backend):
 
@@ -872,7 +872,7 @@ class VolumeManager(object):
         else:
             return json.dumps({u"Err": ''})
 
-    @synchronization.synchronized('{volumename}')
+    @synchronization.synchronized_volume('{volumename}')
     def revert_to_snapshot(self, volumename, snapname):
         volume = self._etcd.get_vol_byname(volumename)
         if volume is None:
@@ -1231,7 +1231,7 @@ class VolumeManager(object):
         # Add new node information to volume meta-data
         node_mount_info[self._node_id] = [mount_id]
 
-    @synchronization.synchronized('{volname}')
+    @synchronization.synchronized_volume('{volname}')
     def mount_volume(self, volname, vol_mount, mount_id):
         vol = self._etcd.get_vol_byname(volname)
         if vol is None:
@@ -1489,7 +1489,7 @@ class VolumeManager(object):
             if remote_rcg['role'] == PRIMARY and remote_role_reversed:
                 return self._remote_driver
 
-    @synchronization.synchronized('{volname}')
+    @synchronization.synchronized_volume('{volname}')
     def unmount_volume(self, volname, vol_mount, mount_id):
         vol = self._etcd.get_vol_byname(volname)
         if vol is None:
@@ -1791,7 +1791,7 @@ class VolumeManager(object):
         return rcg_info
 
     # TODO: Need RCG lock in different namespace. To be done later
-    # @synchronization.synchronized('{rcg_name}')
+    @synchronization.synchronized_rcg('{rcg_name}')
     def _create_rcg(self, rcg_name, undo_steps):
         rcg_info = self._hpeplugin_driver.create_rcg(
             rcg_name=rcg_name)
@@ -1804,7 +1804,7 @@ class VolumeManager(object):
         return rcg_info
 
     # TODO: Need RCG lock in different namespace. To be done later
-    # @synchronization.synchronized('{rcg_name}')
+    # @synchronization.synchronized_rcg('{rcg_name}')
     def _add_volume_to_rcg(self, vol, rcg_name, undo_steps):
         bkend_vol_name = utils.get_3par_vol_name(vol['id'])
         self._hpeplugin_driver.add_volume_to_rcg(
