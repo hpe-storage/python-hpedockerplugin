@@ -52,6 +52,7 @@ class VolumePlugin(object):
 
         self._reactor = reactor
         self.conf = setupcfg.CONF
+        self._hpepluginconfig = hpepluginconfig
 
         # TODO: make device_scan_attempts configurable
         # see nova/virt/libvirt/volume/iscsi.py
@@ -333,6 +334,10 @@ class VolumePlugin(object):
                         return response
 
             rcg_name = contents['Opts'].get('replicationGroup', None)
+            try:
+                self._validate_rcg_params(rcg_name)
+            except exception.InvalidInput as ex:
+                return json.dumps({u"Err": ex.message})
 
         return self.orchestrator.volumedriver_create(volname, vol_size,
                                                      vol_prov,
@@ -344,6 +349,33 @@ class VolumePlugin(object):
                                                      cpg, snap_cpg,
                                                      current_backend,
                                                      rcg_name)
+
+    def _validate_rcg_params(self, rcg_name):
+        replication_device = self._hpepluginconfig.replication_device
+        if (rcg_name and not replication_device) or \
+                (replication_device and not rcg_name):
+            msg = "Request to create replicated volume cannot be fulfilled " \
+                  "without defining 'replication_device' entry in hpe.conf " \
+                  "for the desired or default backend. Please add it and " \
+                  "then execute the request again."
+            raise exception.InvalidInput(reason=msg)
+
+        if rcg_name and replication_device:
+
+            def _check_valid_replication_mode(mode):
+                valid_modes = ['synchronous', 'asynchronous', 'streaming']
+                if mode.lower() not in valid_modes:
+                    msg = "Unknown replication mode specified. Valid values" \
+                          "are 'synchronous | asynchronous | streaming'"
+                    raise exception.InvalidInput(reason=msg)
+
+            rep_mode = replication_device['replication_mode']
+            _check_valid_replication_mode(rep_mode)
+            if self._hpepluginconfig.quorum_witness_ip:
+                if rep_mode.lower() != 'synchronous':
+                    msg = "For Peer Persistence, replication mode must be " \
+                          "synchronous"
+                    raise exception.InvalidInput(reason=msg)
 
     def _check_schedule_frequency(self, schedFrequency):
         freq_sched = schedFrequency
