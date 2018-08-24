@@ -52,7 +52,7 @@ class Orchestrator(object):
             LOG.info('INITIALIZING backend  : %s' % backend_name)
             manager_objs[backend_name] = mgr.VolumeManager(
                 setupcfg.backend_config(CONFIG, backend_name),
-                defaultconfig, self.etcd_util)
+                defaultconfig, self.etcd_util, backend_name)
 
         return manager_objs
 
@@ -79,8 +79,9 @@ class Orchestrator(object):
     def volumedriver_create(self, volname, vol_size,
                             vol_prov, vol_flash,
                             compression_val, vol_qos,
-                            mount_conflict_delay, current_backend):
-
+                            fs_mode, fs_owner,
+                            mount_conflict_delay, cpg,
+                            snap_cpg, current_backend, rcg_name):
         return self._manager[current_backend].create_volume(
             volname,
             vol_size,
@@ -88,13 +89,17 @@ class Orchestrator(object):
             vol_flash,
             compression_val,
             vol_qos,
+            fs_mode, fs_owner,
             mount_conflict_delay,
-            current_backend)
+            cpg,
+            snap_cpg,
+            current_backend,
+            rcg_name)
 
-    def clone_volume(self, src_vol_name, clone_name, size):
+    def clone_volume(self, src_vol_name, clone_name, size, cpg, snap_cpg):
         backend = self.get_volume_backend_details(src_vol_name)
         return self._manager[backend].clone_volume(src_vol_name, clone_name,
-                                                   size)
+                                                   size, cpg, snap_cpg)
 
     def create_snapshot(self, src_vol_name, schedName, snapshot_name,
                         snapPrefix, expiration_hrs, exphrs, retention_hrs,
@@ -129,7 +134,9 @@ class Orchestrator(object):
                                                               qualified_name)
 
     def manage_existing(self, volname, existing_ref, backend):
-        return self._manager[backend].manage_existing(volname, existing_ref)
+        return self._manager[backend].manage_existing(volname,
+                                                      existing_ref,
+                                                      backend)
 
     def volumedriver_list(self):
         return self._manager[DEFAULT_BACKEND_NAME].list_volumes()
