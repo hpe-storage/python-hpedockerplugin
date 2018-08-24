@@ -14,7 +14,8 @@ Create Volume Options:
  -o flash-cache=x 		x is a boolean value, hence x can have true or false. x specifies whether flash cache should be used or not.
 				Valid vaues are true or false.
  -o qos-name=x 			x is name of existing VVset on 3PAR on which QoS rules are applied.
- 
+ -o backend=x                   x is the backend name on which the operation to be performed.
+                                Refer https://github.com/hpe-storage/python-hpedockerplugin/blob/plugin_v2/docs/multi-array-feature.md for details.
 
 Create Clone Options:
  -o cloneOf=x			x is the name of docker volume (source volume) of which clone to be created.
@@ -33,6 +34,7 @@ Import Volume Options:
 
 Backend Volume Options:
  -o backend=x                   x is the backend name on which the operation to be performed.
+                                Refer https://github.com/hpe-storage/python-hpedockerplugin/blob/plugin_v2/docs/multi-array-feature.md for details.
 
 Create Snapshot Schedule:
  -o virtualCopyOf=x             This option is mandatory. x is the name of the volume for which snapshot schedule has to be created.
