@@ -1191,37 +1191,28 @@ class VolumeManager(object):
         return unmounted
 
     def _force_remove_vlun(self, vol, is_snap):
-        # Force remove VLUNs for volume from the array
         bkend_vol_name = utils.get_3par_name(vol['id'], is_snap)
-        LOG.info("Removing VLUNs forcefully...")
-        self._hpeplugin_driver.force_remove_volume_vlun(
-            bkend_vol_name)
-        LOG.info("VLUNs forcefully removed from remote backend!")
-
-        # TODO: Replication with mount-conflict-delay
-        # TODO: To be uncommented later
-        # if self._hpepluginconfig.replication_device:
-        #     if self._hpepluginconfig.quorum_witness_ip:
-        #         LOG.info("Peer Persistence setup: Removing VLUNs "
-        #                  "forcefully from remote backend...")
-        #         self._primary_driver.force_remove_volume_vlun(bkend_vol_name)
-        #         self._remote_driver.force_remove_volume_vlun(bkend_vol_name)
-        #         LOG.info("Peer Persistence setup: VLUNs forcefully "
-        #                  "removed from remote backend!")
-        #     else:
-        #         LOG.info("Active/Passive setup: Getting active driver...")
-        #         driver = self._get_target_driver_to_mount_volume(
-        #             vol['rcg_info'])
-        #         LOG.info("Active/Passive setup: Got active driver!")
-        #         LOG.info("Active/Passive setup: Removing VLUNs "
-        #                  "forcefully from remote backend...")
-        #         driver.force_remove_volume_vlun(bkend_vol_name)
-        #         LOG.info("Active/Passive setup: VLUNs forcefully "
-        #                  "removed from remote backend!")
-        # else:
-        #     LOG.info("Removing VLUNs forcefully from remote backend...")
-        #     self._primary_driver.force_remove_volume_vlun(bkend_vol_name)
-        #     LOG.info("VLUNs forcefully removed from remote backend!")
+        if self.src_bkend_config.replication_device:
+            if self.src_bkend_config.quorum_witness_ip:
+                LOG.info("Peer Persistence setup: Removing VLUNs "
+                         "forcefully from remote backend...")
+                self._primary_driver.force_remove_volume_vlun(bkend_vol_name)
+                self._remote_driver.force_remove_volume_vlun(bkend_vol_name)
+                LOG.info("Peer Persistence setup: VLUNs forcefully "
+                         "removed from remote backend!")
+            else:
+                LOG.info("Active/Passive setup: Getting active driver...")
+                driver = self._get_target_driver(vol['rcg_info'])
+                LOG.info("Active/Passive setup: Got active driver!")
+                LOG.info("Active/Passive setup: Removing VLUNs "
+                         "forcefully from remote backend...")
+                driver.force_remove_volume_vlun(bkend_vol_name)
+                LOG.info("Active/Passive setup: VLUNs forcefully "
+                         "removed from remote backend!")
+        else:
+            LOG.info("Removing VLUNs forcefully from remote backend...")
+            self._primary_driver.force_remove_volume_vlun(bkend_vol_name)
+            LOG.info("VLUNs forcefully removed from remote backend!")
 
     def _replace_node_mount_info(self, node_mount_info, mount_id):
         # Remove previous node info from volume meta-data
@@ -1343,23 +1334,30 @@ class VolumeManager(object):
                 LOG.info("Mounting volume on primary array...")
                 device_info, pri_connection_info = _mount_volume(
                     self._primary_driver)
-                LOG.info("Volume successfully mounted on primary array!")
+                LOG.info("Volume successfully mounted on primary array!"
+                         "pri_connection_info: %s" % pri_connection_info)
                 LOG.info("Mounting volume on secondary array...")
                 sec_device_info, sec_connection_info = _mount_volume(
                     self._remote_driver)
-                LOG.info("Volume successfully mounted on secondary array...")
+                LOG.info("Volume successfully mounted on secondary array!"
+                         "sec_connection_info: %s" % sec_connection_info)
             else:
                 # In case failover/failback has happened at the backend, while
                 # mounting the volume, the plugin needs to figure out the
                 # target array
-                driver = self._get_target_driver_to_mount_volume(
-                    vol['rcg_info'])
+                LOG.info("Active/Passive replication has been configured")
+                driver = self._get_target_driver(vol['rcg_info'])
                 device_info, pri_connection_info = _mount_volume(driver)
+                LOG.info("Volume successfully mounted on active array!"
+                         "active_connection_info: %s" % pri_connection_info)
         else:
             # hpeplugin_driver will always point to the currently active array
             # Post-failover, it will point to secondary_driver
+            LOG.info("Single array setup has been configured")
             device_info, pri_connection_info = _mount_volume(
                 self._hpeplugin_driver)
+            LOG.info("Volume successfully mounted on the array!"
+                     "pri_connection_info: %s" % pri_connection_info)
 
         # Make sure the path exists
         path = FilePath(device_info['path']).realpath()
@@ -1438,7 +1436,7 @@ class VolumeManager(object):
                                u"Devicename": path.path})
         return response
 
-    def _get_target_driver_to_mount_volume(self, rcg_info):
+    def _get_target_driver(self, rcg_info):
         local_rcg = None
         try:
             rcg_name = rcg_info['local_rcg_name']
@@ -1594,7 +1592,14 @@ class VolumeManager(object):
             LOG.info(_LI('end of sync call to disconnect volume'))
 
         remote_connection_info = path_info.get('remote_connection_info')
-        if remote_connection_info:
+
+        # Issue#272 Fix: Don't allow disconnect_volume on secondary array
+        # for ISCSI. OS-Brick cleans up all the devices in the above call
+        # only for ISCSI. If we allow the below disconnect-volume to
+        # execute, OS-Brick throws exception aborting the remaining steps
+        # thereby leaving behind VLUN and ETCD entries
+        if remote_connection_info and \
+                remote_connection_info['driver_volume_type'] != 'iscsi':
             LOG.info('sync call os brick to disconnect remote volume')
             self._connector.disconnect_volume(
                 remote_connection_info['data'], None)
