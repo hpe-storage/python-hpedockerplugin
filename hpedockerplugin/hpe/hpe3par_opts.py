@@ -1,7 +1,5 @@
 from oslo_config import cfg
 
-from hpedockerplugin import configuration
-
 
 hpe3par_opts = [
     cfg.StrOpt('hpe3par_api_url',
@@ -119,5 +117,5 @@ volume_opts = [
 
 CONF = cfg.CONF
 CONF.register_opts(hpe3par_opts)
-CONF.register_opts(san_opts, group=configuration.SHARED_CONF_GROUP)
-CONF.register_opts(volume_opts, group=configuration.SHARED_CONF_GROUP)
+CONF.register_opts(san_opts)
+CONF.register_opts(volume_opts)
