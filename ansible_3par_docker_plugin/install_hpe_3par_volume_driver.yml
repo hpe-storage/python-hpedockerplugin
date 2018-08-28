@@ -1,0 +1,54 @@
+---
+- name: Set MountFlags in docker service
+  hosts: all
+  become: root
+
+  tasks:
+    - name: Configure docker service
+      include: tasks/configure_docker_service.yml
+
+- name: Create etcd cluster
+  hosts: etcd
+  become: root
+
+  tasks:
+    - name: Create etcd cluster for 3PAR Docker Volume plugin
+      include: tasks/create_etcd_container.yml
+
+
+- name: Install HPE 3PAR Volume Driver for Kubernetes/OpenShift
+  hosts: all
+  become: root
+
+  vars:
+    driver_path: "/usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/"
+
+  vars_prompt:
+    - name: "storage_config"
+      prompt: "Configure for FC or iSCSI? Type: 'fc' or 'iscsi'."
+      private: no
+      default: "fc"
+
+  tasks:
+    - name: Configure multipath
+      include: tasks/configure_multipath.yml
+
+    - name: Copy hpe.conf
+      include: tasks/copy_hpe_conf.yml
+
+    - name: Create 3PAR Docker Volume plugin
+      include: tasks/create_3par_docker_volume_plugin.yml
+
+    - name: Create the hpe_sock files
+      include: tasks/hpe_sock.yml
+
+    - name: Deploy FlexVolume drivers
+      include: tasks/deploy_FlexVolume_driver.yml
+
+- name: Install HPE 3PAR Volume Driver for Kubernetes/OpenShift
+  hosts: masters
+  become: root
+
+  tasks:
+    - name: Start Dynamic Provisioner (doryd) on Master node
+      include: tasks/configure_doryd_service.yml

@@ -1,0 +1,24 @@
+---
+  - name: load etcd settings
+    include_vars: '../properties/etcd_cluster_properties.yml'
+
+  - name: run etcd container
+    docker_container:
+      name: etcd
+      image: "{{ etcd_image }}"
+      state: started
+      detach: true
+      ports:
+        - "23800:23800"
+        - "23790:23790"
+        - "40010:40010"
+      env:
+        ETCD_NAME: "{{ etcd_name }}"
+        ETCD_ADVERTISE_CLIENT_URLS: "{{ etcd_advertise_client_url_1 }},{{ etcd_advertise_client_url_2 }}"
+        ETCD_LISTEN_CLIENT_URLS: "{{ etcd_listen_client_url_1 }},{{ etcd_listen_client_url_2 }}"
+        ETCD_INITIAL_ADVERTISE_PEER_URLS: "{{ etcd_initial_advertise_peer_urls }}"
+        ETCD_LISTEN_PEER_URLS: "{{ etcd_listen_peer_urls }}"
+        ETCD_INITIAL_CLUSTER: "{{ etcd_initial_cluster }}"
+        ETCD_INITIAL_CLUSTER_TOKEN: "{{ etcd_initial_cluster_token }}"
+        ETCD_INITIAL_CLUSTER_STATE: "{{ etcd_initial_cluster_state }}"
+      restart_policy: always

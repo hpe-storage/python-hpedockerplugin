@@ -1,0 +1,24 @@
+---
+  - name: create hpedockerplugin container
+    docker_container:
+      name: plugin_container
+      image: hpestorage/legacyvolumeplugin:2.1
+      privileged: true
+      network_mode: host
+      state: started
+      detach: true
+      volumes:
+        - /dev:/dev
+        - /run/lock:/run/lock
+        - /var/lib:/var/lib
+        - /var/run/docker/plugins:/var/run/docker/plugins:rw
+        - /etc:/etc
+        - /root/.ssh:/root/.ssh
+        - /sys:/sys
+        - /root/plugin/certs:/root/plugin/certs
+        - /sbin/iscsiadm:/sbin/ia
+        - /lib/modules:/lib/modules
+        - /lib64:/lib64
+        - /var/run/docker.sock:/var/run/docker.sock
+        - /opt/hpe/data:/opt/hpe/data:rshared
+      restart_policy: on-failure
