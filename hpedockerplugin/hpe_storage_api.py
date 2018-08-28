@@ -405,7 +405,7 @@ class VolumePlugin(object):
                     SYNC_PERIOD_LOW = 300
                     SYNC_PERIOD_HIGH = 31622400
                     if sync_period < SYNC_PERIOD_LOW or \
-                            sync_period > SYNC_PERIOD_HIGH:
+                       sync_period > SYNC_PERIOD_HIGH:
                         msg = "'sync_period' must be between 300 and " \
                               "31622400 seconds."
                         raise exception.InvalidInput(reason=msg)
