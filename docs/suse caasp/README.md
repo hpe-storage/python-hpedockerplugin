@@ -209,8 +209,10 @@ Installing the HPE 3PAR Volume Plug-in for Docker (Containerized Plug-in) for SU
     > **Note:** In case you are missing **docker-compose**, run the
     > following commands:
     ```bash
+   
+    $ curl -L https://github.com/docker/compose/releases/download/1.21.2/docker-compose-$(uname -s)-$(uname -m) --insecure -o     /root/bin/docker-compose
     $ transactional-update shell
-    $ curl -L https://github.com/docker/compose/releases/download/1.21.2/docker-compose-$(uname -s)-$(uname -m) --insecure -o /usr/local/bin/docker-compose
+    $ cp /root/bin/docker-compose /usr/local/bin/
     $ chmod +x /usr/local/bin/docker-compose
     $ exit
     $ systemctl reboot
