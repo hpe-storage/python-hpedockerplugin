@@ -269,6 +269,16 @@ class VolumeManager(object):
         if vol_qos is not None:
             try:
                 self._hpeplugin_driver.get_qos_detail(vol_qos)
+                # if vol_flash is not given in option & with qos
+                # if vvset is having flash-cache enabled, then set
+                # vol_flash=True
+                if vol_flash is None:
+                    vvset_detail = self._hpeplugin_driver.get_vvset_detail(
+                        vol_qos)
+                    if(vvset_detail.get('flashCachePolicy') is not None and
+                       vvset_detail.get('flashCachePolicy') == 1):
+                        vol_flash = True
+
             except Exception as ex:
                 msg = (_('Create volume failed because vvset is not present or'
                          'is not associated with qos: %s'), six.text_type(ex))
@@ -403,7 +413,7 @@ class VolumeManager(object):
             LOG.exception(msg)
             return json.dumps({u"Err": six.text_type(msg)})
 
-        vvset_detail = self._hpeplugin_driver.get_vvset_detail(
+        vvset_detail = self._hpeplugin_driver.get_vvset_from_volume(
             existing_ref_details['name'])
         if vvset_detail is not None:
             vvset_name = vvset_detail.get('name')
@@ -1670,6 +1680,7 @@ class VolumeManager(object):
             if not vvs_name:
                 vvs_name = self._create_vvs(vol['id'], undo_steps)
 
+        if vvs_name is not None:
             self._set_flash_cache_for_volume(vvs_name,
                                              vol['flash_cache'])
 

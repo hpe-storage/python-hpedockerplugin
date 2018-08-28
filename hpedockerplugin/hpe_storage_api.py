@@ -145,7 +145,7 @@ class VolumePlugin(object):
         vol_flash = volume.DEFAULT_FLASH_CACHE
         vol_qos = volume.DEFAULT_QOS
         compression_val = volume.DEFAULT_COMPRESSION_VAL
-        valid_compression_opts = ['true', 'false']
+        valid_bool_opts = ['true', 'false']
         fs_owner = None
         fs_mode = None
         mount_conflict_delay = volume.DEFAULT_MOUNT_CONFLICT_DELAY
@@ -156,7 +156,6 @@ class VolumePlugin(object):
         current_backend = DEFAULT_BACKEND_NAME
         if 'Opts' in contents and contents['Opts']:
             # Verify valid Opts arguments.
-            valid_compression_opts = ['true', 'false']
             valid_volume_create_opts = ['mount-volume', 'compression',
                                         'size', 'provisioning', 'flash-cache',
                                         'cloneOf', 'virtualCopyOf',
@@ -232,19 +231,29 @@ class VolumePlugin(object):
                     contents['Opts']['compression'] != ""):
                 compression_val = str(contents['Opts']['compression'])
                 if compression_val is not None:
-                    if compression_val.lower() not in valid_compression_opts:
+                    if compression_val.lower() not in valid_bool_opts:
                         msg = \
                             _('create volume failed, error is:'
                               'passed compression parameter'
                               ' do not have a valid value. '
-                              ' Valid vaues are: %(valid)s') % {
-                                'valid': valid_compression_opts}
+                              'Valid vaues are: %(valid)s') % {
+                                'valid': valid_bool_opts}
                         LOG.error(msg)
                         return json.dumps({u'Err': six.text_type(msg)})
 
             if ('flash-cache' in contents['Opts'] and
                     contents['Opts']['flash-cache'] != ""):
                 vol_flash = str(contents['Opts']['flash-cache'])
+                if vol_flash is not None:
+                    if vol_flash.lower() not in valid_bool_opts:
+                        msg = \
+                            _('create volume failed, error is:'
+                              'passed flash-cache parameter'
+                              ' do not have a valid value. '
+                              'Valid vaues are: %(valid)s') % {
+                                'valid': valid_bool_opts}
+                        LOG.error(msg)
+                        return json.dumps({u'Err': six.text_type(msg)})
 
             if ('qos-name' in contents['Opts'] and
                     contents['Opts']['qos-name'] != ""):
@@ -396,7 +405,7 @@ class VolumePlugin(object):
                     SYNC_PERIOD_LOW = 300
                     SYNC_PERIOD_HIGH = 31622400
                     if sync_period < SYNC_PERIOD_LOW or \
-                        sync_period > SYNC_PERIOD_HIGH:
+                            sync_period > SYNC_PERIOD_HIGH:
                         msg = "'sync_period' must be between 300 and " \
                               "31622400 seconds."
                         raise exception.InvalidInput(reason=msg)

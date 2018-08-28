@@ -313,7 +313,10 @@ class HPE3PARCommon(object):
             LOG.error(msg)
             raise exception.HPEDriverGetQosFromVvSetFailed(ex)
 
-    def get_vvset_detail(self, volume):
+    def get_vvset_detail(self, vvset):
+        return self.client.getVolumeSet(vvset)
+
+    def get_vvset_from_volume(self, volume):
         vvset_name = self.client.findVolumeSet(volume)
         if vvset_name is not None:
             return self.client.getVolumeSet(vvset_name)
@@ -1479,7 +1482,7 @@ class HPE3PARCommon(object):
             'synchronous': self.SYNC,
             'asynchronous': self.PERIODIC,
             'streaming': self.STREAMING}
-        ret_mode = mode_map.get(mode, None)
+        ret_mode = mode_map.get(mode)
         return ret_mode
 
     def create_rcg(self, **kwargs):
