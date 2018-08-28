@@ -77,6 +77,8 @@ class HPE3PARCommon(object):
 
     SYNC = 1
     PERIODIC = 2
+    STREAMING = 4
+    DEFAULT_SYNC_PERIOD = 900
     RCG_STARTED = 3
     RCG_STOPPED = 5
     ROLE_PRIMARY = 1
@@ -1423,14 +1425,6 @@ class HPE3PARCommon(object):
         except hpeexceptions.HTTPNotFound:
             raise exception.HPEDriverRemoteCopyGroupNotFound(name=rcg_name)
 
-    def _get_remote_copy_mode_num(self, mode):
-        ret_mode = None
-        if mode == "sync":
-            ret_mode = self.SYNC
-        if mode == "periodic":
-            ret_mode = self.PERIODIC
-        return ret_mode
-
     def add_volume_to_rcg(self, **kwargs):
         bkend_vol_name = kwargs['bkend_vol_name']
         rcg_name = kwargs['rcg_name']
@@ -1480,12 +1474,11 @@ class HPE3PARCommon(object):
             LOG.error(msg)
             raise exception.VolumeBackendAPIException(data=msg)
 
-    @staticmethod
-    def _get_backend_replication_mode(mode):
+    def _get_backend_replication_mode(self, mode):
         mode_map = {
-            'synchronous': 1,
-            'periodic': 2,
-            'streaming': 3}
+            'synchronous': self.SYNC,
+            'asynchronous': self.PERIODIC,
+            'streaming': self.STREAMING}
         ret_mode = mode_map.get(mode, None)
         return ret_mode
 
@@ -1549,6 +1542,28 @@ class HPE3PARCommon(object):
                          "group: %s.") % six.text_type(ex))
                 LOG.error(msg)
                 raise exception.HPERemoteCopyGroupBackendAPIException(data=msg)
+
+        else:
+            if bkend_replication_mode == self.PERIODIC or \
+                    bkend_replication_mode == self.STREAMING:
+                if tgt_config.sync_period:
+                    sync_period = int(tgt_config.sync_period)
+                else:
+                    sync_period = self.DEFAULT_SYNC_PERIOD
+
+                sync_target = {'targetName': tgt_config.backend_id,
+                               'syncPeriod': sync_period}
+
+                opt = {'targets': [sync_target]}
+                try:
+                    self.client.modifyRemoteCopyGroup(rcg_name, opt)
+                except Exception as ex:
+                    msg = (_("There was an error setting the sync period for "
+                             "the remote copy group: %s.") %
+                           six.text_type(ex))
+                    LOG.error(msg)
+                    raise exception.HPERemoteCopyGroupBackendAPIException(
+                        data=msg)
 
         try:
             rcg = self.client.getRemoteCopyGroup(rcg_name)

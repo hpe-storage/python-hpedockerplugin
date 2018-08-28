@@ -352,6 +352,7 @@ class VolumePlugin(object):
 
     def _validate_rcg_params(self, rcg_name):
         replication_device = self._hpepluginconfig.replication_device
+
         if (rcg_name and not replication_device) or \
                 (replication_device and not rcg_name):
             msg = "Request to create replicated volume cannot be fulfilled " \
@@ -365,17 +366,40 @@ class VolumePlugin(object):
             def _check_valid_replication_mode(mode):
                 valid_modes = ['synchronous', 'asynchronous', 'streaming']
                 if mode.lower() not in valid_modes:
-                    msg = "Unknown replication mode specified. Valid values" \
-                          "are 'synchronous | asynchronous | streaming'"
+                    msg = "Unknown replication mode '%s' specified. Valid " \
+                          "values are 'synchronous | asynchronous | " \
+                          "streaming'" % mode
                     raise exception.InvalidInput(reason=msg)
 
-            rep_mode = replication_device['replication_mode']
+            rep_mode = replication_device['replication_mode'].lower()
             _check_valid_replication_mode(rep_mode)
             if self._hpepluginconfig.quorum_witness_ip:
                 if rep_mode.lower() != 'synchronous':
                     msg = "For Peer Persistence, replication mode must be " \
                           "synchronous"
                     raise exception.InvalidInput(reason=msg)
+
+            if replication_device.sync_period and rep_mode == 'synchronous':
+                msg = "'sync_period' can be defined only for 'asynchronous'" \
+                      " and 'streaming' replicate modes"
+                raise exception.InvalidInput(reason=msg)
+
+            if (rep_mode == 'asynchronous' or rep_mode == 'streaming')\
+                    and replication_device.sync_period:
+                try:
+                    sync_period = int(replication_device.sync_period)
+                except ValueError as ex:
+                    msg = "Non-integer value '%s' not allowed for " \
+                          "'sync_period'" % replication_device.sync_period
+                    raise exception.InvalidInput(reason=msg)
+                else:
+                    SYNC_PERIOD_LOW = 300
+                    SYNC_PERIOD_HIGH = 31622400
+                    if sync_period < SYNC_PERIOD_LOW or \
+                        sync_period > SYNC_PERIOD_HIGH:
+                        msg = "'sync_period' must be between 300 and " \
+                              "31622400 seconds."
+                        raise exception.InvalidInput(reason=msg)
 
     def _check_schedule_frequency(self, schedFrequency):
         freq_sched = schedFrequency
