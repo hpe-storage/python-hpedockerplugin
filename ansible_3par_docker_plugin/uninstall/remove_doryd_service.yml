@@ -1,0 +1,14 @@
+---
+  - name: stop doryd service, also issue daemon-reload to pick up config changes
+    service:
+      state: stopped
+      enabled: no
+      name: doryd.service
+
+  - pause:
+      seconds: 5
+
+  - name: remove doryd files
+    file:
+      path: /etc/systemd/system/doryd.service
+      state: absent
