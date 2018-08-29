@@ -4,7 +4,7 @@
 
   - name: run etcd container
     docker_container:
-      name: etcd
+      name: etcd_hpe
       image: "{{ etcd_image }}"
       state: started
       detach: true
