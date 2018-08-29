@@ -30,7 +30,6 @@ class TestListVolumeDefault(ListVolumeUnitTest):
         # in the flow or not
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.getWsApiVersion.assert_called()
-        print('SATHISH-LISTVOLUME')
 
     def get_request_params(self):
         return {"Name": "test-vol-001",
