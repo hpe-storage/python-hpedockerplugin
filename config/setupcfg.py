@@ -66,20 +66,6 @@ def setup_logging(name, level):
         LOG.logger.setLevel(logging.ERROR)
 
 
-def getdefaultconfig(configfile):
-    CONF(configfile, project='hpedockerplugin', version='1.0.0')
-    configuration = conf.Configuration(host_opts, config_group='DEFAULT')
-    configuration.append_config_values(plugin_opts.hpe3par_opts)
-    return configuration
-
-
-def backend_config(configfile, backend_name):
-    # CONF(configfile, project='hpedockerplugin', version='1.0.0')
-    backend_configuration = conf.Configuration(host_opts, config_group=backend_name)
-    backend_configuration.append_config_values(plugin_opts.hpe3par_opts)
-    return backend_configuration
-
-
 def get_all_backend_configs(configfile):
     backend_configs = {}
     CONF(configfile, project='hpedockerplugin', version='1.0.0')
