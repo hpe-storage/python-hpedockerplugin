@@ -24,7 +24,6 @@ import math
 import re
 import hpedockerplugin.hpe.array_connection_params as acp
 import datetime
-from hpedockerplugin.hpe import hpe3par_opts as opts
 from hpedockerplugin.hpe import volume
 from hpedockerplugin.hpe import utils
 from hpedockerplugin.i18n import _, _LE, _LI, _LW
@@ -38,10 +37,8 @@ CONF = cfg.CONF
 
 
 class VolumeManager(object):
-    def __init__(self, hpepluginconfig, default_config,
-                 etcd_util, backend_name):
+    def __init__(self, hpepluginconfig, etcd_util, backend_name='DEFAULT'):
         self._hpepluginconfig = hpepluginconfig
-        self._hpepluginconfig.append_config_values(opts.hpe3par_opts)
         self._my_ip = netutils.get_my_ipv4()
 
         # Override the settings of use_multipath3, enforce_multipath
@@ -99,9 +96,9 @@ class VolumeManager(object):
 
     def _initialize_configuration(self):
         # Initialize default configuration
-        self._hpepluginconfig.append_config_values(opts.hpe3par_opts)
-        self._hpepluginconfig.append_config_values(opts.san_opts)
-        self._hpepluginconfig.append_config_values(opts.volume_opts)
+        # self._hpepluginconfig.append_config_values(opts.hpe3par_opts)
+        # self._hpepluginconfig.append_config_values(opts.san_opts)
+        # self._hpepluginconfig.append_config_values(opts.volume_opts)
 
         self.src_bkend_config = self._get_src_bkend_config()
 
@@ -235,14 +232,6 @@ class VolumeManager(object):
                 node_id = node_id_file.readline()
         return node_id
 
-    @staticmethod
-    def _get_etcd_util(default_config):
-        return util.EtcdUtil(
-            default_config.host_etcd_ip_address,
-            default_config.host_etcd_port_number,
-            default_config.host_etcd_client_cert,
-            default_config.host_etcd_client_key)
-
     @synchronization.synchronized_volume('{volname}')
     def create_volume(self, volname, vol_size, vol_prov,
                       vol_flash, compression_val, vol_qos,
@@ -256,14 +245,6 @@ class VolumeManager(object):
         vol = self._etcd.get_vol_byname(volname)
         if vol is not None:
             return json.dumps({u"Err": ''})
-
-        if (rcg_name and not self._hpepluginconfig.replication_device) or \
-                (self._hpepluginconfig.replication_device and not rcg_name):
-            msg = "Request to create replicated volume cannot be fulfilled " \
-                  "without defining 'replication_device' entry in hpe.conf " \
-                  "for the desired or default backend. Please add it and " \
-                  "then execute the request again."
-            return json.dumps({u"Err": msg})
 
         # if qos-name is given, check vvset is associated with qos or not
         if vol_qos is not None:
@@ -1318,7 +1299,7 @@ class VolumeManager(object):
         if self._hpepluginconfig.replication_device:
             LOG.info("This is a replication setup")
             # TODO: This is where existing volume can be added to RCG
-            # after enabling replication configuration in hpe.conf
+            # after enabling replication configuration in hpe_iscsi.conf
             if 'rcg_info' not in vol or not vol['rcg_info']:
                 msg = "Volume %s is not a replicated volume. It seems" \
                       "the backend configuration was modified to be a" \

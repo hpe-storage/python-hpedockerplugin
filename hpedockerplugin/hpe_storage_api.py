@@ -43,7 +43,7 @@ class VolumePlugin(object):
     """
     app = Klein()
 
-    def __init__(self, reactor, hpepluginconfig):
+    def __init__(self, reactor, backend_configs):
         """
         :param IReactorTime reactor: Reactor time interface implementation.
         :param Ihpepluginconfig : hpedefaultconfig configuration
@@ -52,11 +52,11 @@ class VolumePlugin(object):
 
         self._reactor = reactor
         self.conf = setupcfg.CONF
-        self._hpepluginconfig = hpepluginconfig
+        self._backend_configs = backend_configs
 
         # TODO: make device_scan_attempts configurable
         # see nova/virt/libvirt/volume/iscsi.py
-        self.orchestrator = orchestrator.Orchestrator(hpepluginconfig)
+        self.orchestrator = orchestrator.Orchestrator(backend_configs)
 
     def disconnect_volume_callback(self, connector_info):
         LOG.info(_LI('In disconnect_volume_callback: connector info is %s'),
@@ -335,9 +335,9 @@ class VolumePlugin(object):
 
             rcg_name = contents['Opts'].get('replicationGroup', None)
             try:
-                self._validate_rcg_params(rcg_name)
+                self._validate_rcg_params(rcg_name, current_backend)
             except exception.InvalidInput as ex:
-                return json.dumps({u"Err": ex.message})
+                return json.dumps({u"Err": ex.msg})
 
         return self.orchestrator.volumedriver_create(volname, vol_size,
                                                      vol_prov,
@@ -350,15 +350,21 @@ class VolumePlugin(object):
                                                      current_backend,
                                                      rcg_name)
 
-    def _validate_rcg_params(self, rcg_name):
-        replication_device = self._hpepluginconfig.replication_device
+    def _validate_rcg_params(self, rcg_name, backend_name):
+        hpepluginconfig = self._backend_configs[backend_name]
+        replication_device = hpepluginconfig.replication_device
 
-        if (rcg_name and not replication_device) or \
-                (replication_device and not rcg_name):
+        if rcg_name and not replication_device:
             msg = "Request to create replicated volume cannot be fulfilled " \
-                  "without defining 'replication_device' entry in hpe.conf " \
-                  "for the desired or default backend. Please add it and " \
-                  "then execute the request again."
+                  "without defining 'replication_device' entry in " \
+                  "hpe_iscsi.conf for the desired or default backend. " \
+                  "Please add it and execute the request again."
+            raise exception.InvalidInput(reason=msg)
+
+        if replication_device and not rcg_name:
+            msg = "Request to create replicated volume cannot be fulfilled " \
+                  "without specifying 'rcg_name' parameter in the request. " \
+                  "Please specify 'rcg_name' and execute the request again."
             raise exception.InvalidInput(reason=msg)
 
         if rcg_name and replication_device:
@@ -373,7 +379,7 @@ class VolumePlugin(object):
 
             rep_mode = replication_device['replication_mode'].lower()
             _check_valid_replication_mode(rep_mode)
-            if self._hpepluginconfig.quorum_witness_ip:
+            if hpepluginconfig.quorum_witness_ip:
                 if rep_mode.lower() != 'synchronous':
                     msg = "For Peer Persistence, replication mode must be " \
                           "synchronous"
@@ -396,7 +402,7 @@ class VolumePlugin(object):
                     SYNC_PERIOD_LOW = 300
                     SYNC_PERIOD_HIGH = 31622400
                     if sync_period < SYNC_PERIOD_LOW or \
-                        sync_period > SYNC_PERIOD_HIGH:
+                       sync_period > SYNC_PERIOD_HIGH:
                         msg = "'sync_period' must be between 300 and " \
                               "31622400 seconds."
                         raise exception.InvalidInput(reason=msg)

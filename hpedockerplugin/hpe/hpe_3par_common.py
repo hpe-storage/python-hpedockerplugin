@@ -135,7 +135,7 @@ class HPE3PARCommon(object):
             msg = (_('Failed to connect to the array using %(url)s.'
                      'Please ensure the following \n'
                      '1.Value of IP and port specified for '
-                     'hpe3par_api_url in hpe.conf is correct and \n'
+                     'hpe3par_api_url in hpe_iscsi.conf is correct and \n'
                      '2. The array is reachable from the host.\n')
                    % {'url': self.src_bkend_config.hpe3par_api_url})
             LOG.error(msg)

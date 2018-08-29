@@ -18,7 +18,7 @@ This driver requires 3.1.3 firmware on the 3PAR array, using
 the 4.x version of the hpe3parclient.
 You will need to install the python hpe3parclient.
 sudo pip install --upgrade "hpe3parclient>=4.0"
-Set the following in the hpe.conf file to enable the
+Set the following in the hpe_iscsi.conf file to enable the
 3PAR iSCSI Driver along with the required flags:
 hpedockerplugin_driver = hpe.hpe_3par_iscsi.HPE3PARISCSIDriver
 """
@@ -272,7 +272,7 @@ class HPE3PARISCSIDriver(object):
                     else:
                         LOG.warning(_LW("iSCSI IP: '%s' was not found in "
                                         "hpe3par_iscsi_ips list defined in "
-                                        "hpe.conf."), iscsi_ip)
+                                        "hpe_iscsi.conf."), iscsi_ip)
 
                 info = {'driver_volume_type': 'iscsi',
                         'data': {'target_portals': target_portals,

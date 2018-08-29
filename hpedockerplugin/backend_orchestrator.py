@@ -25,34 +25,42 @@ Eg.
 
 
 """
+from oslo_config import cfg
 from oslo_log import log as logging
+import hpedockerplugin.etcdutil as util
 import hpedockerplugin.volume_manager as mgr
-from config import setupcfg
 
 LOG = logging.getLogger(__name__)
 
-CONFIG_FILE = '/etc/hpedockerplugin/hpe.conf'
+CONFIG_FILE = '/etc/hpedockerplugin/hpe_iscsi.conf'
 CONFIG = ['--config-file', CONFIG_FILE]
 DEFAULT_BACKEND_NAME = "DEFAULT"
+CONF = cfg.CONF
 
 
 class Orchestrator(object):
-    def __init__(self, hpedefaultconfig):
-        self.default_config = hpedefaultconfig
+    def __init__(self, backend_configs):
         LOG.info('calling initialize manager objs')
-        self.etcd_util = mgr.VolumeManager._get_etcd_util(
-            self.default_config)
+        self.etcd_util = self._get_etcd_util(
+            backend_configs['DEFAULT'])
         self._manager = self.initialize_manager_objects(
-            self.default_config, self.etcd_util)
+            backend_configs)
 
-    def initialize_manager_objects(self, defaultconfig, etcd_util):
+    @staticmethod
+    def _get_etcd_util(host_config):
+        return util.EtcdUtil(
+            host_config.host_etcd_ip_address,
+            host_config.host_etcd_port_number,
+            host_config.host_etcd_client_cert,
+            host_config.host_etcd_client_key)
+
+    def initialize_manager_objects(self, backend_configs):
         manager_objs = {}
 
-        for backend_name in setupcfg.get_all_backends(CONFIG):
+        for backend_name, config in backend_configs.items():
             LOG.info('INITIALIZING backend  : %s' % backend_name)
             manager_objs[backend_name] = mgr.VolumeManager(
-                setupcfg.backend_config(CONFIG, backend_name),
-                defaultconfig, self.etcd_util, backend_name)
+                config, self.etcd_util, backend_name)
 
         return manager_objs
 

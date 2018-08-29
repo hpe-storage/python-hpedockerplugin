@@ -1,11 +1,14 @@
 import abc
 import json
 import mock
+import six
 
 from io import StringIO
 from twisted.internet import reactor
 
 import test.fake_3par_data as data
+from config import setupcfg
+from hpedockerplugin import exception
 from hpedockerplugin import hpe_storage_api as api
 import test.setup_mock as setup_mock
 
@@ -50,7 +53,7 @@ class HpeDockerUnitTestExecutor(object):
         # Get API parameters from child class
         req_body = self._get_request_body(self.get_request_params())
 
-        _api = api.VolumePlugin(reactor, self._config)
+        _api = api.VolumePlugin(reactor, self._all_configs)
         try:
             resp = getattr(_api, plugin_api)(req_body)
             resp = json.loads(resp)
@@ -90,7 +93,7 @@ class HpeDockerUnitTestExecutor(object):
         # Get API parameters from child class
         req_body = self._get_request_body(self.get_request_params())
 
-        _api = api.VolumePlugin(reactor, self._config)
+        _api = api.VolumePlugin(reactor, self._all_configs)
         try:
             resp = getattr(_api, plugin_api)(req_body)
             resp = json.loads(resp)
@@ -110,25 +113,40 @@ class HpeDockerUnitTestExecutor(object):
         # This is important to set as it is used by the mock decorator to
         # take decision which driver to instantiate
         self._protocol = test_case.protocol
-        self._config = self._get_configuration()
-        if not self._config.use_real_flow:
+        self._all_configs = self._get_configuration()
+
+        if not self.use_real_flow():
             self._mock_execute_api(plugin_api=self._get_plugin_api())
         else:
             self._real_execute_api(plugin_api=self._get_plugin_api())
 
+    # Individual TCs can override this value to execute real flow
+    def use_real_flow(self):
+        return False
+
     def _get_configuration(self):
+        cfg_file_name = './test/config/hpe_%s.conf' % self._protocol.lower()
+        cfg_param = ['--config-file', cfg_file_name]
+        try:
+            all_configs = setupcfg.get_all_backend_configs(cfg_param)
+        except Exception as ex:
+            msg = 'Setting up of hpe3pardocker unit test failed, error is: ' \
+                  '%s' % six.text_type(ex)
+            # LOG.error(msg)
+            raise exception.HPEPluginStartPluginException(reason=msg)
+
         # _protocol is set in the immediate child class
-        config = create_configuration(self._protocol)
+        # config = create_configuration(self._protocol)
         # Allow child classes to override configuration
-        self.override_configuration(config)
-        return config
+        self.override_configuration(all_configs)
+        return all_configs
 
     """
     Allows the child class to override the HPE configuration parameters
     needed to invoke VolumePlugin APIs
     """
 
-    def override_configuration(self, config):
+    def override_configuration(self, all_configs):
         pass
 
     """
@@ -207,7 +225,7 @@ def create_configuration(protocol):
     config.host_etcd_client_key = None
     config.mount_conflict_delay = 3
 
-    # This flag doesn't belong to hpe.conf. Has been added to allow
+    # This flag doesn't belong to hpe_iscsi.conf. Has been added to allow
     # framework to decide if ETCD is to be mocked or real
     config.use_real_flow = False
 

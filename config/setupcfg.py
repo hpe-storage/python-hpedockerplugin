@@ -13,6 +13,7 @@
 #    limitations under the License.
 
 from hpedockerplugin import configuration as conf
+from hpedockerplugin.hpe import hpe3par_opts as plugin_opts
 from oslo_log import log as logging
 from oslo_config import cfg
 
@@ -50,7 +51,6 @@ CONF = cfg.CONF
 logging.register_options(CONF)
 
 
-
 def setup_logging(name, level):
 
     logging.setup(CONF, name)
@@ -68,27 +68,27 @@ def setup_logging(name, level):
 
 def getdefaultconfig(configfile):
     CONF(configfile, project='hpedockerplugin', version='1.0.0')
-    sections = CONF.list_all_sections()
-    print("WILLIAM -- SECTION NAME: %s" % sections)
-    for section in sections:
-        opt_group = cfg.OptGroup(name=section,
-                                 title=section)
-        CONF.register_group(opt_group)
-        CONF.register_opts(host_opts, group=section)
-
     configuration = conf.Configuration(host_opts, config_group='DEFAULT')
-
+    configuration.append_config_values(plugin_opts.hpe3par_opts)
     return configuration
 
-def backend_config(configfile, backend_name):
-    CONF(configfile, project='hpedockerplugin', version='1.0.0')
-    backend_configuration = conf.Configuration(host_opts, config_group=backend_name)
 
+def backend_config(configfile, backend_name):
+    # CONF(configfile, project='hpedockerplugin', version='1.0.0')
+    backend_configuration = conf.Configuration(host_opts, config_group=backend_name)
+    backend_configuration.append_config_values(plugin_opts.hpe3par_opts)
     return backend_configuration
 
-def get_all_backends(configfile):
+
+def get_all_backend_configs(configfile):
+    backend_configs = {}
     CONF(configfile, project='hpedockerplugin', version='1.0.0')
-    sections = CONF.list_all_sections()
+    for backend_name in CONF.list_all_sections():
+        config = conf.Configuration(host_opts,
+                                    config_group=backend_name)
+        config.append_config_values(plugin_opts.hpe3par_opts)
+        config.append_config_values(plugin_opts.san_opts)
+        config.append_config_values(plugin_opts.volume_opts)
+        backend_configs[backend_name] = config
 
-    return sections
-
+    return backend_configs
