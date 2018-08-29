@@ -25,24 +25,20 @@ Eg.
 
 
 """
-from oslo_config import cfg
 from oslo_log import log as logging
 import hpedockerplugin.etcdutil as util
 import hpedockerplugin.volume_manager as mgr
 
 LOG = logging.getLogger(__name__)
 
-CONFIG_FILE = '/etc/hpedockerplugin/hpe_iscsi.conf'
-CONFIG = ['--config-file', CONFIG_FILE]
 DEFAULT_BACKEND_NAME = "DEFAULT"
-CONF = cfg.CONF
 
 
 class Orchestrator(object):
     def __init__(self, backend_configs):
         LOG.info('calling initialize manager objs')
         self.etcd_util = self._get_etcd_util(
-            backend_configs['DEFAULT'])
+            backend_configs[DEFAULT_BACKEND_NAME])
         self._manager = self.initialize_manager_objects(
             backend_configs)
 
