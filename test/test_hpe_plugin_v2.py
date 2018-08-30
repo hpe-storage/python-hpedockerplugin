@@ -132,6 +132,14 @@ class HpeDockerUnitTestsBase(object):
         test.run_test(self)
 
     """
+    REPLICATION related tests
+    """
+    @tc_banner_decorator
+    def test_create_replicated_volume_default(self):
+        test = createvolume_tester.TestCreateReplicatedVolumeDefault()
+        test.run_test(self)
+
+    """
     CLONE VOLUME related tests
     """
     @tc_banner_decorator

@@ -20,7 +20,7 @@ the 4.x version of the hpe3parclient.
 You will need to install the python hpe3parclient.
 sudo pip install --upgrade "hpe3parclient>=4.0"
 
-Set the following in the hpe_iscsi.conf file to enable the
+Set the following in the hpe.conf file to enable the
 3PAR FC Driver along with the required flags:
 
 hpedockerplugin_driver = hpe.hpe_3par_fc.HPE3PARFCDriver

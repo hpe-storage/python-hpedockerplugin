@@ -21,7 +21,7 @@ the 2.0 or greater version of the hpelefthandclient.
 You will need to install the python hpelefthandclient module.
 sudo pip install python-lefthandclient
 
-Set the following in the hpe_iscsi.conf file to enable the
+Set the following in the hpe.conf file to enable the
 LeftHand iSCSI REST Driver along with the required flags:
 
 hpedockerplugin_driver = hpe.hpe_lefthand_iscsi.HPELeftHandISCSIDriver

@@ -9,7 +9,8 @@ from hpedockerplugin.hpe_plugin_service import HpeFactory
 
 
 class Options(usage.Options):
-    optParameters = [["cfg", "c", "/home/vagrant/python-hpedockerplugin/config/hpe_iscsi.conf", "The configuration file."]]
+    optParameters = [["cfg", "c", "/home/vagrant/python-hpedockerplugin/config"
+                                  "/hpe.conf", "The configuration file."]]
 
 @implementer(IServiceMaker)
 @implementer(IPlugin)

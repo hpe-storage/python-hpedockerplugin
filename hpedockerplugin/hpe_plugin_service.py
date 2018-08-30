@@ -113,7 +113,7 @@ class HPEDockerPluginService(object):
         UNIXAddress.port = 0
         UNIXAddress.host = b"127.0.0.1"
 
-        # Turnoff use of parameterized hpe_iscsi.conf and use bind mounted
+        # Turnoff use of parameterized hpe.conf and use bind mounted
         # configuration file
         # CONFIG = ['--config-file', self._config_file]
         CONFIG = ['--config-file', CONFIG_FILE]

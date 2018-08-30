@@ -38,7 +38,7 @@ from oslo_log import log as logging
 
 LOG = logging.getLogger(__name__)
 
-CONFIG_FILE = '/etc/hpedockerplugin/hpe_iscsi.conf'
+CONFIG_FILE = '/etc/hpedockerplugin/hpe.conf'
 CONFIG = ['--config-file', CONFIG_FILE]
 
 TEST_DIR = os.path.abspath('../')

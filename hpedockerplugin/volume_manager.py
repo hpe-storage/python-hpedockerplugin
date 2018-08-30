@@ -70,7 +70,7 @@ class VolumeManager(object):
                 reason=msg)
 
         # If replication enabled, then initialize secondary driver
-        if hpepluginconfig.replication_device:
+        if self.tgt_bkend_config:
             LOG.info("Replication enabled!")
             try:
                 LOG.info("Initializing 3PAR driver for remote array...")
@@ -95,11 +95,6 @@ class VolumeManager(object):
         self._node_id = self._get_node_id()
 
     def _initialize_configuration(self):
-        # Initialize default configuration
-        # self._hpepluginconfig.append_config_values(opts.hpe3par_opts)
-        # self._hpepluginconfig.append_config_values(opts.san_opts)
-        # self._hpepluginconfig.append_config_values(opts.volume_opts)
-
         self.src_bkend_config = self._get_src_bkend_config()
 
         self.tgt_bkend_config = None
@@ -122,9 +117,6 @@ class VolumeManager(object):
                 if not self.tgt_bkend_config.hpe3par_snapcpg:
                     self.tgt_bkend_config.hpe3par_snapcpg = \
                         self.tgt_bkend_config.hpe3par_cpg
-                if not self.tgt_bkend_config.quorum_witness_ip:
-                    self.tgt_bkend_config.quorum_witness_ip = \
-                        self._hpepluginconfig.quorum_witness_ip
 
                 if not self.tgt_bkend_config.hpe3par_iscsi_ips:
                     self.tgt_bkend_config.hpe3par_iscsi_ips = \
@@ -167,8 +159,6 @@ class VolumeManager(object):
 
         config.use_multipath = hpeconf.use_multipath
         config.enforce_multipath = hpeconf.enforce_multipath
-        config.quorum_witness_ip = hpeconf.quorum_witness_ip
-        config.backend_id = hpeconf.backend_id
 
         config.hpe3par_iscsi_ips = hpeconf.hpe3par_iscsi_ips
         config.iscsi_ip_address = hpeconf.iscsi_ip_address
@@ -1173,8 +1163,8 @@ class VolumeManager(object):
 
     def _force_remove_vlun(self, vol, is_snap):
         bkend_vol_name = utils.get_3par_name(vol['id'], is_snap)
-        if self.src_bkend_config.replication_device:
-            if self.src_bkend_config.quorum_witness_ip:
+        if self.tgt_bkend_config:
+            if self.tgt_bkend_config.quorum_witness_ip:
                 LOG.info("Peer Persistence setup: Removing VLUNs "
                          "forcefully from remote backend...")
                 self._primary_driver.force_remove_volume_vlun(bkend_vol_name)
@@ -1296,10 +1286,10 @@ class VolumeManager(object):
         pri_connection_info = None
         sec_connection_info = None
         # Check if replication is configured
-        if self._hpepluginconfig.replication_device:
+        if self.tgt_bkend_config:
             LOG.info("This is a replication setup")
             # TODO: This is where existing volume can be added to RCG
-            # after enabling replication configuration in hpe_iscsi.conf
+            # after enabling replication configuration in hpe.conf
             if 'rcg_info' not in vol or not vol['rcg_info']:
                 msg = "Volume %s is not a replicated volume. It seems" \
                       "the backend configuration was modified to be a" \
@@ -1309,7 +1299,7 @@ class VolumeManager(object):
                 raise exception.HPEPluginMountException(reason=msg)
 
             # Check if this is Active/Passive based replication
-            if self._hpepluginconfig.quorum_witness_ip:
+            if self.tgt_bkend_config.quorum_witness_ip:
                 LOG.info("Peer Persistence has been configured")
                 # This is Peer Persistence setup
                 LOG.info("Mounting volume on primary array...")
@@ -1607,7 +1597,7 @@ class VolumeManager(object):
 
         # In case of Peer Persistence, volume is mounted on the secondary
         # array as well. It should be unmounted too
-        if self._hpepluginconfig.replication_device:
+        if self.tgt_bkend_config:
             _unmount_volume(self._remote_driver)
 
         # TODO: Create path_info list as we can mount the volume to multiple

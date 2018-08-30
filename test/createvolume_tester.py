@@ -515,6 +515,26 @@ class TestCreateVolSetFlashCacheFails(CreateVolumeUnitTest):
             exceptions.HTTPInternalServerError("Internal server error")
         ]
 
+
+class TestCreateReplicatedVolumeDefault(CreateVolumeUnitTest):
+    def get_request_params(self):
+        return {"Name": "test-vol-001",
+                "Opts": {"replicationGroup": "RCG-01", }}
+                         # "backend": "3par_iscsi_pp_rep"}}
+
+    def setup_mock_objects(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.return_value = None
+
+    def check_response(self, resp):
+        self._test_case.assertEqual(resp, {u"Err": ''})
+
+        # Check if these functions were actually invoked
+        # in the flow or not
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.getWsApiVersion.assert_called()
+        mock_3parclient.createVolume.assert_called()
+
 # More cases of flash cache
 # 1.
 # if flash_cache:

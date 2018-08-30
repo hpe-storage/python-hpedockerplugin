@@ -351,13 +351,17 @@ class VolumePlugin(object):
                                                      rcg_name)
 
     def _validate_rcg_params(self, rcg_name, backend_name):
+        LOG.info("Validating RCG: %s, backend name: %s..." %(rcg_name,
+                                                          backend_name))
         hpepluginconfig = self._backend_configs[backend_name]
         replication_device = hpepluginconfig.replication_device
+
+        LOG.info("Replication device: %s" % six.text_type(replication_device))
 
         if rcg_name and not replication_device:
             msg = "Request to create replicated volume cannot be fulfilled " \
                   "without defining 'replication_device' entry in " \
-                  "hpe_iscsi.conf for the desired or default backend. " \
+                  "hpe.conf for the desired or default backend. " \
                   "Please add it and execute the request again."
             raise exception.InvalidInput(reason=msg)
 
@@ -379,19 +383,20 @@ class VolumePlugin(object):
 
             rep_mode = replication_device['replication_mode'].lower()
             _check_valid_replication_mode(rep_mode)
-            if hpepluginconfig.quorum_witness_ip:
+            if replication_device.get('quorum_witness_ip'):
                 if rep_mode.lower() != 'synchronous':
                     msg = "For Peer Persistence, replication mode must be " \
                           "synchronous"
                     raise exception.InvalidInput(reason=msg)
 
-            if replication_device.sync_period and rep_mode == 'synchronous':
+            sync_period = replication_device.get('sync_period')
+            if sync_period and rep_mode == 'synchronous':
                 msg = "'sync_period' can be defined only for 'asynchronous'" \
                       " and 'streaming' replicate modes"
                 raise exception.InvalidInput(reason=msg)
 
             if (rep_mode == 'asynchronous' or rep_mode == 'streaming')\
-                    and replication_device.sync_period:
+                    and sync_period:
                 try:
                     sync_period = int(replication_device.sync_period)
                 except ValueError as ex:

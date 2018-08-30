@@ -135,7 +135,7 @@ class HPE3PARCommon(object):
             msg = (_('Failed to connect to the array using %(url)s.'
                      'Please ensure the following \n'
                      '1.Value of IP and port specified for '
-                     'hpe3par_api_url in hpe_iscsi.conf is correct and \n'
+                     'hpe3par_api_url in hpe.conf is correct and \n'
                      '2. The array is reachable from the host.\n')
                    % {'url': self.src_bkend_config.hpe3par_api_url})
             LOG.error(msg)
@@ -1516,7 +1516,7 @@ class HPE3PARCommon(object):
             LOG.error(msg)
             raise exception.HPERemoteCopyGroupBackendAPIException(data=msg)
 
-        if src_config.quorum_witness_ip:
+        if tgt_config.quorum_witness_ip:
             pp_params = {'targets': [
                 {'targetName': tgt_config.backend_id,
                  'policies': {'autoFailover': True,

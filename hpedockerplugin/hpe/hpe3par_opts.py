@@ -57,13 +57,6 @@ hpe3par_opts = [
     cfg.BoolOpt('suppress_requests_ssl_warnings',
                 default=False,
                 help='Suppress requests library SSL certificate warnings.'),
-    # cfg.MultiOpt('replication_device',
-    cfg.StrOpt('quorum_witness_ip',
-               default='',
-               help='IP address of Qurorum Witness'),
-    cfg.StrOpt('backend_id',
-               default='',
-               help='Primary backend id'),
     cfg.DictOpt('replication_device',
                 default={},
                 help="Multi opt of dictionaries to represent a replication "
