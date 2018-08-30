@@ -1,0 +1,10 @@
+---
+  - name: Change MountFlags
+    ini_file: dest=/usr/lib/systemd/system/docker.service section=Service option=MountFlags value=shared no_extra_spaces=True backup=yes
+    tags: configuration
+
+  - name: restart docker service, also issue daemon-reload to pick up config changes
+    systemd:
+      state: restarted
+      daemon_reload: yes
+      name: docker.service

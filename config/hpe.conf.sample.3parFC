@@ -45,6 +45,8 @@ san_ip = <SAN IP>
 san_login = <SAN username>
 san_password = <SAN password>
 hpe3par_cpg = <CPG name used for volume creation>
+hpe3par_snapcpg = <CPG name used for snapshot creation>
+# hpe3par_snapcpg is optional. If not provided, it defaults to hpe3par_cpg value
 use_multipath = <True or False>  
 enforce_multipath = <True or False>
 

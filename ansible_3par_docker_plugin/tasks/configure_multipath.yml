@@ -1,0 +1,21 @@
+---
+  - name: install multipath dependencies
+    yum: pkg={{ item }} state=installed
+    with_items:
+      - iscsi-initiator-utils
+      - device-mapper-multipath
+
+  - name: configure multipath.conf
+    copy:
+      src: files/multipath.conf
+      dest: /etc/multipath.conf
+      owner: root
+      group: root
+      mode: 0644
+
+  - name: enable service multipathd, if not running
+    action: >
+      service name={{ item }} state=present name={{ item }} enabled=yes state=started
+    with_items:
+      - iscsid
+      - multipathd

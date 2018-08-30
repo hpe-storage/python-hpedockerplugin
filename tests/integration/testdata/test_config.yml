@@ -1,0 +1,102 @@
+# Valid values of Operating Systems: ubuntu, rhel, centos, suse
+platform:
+    os: ubuntu
+
+# Plugin with old_version is mandatory for plugin upgrade test case
+# Plugin type supported: containerized (legacy, version 1) and managed (version 2)
+plugin:
+    type: managed
+    managed_plugin_latest: dockerciuser/hpedockerplugin:test
+    managed_plugin_old: dockerciuser/hpedockerplugin:old
+    certs_source: /tmp/
+    containerized_image: hpestorage/legacyvolumeplugin:2.1
+    containerized_plugin: hpe
+
+# Add etcd service details for secured/unsecured connection
+# Specify the name of the etcd container
+etcd:
+    host: 192.168.82.1
+    #host: localhost
+    port: 2379
+    client_cert:
+    client_key:
+    container: etcd
+
+# Change volume sizes in single inverted commas as per the availability of space in 3Par array
+# e.g. '5' will create a volume of 5 GB size in 3Par array
+volumes:
+    thin_size: '10'
+    full_size: '1'
+    dedup_size: '1'
+    compress_size: '16'
+
+# 3Par backend details (mentioned in hpe.conf) to initialize WSAPI session
+backend:
+    3Par_api_url: https://192.168.67.5:8080/api/v1
+
+# Multipath configuration details
+# Mention the number of iSCSI ports present in hpe.conf
+# Mention the number of FC zones configured in Fabric
+multipath:
+    ports_zones: 1
+
+# Mention the snapshot cpg here
+snapshot:
+    snap_cpg: Docker_CI
+
+# Mention the details required to create and verify VVset with QoS in 3par array
+# Set Priority : '1' for Low, '2' for Normal and '3' for High
+qos:
+    domain: TEST_DOMAIN
+    min_io: 10000
+    max_io: 2000000
+    min_bw: 30
+    max_bw: 40
+    latency: 500
+    priority: 1
+
+# Bind mounts for containerized plugin
+ubuntu_volumes:
+    - /dev:/dev
+    - /run/lock:/run/lock
+    - /var/lib:/var/lib
+    - /var/run/docker/plugins:/var/run/docker/plugins:rw
+    - /etc:/etc
+    - /root/.ssh:/root/.ssh
+    - /sys:/sys
+    - /root/plugin/certs:/root/plugin/certs
+    - /sbin/iscsiadm:/sbin/ia
+    - /lib/modules:/lib/modules
+    - /lib/x86_64-linux-gnu:/lib64
+    - /var/run/docker.sock:/var/run/docker.sock
+
+rhel_volumes:
+    - /dev:/dev
+    - /run/lock:/run/lock
+    - /var/lib:/var/lib
+    - /var/run/docker/plugins:/var/run/docker/plugins:rw
+    - /etc:/etc
+    - /root/.ssh:/root/.ssh
+    - /sys:/sys
+    - /root/plugin/certs:/root/plugin/certs
+    - /sbin/iscsiadm:/sbin/ia
+    - /lib/modules:/lib/modules
+    - /lib64:/lib64
+    - /var/run/docker.sock:/var/run/docker.sock
+
+suse_volumes:
+    - /dev:/dev
+    - /run/lock:/run/lock
+    - /var/lib:/var/lib
+    - /var/run/docker/plugins:/var/run/docker/plugins:rw
+    - /etc:/etc
+    - /root/.ssh:/root/.ssh
+    - /sys:/sys
+    - /root/plugin/certs:/root/plugin/certs
+    - /sbin/iscsiadm:/sbin/ia
+    - /lib64:/lib64
+    - /usr/lib64:/usr/lib64
+    - /var/run/docker.sock:/var/run/docker.sock
+
+
+
