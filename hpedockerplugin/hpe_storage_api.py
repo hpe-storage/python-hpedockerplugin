@@ -52,6 +52,7 @@ class VolumePlugin(object):
 
         self._reactor = reactor
         self.conf = setupcfg.CONF
+        self._hpepluginconfig = hpepluginconfig
 
         # TODO: make device_scan_attempts configurable
         # see nova/virt/libvirt/volume/iscsi.py
@@ -144,17 +145,17 @@ class VolumePlugin(object):
         vol_flash = volume.DEFAULT_FLASH_CACHE
         vol_qos = volume.DEFAULT_QOS
         compression_val = volume.DEFAULT_COMPRESSION_VAL
-        valid_compression_opts = ['true', 'false']
+        valid_bool_opts = ['true', 'false']
         fs_owner = None
         fs_mode = None
         mount_conflict_delay = volume.DEFAULT_MOUNT_CONFLICT_DELAY
         cpg = None
         snap_cpg = None
+        rcg_name = None
 
         current_backend = DEFAULT_BACKEND_NAME
-        if ('Opts' in contents and contents['Opts']):
+        if 'Opts' in contents and contents['Opts']:
             # Verify valid Opts arguments.
-            valid_compression_opts = ['true', 'false']
             valid_volume_create_opts = ['mount-volume', 'compression',
                                         'size', 'provisioning', 'flash-cache',
                                         'cloneOf', 'virtualCopyOf',
@@ -164,7 +165,8 @@ class VolumePlugin(object):
                                         'help', 'importVol', 'cpg',
                                         'snapcpg', 'scheduleName',
                                         'scheduleFrequency', 'snapshotPrefix',
-                                        'expHrs', 'retHrs', 'backend']
+                                        'expHrs', 'retHrs', 'backend',
+                                        'replicationGroup']
             valid_snap_schedule_opts = ['scheduleName', 'scheduleFrequency',
                                         'snapshotPrefix', 'expHrs', 'retHrs']
             for key in contents['Opts']:
@@ -178,7 +180,8 @@ class VolumePlugin(object):
                     return json.dumps({u"Err": six.text_type(msg)})
 
             # mutually exclusive options check
-            mutually_exclusive_list = ['virtualCopyOf', 'cloneOf', 'qos-name']
+            mutually_exclusive_list = ['virtualCopyOf', 'cloneOf', 'qos-name',
+                                       'replicationGroup']
             input_list = list(contents['Opts'].keys())
             if (len(list(set(input_list) &
                     set(mutually_exclusive_list))) >= 2):
@@ -207,7 +210,7 @@ class VolumePlugin(object):
                                                          existing_ref,
                                                          current_backend)
 
-            if ('help' in contents['Opts']):
+            if 'help' in contents['Opts']:
                 create_help_path = "./config/create_help.txt"
                 create_help_file = open(create_help_path, "r")
                 create_help_content = create_help_file.read()
@@ -228,19 +231,29 @@ class VolumePlugin(object):
                     contents['Opts']['compression'] != ""):
                 compression_val = str(contents['Opts']['compression'])
                 if compression_val is not None:
-                    if compression_val.lower() not in valid_compression_opts:
+                    if compression_val.lower() not in valid_bool_opts:
                         msg = \
                             _('create volume failed, error is:'
                               'passed compression parameter'
                               ' do not have a valid value. '
-                              ' Valid vaues are: %(valid)s') % {
-                                'valid': valid_compression_opts}
+                              'Valid vaues are: %(valid)s') % {
+                                'valid': valid_bool_opts}
                         LOG.error(msg)
                         return json.dumps({u'Err': six.text_type(msg)})
 
             if ('flash-cache' in contents['Opts'] and
                     contents['Opts']['flash-cache'] != ""):
                 vol_flash = str(contents['Opts']['flash-cache'])
+                if vol_flash is not None:
+                    if vol_flash.lower() not in valid_bool_opts:
+                        msg = \
+                            _('create volume failed, error is:'
+                              'passed flash-cache parameter'
+                              ' do not have a valid value. '
+                              'Valid vaues are: %(valid)s') % {
+                                'valid': valid_bool_opts}
+                        LOG.error(msg)
+                        return json.dumps({u'Err': six.text_type(msg)})
 
             if ('qos-name' in contents['Opts'] and
                     contents['Opts']['qos-name'] != ""):
@@ -318,7 +331,7 @@ class VolumePlugin(object):
                 return self.volumedriver_create_snapshot(name,
                                                          mount_conflict_delay,
                                                          opts)
-            elif ('cloneOf' in contents['Opts']):
+            elif 'cloneOf' in contents['Opts']:
                 return self.volumedriver_clone_volume(name, opts)
             for i in input_list:
                 if i in valid_snap_schedule_opts:
@@ -329,6 +342,12 @@ class VolumePlugin(object):
                         response = json.dumps({u"Err": msg})
                         return response
 
+            rcg_name = contents['Opts'].get('replicationGroup', None)
+            try:
+                self._validate_rcg_params(rcg_name)
+            except exception.InvalidInput as ex:
+                return json.dumps({u"Err": ex.message})
+
         return self.orchestrator.volumedriver_create(volname, vol_size,
                                                      vol_prov,
                                                      vol_flash,
@@ -337,7 +356,59 @@ class VolumePlugin(object):
                                                      fs_owner, fs_mode,
                                                      mount_conflict_delay,
                                                      cpg, snap_cpg,
-                                                     current_backend)
+                                                     current_backend,
+                                                     rcg_name)
+
+    def _validate_rcg_params(self, rcg_name):
+        replication_device = self._hpepluginconfig.replication_device
+
+        if (rcg_name and not replication_device) or \
+                (replication_device and not rcg_name):
+            msg = "Request to create replicated volume cannot be fulfilled " \
+                  "without defining 'replication_device' entry in hpe.conf " \
+                  "for the desired or default backend. Please add it and " \
+                  "then execute the request again."
+            raise exception.InvalidInput(reason=msg)
+
+        if rcg_name and replication_device:
+
+            def _check_valid_replication_mode(mode):
+                valid_modes = ['synchronous', 'asynchronous', 'streaming']
+                if mode.lower() not in valid_modes:
+                    msg = "Unknown replication mode '%s' specified. Valid " \
+                          "values are 'synchronous | asynchronous | " \
+                          "streaming'" % mode
+                    raise exception.InvalidInput(reason=msg)
+
+            rep_mode = replication_device['replication_mode'].lower()
+            _check_valid_replication_mode(rep_mode)
+            if self._hpepluginconfig.quorum_witness_ip:
+                if rep_mode.lower() != 'synchronous':
+                    msg = "For Peer Persistence, replication mode must be " \
+                          "synchronous"
+                    raise exception.InvalidInput(reason=msg)
+
+            if replication_device.sync_period and rep_mode == 'synchronous':
+                msg = "'sync_period' can be defined only for 'asynchronous'" \
+                      " and 'streaming' replicate modes"
+                raise exception.InvalidInput(reason=msg)
+
+            if (rep_mode == 'asynchronous' or rep_mode == 'streaming')\
+                    and replication_device.sync_period:
+                try:
+                    sync_period = int(replication_device.sync_period)
+                except ValueError as ex:
+                    msg = "Non-integer value '%s' not allowed for " \
+                          "'sync_period'" % replication_device.sync_period
+                    raise exception.InvalidInput(reason=msg)
+                else:
+                    SYNC_PERIOD_LOW = 300
+                    SYNC_PERIOD_HIGH = 31622400
+                    if sync_period < SYNC_PERIOD_LOW or \
+                       sync_period > SYNC_PERIOD_HIGH:
+                        msg = "'sync_period' must be between 300 and " \
+                              "31622400 seconds."
+                        raise exception.InvalidInput(reason=msg)
 
     def _check_schedule_frequency(self, schedFrequency):
         freq_sched = schedFrequency
@@ -522,7 +593,10 @@ class VolumePlugin(object):
 
         mount_id = contents['ID']
 
-        return self.orchestrator.mount_volume(volname, vol_mount, mount_id)
+        try:
+            return self.orchestrator.mount_volume(volname, vol_mount, mount_id)
+        except Exception as ex:
+            return {'Err': six.text_type(ex)}
 
     @app.route("/VolumeDriver.Path", methods=["POST"])
     def volumedriver_path(self, name):

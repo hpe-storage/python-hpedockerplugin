@@ -20,7 +20,14 @@ Create Volume Options:
                                 [userId:groupId]
  -o fsMode=x                     x is 1 to 4 octal digits that represent the file mode to be applied to the root directory of the
                                 filesystem
- 
+ -o replicationGroup=x 	        x is name of the 3PAR replication group to which the newly created volume is added. If the replication
+                                group doesn't exist on 3PAR array then it is created. Configuration parameter, 'replication_device',
+                                must be defined in the hpe.conf file in conjunction with this option. Not doing so results in rejection
+                                of the volume creation request. Another configuration parameter, 'quorum_witness_ip', if defined, results
+                                into Peer Persistence based replication configuration. Absence of 'quorum_witness_ip' results into
+                                Active/Passive based replication configuration.
+
+
 
 Create Clone Options:
  -o cloneOf=x			x is the name of docker volume (source volume) of which clone to be created.

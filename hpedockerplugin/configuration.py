@@ -14,25 +14,19 @@
 #    under the License.
 
 """Configuration support for all drivers.
-
 This module allows support for setting configurations either from default
 or from a particular FLAGS group, to be able to set multiple configurations
 for a given set of values.
-
 For instance, two lvm configurations can be set by naming them in groups as
-
  [lvm1]
  volume_group=lvm-group-1
  ...
-
  [lvm2]
  volume_group=lvm-group-2
  ...
-
 And the configuration group name will be passed in so that all calls to
 configuration.volume_group within that instance will be mapped to the proper
 named group.
-
 This class also ensures the implementation's configuration is grafted into the
 option group. This is due to the way cfg works. All cfg options must be defined
 and registered in the group in which they are used.
@@ -43,6 +37,8 @@ from oslo_config import cfg
 from oslo_log import log as logging
 
 
+SHARED_CONF_GROUP = 'backend_defaults'
+
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
@@ -51,7 +47,6 @@ class Configuration(object):
 
     def __init__(self, volume_opts, config_group=None):
         """Initialize configuration.
-
         This takes care of grafting the implementation's config
         values into the config group
         """

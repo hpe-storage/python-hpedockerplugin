@@ -127,4 +127,9 @@ def create_configuration(protocol):
     # framework to decide if ETCD is to be mocked or real
     config.use_real_flow = False
 
+    # By default, replication is disabled
+    config.replication_device = {}
+    config.backend_id = ''
+    config.quorum_witness_ip = ''
+
     return config
