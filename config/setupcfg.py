@@ -28,27 +28,46 @@ host_opts = [
                 default=2379,
                 help='Host Port Number to use for etcd communication'),
     cfg.StrOpt('host_etcd_ca_cert',
-                default=None,
-                help='CA certificate location'),
+               default=None,
+               help='CA certificate location'),
     cfg.StrOpt('host_etcd_client_cert',
-                default=None,
-                help='Client certificate location'),
+               default=None,
+               help='Client certificate location'),
     cfg.StrOpt('host_etcd_client_key',
-                default=None,
-                help='Client certificate key location'),
+               default=None,
+               help='Client certificate key location'),
     cfg.StrOpt('logging',
                default='WARNING',
                help='Debug level for hpe docker volume plugin'),
     cfg.BoolOpt('use_multipath',
-               default=False,
-               help='Toggle use of multipath for volume attachments.'),
+                default=False,
+                help='Toggle use of multipath for volume attachments.'),
     cfg.BoolOpt('enforce_multipath',
-               default=False,
-               help='Toggle enforcing of multipath for volume attachments.'),
+                default=False,
+                help='Toggle enforcing of multipath for volume attachments.'),
+    cfg.BoolOpt('strict_ssh_host_key_policy',
+                default=False,
+                help='Option to enable strict host key checking.  When '
+                     'set to "True" the plugin will only connect to systems '
+                     'with a host key present in the configured '
+                     '"ssh_hosts_key_file".  When set to "False" the host key '
+                     'will be saved upon first connection and used for '
+                     'subsequent connections.  Default=False'),
+    cfg.StrOpt('state_path',
+               default='/var/lib/docker',
+               help='File containing SSH host keys for the systems with which '
+                    'the plugin needs to communicate.  OPTIONAL: '
+                    'Default=/home/'),
+    cfg.StrOpt('ssh_hosts_key_file',
+               default='$state_path/ssh_known_hosts',
+               help='File containing SSH host keys for the systems with which '
+                    'the plugin needs to communicate.  OPTIONAL: '
+                    'Default=$state_path/ssh_known_hosts'),
 ]
 
 CONF = cfg.CONF
 logging.register_options(CONF)
+CONF.register_opts(host_opts)
 
 
 def setup_logging(name, level):
@@ -64,6 +83,11 @@ def setup_logging(name, level):
         LOG.logger.setLevel(logging.WARNING)
     if level == 'ERROR':
         LOG.logger.setLevel(logging.ERROR)
+
+
+def get_host_config(configfile):
+    CONF(configfile, project='hpedockerplugin', version='1.0.0')
+    return conf.Configuration(host_opts)
 
 
 def get_all_backend_configs(configfile):

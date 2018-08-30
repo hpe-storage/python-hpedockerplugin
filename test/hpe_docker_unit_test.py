@@ -1,12 +1,10 @@
 import abc
 import json
-import mock
 import six
 
 from io import StringIO
 from twisted.internet import reactor
 
-import test.fake_3par_data as data
 from config import setupcfg
 from hpedockerplugin import exception
 from hpedockerplugin import hpe_storage_api as api
@@ -32,6 +30,8 @@ class HpeDockerUnitTestExecutor(object):
 
     def __init__(self, **kwargs):
         self._kwargs = kwargs
+        self._host_config = None
+        self._all_configs = None
 
     @staticmethod
     def _get_request_body(request_dict):
@@ -53,7 +53,7 @@ class HpeDockerUnitTestExecutor(object):
         # Get API parameters from child class
         req_body = self._get_request_body(self.get_request_params())
 
-        _api = api.VolumePlugin(reactor, self._all_configs)
+        _api = api.VolumePlugin(reactor, self._host_config, self._all_configs)
         try:
             resp = getattr(_api, plugin_api)(req_body)
             resp = json.loads(resp)
@@ -93,7 +93,7 @@ class HpeDockerUnitTestExecutor(object):
         # Get API parameters from child class
         req_body = self._get_request_body(self.get_request_params())
 
-        _api = api.VolumePlugin(reactor, self._all_configs)
+        _api = api.VolumePlugin(reactor, self._host_config, self._all_configs)
         try:
             resp = getattr(_api, plugin_api)(req_body)
             resp = json.loads(resp)
@@ -113,7 +113,7 @@ class HpeDockerUnitTestExecutor(object):
         # This is important to set as it is used by the mock decorator to
         # take decision which driver to instantiate
         self._protocol = test_case.protocol
-        self._all_configs = self._get_configuration()
+        self._host_config, self._all_configs = self._get_configuration()
 
         if not self.use_real_flow():
             self._mock_execute_api(plugin_api=self._get_plugin_api())
@@ -128,6 +128,7 @@ class HpeDockerUnitTestExecutor(object):
         cfg_file_name = './test/config/hpe_%s.conf' % self._protocol.lower()
         cfg_param = ['--config-file', cfg_file_name]
         try:
+            host_config = setupcfg.get_host_config(cfg_param)
             all_configs = setupcfg.get_all_backend_configs(cfg_param)
         except Exception as ex:
             msg = 'Setting up of hpe3pardocker unit test failed, error is: ' \
@@ -139,7 +140,7 @@ class HpeDockerUnitTestExecutor(object):
         # config = create_configuration(self._protocol)
         # Allow child classes to override configuration
         self.override_configuration(all_configs)
-        return all_configs
+        return host_config, all_configs
 
     """
     Allows the child class to override the HPE configuration parameters

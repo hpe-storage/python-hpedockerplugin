@@ -35,12 +35,11 @@ DEFAULT_BACKEND_NAME = "DEFAULT"
 
 
 class Orchestrator(object):
-    def __init__(self, backend_configs):
+    def __init__(self, host_config, backend_configs):
         LOG.info('calling initialize manager objs')
-        self.etcd_util = self._get_etcd_util(
-            backend_configs[DEFAULT_BACKEND_NAME])
-        self._manager = self.initialize_manager_objects(
-            backend_configs)
+        self.etcd_util = self._get_etcd_util(host_config)
+        self._manager = self.initialize_manager_objects(host_config,
+                                                        backend_configs)
 
     @staticmethod
     def _get_etcd_util(host_config):
@@ -50,13 +49,15 @@ class Orchestrator(object):
             host_config.host_etcd_client_cert,
             host_config.host_etcd_client_key)
 
-    def initialize_manager_objects(self, backend_configs):
+    def initialize_manager_objects(self, host_config, backend_configs):
         manager_objs = {}
 
         for backend_name, config in backend_configs.items():
             LOG.info('INITIALIZING backend  : %s' % backend_name)
-            manager_objs[backend_name] = mgr.VolumeManager(
-                config, self.etcd_util, backend_name)
+            manager_objs[backend_name] = mgr.VolumeManager(host_config,
+                                                           config,
+                                                           self.etcd_util,
+                                                           backend_name)
 
         return manager_objs
 

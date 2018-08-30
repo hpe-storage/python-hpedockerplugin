@@ -37,7 +37,9 @@ CONF = cfg.CONF
 
 
 class VolumeManager(object):
-    def __init__(self, hpepluginconfig, etcd_util, backend_name='DEFAULT'):
+    def __init__(self, host_config, hpepluginconfig, etcd_util,
+                 backend_name='DEFAULT'):
+        self._host_config = host_config
         self._hpepluginconfig = hpepluginconfig
         self._my_ip = netutils.get_my_ipv4()
 
@@ -56,7 +58,7 @@ class VolumeManager(object):
         try:
             LOG.info("Initializing 3PAR driver...")
             self._primary_driver = self._initialize_driver(
-                hpepluginconfig, self.src_bkend_config, self.tgt_bkend_config)
+                host_config, self.src_bkend_config, self.tgt_bkend_config)
 
             self._hpeplugin_driver = self._primary_driver
             LOG.info("Initialized 3PAR driver!")
@@ -75,7 +77,7 @@ class VolumeManager(object):
             try:
                 LOG.info("Initializing 3PAR driver for remote array...")
                 self._remote_driver = self._initialize_driver(
-                    hpepluginconfig, self.tgt_bkend_config,
+                    host_config, self.tgt_bkend_config,
                     self.src_bkend_config)
             except Exception as ex:
                 msg = "Failed to initialize 3PAR driver for remote array %s!" \
@@ -144,7 +146,6 @@ class VolumeManager(object):
         LOG.info("Getting source backend configuration...")
         hpeconf = self._hpepluginconfig
         config = acp.ArrayConnectionParams()
-        config.hpedockerplugin_driver = hpeconf.hpedockerplugin_driver
         config.hpe3par_api_url = hpeconf.hpe3par_api_url
         config.hpe3par_username = hpeconf.hpe3par_username
         config.hpe3par_password = hpeconf.hpe3par_password
@@ -156,9 +157,6 @@ class VolumeManager(object):
             config.hpe3par_snapcpg = hpeconf.hpe3par_snapcpg
         else:
             config.hpe3par_snapcpg = hpeconf.hpe3par_cpg
-
-        config.use_multipath = hpeconf.use_multipath
-        config.enforce_multipath = hpeconf.enforce_multipath
 
         config.hpe3par_iscsi_ips = hpeconf.hpe3par_iscsi_ips
         config.iscsi_ip_address = hpeconf.iscsi_ip_address
@@ -179,10 +177,10 @@ class VolumeManager(object):
         return hpe3par_cpgs
 
     @staticmethod
-    def _initialize_driver(hpepluginconfig, src_config, tgt_config):
-        hpeplugin_driver_class = hpepluginconfig.hpedockerplugin_driver
+    def _initialize_driver(host_config, src_config, tgt_config):
+        hpeplugin_driver_class = host_config.hpedockerplugin_driver
         hpeplugin_driver = importutils.import_object(
-            hpeplugin_driver_class, hpepluginconfig, src_config, tgt_config)
+            hpeplugin_driver_class, host_config, src_config, tgt_config)
 
         if hpeplugin_driver is None:
             msg = (_('hpeplugin_driver import driver failed'))

@@ -22,7 +22,6 @@ import six
 import re
 
 from oslo_log import log as logging
-from config import setupcfg
 
 import hpedockerplugin.exception as exception
 from hpedockerplugin.i18n import _, _LE, _LI
@@ -43,7 +42,7 @@ class VolumePlugin(object):
     """
     app = Klein()
 
-    def __init__(self, reactor, backend_configs):
+    def __init__(self, reactor, host_config, backend_configs):
         """
         :param IReactorTime reactor: Reactor time interface implementation.
         :param Ihpepluginconfig : hpedefaultconfig configuration
@@ -51,12 +50,13 @@ class VolumePlugin(object):
         LOG.info(_LI('Initialize Volume Plugin'))
 
         self._reactor = reactor
-        self.conf = setupcfg.CONF
+        self._host_config = host_config
         self._backend_configs = backend_configs
 
         # TODO: make device_scan_attempts configurable
         # see nova/virt/libvirt/volume/iscsi.py
-        self.orchestrator = orchestrator.Orchestrator(backend_configs)
+        self.orchestrator = orchestrator.Orchestrator(host_config,
+                                                      backend_configs)
 
     def disconnect_volume_callback(self, connector_info):
         LOG.info(_LI('In disconnect_volume_callback: connector info is %s'),
@@ -351,8 +351,8 @@ class VolumePlugin(object):
                                                      rcg_name)
 
     def _validate_rcg_params(self, rcg_name, backend_name):
-        LOG.info("Validating RCG: %s, backend name: %s..." %(rcg_name,
-                                                          backend_name))
+        LOG.info("Validating RCG: %s, backend name: %s..." % (rcg_name,
+                                                              backend_name))
         hpepluginconfig = self._backend_configs[backend_name]
         replication_device = hpepluginconfig.replication_device
 

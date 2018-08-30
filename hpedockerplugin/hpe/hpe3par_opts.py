@@ -36,24 +36,6 @@ hpe3par_opts = [
                 default=False,
                 help="Enable CHAP authentication for iSCSI connections.",
                 deprecated_name='hp3par_iscsi_chap_enabled'),
-    cfg.BoolOpt('strict_ssh_host_key_policy',
-                default=False,
-                help='Option to enable strict host key checking.  When '
-                     'set to "True" the plugin will only connect to systems '
-                     'with a host key present in the configured '
-                     '"ssh_hosts_key_file".  When set to "False" the host key '
-                     'will be saved upon first connection and used for '
-                     'subsequent connections.  Default=False'),
-    cfg.StrOpt('state_path',
-               default='/home/',
-               help='File containing SSH host keys for the systems with which '
-                    'the plugin needs to communicate.  OPTIONAL: '
-                    'Default=/home/'),
-    cfg.StrOpt('ssh_hosts_key_file',
-               default='$state_path/ssh_known_hosts',
-               help='File containing SSH host keys for the systems with which '
-                    'the plugin needs to communicate.  OPTIONAL: '
-                    'Default=$state_path/ssh_known_hosts'),
     cfg.BoolOpt('suppress_requests_ssl_warnings',
                 default=False,
                 help='Suppress requests library SSL certificate warnings.'),

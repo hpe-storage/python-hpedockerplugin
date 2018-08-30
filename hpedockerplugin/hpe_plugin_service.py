@@ -121,6 +121,7 @@ class HPEDockerPluginService(object):
         # Setup the default, hpe3parconfig, and hpelefthandconfig
         # configuration objects.
         try:
+            host_config = setupcfg.get_host_config(CONFIG)
             backend_configs = setupcfg.get_all_backend_configs(CONFIG)
         except Exception as ex:
             msg = (_('hpe3pardocker setupservice failed, error is: %s'),
@@ -136,7 +137,8 @@ class HPEDockerPluginService(object):
         endpoint = serverFromString(self._reactor, "unix:{}:mode=600".
                                     format(PLUGIN_PATH.path))
         servicename = StreamServerEndpointService(endpoint, Site(
-            VolumePlugin(self._reactor, backend_configs).app.resource()))
+            VolumePlugin(self._reactor, host_config,
+                         backend_configs).app.resource()))
         return servicename
 
 

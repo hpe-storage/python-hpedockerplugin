@@ -12,10 +12,11 @@ class Options(usage.Options):
     optParameters = [["cfg", "c", "/home/vagrant/python-hpedockerplugin/config"
                                   "/hpe.conf", "The configuration file."]]
 
+
 @implementer(IServiceMaker)
 @implementer(IPlugin)
 class MyServiceMaker(object):
-#    implements(IServiceMaker, IPlugin)
+    # implements(IServiceMaker, IPlugin)
     tapname = "hpe_plugin_service"
     description = "Run to start up the HPE Docker Volume Plugin"
     options = Options
