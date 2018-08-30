@@ -519,8 +519,8 @@ class TestCreateVolSetFlashCacheFails(CreateVolumeUnitTest):
 class TestCreateReplicatedVolumeDefault(CreateVolumeUnitTest):
     def get_request_params(self):
         return {"Name": "test-vol-001",
-                "Opts": {"replicationGroup": "RCG-01", }}
-                         # "backend": "3par_iscsi_pp_rep"}}
+                "Opts": {"replicationGroup": "RCG-01",
+                         "backend": "3par_iscsi_pp_rep"}}
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
