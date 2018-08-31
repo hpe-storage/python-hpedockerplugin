@@ -1509,8 +1509,8 @@ class HPE3PARCommon(object):
                                               optional)
             LOG.info("Remote copy group successfully created: %s!" % rcg_name)
         except Exception as ex:
-            msg = (_("There was an error creating remote copy "
-                     "group: %s.") % six.text_type(ex))
+            msg = "Error encountered while creating remote copy group: %s" %\
+                  six.text_type(ex)
             LOG.error(msg)
             raise exception.HPERemoteCopyGroupBackendAPIException(data=msg)
 
@@ -1524,8 +1524,8 @@ class HPE3PARCommon(object):
             try:
                 self.client.modifyRemoteCopyGroup(rcg_name, pp_params)
             except Exception as ex:
-                msg = (_("There was an error modifying the remote copy "
-                         "group: %s.") % six.text_type(ex))
+                msg = "Error encountered while modifying remote copy group"\
+                      "%s: %s" % (rcg_name, six.text_type(ex))
                 LOG.error(msg)
                 raise exception.HPERemoteCopyGroupBackendAPIException(data=msg)
 
@@ -1544,13 +1544,14 @@ class HPE3PARCommon(object):
                 try:
                     self.client.modifyRemoteCopyGroup(rcg_name, opt)
                 except Exception as ex:
-                    msg = (_("There was an error setting the sync period for "
-                             "the remote copy group: %s.") %
-                           six.text_type(ex))
+                    msg = "Error encountered while setting the sync period "\
+                          "for the remote copy group: %s" % six.text_type(ex)
                     LOG.error(msg)
                     raise exception.HPERemoteCopyGroupBackendAPIException(
                         data=msg)
 
+        import pdb
+        pdb.set_trace()
         try:
             rcg = self.client.getRemoteCopyGroup(rcg_name)
             ret_val = {'local_rcg_name': rcg_name,
@@ -1558,8 +1559,8 @@ class HPE3PARCommon(object):
             return ret_val
 
         except Exception as ex:
-            msg = (_("There was an error fetching the remote copy "
-                     "group after its creation: %s.") % six.text_type(ex))
+            msg = "Error encountered while fetching the remote copy "\
+                  "group after its creation: %s" % six.text_type(ex)
             LOG.error(msg)
             raise exception.HPERemoteCopyGroupBackendAPIException(data=msg)
 
