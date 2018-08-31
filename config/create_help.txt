@@ -16,12 +16,17 @@ Create Volume Options:
  -o flash-cache=x 		x is a boolean value, hence x can have true or false. x specifies whether flash cache should be used or not.
 				Valid vaues are true or false.
  -o qos-name=x 			x is name of existing VVset on 3PAR on which QoS rules are applied.
+ -o fsOwner=x                    x is the user id and group id that should own the root directory of the filesystem, in the form of     
+                                [userId:groupId]
+ -o fsMode=x                     x is 1 to 4 octal digits that represent the file mode to be applied to the root directory of the
+                                filesystem
  -o replicationGroup=x 	        x is name of the 3PAR replication group to which the newly created volume is added. If the replication
                                 group doesn't exist on 3PAR array then it is created. Configuration parameter, 'replication_device',
                                 must be defined in the hpe.conf file in conjunction with this option. Not doing so results in rejection
                                 of the volume creation request. Another configuration parameter, 'quorum_witness_ip', if defined, results
                                 into Peer Persistence based replication configuration. Absence of 'quorum_witness_ip' results into
                                 Active/Passive based replication configuration.
+
 
 
 Create Clone Options:
