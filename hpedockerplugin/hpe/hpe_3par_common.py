@@ -1550,8 +1550,6 @@ class HPE3PARCommon(object):
                     raise exception.HPERemoteCopyGroupBackendAPIException(
                         data=msg)
 
-        import pdb
-        pdb.set_trace()
         try:
             rcg = self.client.getRemoteCopyGroup(rcg_name)
             ret_val = {'local_rcg_name': rcg_name,
