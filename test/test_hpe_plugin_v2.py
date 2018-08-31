@@ -186,10 +186,10 @@ class HpeDockerUnitTestsBase(object):
         test.run_test(self)
 
     @tc_banner_decorator
-    def test_create_ap_async_replicated_volume_and_rcg_create_fails(self):
+    def test_create_ap_streaming_replicated_volume_and_rcg_create_fails(self):
         test = createrepvolume_tester.\
             TestCreateReplicatedVolumeAndRCGCreateFails(
-                backend_name=BKEND_3PAR_AP_ASYNC_REP)
+                backend_name=BKEND_3PAR_AP_STREAMING_REP)
         test.run_test(self)
 
     """
