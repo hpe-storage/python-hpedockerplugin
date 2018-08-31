@@ -53,13 +53,8 @@ host_opts = [
                      '"ssh_hosts_key_file".  When set to "False" the host key '
                      'will be saved upon first connection and used for '
                      'subsequent connections.  Default=False'),
-    cfg.StrOpt('state_path',
-               default='/var/lib/docker',
-               help='File containing SSH host keys for the systems with which '
-                    'the plugin needs to communicate.  OPTIONAL: '
-                    'Default=/home/'),
     cfg.StrOpt('ssh_hosts_key_file',
-               default='$state_path/ssh_known_hosts',
+               default='/root/.ssh/ssh_known_hosts',
                help='File containing SSH host keys for the systems with which '
                     'the plugin needs to communicate.  OPTIONAL: '
                     'Default=$state_path/ssh_known_hosts'),
