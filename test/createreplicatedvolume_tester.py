@@ -1,6 +1,4 @@
-# import mock
 import test.fake_3par_data as data
-from hpedockerplugin import exception as hpe_exc
 import test.hpe_docker_unit_test as hpeunittest
 from hpe3parclient import exceptions
 from oslo_config import cfg
@@ -75,7 +73,8 @@ class TestCreateReplicatedVolumeAndRCG(CreateReplicatedVolumeUnitTest):
         mock_3parclient.startRemoteCopy.assert_called()
 
 
-class TestCreateReplicatedVolumeAndRCGCreateFails(CreateReplicatedVolumeUnitTest):
+class TestCreateReplicatedVolumeAndRCGCreateFails(
+        CreateReplicatedVolumeUnitTest):
     def __init__(self, backend_name):
         self._backend_name = backend_name
         self._expected_resp = 'Bad or unexpected response from the RCG ' \
@@ -117,7 +116,8 @@ class TestCreateReplicatedVolumeAndRCGCreateFails(CreateReplicatedVolumeUnitTest
 
 
 # TODO:
-# class TestCreateVolumeWithMutuallyExclusiveList(CreateReplicatedVolumeUnitTest):
+# class TestCreateVolumeWithMutuallyExclusiveList(
+#       CreateReplicatedVolumeUnitTest):
 #     def check_response(self, resp):
 #         self._test_case.assertEqual(
 #             {"Err": "['virtualCopyOf', 'cloneOf', 'qos-name',"

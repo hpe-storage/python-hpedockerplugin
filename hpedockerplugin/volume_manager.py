@@ -176,11 +176,10 @@ class VolumeManager(object):
 
         return hpe3par_cpgs
 
-    @staticmethod
     def _initialize_driver(self, host_config, src_config, tgt_config):
         hpeplugin_driver_class = self._host_config.hpedockerplugin_driver
         hpeplugin_driver = importutils.import_object(
-            hpeplugin_driver_class, hpepluginconfig, src_config, tgt_config)
+            hpeplugin_driver_class, host_config, src_config, tgt_config)
 
         if hpeplugin_driver is None:
             msg = (_('hpeplugin_driver import driver failed'))
