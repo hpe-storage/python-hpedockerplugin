@@ -14,7 +14,7 @@ class GetVolumeUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):
         mock_etcd = self.mock_objects['mock_etcd']
         mock_etcd.get_vol_byname.return_value = data.volume_with_snapshots
 
-    def override_configuration(self, config):
+    def override_configuration(self, all_configs):
         pass
 
 

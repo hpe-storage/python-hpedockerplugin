@@ -1,11 +1,8 @@
-# import mock
 import copy
 
 import test.fake_3par_data as data
 import test.hpe_docker_unit_test as hpedockerunittest
 from hpe3parclient import exceptions
-import hpedockerplugin.volume_manager as mgr
-from test.setup_mock import create_configuration
 
 
 class MountVolumeUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):
@@ -34,10 +31,6 @@ class MountVolumeUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):
             mock_etcd.get_vol_byname.return_value = self._vol
             # Allow child class to make changes
             self.setup_mock_etcd()
-            # mock_orchestrator_obj = self.mock_objects['mock_orchestrator']
-            # config = super(type(self), self)._get_configuration()
-            # mock_orchestrator_obj.initialize_manager_objects.return_value = \
-            #    {'DEFAULT': mgr.VolumeManager(config,config)}
 
         def _setup_mock_fileutil():
             mock_fileutil = self.mock_objects['mock_fileutil']
@@ -137,7 +130,7 @@ class TestMountVolumeFCHost(MountVolumeUnitTest):
         mock_3parclient.getCPG.assert_called()
         mock_3parclient.getHost.assert_called()
         mock_3parclient.queryHost.assert_called()
-        mock_3parclient.getPorts.assert_called()
+        # mock_3parclient.getPorts.assert_called()
         mock_3parclient.getHostVLUNs.assert_called()
         mock_3parclient.createVLUN.assert_called()
 
@@ -204,7 +197,7 @@ class TestMountVolumeFCHostVLUNExists(MountVolumeUnitTest):
         mock_3parclient.getCPG.assert_called()
         mock_3parclient.getHost.assert_called()
         mock_3parclient.queryHost.assert_called()
-        mock_3parclient.getPorts.assert_called()
+        # mock_3parclient.getPorts.assert_called()
         mock_3parclient.getHostVLUNs.assert_called()
         # mock_3parclient.createVLUN.assert_called()
 
@@ -274,7 +267,7 @@ class TestMountVolumeNoFCHostNoVLUN(MountVolumeUnitTest):
         mock_3parclient.queryHost.assert_called()
         # Important check for this TC
         mock_3parclient.createHost.assert_called()
-        mock_3parclient.getPorts.assert_called()
+        # mock_3parclient.getPorts.assert_called()
         mock_3parclient.getHostVLUNs.assert_called()
         # Important check for this TC
         mock_3parclient.createVLUN.assert_called()
@@ -346,7 +339,7 @@ class TestMountVolumeModifyHostVLUNExists(MountVolumeUnitTest):
         mock_3parclient.queryHost.assert_called()
         # Important check for this TC
         mock_3parclient.modifyHost.assert_called()
-        mock_3parclient.getPorts.assert_called()
+        # mock_3parclient.getPorts.assert_called()
         mock_3parclient.getHostVLUNs.assert_called()
 
 
@@ -399,7 +392,7 @@ class TestMountVolumeISCSIHostNoVLUN(MountVolumeUnitTest):
         mock_3parclient.getCPG.assert_called()
         mock_3parclient.getHost.assert_called()
         mock_3parclient.queryHost.assert_called()
-        mock_3parclient.getPorts.assert_called()
+        # mock_3parclient.getPorts.assert_called()
         mock_3parclient.getHostVLUNs.assert_called()
         mock_3parclient.createVLUN.assert_called()
 
@@ -467,7 +460,7 @@ class TestMountVolumeISCSIHostVLUNExist(MountVolumeUnitTest):
         mock_3parclient.getCPG.assert_called()
         mock_3parclient.getHost.assert_called()
         mock_3parclient.queryHost.assert_called()
-        mock_3parclient.getPorts.assert_called()
+        # mock_3parclient.getPorts.assert_called()
         mock_3parclient.getHostVLUNs.assert_called()
 
         mock_fileutil = self.mock_objects['mock_fileutil']
@@ -521,19 +514,10 @@ class TestMountVolumeISCSIHostChapOn(MountVolumeUnitTest):
         # Same connector has info for both FC and ISCSI
         mock_connector.get_connector_properties.return_value = \
             data.connector
-        config = create_configuration('ISCSI')
-        config.hpe3par_iscsi_chap_enabled = True
-        config.use_multipath = False
-        mock_etcd = self.mock_objects['mock_etcd']
-        mock_orchestrator = self.mock_objects['mock_orchestrator']
-        mock_orchestrator.return_value = {'DEFAULT':
-                                          mgr.VolumeManager(config,
-                                                            config, mock_etcd,
-                                                            'DEFAULT')}
 
-    def override_configuration(self, config):
-        config.hpe3par_iscsi_chap_enabled = True
-        config.use_multipath = False
+    def override_configuration(self, all_configs):
+        all_configs['DEFAULT'].hpe3par_iscsi_chap_enabled = True
+        all_configs['DEFAULT'].use_multipath = False
 
     def check_response(self, resp):
         # resp -> {u'Mountpoint': u'/tmp', u'Name': u'test-vol-001',
@@ -555,7 +539,7 @@ class TestMountVolumeISCSIHostChapOn(MountVolumeUnitTest):
         mock_3parclient.getCPG.assert_called()
         mock_3parclient.getHost.assert_called()
         mock_3parclient.modifyHost.assert_called()
-        mock_3parclient.getPorts.assert_called()
+        # mock_3parclient.getPorts.assert_called()
         mock_3parclient.getHostVLUNs.assert_called()
         mock_3parclient.getVolumeMetaData.assert_called()
         mock_3parclient.setVolumeMetaData.assert_called()
@@ -624,7 +608,7 @@ class TestMountVolumeModifyISCSIHostVLUNExists_Old(MountVolumeUnitTest):
         # mock_client.queryHost.assert_called()
         # Important check for this TC
         mock_client.modifyHost.assert_called()
-        mock_client.getPorts.assert_called()
+        # mock_client.getPorts.assert_called()
         mock_client.getHostVLUNs.assert_called()
 
 
@@ -657,9 +641,9 @@ class TestMountVolumeNoISCSIHostNoVLUN(MountVolumeUnitTest):
 
         mock_client.createVLUN.return_value = data.location
 
-    def override_configuration(self, config):
+    def override_configuration(self, all_configs):
         # config.hpe3par_iscsi_chap_enabled = True
-        config.use_multipath = False
+        all_configs['DEFAULT'].use_multipath = False
 
     def check_response(self, resp):
         # resp -> {u'Mountpoint': u'/tmp', u'Name': u'test-vol-001',
@@ -683,7 +667,7 @@ class TestMountVolumeNoISCSIHostNoVLUN(MountVolumeUnitTest):
         mock_client.queryHost.assert_called()
         # Important check for this TC
         mock_client.createHost.assert_called()
-        mock_client.getPorts.assert_called()
+        # mock_client.getPorts.assert_called()
         mock_client.getHostVLUNs.assert_called()
         # Important check for this TC
         # mock_client.createVLUN.assert_called()
@@ -757,7 +741,7 @@ class TestMountVolumeModifyISCSIHostVLUNExists(MountVolumeUnitTest):
         # mock_3parclient.queryHost.assert_called()
         # Important check for this TC
         # mock_3parclient.modifyHost.assert_called()
-        mock_3parclient.getPorts.assert_called()
+        # mock_3parclient.getPorts.assert_called()
         mock_3parclient.getHostVLUNs.assert_called()
 
 
@@ -794,7 +778,7 @@ class TestVolFencingMountTwiceSameNode(MountVolumeUnitTest):
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.getWsApiVersion.assert_called()
         mock_3parclient.getCPG.assert_called()
-        mock_3parclient.getPorts.assert_called()
+        # mock_3parclient.getPorts.assert_called()
         mock_3parclient.getVolume.assert_not_called()
         mock_3parclient.getHost.assert_not_called()
         mock_3parclient.queryHost.assert_not_called()
@@ -874,7 +858,7 @@ class TestVolFencingGracefulUnmount(MountVolumeUnitTest):
         # mock_3parclient.queryHost.assert_called()
         # Important check for this TC
         # mock_3parclient.modifyHost.assert_called()
-        mock_3parclient.getPorts.assert_called()
+        # mock_3parclient.getPorts.assert_called()
         mock_3parclient.getHostVLUNs.assert_called()
 
 
@@ -946,7 +930,7 @@ class TestVolFencingForcedUnmount(MountVolumeUnitTest):
         # mock_3parclient.queryHost.assert_called()
         # Important check for this TC
         # mock_3parclient.modifyHost.assert_called()
-        mock_3parclient.getPorts.assert_called()
+        # mock_3parclient.getPorts.assert_called()
         mock_3parclient.getHostVLUNs.assert_called()
 
 
@@ -1094,7 +1078,7 @@ class TestMountPreviousVersionVolumeFCHost(MountVolumeUnitTest):
         mock_3parclient.getCPG.assert_called()
         mock_3parclient.getHost.assert_called()
         mock_3parclient.queryHost.assert_called()
-        mock_3parclient.getPorts.assert_called()
+        # mock_3parclient.getPorts.assert_called()
         mock_3parclient.getHostVLUNs.assert_called()
         mock_3parclient.createVLUN.assert_called()
 

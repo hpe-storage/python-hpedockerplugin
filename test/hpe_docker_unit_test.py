@@ -1,11 +1,12 @@
 import abc
 import json
-import mock
+import six
 
 from io import StringIO
 from twisted.internet import reactor
 
-import test.fake_3par_data as data
+from config import setupcfg
+from hpedockerplugin import exception
 from hpedockerplugin import hpe_storage_api as api
 import test.setup_mock as setup_mock
 
@@ -29,6 +30,8 @@ class HpeDockerUnitTestExecutor(object):
 
     def __init__(self, **kwargs):
         self._kwargs = kwargs
+        self._host_config = None
+        self._all_configs = None
 
     @staticmethod
     def _get_request_body(request_dict):
@@ -50,7 +53,7 @@ class HpeDockerUnitTestExecutor(object):
         # Get API parameters from child class
         req_body = self._get_request_body(self.get_request_params())
 
-        _api = api.VolumePlugin(reactor, self._config)
+        _api = api.VolumePlugin(reactor, self._host_config, self._all_configs)
         try:
             resp = getattr(_api, plugin_api)(req_body)
             resp = json.loads(resp)
@@ -90,7 +93,7 @@ class HpeDockerUnitTestExecutor(object):
         # Get API parameters from child class
         req_body = self._get_request_body(self.get_request_params())
 
-        _api = api.VolumePlugin(reactor, self._config)
+        _api = api.VolumePlugin(reactor, self._host_config, self._all_configs)
         try:
             resp = getattr(_api, plugin_api)(req_body)
             resp = json.loads(resp)
@@ -110,25 +113,41 @@ class HpeDockerUnitTestExecutor(object):
         # This is important to set as it is used by the mock decorator to
         # take decision which driver to instantiate
         self._protocol = test_case.protocol
-        self._config = self._get_configuration()
-        if not self._config.use_real_flow:
+        self._host_config, self._all_configs = self._get_configuration()
+
+        if not self.use_real_flow():
             self._mock_execute_api(plugin_api=self._get_plugin_api())
         else:
             self._real_execute_api(plugin_api=self._get_plugin_api())
 
+    # Individual TCs can override this value to execute real flow
+    def use_real_flow(self):
+        return False
+
     def _get_configuration(self):
+        cfg_file_name = './test/config/hpe_%s.conf' % self._protocol.lower()
+        cfg_param = ['--config-file', cfg_file_name]
+        try:
+            host_config = setupcfg.get_host_config(cfg_param)
+            all_configs = setupcfg.get_all_backend_configs(cfg_param)
+        except Exception as ex:
+            msg = 'Setting up of hpe3pardocker unit test failed, error is: ' \
+                  '%s' % six.text_type(ex)
+            # LOG.error(msg)
+            raise exception.HPEPluginStartPluginException(reason=msg)
+
         # _protocol is set in the immediate child class
-        config = create_configuration(self._protocol)
+        # config = create_configuration(self._protocol)
         # Allow child classes to override configuration
-        self.override_configuration(config)
-        return config
+        self.override_configuration(all_configs)
+        return host_config, all_configs
 
     """
     Allows the child class to override the HPE configuration parameters
     needed to invoke VolumePlugin APIs
     """
 
-    def override_configuration(self, config):
+    def override_configuration(self, all_configs):
         pass
 
     """
@@ -171,49 +190,3 @@ class HpeDockerUnitTestExecutor(object):
     @abc.abstractmethod
     def check_response(self, resp):
         pass
-
-
-def create_configuration(protocol):
-    config = mock.Mock()
-    config.ssh_hosts_key_file = "/root/.ssh/known_hosts"
-#    config.ssh_hosts_key_file = "/home/docker/.ssh/known_hosts"
-    config.host_etcd_ip_address = "10.50.3.140"
-    config.host_etcd_port_number = 2379
-    config.logging = "DEBUG"
-    config.hpe3par_debug = False
-    config.suppress_requests_ssl_warnings = True
-
-    if protocol == 'ISCSI':
-        config.hpedockerplugin_driver = \
-            "hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver"
-    else:
-        config.hpedockerplugin_driver = \
-            "hpedockerplugin.hpe.hpe_3par_fc.HPE3PARFCDriver"
-
-    config.hpe3par_api_url = "https://10.50.3.9:8080/api/v1"
-    config.hpe3par_username = "3paradm"
-    config.hpe3par_password = "3pardata"
-    config.san_ip = "10.50.3.9"
-    config.san_login = "3paradm"
-    config.san_password = "3pardata"
-    config.hpe3par_cpg = [data.HPE3PAR_CPG, data.HPE3PAR_CPG2]
-    config.hpe3par_snapcpg = [data.HPE3PAR_CPG]
-    config.hpe3par_iscsi_ips = ['10.50.3.59', '10.50.3.60']
-    config.iscsi_ip_address = '1.1.1.2'
-    config.hpe3par_iscsi_chap_enabled = False
-    config.use_multipath = True
-    config.enforce_multipath = True
-    config.host_etcd_client_cert = None
-    config.host_etcd_client_key = None
-    config.mount_conflict_delay = 3
-
-    # This flag doesn't belong to hpe.conf. Has been added to allow
-    # framework to decide if ETCD is to be mocked or real
-    config.use_real_flow = False
-
-    # By default, replication is disabled
-    config.replication_device = {}
-    config.backend_id = ''
-    config.quorum_witness_ip = ''
-
-    return config

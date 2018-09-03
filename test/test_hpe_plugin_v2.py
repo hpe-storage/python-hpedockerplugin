@@ -2,6 +2,7 @@ import logging
 import testtools
 
 import test.createvolume_tester as createvolume_tester
+import test.createreplicatedvolume_tester as createrepvolume_tester
 import test.clonevolume_tester as clonevolume_tester
 import test.createsnapshot_tester as createsnapshot_tester
 import test.getvolume_tester as getvolume_tester
@@ -17,6 +18,11 @@ fh.setLevel(logging.DEBUG)
 fmt = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(fmt)
 logger.addHandler(fh)
+
+BKEND_3PAR_PP_REP = '3par_pp_rep'
+BKEND_3PAR_AP_SYNC_REP = '3par_ap_sync_rep'
+BKEND_3PAR_AP_ASYNC_REP = '3par_ap_async_rep'
+BKEND_3PAR_AP_STREAMING_REP = '3par_ap_streaming_rep'
 
 
 def tc_banner_decorator(func):
@@ -129,6 +135,61 @@ class HpeDockerUnitTestsBase(object):
     @tc_banner_decorator
     def test_create_vol_set_flash_cache_fails(self):
         test = createvolume_tester.TestCreateVolSetFlashCacheFails()
+        test.run_test(self)
+
+    """
+    REPLICATION related tests
+    """
+    @tc_banner_decorator
+    def test_create_pp_replicated_volume_and_rcg(self):
+        test = createrepvolume_tester.TestCreateReplicatedVolumeAndRCG(
+            backend_name=BKEND_3PAR_PP_REP)
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_create_ap_sync_replicated_volume_and_rcg(self):
+        test = createrepvolume_tester.TestCreateReplicatedVolumeAndRCG(
+            backend_name=BKEND_3PAR_AP_SYNC_REP)
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_create_ap_async_replicated_volume_and_rcg(self):
+        test = createrepvolume_tester.TestCreateReplicatedVolumeAndRCG(
+            backend_name=BKEND_3PAR_AP_ASYNC_REP)
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_create_ap_streaming_replicated_volume_and_rcg(self):
+        test = createrepvolume_tester.TestCreateReplicatedVolumeAndRCG(
+            backend_name=BKEND_3PAR_AP_STREAMING_REP)
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_create_pp_replicated_volume_and_rcg_create_fails(self):
+        test = createrepvolume_tester.\
+            TestCreateReplicatedVolumeAndRCGCreateFails(
+                backend_name=BKEND_3PAR_PP_REP)
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_create_ap_sync_replicated_volume_and_rcg_create_fails(self):
+        test = createrepvolume_tester.\
+            TestCreateReplicatedVolumeAndRCGCreateFails(
+                backend_name=BKEND_3PAR_AP_SYNC_REP)
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_create_ap_async_replicated_volume_and_rcg_create_fails(self):
+        test = createrepvolume_tester.\
+            TestCreateReplicatedVolumeAndRCGCreateFails(
+                backend_name=BKEND_3PAR_AP_ASYNC_REP)
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_create_ap_streaming_replicated_volume_and_rcg_create_fails(self):
+        test = createrepvolume_tester.\
+            TestCreateReplicatedVolumeAndRCGCreateFails(
+                backend_name=BKEND_3PAR_AP_STREAMING_REP)
         test.run_test(self)
 
     """
