@@ -49,7 +49,11 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
     """
     This class covers all base methods to verify entities in Docker Engine.
     """
-    mount = r"hpedocker-(?:dm-uuid-mpath|dm-name-)"
+    # CentOS - hpedocker-dm-uuid-mpath-360002ac00000000000019e470001c00a
+    # Ubuntu - hpedocker-scsi-360002ac0000000000001d2750001c00a
+    # lets keep generic for now
+    mount = r"hpedocker-"
+    #mount = r"hpedocker-(?:dm-uuid-mpath|dm-name|scsi)"
     compile_mount_regex = re.compile(mount)
 
     def hpe_create_volume(self, name, driver, **kwargs):
