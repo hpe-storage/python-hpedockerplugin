@@ -227,20 +227,28 @@ class PluginTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
 
         volume_name = helpers.random_name()
         self.tmp_volumes.append(volume_name)
+        container_name = helpers.random_name()
+        self.tmp_volumes.append(container_name)
+
         volume = self.hpe_create_volume(volume_name, driver=HPE3PAR_OLD,
                                    size=THIN_SIZE, provisioning='thin')
         host_conf = self.hpe_create_host_config(volume_driver=HPE3PAR_OLD,
                                                 binds=volume_name + ':/data1')
-        container_info = self.hpe_unmount_volume(BUSYBOX, command='sh', detach=True,
-                                    name=helpers.random_name(), tty=True, stdin_open=True,
-                                    host_config=host_conf
-        )
+        container_info = self.hpe_mount_volume(BUSYBOX, command='sh', detach=True,
+                              tty=True, stdin_open=True,
+                              name=container_name, host_config=host_conf
+                              )
 
-        id = container_info['Id']
-        self.client.remove_container(id)
+        container_id = container_info['Id']
+        self.hpe_inspect_container_volume_mount(volume_name, container_name)
+        # Verifying in 3par
+        self.hpe_verify_volume_mount(volume_name)
+
+        self.hpe_unmount_volume(container_id)
+        # Verifying in 3par
+        self.hpe_verify_volume_unmount(volume_name)
+        self.client.remove_container(container_id)
         self.hpe_delete_volume(volume)
-
-
         client.disable_plugin(HPE3PAR_OLD)
         pl_data = client.inspect_plugin(HPE3PAR_OLD)
         assert pl_data['Enabled'] is False

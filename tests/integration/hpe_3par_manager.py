@@ -75,7 +75,7 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
             self.assertEqual(docker_volume['Driver'], HPE3PAR_OLD)
         # Verify all volume optional parameters in docker managed plugin system
         driver_options = ['size', 'provisioning', 'flash-cache', 'compression', 'cloneOf',
-                          'qos-name', 'mountConflictDelay']
+                          'qos-name', 'mountConflictDelay', 'importVol']
 
         for option in driver_options:
             if option in kwargs:
@@ -105,21 +105,33 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
         self.assertIn('Status', inspect_volume)
         self.assertIn('volume_detail', inspect_volume['Status'])
 
-        volume_details = ['size', 'provisioning', 'flash_cache', 'compression', 'mountConflictDelay']
+        volume_details = ['size', 'provisioning', 'flash_cache', 'compression', 'mountConflictDelay', 'importVol']
+        qos_detail = ['enabled', 'maxIOPS', 'minIOPS', 'priority', 'vvset_name']
 
         for option in volume_details:
-            if option in kwargs:
-                self.assertIn(option, inspect_volume['Status']['volume_detail'])
-                self.assertEqual(inspect_volume['Status']['volume_detail'][option], kwargs[option])
+            if option == 'importVol':
+                if option in kwargs:
+                    self.assertIn(option, inspect_volume['Options'])
+                    self.assertEqual(inspect_volume['Options'][option], kwargs[option])
             else:
-                if option == 'size':
-                    self.assertEqual(inspect_volume['Status']['volume_detail'][option], 100)
-                elif option == 'provisioning':
-                    self.assertEqual(inspect_volume['Status']['volume_detail'][option], 'thin')
-                elif option == 'mountConflictDelay':
-                    self.assertEqual(inspect_volume['Status']['volume_detail'][option], 30)
+                if option in kwargs:
+                    self.assertIn(option, inspect_volume['Status']['volume_detail'])
+                    self.assertEqual(inspect_volume['Status']['volume_detail'][option], kwargs[option])
                 else:
-                    self.assertEqual(inspect_volume['Status']['volume_detail'][option], None)
+                    if option == 'size':
+                        self.assertEqual(inspect_volume['Status']['volume_detail'][option], 100)
+                    elif option == 'provisioning':
+                        self.assertEqual(inspect_volume['Status']['volume_detail'][option], 'thin')
+                    elif option == 'mountConflictDelay':
+                        self.assertEqual(inspect_volume['Status']['volume_detail'][option], 30)
+                    else:
+                        self.assertEqual(inspect_volume['Status']['volume_detail'][option], None)
+        for option in qos_detail:
+            if option in kwargs:
+                self.assertIn(option, inspect_volume['Status']['qos_detail'])
+                self.assertEqual(inspect_volume['Status']['qos_detail'][option], kwargs[option])
+            else:
+                pass
 
         return inspect_volume
 
@@ -276,27 +288,18 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
             self.assertEqual(inspect_start['State']['ExitCode'], 0)
         return container_info
 
-    def hpe_unmount_volume(self, image, command, host_config, *args, **kwargs):
-        # Create a container
-        container_info = self.client.create_container(image, command=command,
-                                                      host_config=host_config,
-                                                      *args, **kwargs
-        )
-        self.assertIn('Id', container_info)
-        id = container_info['Id']
-        self.tmp_containers.append(id)
-        # Mount volume to this container
-        self.client.start(id)
+    def hpe_unmount_volume(self, container_id):
+ 
         # Unmount volume
-        self.client.stop(id)
+        self.client.stop(container_id)
         # Inspect this container
-        inspect_stop = self.client.inspect_container(id)
+        inspect_stop = self.client.inspect_container(container_id)
         self.assertIn('State', inspect_stop)
         # Verify if container is unmounted correctly in docker host.
         state = inspect_stop['State']
         self.assertIn('Running', state)
         self.assertEqual(state['Running'], False)
-        return container_info
+        return
 
     def is_mounted(self, mount_source):
         if self.compile_mount_regex.search(mount_source) is not None:
@@ -458,17 +461,17 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
         if 'clone' in kwargs:
             self.assertEqual(hpe3par_volume['snapCPG'], SNAP_CPG)
             self.assertEqual(hpe3par_volume['copyType'], 1)
-        if vvs_name:
-            vvset = hpe3par_cli.getVolumeSet(vvs_name)
-            self.assertNotEqual(vvset, None)
+        if 'qos' in kwargs:
             self.assertEqual(vvset['qosEnabled'], True)
-            # Ensure QoS rule is set on the vvset
             qos = hpe3par_cli.queryQoSRule(vvs_name)
             self.assertNotEqual(qos, None)
-            # Ensure the created volume is a member of the vvset
             self.assertIn(backend_volume_name,
                           [vv_name for vv_name in vvset['setmembers']]
             )
+        if 'importVol' in kwargs:
+            self.assertEqual(etcd_volume['display_name'],kwargs['importVol'])
+            self.assertEqual(hpe3par_volume['name'][:3], "dcv")
+
         hpe3par_cli.logout()
 
     def hpe_verify_volume_deleted(self, volume_name):
