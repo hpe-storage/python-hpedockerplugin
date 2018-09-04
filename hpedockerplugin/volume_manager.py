@@ -52,6 +52,8 @@ class VolumeManager(object):
         self._etcd = etcd_util
 
         self._initialize_configuration()
+        self._decrypt_password(self.src_bkend_config,
+                               self.tgt_bkend_config, backend_name)
 
         # TODO: When multiple backends come into picture, consider
         # lazy initialization of individual driver
@@ -86,10 +88,6 @@ class VolumeManager(object):
                          six.text_type(ex))
                 LOG.info(msg)
                 raise exception.HPEPluginStartPluginException(reason=msg)
-
-        self._etcd = etcd_util
-        hpepluginconfig.hpe3par_password = \
-            self._decrypt_password(hpepluginconfig, backend_name)
 
         self._connector = self._get_connector(hpepluginconfig)
 
@@ -1806,16 +1804,22 @@ class VolumeManager(object):
              'msg': 'Removing VV %s from Remote Copy Group %s...'
                     % (bkend_vol_name, rcg_name)})
 
-    def _decrypt_password(self, hpepluginconfig, backend_name):
+    def _decrypt_password(self, src_bknd, trgt_bknd, backend_name):
         try:
             passphrase = self._etcd.get_backend_key(backend_name)
         except Exception as ex:
             LOG.info("Using Plain Text")
-            return hpepluginconfig.hpe3par_password
         else:
             passphrase = self.key_check(passphrase)
-            return self._decrypt(hpepluginconfig.hpe3par_password,
-                                 passphrase)
+            src_bknd.hpe3par_password = \
+                self._decrypt(src_bknd.hpe3par_password, passphrase)
+            src_bknd.san_password =  \
+                self._decrypt(src_bknd.san_password, passphrase)
+            if trgt_bknd:
+                trgt_bknd.hpe3par_password = \
+                    self._decrypt(trgt_bknd.hpe3par_password, passphrase)
+                trgt_bknd.san_password = \
+                    self._decrypt(trgt_bknd.san_password, passphrase)
 
     def key_check(self, key):
         KEY_LEN = len(key)
