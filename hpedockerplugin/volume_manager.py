@@ -104,6 +104,8 @@ class VolumeManager(object):
             self.tgt_bkend_config = acp.ArrayConnectionParams(
                 self._hpepluginconfig.replication_device)
             if self.tgt_bkend_config:
+                self.tgt_bkend_config.hpedockerplugin_driver = \
+                    self.src_bkend_config.hpedockerplugin_driver
                 self.tgt_bkend_config.hpe3par_cpg = self._extract_remote_cpgs(
                     self.tgt_bkend_config.cpg_map)
                 if not self.tgt_bkend_config.hpe3par_cpg:
@@ -120,23 +122,18 @@ class VolumeManager(object):
                     self.tgt_bkend_config.hpe3par_snapcpg = \
                         self.tgt_bkend_config.hpe3par_cpg
 
-                if not self.tgt_bkend_config.hpe3par_iscsi_ips:
-                    self.tgt_bkend_config.hpe3par_iscsi_ips = \
-                        CONF.hpe3par_iscsi_ips
-                else:
+                if 'iscsi' in self.src_bkend_config.hpedockerplugin_driver:
                     iscsi_ips = self.tgt_bkend_config.hpe3par_iscsi_ips
                     self.tgt_bkend_config.hpe3par_iscsi_ips = iscsi_ips.split(
                         ';')
 
-                if not self.tgt_bkend_config.iscsi_ip_address:
-                    self.tgt_bkend_config.iscsi_ip_address = \
-                        CONF.iscsi_ip_address
-                if not self.tgt_bkend_config.iscsi_port:
-                    self.tgt_bkend_config.iscsi_port = \
-                        CONF.iscsi_port
-                if not self.tgt_bkend_config.hpe3par_iscsi_chap_enabled:
+                    # Post failover, user would want to mount the volume to
+                    # target array. In which case, tgt_bkend_config would be
+                    # used to mount the volume. Copy the parameters that are
+                    # present with src_bkend_config and are applicable to
+                    # tgt_bkend_config as well
                     self.tgt_bkend_config.hpe3par_iscsi_chap_enabled = \
-                        CONF.hpe3par_iscsi_chap_enabled
+                        self.src_bkend_config.hpe3par_iscsi_chap_enabled
 
             # Additional information from target_device
             self.src_bkend_config.replication_mode = \
@@ -146,6 +143,7 @@ class VolumeManager(object):
         LOG.info("Getting source backend configuration...")
         hpeconf = self._hpepluginconfig
         config = acp.ArrayConnectionParams()
+        config.hpedockerplugin_driver = hpeconf.hpedockerplugin_driver
         config.hpe3par_api_url = hpeconf.hpe3par_api_url
         config.hpe3par_username = hpeconf.hpe3par_username
         config.hpe3par_password = hpeconf.hpe3par_password
@@ -158,10 +156,12 @@ class VolumeManager(object):
         else:
             config.hpe3par_snapcpg = hpeconf.hpe3par_cpg
 
-        config.hpe3par_iscsi_ips = hpeconf.hpe3par_iscsi_ips
-        config.iscsi_ip_address = hpeconf.iscsi_ip_address
-        config.iscsi_port = hpeconf.iscsi_port
-        config.hpe3par_iscsi_chap_enabled = hpeconf.hpe3par_iscsi_chap_enabled
+        if 'iscsi' in hpeconf.hpedockerplugin_driver:
+            config.hpe3par_iscsi_ips = hpeconf.hpe3par_iscsi_ips
+            config.iscsi_ip_address = hpeconf.iscsi_ip_address
+            config.iscsi_port = hpeconf.iscsi_port
+            config.hpe3par_iscsi_chap_enabled = \
+                hpeconf.hpe3par_iscsi_chap_enabled
 
         LOG.info("Got source backend configuration!")
         return config
@@ -177,7 +177,7 @@ class VolumeManager(object):
         return hpe3par_cpgs
 
     def _initialize_driver(self, host_config, src_config, tgt_config):
-        hpeplugin_driver_class = self._host_config.hpedockerplugin_driver
+        hpeplugin_driver_class = src_config.hpedockerplugin_driver
         hpeplugin_driver = importutils.import_object(
             hpeplugin_driver_class, host_config, src_config, tgt_config)
 
@@ -1042,8 +1042,18 @@ class VolumeManager(object):
             vol_detail['fsMode'] = volinfo.get('fsMode')
             vol_detail['mountConflictDelay'] = volinfo.get(
                 'mount_conflict_delay')
-            vol_detail['cpg'] = volinfo.get('cpg')
-            vol_detail['snap_cpg'] = volinfo.get('snap_cpg')
+
+            cpg = volinfo.get('cpg')
+            snap_cpg = volinfo.get('snap_cpg')
+            rcg_info = volinfo.get('rcg_info')
+            if rcg_info:
+                driver = self._get_target_driver(rcg_info)
+                if driver == self._remote_driver:
+                    cpg = self.tgt_bkend_config['hpe3par_cpg']
+                    snap_cpg = self.tgt_bkend_config['hpe3par_snapcpg']
+
+            vol_detail['cpg'] = cpg
+            vol_detail['snap_cpg'] = snap_cpg
             volume['Status'].update({'volume_detail': vol_detail})
 
         response = json.dumps({u"Err": err, u"Volume": volume})
