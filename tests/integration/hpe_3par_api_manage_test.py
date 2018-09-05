@@ -150,7 +150,7 @@ class ManageVolumeTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
         try:
             hpe_3par_cli.createVolume(vol_name, USER_CPG, sizeMiB)
         except Exception as e:
-            print "Unable to create volume %s: %s" % (vol_name, e)
+            print("Unable to create volume {}: {}".format(vol_name, e))
 
         volume_name = helpers.random_name()
         self.tmp_volumes.append(volume_name)
@@ -219,10 +219,10 @@ class ManageVolumeTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
         vol_name = "python_vol_2"
         sizeMiB = 1024
         try:
-            print "Create volume %s" % vol_name
+            print("Create volume {}".format(vol_name))
             hpe_3par_cli.createVolume(vol_name, USER_CPG, sizeMiB)
         except Exception as e:
-            print "Unable to create volume %s: %s" % (vol_name, e)
+            print("Unable to create volume {}: {}".format(vol_name, e))
 
         volume_name = helpers.random_name()
         self.tmp_volumes.append(volume_name)
@@ -244,12 +244,12 @@ class ManageVolumeTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
         sizeMiB = 1024
         qosRules = {'priority': 2,'ioMinGoal': 300, 'ioMaxLimit': 1000}
         try:
-            print "Create volume %s" % vol_name
+            print("Create volume {}".format(vol_name))
             hpe_3par_cli.createVolume(vol_name, USER_CPG, sizeMiB)
             hpe_3par_cli.createVolumeSet(vvset_name, setmembers=[vol_name])
             hpe_3par_cli.createQoSRules("python_vvset_3", qosRules)
         except Exception as e:
-            print "Unable to create volume %s: %s" % (vol_name, e)
+            print("Unable to create volume {}: {}".format(vol_name, e))
 
         volume_name = helpers.random_name()
         self.tmp_volumes.append(volume_name)
@@ -267,11 +267,11 @@ class ManageVolumeTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
         vvset_name = "python_vvset_4"
         sizeMiB = 1024
         try:
-            print "Create volume %s" % vol_name
+            print("Create volume {}".format(vol_name))
             hpe_3par_cli.createVolume(vol_name, USER_CPG, sizeMiB)
             hpe_3par_cli.createVolumeSet(vvset_name, setmembers=[vol_name])
         except Exception as e:
-            print "Unable to create volume %s: %s" % (vol_name, e)
+            print("Unable to create volume {}: {}".format(vol_name, e))
 
         volume_name = helpers.random_name()
         self.tmp_volumes.append(volume_name)
@@ -300,11 +300,11 @@ class ManageVolumeTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
         snap_name = "python_snap_5"
         sizeMiB = 1024
         try:
-            print "Create volume %s" % vol_name
+            print("Create volume {}".format(vol_name))
             hpe_3par_cli.createVolume(vol_name, USER_CPG, sizeMiB, {'snapCPG': SNAP_CPG})
             hpe_3par_cli.createSnapshot(snap_name, vol_name)
         except Exception as e:
-            print "Unable to create volume %s: %s" % (vol_name, e)
+            print("Unable to create volume {}: {}".format(vol_name, e))
         volume_name = helpers.random_name()
         snapshot_name = helpers.random_name()
         self.tmp_volumes.append(volume_name)
@@ -324,10 +324,10 @@ class ManageVolumeTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
         vol_name = "python_vol_6"
         sizeMiB = 1024
         try:
-            print "Create volume %s" % vol_name
+            print("Create volume {}".format(vol_name))
             hpe_3par_cli.createVolume(vol_name, USER_CPG, sizeMiB)
         except Exception as e:
-            print "Unable to create volume %s: %s" % (vol_name, e)
+            print("Unable to create volume {}: {}".format(vol_name, e))
 
         volume_name = helpers.random_name()
         self.tmp_volumes.append(volume_name)
@@ -357,7 +357,7 @@ class ManageVolumeTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
             hpe_3par_cli.createHost(host_name,optional = {'domain': DOMAIN})
             hpe_3par_cli.createVLUN(vol_name, lun=0, hostname=host_name)
         except Exception as e:
-            print "Unable to create volume %s: %s" % (vol_name, e)
+            print("Unable to create volume {}: {}".format(vol_name, e))
 
         volume_name = helpers.random_name()
         self.tmp_volumes.append(volume_name)
@@ -381,12 +381,12 @@ class ManageVolumeTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
         vvset_name = "python_vvset_8"
         sizeMiB = 1024
         try:
-            print "Create volume %s" % vol_name
+            print("Create volume {}".format(vol_name))
             hpe_3par_cli.createVolume(vol_name, USER_CPG, sizeMiB)
             hpe_3par_cli.createVolumeSet(vvset_name, setmembers=[vol_name])
             hpe_3par_cli.modifyVolumeSet(vvset_name, flashCachePolicy=1)
         except Exception as e:
-            print "Unable to create volume %s: %s" % (vol_name, e)
+            print("Unable to create volume {}: {}".format(vol_name, e))
         volume_name = helpers.random_name()
         self.tmp_volumes.append(volume_name)
         container_name= helpers.random_name()
@@ -441,13 +441,13 @@ class ManageVolumeTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
         sizeMiB = 1024
         qosRules = {'priority': 2,'ioMinGoal': 300, 'ioMaxLimit': 1000}
         try:
-            print "Create volume %s" % vol_name
+            print("Create volume {}".format(vol_name))
             hpe_3par_cli.createVolume(vol_name, USER_CPG, sizeMiB)
             hpe_3par_cli.createVolumeSet(vvset_name, setmembers=[vol_name])
             hpe_3par_cli.modifyVolumeSet(vvset_name, flashCachePolicy=1)
             hpe_3par_cli.createQoSRules(vvset_name, qosRules)
         except Exception as e:
-            print "Unable to create volume %s: %s" % (vol_name, e)
+            print("Unable to create volume {}: {}".format(vol_name, e))
 
         volume_name = helpers.random_name()
         self.tmp_volumes.append(volume_name)
