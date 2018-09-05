@@ -150,17 +150,24 @@ class VolumeBindTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
         volume_name = helpers.random_name()
         self.tmp_volumes.append(volume_name)
         container_name = helpers.random_name()
+        self.tmp_containers.append(container_name)
         self.hpe_create_volume(volume_name, driver=HPE3PAR,
                                size=THIN_SIZE, provisioning='thin')
         host_conf = self.hpe_create_host_config(volume_driver=HPE3PAR,
                                                 binds= volume_name + ':/data1')
-        self.hpe_unmount_volume(BUSYBOX, command='sh', detach=True,
-                                name=container_name, tty=True, stdin_open=True,
-                                host_config=host_conf
-                                )
+        container_info = self.hpe_mount_volume(BUSYBOX, command='sh', detach=True,
+                              tty=True, stdin_open=True,
+                              name=container_name, host_config=host_conf
+                              )
+
+        container_id = container_info['Id']
+        self.hpe_inspect_container_volume_mount(volume_name, container_name)
+        # Verifying in 3par
+        self.hpe_verify_volume_mount(volume_name)
+
+        self.hpe_unmount_volume(container_id)
         # Verifying in 3par
         self.hpe_verify_volume_unmount(volume_name)
-        self.hpe_inspect_container_volume_unmount(volume_name, container_name)
 
     def test_write_and_read_data(self):
         '''
