@@ -1174,8 +1174,6 @@ class HPE3PARCommon(object):
 
         except hpeexceptions.HTTPForbidden:
             raise exception.NotAuthorized()
-        except hpeexceptions.HTTPNotFound:
-            raise exception.NotFound()
         except Exception as ex:
             LOG.error("Exception: %s", ex)
             raise exception.PluginException(ex)
