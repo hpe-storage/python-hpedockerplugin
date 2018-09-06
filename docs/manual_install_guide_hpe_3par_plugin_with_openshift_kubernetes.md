@@ -205,7 +205,8 @@ hpedockerplugin:
 
 >Save and exit
 
-> **NOTE:** Before we start the HPE 3PAR Volume Plug-in container, make sure etcd is running. Use the Docker command: `docker ps -a | grep -i etcd_hpe`
+> **NOTE:** Before we start the HPE 3PAR Volume Plug-in container, make sure etcd is running.
+>Use the Docker command: `docker ps -a | grep -i etcd_hpe`
 
 8. Start the HPE 3PAR Volume Plug-in for Docker (Containerized Plug-in)
 
