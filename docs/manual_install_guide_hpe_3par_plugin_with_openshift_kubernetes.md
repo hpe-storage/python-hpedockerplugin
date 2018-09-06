@@ -231,10 +231,53 @@ docker-compose version 1.21.0, build 1719ceb
 ```
 > Re-run step 8
 
+9. Success, you should now be able to test docker volume operations like:
+```
+$ docker volume create -d hpe --name sample_vol -o size=
+```
 
+10. Install the HPE 3PAR FlexVolume driver:
+```
+$ wget https://github.com/hpe-storage/python-hpedockerplugin/raw/master/dory_installer
+$ chmod u+x ./dory_installer
+$ sudo ./dory_installer
+```
 
+11. Confirm HPE 3PAR FlexVolume driver installed correctly:
+```
+$ ls -l /usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/
+-rwxr-xr-x. 1 docker docker 47046107 Apr 20 06:11 doryd
+-rwxr-xr-x. 1 docker docker  6561963 Apr 20 06:11 hpe
+-rw-r--r--. 1 docker docker      237 Apr 20 06:11 hpe.json
+```
 
+12. Run the following command to start the HPE 3PAR FlexVolume dynamic provisioner:
 
+```
+$ sudo /usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/doryd /etc/kubernetes/admin.conf hpe.
+
+```
+>**NOTE:** If you see the following error:
+
+```
+Error getting config from file /etc/kubernetes/admin.conf - stat /etc/kubernetes/admin.conf: no such file or directory
+Error getting config cluster - unable to load in-cluster configuration, KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT must be defined
+```
+>Run the following commands:
+```
+$ mkdir –p /etc/kubernetes
+$ cp /root/.kube/config /etc/kubernetes/admin.conf
+```
+
+>Re-run the command to start the HPE 3PAR FlexVolume dynamic provisioner
+
+>For more information on the HPE FlexVolume driver, please visit this link:
+>
+>https://github.com/hpe-storage/dory/blob/master/README.md
+
+13. Repeat steps 1-9 on all worker nodes. **Steps 10-12 only needs to be ran on the Master node.**
+
+>**Upon successful completion of the above steps, you should have a working installation of Openshift 3.7 integrated with HPE 3PAR Volume Plug-in for Docker**
 
 ## Usage <a name="usage"></a>
 
