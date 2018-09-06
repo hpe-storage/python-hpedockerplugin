@@ -26,6 +26,7 @@ This document details the installation steps in order to get up and running quic
   * OpenShift https://docs.openshift.org/3.7/install_config/install/planning.html
 
 ## Support Matrix for Kubernetes and Openshift 3.7 <a name="support"></a>
+
 | platforms | Support for Containerized Plugin | Docker Engine Version | HPE 3PAR OS version |
 |---------------------|---------------|--------|--------|--------|
 |Kubernetes 1.6.13 | Yes | 1.12.6 |3.2.2 MU6+ P107 3.3.1 MU1, MU2 |
