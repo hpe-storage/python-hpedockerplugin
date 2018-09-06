@@ -28,12 +28,20 @@ This document details the installation steps in order to get up and running quic
 ## Support Matrix for Kubernetes and Openshift 3.7 <a name="support"></a>
 
 | platforms | Support for Containerized Plugin | Docker Engine Version | HPE 3PAR OS version |
-|---------------------|---------------|--------|--------|--------|
-|Kubernetes 1.6.13 | Yes | 1.12.6 |3.2.2 MU6+ P107 3.3.1 MU1, MU2 |
-|Kubernetes 1.7.6 | Yes | 1.12.6 | 3.2.2 MU6+ P107 3.3.1 MU1, MU2 |
+|---|---|---|---|---|
+| Kubernetes 1.6.13 | Yes | 1.12.6 | 3.2.2 MU6+ P107 3.3.1 MU1, MU2 |
+| Kubernetes 1.7.6 | Yes | 1.12.6 | 3.2.2 MU6+ P107 3.3.1 MU1, MU2 |
 | Kubernetes 1.8.9 | Yes | 17.06 | 3.2.2 MU6+ P107 3.3.1 MU1, MU2 |
 | Kubernetes 1.10.3 | Yes | 17.03 | 3.2.2 MU6+ P107 3.3.1 MU1, MU2 |
 | OpenShift 3.7 RPM based installation (Kubernetes 1.7.6) | Yes | 1.12.6 | 3.2.2 MU6+ P107 3.3.1 MU1, MU2 |
+
+
+
+| platforms  |   |   |   |   |
+|---|---|---|---|---|
+|   |   |   |   |   |
+|   |   |   |   |   |
+|   |   |   |   |   |
 
 **NOTE**
   * Managed Plugin is not supported for Kubernetes or Openshift 3.7
