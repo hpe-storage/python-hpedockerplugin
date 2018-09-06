@@ -12,7 +12,7 @@ Before we get started, you need to make a choice on how you will be using the pl
 
 Here is an example of the plugin being used in a standalone Docker instance:
 
-![HPE Docker Volume Plugin](https://github.com/budhac/python-hpedockerplugin/blob/master/docs/img/3PAR_docker_design_diagram.png)
+![HPE Docker Volume Plugin](https://github.com/budhac/python-hpedockerplugin/blob/master/docs/img/3PAR_docker_design_diagram_50.png)
 
 
 ## HPE Docker Volume Plugin Overview
