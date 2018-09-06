@@ -219,7 +219,7 @@ $ docker-compose up -d
 
 >**NOTE:** In case you are missing `docker-compose`, https://docs.docker.com/compose/install/#install-compose
 >
->```
+```
 $ curl -x 16.85.88.10:8080 -L https://github.com/docker/compose/releases/download/1.21.0/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
 $ sudo chmod +x /usr/local/bin/docker-compose
 ```
@@ -227,7 +227,7 @@ $ sudo chmod +x /usr/local/bin/docker-compose
 >Visit https://docs.docker.com/compose/install/#install-compose for latest curl details
 >
 >Test the installation:
->```
+```
 $ docker-compose --version
 docker-compose version 1.21.0, build 1719ceb
 ```
