@@ -4,6 +4,17 @@ HPE Docker Volume Plugin is an open source project that provides persistent stor
 
 The HPE Docker Volume Plugin supports popular container platforms like Docker, Kubernetes, OpenShift and soon SuSE CaaS/CAP (coming in v3.0)
 
+## Getting Started
+
+Before we get started, you need to make a choice on how you will be using the plugin.
+
+#### Standalone Docker instance
+
+Here is an example of the plugin being used in a standalone Docker instance:
+
+![HPE Docker Volume Plugin](/docs/img/3PAR_docker_design_diagram.png "Standalone Docker Storage Overview")
+
+
 ## HPE Docker Volume Plugin Overview
 The following diagram illustrates the HPE Docker Volume Plugin configured on multiple hosts in a Docker cluster. The plugin is a part of Docker Engine Managed Plugin System. See the [quick start instructions](/quick-start/README.md) for details on how to install the plugin.
 
@@ -16,14 +27,21 @@ The following diagram illustrates the HPE Docker Volume Plugin configured on mul
 * Deploying the plugin into Docker Engine Managed Plugin System [quick-start instructions](/quick-start/README.md)
 
 
-## Supported Features by Release
+## Supported Features
 
-* Release v1.0 - Initial Realease - iSCSI driver for 3PAR
-* Release v1.1 - Support for multipath and key defect fixes around volume mount operations
-* Release v2.0 - Support for secure / unsecure etcd cluster for fault tolerance - Fibre Channel Driver for 3PAR
-* Release v2.1 - Support for creating volumes of type thin, dedup, full, compressed volumes, snapshots, clones,
-   QoS, snapshot mount, mount_conflict_delay, and multiple container access for a volume on same node.
-   Plugin supports both iscsi and FC drivers.
+* Fibre Channel & iSCSI support for 3PAR
+* Secure/Unsecure etcd cluster for fault tolerance
+* Advanced volume features
+  * thin
+  * dedup
+  * full
+  * compression
+  * snapshots
+  * clones
+  * QoS
+  * snapshot mount
+  * mount_conflict_delay
+  * concurrent volume access
 
 ## Usage
 
