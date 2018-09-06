@@ -27,23 +27,13 @@ This document details the installation steps in order to get up and running quic
 
 ## Support Matrix for Kubernetes and Openshift 3.7 <a name="support"></a>
 
-| Platforms | Support for Containerized Plugin | Docker Engine Version | HPE 3PAR OS version |
-|---|---|---|---|---|
-| Kubernetes 1.6.13 | Yes | 1.12.6 | 3.2.2 MU6+ P107 3.3.1 MU1, MU2 |
-| Kubernetes 1.7.6 | Yes | 1.12.6 | 3.2.2 MU6+ P107 3.3.1 MU1, MU2 |
-| Kubernetes 1.8.9 | Yes | 17.06 | 3.2.2 MU6+ P107 3.3.1 MU1, MU2 |
-| Kubernetes 1.10.3 | Yes | 17.03 | 3.2.2 MU6+ P107 3.3.1 MU1, MU2 |
-| OpenShift 3.7 RPM based installation (Kubernetes 1.7.6) | Yes | 1.12.6 | 3.2.2 MU6+ P107 3.3.1 MU1, MU2 |
-
-
-
 | Platforms                                               | Support for Containerized Plugin | Docker Engine Version | HPE 3PAR OS version              |
 |---------------------------------------------------------|----------------------------------|-----------------------|----------------------------------|
-| Kubernetes 1.6.13                                       | Yes                              | 1.12.6                | 3.2.2 MU6+ P107 3.3.1 MU1, MU2 |
-| Kubernetes 1.7.6                                        | Yes                              | 1.12.6                | 3.2.2 MU6+ P107 3.3.1 MU1, MU2 |
-| Kubernetes 1.8.9                                        | Yes                              | 17.06                 | 3.2.2 MU6+ P107 3.3.1 MU1, MU2 |
-| Kubernetes 1.10.3                                       | Yes                              | 17.03                 | 3.2.2 MU6+ P107 3.3.1 MU1, MU2 |
-| OpenShift 3.7 RPM based installation (Kubernetes 1.7.6) | Yes                              | 1.12.6                | 3.2.2 MU6+ P107 3.3.1 MU1, MU2   |
+| Kubernetes 1.6.13                                       | Yes                              | 1.12.6                | 3.2.2 MU6+ P107 & 3.3.1 MU1, MU2 |
+| Kubernetes 1.7.6                                        | Yes                              | 1.12.6                | 3.2.2 MU6+ P107 & 3.3.1 MU1, MU2 |
+| Kubernetes 1.8.9                                        | Yes                              | 17.06                 | 3.2.2 MU6+ P107 & 3.3.1 MU1, MU2 |
+| Kubernetes 1.10.3                                       | Yes                              | 17.03                 | 3.2.2 MU6+ P107 & 3.3.1 MU1, MU2 |
+| OpenShift 3.7 RPM based installation (Kubernetes 1.7.6) | Yes                              | 1.12.6                | 3.2.2 MU6+ P107 & 3.3.1 MU1, MU2   |
 
 **NOTE**
   * Managed Plugin is not supported for Kubernetes or Openshift 3.7
@@ -83,7 +73,7 @@ $ export HostIP="<Master node IP>"
 ```yaml
 sudo docker run -d -v /usr/share/ca-certificates/:/etc/ssl/certs -p 40010:40010 \
 -p 23800:23800 -p 23790:23790 \
---name etcd quay.io/coreos/etcd:v2.2.0 \
+--name etcd_hpe quay.io/coreos/etcd:v2.2.0 \
 -name etcd0 \
 -advertise-client-urls http://${HostIP}:23790,http://${HostIP}:40010 \
 -listen-client-urls http://0.0.0.0:23790,http://0.0.0.0:40010 \
@@ -172,6 +162,78 @@ $ vi hpe.conf
 ```
 
 >Copy the contents from the sample hpe.conf file, based on your storage configuration for either iSCSI or Fiber Channel:
+
+>##### HPE 3PAR iSCSI:
+>
+>https://github.com/budhac/python-hpedockerplugin/blob/master/config_examples/hpe.conf.sample.3parISCSI
+
+
+>##### HPE 3PAR Fiber Channel:
+>
+>https://github.com/budhac/python-hpedockerplugin/blob/master/config_examples/hpe.conf.sample.3parFC
+
+7. Use Docker Compose to deploy the HPE 3PAR Volume Plug-In for Docker (Containerized Plug-in) from the pre-built image available on Docker Hub:
+
+```
+$ cd ~
+$ vi docker-compose.yml
+```
+
+> Copy the content below into the `docker-compose.yml` file
+
+```
+hpedockerplugin:
+  image: hpestorage/legacyvolumeplugin:2.1
+  container_name: plugin_container
+  net: host
+  privileged: true
+  volumes:
+     - /dev:/dev
+     - /run/lock:/run/lock
+     - /var/lib:/var/lib
+     - /var/run/docker/plugins:/var/run/docker/plugins:rw
+     - /etc:/etc
+     - /root/.ssh:/root/.ssh
+     - /sys:/sys
+     - /root/plugin/certs:/root/plugin/certs
+     - /sbin/iscsiadm:/sbin/ia
+     - /lib/modules:/lib/modules
+     - /lib64:/lib64
+     - /var/run/docker.sock:/var/run/docker.sock
+     - /opt/hpe/data:/opt/hpe/data:rshared
+```
+
+>Save and exit
+
+> **NOTE:** Before we start the HPE 3PAR Volume Plug-in container, make sure etcd is running. Use the Docker command: `docker ps -a | grep -i etcd_hpe`
+
+8. Start the HPE 3PAR Volume Plug-in for Docker (Containerized Plug-in)
+
+>Make sure you are in the location of the `docker-compose.yml` filed
+
+```
+$ docker-compose up -d
+```
+
+>**NOTE:** In case you are missing `docker-compose`, https://docs.docker.com/compose/install/#install-compose
+>
+>```
+$ curl -x 16.85.88.10:8080 -L https://github.com/docker/compose/releases/download/1.21.0/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
+$ sudo chmod +x /usr/local/bin/docker-compose
+```
+>
+>Visit https://docs.docker.com/compose/install/#install-compose for latest curl details
+>
+>Test the installation:
+>```
+$ docker-compose --version
+docker-compose version 1.21.0, build 1719ceb
+```
+> Re-run step 8
+
+
+
+
 
 
 ## Usage <a name="usage"></a>
