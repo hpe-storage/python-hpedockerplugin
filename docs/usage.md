@@ -15,7 +15,6 @@ The following guide covers many of the options used for provisioning volumes and
   * [Creating a Volume with QoS rules](#qos)
   * [Cloning a Volume](#clone)
   * [Enabling compression on Volume](#compression)
-  * [Restarting the Plugin](#restart)
 
 * [Using 3PAR Volume Plug-in with Kubernetes/OpenShift](#k8_usage)
   * [Kubernetes/OpenShift Terms](#terms)
@@ -23,6 +22,7 @@ The following guide covers many of the options used for provisioning volumes and
     * [StorageClass options](#sc_parameters)
   * [Persistent Volume Claim Example](#pvc)
   * [Pod Example](#pod)
+  * [Restarting the Containerized HPE 3PAR Volume Plug-in](#restart)
 
 
 
@@ -282,7 +282,7 @@ EOF
 When the pod gets created and a mount request is made, the volume is now available and can be seen using the following command:
 
 ```
-$ docker volume ls 
+$ docker volume ls
 DRIVER   VOLUME NAME
 hpe      export
 ```
