@@ -1,0 +1,16 @@
+---
+  - name: create doryd service
+    copy:
+      src: ../files/doryd.service
+      dest: /etc/systemd/system/
+      owner: root
+      group: root
+      mode: 0755
+
+
+  - name: restart doryd service, also issue daemon-reload to pick up config changes
+    systemd:
+      state: started
+      daemon_reload: yes
+      enabled: yes
+      name: doryd.service

@@ -1,0 +1,176 @@
+- hosts: all
+
+  environment:
+    http_proxy: "http://web-proxy.in.hpecorp.net:8080"
+    https_proxy: "http://web-proxy.in.hpecorp.net:8080"
+
+  tasks:
+
+  - name: Install prerequistes
+    include: tasks/install_prerequisites.yml
+
+  - name: Install packages on Ubuntu
+    package:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - open-iscsi
+      - multipath-tools
+    when: ansible_distribution == 'Ubuntu'
+    become: yes
+
+  - name: Install packages on CentOS/RedHat
+    package:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - iscsi-initiator-utils
+      - device-mapper-multipath
+    when: ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+    become: yes
+
+  - name: Copy multipath configuration file
+    copy:
+      src: multipath.conf
+      dest: /etc/multipath.conf
+    when: ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+    become: yes
+
+  - name: Change MountFlags
+    ini_file:
+      dest: /usr/lib/systemd/system/docker.service
+      section: Service
+      option: MountFlags
+      value: shared
+      no_extra_spaces: true
+      backup: yes
+    when: ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+    become: yes
+
+  - name: Reload sytemd daemon
+    systemd:
+      daemon_reload: yes
+    become: yes
+
+  - name: Restart Services
+    systemd:
+      name: "{{ item }}"
+      state: restarted
+    with_items:
+      - open-iscsi
+      - multipath-tools
+      - docker
+    when: ansible_distribution == 'Ubuntu'
+    become: yes
+
+  - name: Restart Services
+    systemd:
+      name: docker.service
+      state: restarted
+    when: ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+    become: yes
+
+  - name: Enable the services
+    systemd:
+      name: "{{  item  }}"
+      state: started
+      enabled: True
+    with_items:
+      - iscsid
+      - multipathd
+    when: ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+    become: yes
+
+  - name: load etcd settings
+    include_vars: 'properties/etcd_cluster_properties.yml'
+
+  - name: run etcd container
+    docker_container:
+      name: etcd
+      image: "{{ etcd_image }}"
+      state: started
+      detach: true
+      ports:
+        - "23800:23800"
+        - "23790:23790"
+        - "40010:40010"
+      env:
+        ETCD_NAME: etcd0
+        ETCD_ADVERTISE_CLIENT_URLS: "{{ etcd_advertise_client_url_1 }},{{ etcd_advertise_client_url_2 }}"
+        ETCD_LISTEN_CLIENT_URLS: "{{ etcd_listen_client_url_1 }},{{ etcd_listen_client_url_2 }}"
+        ETCD_INITIAL_ADVERTISE_PEER_URLS: "{{ etcd_initial_advertise_peer_urls }}"
+        ETCD_LISTEN_PEER_URLS: "{{ etcd_listen_peer_urls }}"
+        ETCD_INITIAL_CLUSTER: "etcd0=http://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:{{ etcd_peer_port }}"
+        ETCD_INITIAL_CLUSTER_TOKEN: "{{ etcd_initial_cluster_token }}"
+        ETCD_INITIAL_CLUSTER_STATE: "{{ etcd_initial_cluster_state }}"
+      restart_policy: always
+    become: yes
+    
+  - name: load plugin settings
+    include_vars: 'properties/plugin_configuration_properties.yml'
+
+  - name: get the iscsi ports
+    local_action: shell /usr/bin/sshpass -p {{ hpe3par_password }} ssh -oStrictHostKeyChecking=no {{ hpe3par_username }}@{{ hpe3par_ip }} "showport -iscsi" | grep ready | awk '{print $3}'
+    register: result
+    
+  - name: Creates HPE Docker plugin directory
+    file:
+      path: /etc/hpedockerplugin
+      state: directory
+      mode: 0644
+      recurse: yes
+    become: yes
+
+  - name: Populate hpe.conf
+    ini_file:
+      path: /etc/hpedockerplugin/hpe.conf
+      section: DEFAULT
+      option: "{{ item.option }}"
+      value: "{{ item.value }}"
+      no_extra_spaces: true
+    with_items:
+      - { option: 'ssh_hosts_key_file', value: "{{ ssh_hosts_key_file }}" }
+      - { option: 'host_etcd_port_number', value: "{{ host_etcd_port_number }}" }
+      - { option: 'logging', value: "{{ logging }}" }
+      - { option: 'hpe3par_debug', value: "{{ hpe3par_debug }}" }
+      - { option: 'suppress_requests_ssl_warning', value: "{{ suppress_requests_ssl_warning }}" }
+      - { option: 'hpe3par_username', value: "{{ hpe3par_username }}" }
+      - { option: 'hpe3par_password', value: "{{ hpe3par_password }}" }
+      - { option: 'hpe3par_cpg', value: "{{ hpe3par_cpg }}" }
+      - { option: 'hpe3par_snapcpg', value: "{{ hpe3par_snapcpg }}" }
+      - { option: 'hpe3par_iscsi_chap_enabled', value: "{{ hpe3par_iscsi_chap_enabled }}" }
+      - { option: 'use_multipath', value: "{{ use_multipath }}" }
+      - { option: 'enforce_multipath', value: "{{ enforce_multipath }}" }
+      - { option: 'host_etcd_ip_address', value: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}" }  
+      - { option: 'hpedockerplugin_driver', value: "{{ hpedockerplugin_driver }}" }
+      - { option: 'hpe3par_api_url', value: "{{ 'https://' + hpe3par_ip + ':8080/api/v1' }}" }
+      - { option: 'san_ip', value: "{{ hpe3par_ip }}" }
+      - { option: 'san_login', value: "{{ hpe3par_username }}" }
+      - { option: 'san_password', value: "{{ hpe3par_password }}" }
+      - { option: 'hpe3par_iscsi_ips', value: "{{ result.stdout_lines[0] + ',' + result.stdout_lines[1] }}" }
+    become: yes
+
+  - name: create hpedockerplugin container
+    docker_container:
+      name: plugin_container
+      image: "{{ volume_plugin }}"
+      privileged: true
+      network_mode: host
+      state: started
+      detach: true
+      volumes:
+        - /dev:/dev
+        - /run/lock:/run/lock
+        - /var/lib:/var/lib
+        - /var/run/docker/plugins:/var/run/docker/plugins:rw
+        - /etc:/etc
+        - /root/.ssh:/root/.ssh
+        - /sys:/sys
+        - /root/plugin/certs:/root/plugin/certs
+        - /sbin/iscsiadm:/sbin/ia
+        - /lib/modules:/lib/modules
+        - /lib64:/lib64
+        - /var/run/docker.sock:/var/run/docker.sock
+        - /opt/hpe/data:/opt/hpe/data:rshared
+      restart_policy: on-failure
+    become: yes

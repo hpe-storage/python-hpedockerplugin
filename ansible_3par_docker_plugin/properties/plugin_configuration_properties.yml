@@ -1,0 +1,15 @@
+ssh_hosts_key_file: '/root/.ssh/known_hosts'
+host_etcd_port_number: 23790
+logging: DEBUG
+hpe3par_debug: True
+suppress_requests_ssl_warning: True
+hpe3par_ip: 15.212.192.251
+hpe3par_username: 3paradm
+hpe3par_password: 3pardata
+hpe3par_cpg: FC_r1
+hpe3par_snapcpg: FC_r1
+hpe3par_iscsi_chap_enabled: True
+use_multipath: True
+enforce_multipath: True
+hpedockerplugin_driver: hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver
+volume_plugin: farhan7500/python-hpedockerplugin:plugin_v2

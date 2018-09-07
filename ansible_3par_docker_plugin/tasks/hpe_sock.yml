@@ -1,0 +1,25 @@
+---
+  - name: Verify hpe.sock files exists
+    file:
+      path: /run/docker/plugins/hpe
+      state: directory
+      mode: 0644
+      recurse: yes
+
+  - name: Delete any existing sock files
+    file:
+      state: absent
+      path: /run/docker/plugins/hpe/{{ item }}
+    with_items:
+      - hpe.sock.lock
+      - hpe.sock
+
+  - name: Create symbolic link
+    file:
+      src: /run/docker/plugins/{{ item }}
+      dest: /run/docker/plugins/hpe/{{ item }}
+      state: link
+      force: yes
+    with_items:
+      - hpe.sock.lock
+      - hpe.sock
