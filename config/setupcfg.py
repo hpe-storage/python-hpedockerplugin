@@ -13,6 +13,7 @@
 #    limitations under the License.
 
 from hpedockerplugin import configuration as conf
+from hpedockerplugin.hpe import hpe3par_opts as plugin_opts
 from oslo_log import log as logging
 from oslo_config import cfg
 
@@ -27,28 +28,41 @@ host_opts = [
                 default=2379,
                 help='Host Port Number to use for etcd communication'),
     cfg.StrOpt('host_etcd_ca_cert',
-                default=None,
-                help='CA certificate location'),
+               default=None,
+               help='CA certificate location'),
     cfg.StrOpt('host_etcd_client_cert',
-                default=None,
-                help='Client certificate location'),
+               default=None,
+               help='Client certificate location'),
     cfg.StrOpt('host_etcd_client_key',
-                default=None,
-                help='Client certificate key location'),
+               default=None,
+               help='Client certificate key location'),
     cfg.StrOpt('logging',
                default='WARNING',
                help='Debug level for hpe docker volume plugin'),
     cfg.BoolOpt('use_multipath',
-               default=False,
-               help='Toggle use of multipath for volume attachments.'),
+                default=False,
+                help='Toggle use of multipath for volume attachments.'),
     cfg.BoolOpt('enforce_multipath',
-               default=False,
-               help='Toggle enforcing of multipath for volume attachments.'),
+                default=False,
+                help='Toggle enforcing of multipath for volume attachments.'),
+    cfg.BoolOpt('strict_ssh_host_key_policy',
+                default=False,
+                help='Option to enable strict host key checking.  When '
+                     'set to "True" the plugin will only connect to systems '
+                     'with a host key present in the configured '
+                     '"ssh_hosts_key_file".  When set to "False" the host key '
+                     'will be saved upon first connection and used for '
+                     'subsequent connections.  Default=False'),
+    cfg.StrOpt('ssh_hosts_key_file',
+               default='/root/.ssh/ssh_known_hosts',
+               help='File containing SSH host keys for the systems with which '
+                    'the plugin needs to communicate.  OPTIONAL: '
+                    'Default=$state_path/ssh_known_hosts'),
 ]
 
 CONF = cfg.CONF
 logging.register_options(CONF)
-
+CONF.register_opts(host_opts)
 
 
 def setup_logging(name, level):
@@ -66,29 +80,20 @@ def setup_logging(name, level):
         LOG.logger.setLevel(logging.ERROR)
 
 
-def getdefaultconfig(configfile):
+def get_host_config(configfile):
     CONF(configfile, project='hpedockerplugin', version='1.0.0')
-    sections = CONF.list_all_sections()
-    print("WILLIAM -- SECTION NAME: %s" % sections)
-    for section in sections:
-        opt_group = cfg.OptGroup(name=section,
-                                 title=section)
-        CONF.register_group(opt_group)
-        CONF.register_opts(host_opts, group=section)
+    return conf.Configuration(host_opts)
 
-    configuration = conf.Configuration(host_opts, config_group='DEFAULT')
 
-    return configuration
-
-def backend_config(configfile, backend_name):
+def get_all_backend_configs(configfile):
+    backend_configs = {}
     CONF(configfile, project='hpedockerplugin', version='1.0.0')
-    backend_configuration = conf.Configuration(host_opts, config_group=backend_name)
+    for backend_name in CONF.list_all_sections():
+        config = conf.Configuration(host_opts,
+                                    config_group=backend_name)
+        config.append_config_values(plugin_opts.hpe3par_opts)
+        config.append_config_values(plugin_opts.san_opts)
+        config.append_config_values(plugin_opts.volume_opts)
+        backend_configs[backend_name] = config
 
-    return backend_configuration
-
-def get_all_backends(configfile):
-    CONF(configfile, project='hpedockerplugin', version='1.0.0')
-    sections = CONF.list_all_sections()
-
-    return sections
-
+    return backend_configs

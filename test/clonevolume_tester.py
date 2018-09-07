@@ -1,10 +1,7 @@
-# import mock
 import test.fake_3par_data as data
 import test.createvolume_tester as createvolume
 from hpedockerplugin import exception as hpe_exc
 from hpe3parclient import exceptions
-from test.setup_mock import create_configuration
-import hpedockerplugin.volume_manager as mgr
 
 
 # Variation of CreateVolumeUnitTest. Nothing specific to do here
@@ -358,8 +355,9 @@ class TestCloneWithFlashCacheAndQOSEtcdSaveFails(CloneVolumeUnitTest):
 
 # CHAP enabled makes Offline copy flow to execute
 class TestCloneWithCHAP(CloneVolumeUnitTest):
-    def override_configuration(self, config):
-        config.hpe3par_iscsi_chap_enabled = True
+    def override_configuration(self, all_configs):
+        all_configs['DEFAULT'].hpe3par_iscsi_chap_enabled = True
+        all_configs['DEFAULT'].use_multipath = False
 
     def check_response(self, resp):
         self._test_case.assertEqual(resp, {u"Err": ''})
@@ -384,14 +382,6 @@ class TestCloneWithCHAP(CloneVolumeUnitTest):
         mock_3parclient.getCPG.return_value = {}
         mock_3parclient.getVolumeMetaData.return_value = {'value': True}
         mock_3parclient.getTask.return_value = {'status': data.TASK_DONE}
-        config = create_configuration('ISCSI')
-        config.hpe3par_iscsi_chap_enabled = True
-        config.use_multipath = False
-        mock_etcd = self.mock_objects['mock_etcd']
-        mock_orchestrator = self.mock_objects['mock_orchestrator']
-        mock_orchestrator.return_value = \
-            {'DEFAULT': mgr.VolumeManager(config, config, mock_etcd,
-                                          'DEFAULT')}
 
 
 # TODO: Compression related TCs to be added later

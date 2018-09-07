@@ -77,6 +77,8 @@ class HPE3PARCommon(object):
 
     SYNC = 1
     PERIODIC = 2
+    STREAMING = 4
+    DEFAULT_SYNC_PERIOD = 900
     RCG_STARTED = 3
     RCG_STOPPED = 5
     ROLE_PRIMARY = 1
@@ -105,8 +107,8 @@ class HPE3PARCommon(object):
     hpe3par_valid_keys = ['cpg', 'snap_cpg', 'provisioning', 'persona', 'vvs',
                           'flash_cache']
 
-    def __init__(self, config, src_bkend_config, tgt_bkend_config=None):
-        self.config = config
+    def __init__(self, host_config, src_bkend_config, tgt_bkend_config=None):
+        self._host_config = host_config
         self.src_bkend_config = src_bkend_config
         self.tgt_bkend_config = tgt_bkend_config
         self.client = None
@@ -164,17 +166,17 @@ class HPE3PARCommon(object):
             LOG.error(msg)
             raise exception.InvalidInput(reason=msg)
 
-        known_hosts_file = self.config.ssh_hosts_key_file
+        known_hosts_file = self._host_config.ssh_hosts_key_file
         policy = "AutoAddPolicy"
-        if self.config.strict_ssh_host_key_policy:
+        if self._host_config.strict_ssh_host_key_policy:
             policy = "RejectPolicy"
         self.client.setSSHOptions(
             self.src_bkend_config.san_ip,
             self.src_bkend_config.san_login,
             self.src_bkend_config.san_password,
-            port=self.config.san_ssh_port,
-            conn_timeout=self.config.ssh_conn_timeout,
-            privatekey=self.config.san_private_key,
+            port=self.src_bkend_config.san_ssh_port,
+            conn_timeout=self.src_bkend_config.ssh_conn_timeout,
+            privatekey=self.src_bkend_config.san_private_key,
             missing_key_policy=policy,
             known_hosts_file=known_hosts_file)
 
@@ -195,7 +197,7 @@ class HPE3PARCommon(object):
         except hpeexceptions.UnsupportedVersion as ex:
             raise exception.InvalidInput(ex)
 
-        if self.config.hpe3par_debug:
+        if self.src_bkend_config.hpe3par_debug:
             self.client.debug_rest(True)
 
     def check_for_setup_error(self):
@@ -311,7 +313,10 @@ class HPE3PARCommon(object):
             LOG.error(msg)
             raise exception.HPEDriverGetQosFromVvSetFailed(ex)
 
-    def get_vvset_detail(self, volume):
+    def get_vvset_detail(self, vvset):
+        return self.client.getVolumeSet(vvset)
+
+    def get_vvset_from_volume(self, volume):
         vvset_name = self.client.findVolumeSet(volume)
         if vvset_name is not None:
             return self.client.getVolumeSet(vvset_name)
@@ -771,7 +776,7 @@ class HPE3PARCommon(object):
             cpg = volume['cpg']
         else:
             # cpg = self.src_bkend_config.hpe3par_cpg[0]
-            cpg = self.config.hpe3par_cpg[0]
+            cpg = self.src_bkend_config.hpe3par_cpg[0]
             volume['cpg'] = cpg
 
         # check for valid provisioning type
@@ -1358,8 +1363,6 @@ class HPE3PARCommon(object):
 
         except hpeexceptions.HTTPForbidden:
             raise exception.NotAuthorized()
-        except hpeexceptions.HTTPNotFound:
-            raise exception.NotFound()
         except Exception as ex:
             LOG.error("Exception: %s", ex)
             raise exception.PluginException(ex)
@@ -1423,19 +1426,9 @@ class HPE3PARCommon(object):
         except hpeexceptions.HTTPNotFound:
             raise exception.HPEDriverRemoteCopyGroupNotFound(name=rcg_name)
 
-    def _get_remote_copy_mode_num(self, mode):
-        ret_mode = None
-        if mode == "sync":
-            ret_mode = self.SYNC
-        if mode == "periodic":
-            ret_mode = self.PERIODIC
-        return ret_mode
-
     def add_volume_to_rcg(self, **kwargs):
         bkend_vol_name = kwargs['bkend_vol_name']
         rcg_name = kwargs['rcg_name']
-
-        # LOG.info(self.config.replication_device)
 
         # Add volume to remote copy group.
         rcg_targets = []
@@ -1480,13 +1473,12 @@ class HPE3PARCommon(object):
             LOG.error(msg)
             raise exception.VolumeBackendAPIException(data=msg)
 
-    @staticmethod
-    def _get_backend_replication_mode(mode):
+    def _get_backend_replication_mode(self, mode):
         mode_map = {
-            'synchronous': 1,
-            'periodic': 2,
-            'streaming': 3}
-        ret_mode = mode_map.get(mode, None)
+            'synchronous': self.SYNC,
+            'asynchronous': self.PERIODIC,
+            'streaming': self.STREAMING}
+        ret_mode = mode_map.get(mode)
         return ret_mode
 
     def create_rcg(self, **kwargs):
@@ -1530,12 +1522,12 @@ class HPE3PARCommon(object):
                                               optional)
             LOG.info("Remote copy group successfully created: %s!" % rcg_name)
         except Exception as ex:
-            msg = (_("There was an error creating remote copy "
-                     "group: %s.") % six.text_type(ex))
+            msg = "Error encountered while creating remote copy group: %s" %\
+                  six.text_type(ex)
             LOG.error(msg)
             raise exception.HPERemoteCopyGroupBackendAPIException(data=msg)
 
-        if src_config.quorum_witness_ip:
+        if tgt_config.quorum_witness_ip:
             pp_params = {'targets': [
                 {'targetName': tgt_config.backend_id,
                  'policies': {'autoFailover': True,
@@ -1545,10 +1537,31 @@ class HPE3PARCommon(object):
             try:
                 self.client.modifyRemoteCopyGroup(rcg_name, pp_params)
             except Exception as ex:
-                msg = (_("There was an error modifying the remote copy "
-                         "group: %s.") % six.text_type(ex))
+                msg = "Error encountered while modifying remote copy group"\
+                      "%s: %s" % (rcg_name, six.text_type(ex))
                 LOG.error(msg)
                 raise exception.HPERemoteCopyGroupBackendAPIException(data=msg)
+
+        else:
+            if bkend_replication_mode == self.PERIODIC or \
+                    bkend_replication_mode == self.STREAMING:
+                if tgt_config.sync_period:
+                    sync_period = int(tgt_config.sync_period)
+                else:
+                    sync_period = self.DEFAULT_SYNC_PERIOD
+
+                sync_target = {'targetName': tgt_config.backend_id,
+                               'syncPeriod': sync_period}
+
+                opt = {'targets': [sync_target]}
+                try:
+                    self.client.modifyRemoteCopyGroup(rcg_name, opt)
+                except Exception as ex:
+                    msg = "Error encountered while setting the sync period "\
+                          "for the remote copy group: %s" % six.text_type(ex)
+                    LOG.error(msg)
+                    raise exception.HPERemoteCopyGroupBackendAPIException(
+                        data=msg)
 
         try:
             rcg = self.client.getRemoteCopyGroup(rcg_name)
@@ -1557,8 +1570,8 @@ class HPE3PARCommon(object):
             return ret_val
 
         except Exception as ex:
-            msg = (_("There was an error fetching the remote copy "
-                     "group after its creation: %s.") % six.text_type(ex))
+            msg = "Error encountered while fetching the remote copy "\
+                  "group after its creation: %s" % six.text_type(ex)
             LOG.error(msg)
             raise exception.HPERemoteCopyGroupBackendAPIException(data=msg)
 

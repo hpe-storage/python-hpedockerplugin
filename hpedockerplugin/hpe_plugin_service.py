@@ -17,7 +17,7 @@ Command to start up the Docker plugin.
 """
 import socket
 
-from config.setupcfg import getdefaultconfig, setup_logging
+from config import setupcfg
 from hpe_storage_api import VolumePlugin
 
 from os import umask, remove
@@ -121,7 +121,8 @@ class HPEDockerPluginService(object):
         # Setup the default, hpe3parconfig, and hpelefthandconfig
         # configuration objects.
         try:
-            hpedefaultconfig = getdefaultconfig(CONFIG)
+            host_config = setupcfg.get_host_config(CONFIG)
+            backend_configs = setupcfg.get_all_backend_configs(CONFIG)
         except Exception as ex:
             msg = (_('hpe3pardocker setupservice failed, error is: %s'),
                    six.text_type(ex))
@@ -129,14 +130,15 @@ class HPEDockerPluginService(object):
             raise exception.HPEPluginStartPluginException(reason=msg)
 
         # Set Logging level
-        logging_level = hpedefaultconfig.logging
-        setup_logging('hpe_storage_api', logging_level)
+        logging_level = backend_configs['DEFAULT'].logging
+        setupcfg.setup_logging('hpe_storage_api', logging_level)
 
         self._create_listening_directory(PLUGIN_PATH.parent())
         endpoint = serverFromString(self._reactor, "unix:{}:mode=600".
                                     format(PLUGIN_PATH.path))
         servicename = StreamServerEndpointService(endpoint, Site(
-            VolumePlugin(self._reactor, hpedefaultconfig).app.resource()))
+            VolumePlugin(self._reactor, host_config,
+                         backend_configs).app.resource()))
         return servicename
 
 
