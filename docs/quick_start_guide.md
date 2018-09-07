@@ -1,10 +1,6 @@
-# Source Availability
-- Source for the entire HPE 3PAR Volume Plugin for Docker is present in plugin_v2 branch of this repository.
-- Source for paramiko is present under https://github.com/hpe-storage/python-hpedockerplugin/tree/master/paramiko_src 
-
 # Steps for Deploying the Managed Plugin (HPE 3PAR Volume Plug-in for Docker) 
 
-HPE 3PAR Docker Volume Plugin for Docker is tested against: 
+HPE 3PAR Docker Volume Plugin for Docker is tested against:
 
 - Docker EE release version 17.03 and 17.06
 - Ubuntu 16.04 (Xenial), RHEL 7.4 and CentOS 7.3
@@ -13,7 +9,7 @@ HPE 3PAR Docker Volume Plugin for Docker is tested against:
 
 store/hpestorage/hpedockervolumeplugin:2.1
 - ```
-   Support for creating volumes of type thin, dedup, full, compressed volumes, snapshots, clones, 
+   Support for creating volumes of type thin, dedup, full, compressed volumes, snapshots, clones,
    QoS, snapshot mount, mount_conflict_delay, and multiple container access for a volume on same node.
    Plugin supports both iscsi and FC drivers.
    ```
@@ -21,26 +17,26 @@ store/hpestorage/hpedockervolumeplugin:2.1
 #### **Prerequisite packages to be installed on host OS:**
 ```
    on Ubuntu 16.04:
-   
+
    sudo apt-get install -y open-iscsi multipath-tools
    $ systemctl daemon-reload
    $ systemctl restart open-iscsi multipath-tools docker
-   
+
    on RHEL 7.4 and CentOS 7.3:
-   
+
    yum install -y iscsi-initiator-utils device-mapper-multipath
    # configure /etc/multipath.conf and run below commands
    create /etc/multipath.conf based on instructions in: https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/multipath-managed-plugin.md
-   Configure the docker system service 
-   - set the value of Mount Flags 
+   Configure the docker system service
+   - set the value of Mount Flags
       MountFlags=shared (default is slave) in file  /usr/lib/systemd/system/docker.service (in case of RHEL)
    - restart the docker daemon using
       $ systemctl daemon-reload
       $ systemctl restart docker.service
-   
+
       $ systemctl enable iscsid multipathd
       $ systemctl start iscsid multipathd
-   
+
 ```
 #### Steps:
 
@@ -65,7 +61,7 @@ For 3PAR FC plugin, use this template https://github.com/hpe-storage/python-hped
 **Note: Before enabling the plugin user needs to make sure that**
 - etcd container is in running state.
 - Host and 3PAR array has proper iSCSI connectivity if plugin's iscsi driver needs to be used.
-- FC plugin requires proper zoning between the docker host(s) and the 3PAR Array. 
+- FC plugin requires proper zoning between the docker host(s) and the 3PAR Array.
 
 **Execute below commands to install the plugin on Ubuntu 16.04**
 
@@ -83,7 +79,7 @@ $ docker plugin enable hpe
 
 ```
 
-$ docker plugin install store/hpestorage/hpedockervolumeplugin:<version> –-disable –-alias hpe 
+$ docker plugin install store/hpestorage/hpedockervolumeplugin:<version> –-disable –-alias hpe
 
 # certs.source should be set to the folder where the certificates for secure etcd is configured , otherwise
 # please default the setting to a valid folder in the system.
@@ -106,7 +102,7 @@ To Create a volume
 $ docker volume create -d hpe --name db_vol -o size=10
 ```
 
-To List Volumes 
+To List Volumes
 ```
 $ docker volume ls
 ```
@@ -127,7 +123,7 @@ $ docker volume create -d hpe --name db_vol_new -o qos-name=<existing_vvsetname_
 ```
 Note: Here Volume and vvset should be in same domain
 
-To Mount a volume 
+To Mount a volume
 ```
 $ docker run -it -v <volume>:/data1 --rm --volume-driver hpe busybox /bin/sh
 ```
@@ -152,7 +148,7 @@ To inspect a volume or snapshot
 $ docker volume inspect <vol_name or snapshot_name>
 ```
 
-## Logs for the plugin 
+## Logs for the plugin
 
 On Ubuntu, grep for the `plugin id` in the logs , where the `plugin id` can be identified by:
 
@@ -166,15 +162,15 @@ or `` /var/log/messages ``
 
 
 ## Known limitations
-- List of issues around the containerized version of the plugin/Managed plugin is present in https://github.com/hpe-storage/python-hpedockerplugin/issues 
+- List of issues around the containerized version of the plugin/Managed plugin is present in https://github.com/hpe-storage/python-hpedockerplugin/issues
 
 - ``$ docker volume prune`` is not supported for volume plugin, instead use ``$docker volume rm $(docker volume ls -q -f "dangling=true") `` to clean up orphaned volumes.
 
 - Shared volume support is present for containers running on the same host.
 
 - For upgrading the plugin from older version 2.0 or 2.0.2 to 2.1 user needs to unmount all the volumes and follow the standard
- upgrade procedure described in docker guide. 
- 
+ upgrade procedure described in docker guide.
+
 - Volumes created using older plugins (2.0.2 or below) do not have snp_cpg associated with them, hence when the plugin is upgraded to      2.1 and user wants to perform clone/snapshot operations on these old volumes, he/she must set the snap_cpg for the
    corresponding volumes using 3par cli or any tool before performing clone/snapshot operations.
 
@@ -189,25 +185,25 @@ or `` /var/log/messages ``
 
 
 ```
-   Note: 3PAR volumes can be created in docker environment using 2 approces 
-   1. using plugin form (Managed Pugin) as shown in above steps or 
+   Note: 3PAR volumes can be created in docker environment using 2 approces
+   1. using plugin form (Managed Pugin) as shown in above steps or
    2. using as a container image called as containerized plugin as shown below
    Managed plugin is supported only on docker 1.13 onwards, so to use the plugin on
    older releases of docker use this containerized plugin
 ```
 
-# Steps for Deploying the Containerized Plugin(HPE 3PAR Volume Plug-in for Docker as Docker container) 
+# Steps for Deploying the Containerized Plugin(HPE 3PAR Volume Plug-in for Docker as Docker container)
 
 ### For running the Containerized Plugin under Openshift 3.7 / Kubernetes 1.7 please follow these steps as documented in shared file
     https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/OpenShift_Kubernetes_documentation.docx
-    
+
 ` Below are the steps for running etcd and Containerized Plugin. `
 
 #### Steps:
 
 - reload docker daemon after configuring MountFlags
 ```
-Configure the docker system service 
+Configure the docker system service
 - MountFlags=shared (default is slave) in file  /usr/lib/systemd/system/docker.service (in case of RHEL)
 - restart the docker daemon using
       systemctl daemon-reload
@@ -225,7 +221,7 @@ https://github.com/hpe-storage/python-hpedockerplugin/blob/master/quick-start/RE
 - use docker-compose to run the containerized plugin https://github.com/hpe-storage/python-hpedockerplugin/tree/master/quick-start#there-are-2-ways-to-get-the-containerized-plugin-on-system
 
 
-## Run etcd container OR cluster 
+## Run etcd container OR cluster
 **If you plan to run a container orchestration service (such as Docker UCP or Kubernetes) in a cluster of systems then refer to the etcd cluster setup link given below.** These orchestration services typically already have setup instructions for an etcd cluster, so there is no need to create a separate etcd cluster in these cases. The plugin can safely share access to the same etcd cluster being used by the orchestration technology.
 
 **Note:** For quick start purpose user can create a single node etcd setup as shown in below example but for the production use case user can go for creating etcd cluster or High Availability etcd cluster.
@@ -310,13 +306,13 @@ In docker-compose.yml keep image: hpestorage/legacyvolumeplugin:2.1
 ```
 
 - Sample docker-compose.yml file for Ubuntu:
-On **Ubuntu systems** - copy the file https://github.com/hpe-storage/python-hpedockerplugin/blob/plugin_v2/quick-start/docker-compose.yml.example as docker-compose.yml 
+On **Ubuntu systems** - copy the file https://github.com/hpe-storage/python-hpedockerplugin/blob/plugin_v2/quick-start/docker-compose.yml.example as docker-compose.yml
 
 - Substitute the  `image: <image>` in docker-compose.yml with the name of the built image. `container_name: <container_name>` can be substituted by any user defined name.
 
 - Sample docker-compose.yml file for RHEL/CentOS:
 On **RHEL/CentOS systems** docker-compose.yml for creating containerized image using cloned repository in above example will be as shown in below example
-``` 
+```
 hpedockerplugin:
   image: hpe-storage/python-hpedockerplugin:plugin_v2
   container_name: plugin_container
