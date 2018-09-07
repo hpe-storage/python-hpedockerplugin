@@ -1,43 +1,101 @@
-# Steps for Deploying the Managed Plugin (HPE 3PAR Volume Plug-in for Docker) 
+# Quick Start Guide to installing the HPE 3PAR Volume Plug-in for Docker
 
-HPE 3PAR Docker Volume Plugin for Docker is tested against:
+* #### [Quick Start Guide for Standalone Docker environments](#docker)
 
-- Docker EE release version 17.03 and 17.06
-- Ubuntu 16.04 (Xenial), RHEL 7.4 and CentOS 7.3
+* #### [Quick Start Guide for Kubernetes/OpenShift environments](#k8)
 
-#### Feature Matrix for Managed plugin / HPE 3PAR Volume Plug-in for Docker :
+### Quick Start Guide for Standalone Docker environments <a name="docker"></a>
 
-store/hpestorage/hpedockervolumeplugin:2.1
-- ```
-   Support for creating volumes of type thin, dedup, full, compressed volumes, snapshots, clones,
-   QoS, snapshot mount, mount_conflict_delay, and multiple container access for a volume on same node.
-   Plugin supports both iscsi and FC drivers.
-   ```
+Steps for Deploying the Managed Plugin (HPE 3PAR Volume Plug-in for Docker) in a Standalone Docker environment
 
 #### **Prerequisite packages to be installed on host OS:**
+
+##### Ubuntu 16.04 or later:
+
+
+1. Install the iSCSI (optional if you aren't using iSCSI) and Multipath packages
 ```
-   on Ubuntu 16.04:
+$ sudo apt-get install -y open-iscsi multipath-tools
+```
 
-   sudo apt-get install -y open-iscsi multipath-tools
-   $ systemctl daemon-reload
-   $ systemctl restart open-iscsi multipath-tools docker
+2. Enable the iscsid and multipathd services
+```
+$ systemctl daemon-reload
+$ systemctl restart open-iscsi multipath-tools docker
+```
 
-   on RHEL 7.4 and CentOS 7.3:
 
-   yum install -y iscsi-initiator-utils device-mapper-multipath
-   # configure /etc/multipath.conf and run below commands
-   create /etc/multipath.conf based on instructions in: https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/multipath-managed-plugin.md
-   Configure the docker system service
-   - set the value of Mount Flags
-      MountFlags=shared (default is slave) in file  /usr/lib/systemd/system/docker.service (in case of RHEL)
-   - restart the docker daemon using
-      $ systemctl daemon-reload
-      $ systemctl restart docker.service
 
-      $ systemctl enable iscsid multipathd
-      $ systemctl start iscsid multipathd
+##### RHEL/CentOS 7.3 or later:
+
+1. Install the iSCSI (optional if you aren't using iSCSI) and Multipath packages
 
 ```
+$ yum install -y iscsi-initiator-utils device-mapper-multipath
+```
+
+2. Configure /etc/multipath.conf
+
+```
+$ vi /etc/multipath.conf
+```
+
+>Copy the following into /etc/multipath.conf
+
+```
+defaults
+{
+    polling_interval 10
+    max_fds 8192
+}
+
+devices
+{
+    device
+	{
+        vendor                  "3PARdata"
+        product                 "VV"
+        no_path_retry           18
+        features                "0"
+        hardware_handler        "0"
+        path_grouping_policy    multibus
+        #getuid_callout         "/lib/udev/scsi_id --whitelisted --device=/dev/%n"
+        path_selector           "round-robin 0"
+        rr_weight               uniform
+        rr_min_io_rq            1
+        path_checker            tur
+        failback                immediate
+    }
+}
+```
+
+3. Enable the iscsid and multipathd services
+
+```
+$ systemctl enable iscsid multipathd
+$ systemctl start iscsid multipathd
+```
+
+4. Configure `MountFlags` in the Docker service to allow shared access to Docker volumes
+
+```
+$ vi /usr/lib/systemd/system/docker.service
+```
+
+>Change **MountFlags=slave** to **MountFlags=shared** (default is slave)
+>
+>Save and exit
+
+5. Restart the Docker daemon
+
+```
+$ systemctl daemon-reload
+$ systemctl restart docker.service
+```
+
+
+
+
 #### Steps:
 
 - These are the prerequisite packages to be installed on host OS:
