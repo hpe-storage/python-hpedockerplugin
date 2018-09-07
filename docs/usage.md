@@ -116,11 +116,11 @@ Finally, remove the volume:
 sudo docker volume rm <vol_name>
 ```
 
-### Creating a volume with existing vvset associated with QoS rules (**introduced in plugin version 2.1**)<a name="qos"></a>
+### Creating a volume with an existing VVset and QoS rules (**introduced in plugin version 2.1**)<a name="qos"></a>
 ```
 docker volume create -d hpe --name <target_vol_name> -o qos-name=<vvset_name>
 ```
-Note -- 'vvset_name' should be present in 3par and should have QoS rules set to it.
+>**Note** The VVset defined in **vvset_name** MUST exist in the HPE 3PAR and have QoS rules applied.
 
 ### Creating a clone of a volume (**introduced in plugin version 2.1**)<a name="clone"></a>
 ```
