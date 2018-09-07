@@ -122,7 +122,7 @@ sudo docker volume rm <vol_name>
 ```
 docker volume create -d hpe --name <target_vol_name> -o qos-name=<vvset_name>
 ```
->**Note** The VVset defined in **vvset_name** MUST exist in the HPE 3PAR and have QoS rules applied.
+>**Note:** The **VVset** defined in **vvset_name** MUST exist in the HPE 3PAR and have QoS rules applied.
 
 ### Creating a clone of a volume (**introduced in plugin version 2.1**)<a name="clone"></a>
 ```
@@ -153,3 +153,77 @@ docker volume create -d hpe --name <snapshot_name> -o virtualCopyOf=<source_vol_
 
 
 >**Note:** To mount a snapshot, you can use the same commands as [mounting a volume](#mount) as specified above.
+
+
+## Usage of the HPE 3PAR Volume Plug-in for Docker in Kubernetes/OpenShift<a name="k8_usage"></a>
+
+The following section will cover different operations and commands that can be used to familiarize yourself and verify the installation of the HPE 3PAR Volume Plug-in for Docker by provisioning storage using Kubernetes/OpenShift resources like **PersistentVolume**, **PersistentVolumeClaim**, **StorageClass**, **Pods**, etc.
+
+To learn more about Persistent Volume Storage and Kubernetes/OpenShift, go to:
+https://kubernetes.io/docs/tasks/configure-pod-container/configure-persistent-volume-storage/
+
+#### Key Kubernetes/OpenShift Terms:
+* **kubectl** – command line interface for running commands against Kubernetes clusters
+* **oc** – command line interface for running commands against OpenShift platform
+* **PV** – Persistent Volume is a piece of storage in the cluster that has been provisioned by an administrator.
+* **PVC** – Persistent Volume Claim is a request for storage by a user.
+* **SC** – Storage Class provides a way for administrators to describe the “classes” of storage they offer.
+* **hostPath volume** – mounts a file or directory from the host node’s filesystem into your Pod.
+
+To get started, in an OpenShift environment, we need to relax the security of your cluster so pods are allowed to use the **hostPath** volume plugin without granting everyone access to the privileged **SCC**:
+
+1. Edit the restricted SCC:
+```
+$ oc edit scc restricted
+```
+
+2. Add `allowHostDirVolumePlugin: true`
+
+3. Save the changes
+
+4. Restart node service (master node).
+```
+$ sudo systemctl restart origin-node.service
+```
+
+Below is an example yaml specification to create Persistent Volumes using the HPE 3PAR FlexVolume driver.
+
+>Note: If you have OpenShift installed, **kubectl create** and **oc create** commands can be used interchangeably when creating **PVs**, **PVCs**, and **SCs**.
+
+**Dynamic volume provisioning** allows storage volumes to be created on-demand. To enable dynamic provisioning, a cluster administrator needs to pre-create one or more **StorageClass** objects for users.
+
+The **StorageClass** object defines the storage provisioner (in our case the HPE 3PAR Volume Plug-in for Docker) and parameters to be used when requesting persistent storage within a Kubernetes/Openshift environment. This provisioner is a simple daemon that listens for **PVCs** and satisfies those claims based on the defined **StorageClass**.
+
+#### StorageClass example
+
+The following creates a **StorageClass "sc1"** which provisions a compressed volume with the help of HPE 3PAR Docker Volume Plugin.
+
+```yaml
+$ sudo kubectl create -f - << EOF
+---
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: sc1
+provisioner: hpe.com/hpe
+parameters:
+  size: "16"
+  compression: "true"
+EOF
+```
+
+##### Supported StorageClass options
+
+| StorageClass Options | Type    | Parameters                                 | Example                        |
+|----------------------|---------|--------------------------------------------|--------------------------------|
+| size                 | integer | -                                          | size: "10"                     |
+| provisioning         | String  | thin, thick                                | provisioning: thin             |
+| flash-cache          | String  | enable, disable                            | flash-cache: enable            |
+| compression          | boolean | true, false                                | compression: true              |
+| MountConflictDelay   | integer | -                                          | MountConflictDelay: "30"       |
+| qos_name             | String  | vvset name                                 | qos_name: "<vvset_name>"       |
+| cloneOf              | String  | volume name                                | cloneOf: "<volume name>"       |
+| virtualCopyOf        | String  | volume name                                | virtualCopyOf: "<volume name>" |
+| expirationHours      | integer | option of virtualCopyOf                    | expirationHours: "10"          |
+| retentionHours       | integer | option of virtualCopyOf                    | retentionHours: "10"           |
+| accessModes          | String  | ReadWriteOnce, ReadOnlyMany, ReadWriteMany | accessModes: <br> &nbsp;&nbsp;  - ReadWriteOnce  |
