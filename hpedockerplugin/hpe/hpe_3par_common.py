@@ -1078,9 +1078,9 @@ class HPE3PARCommon(object):
         except hpeexceptions.HTTPForbidden as ex:
             LOG.error("Exception: %s", ex)
             raise exception.NotAuthorized()
-        except hpeexceptions.HTTPNotFound as ex:
+        except Exception as ex:
             LOG.error("Exception: %s", ex)
-            raise exception.NotFound()
+            raise exception.PluginException(ex)
 
     def create_cloned_volume(self, dst_volume, src_vref):
         LOG.info("Create clone of volume\n%s", json.dumps(src_vref, indent=2))
