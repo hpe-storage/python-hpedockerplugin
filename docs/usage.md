@@ -23,7 +23,9 @@ The following guide covers many of the options used for provisioning volumes and
 
 
 ## Within Docker<a name="docker_usage"></a>
-The following are the currently supported actions that can be taken using the HPE 3PAR Volume Plug-in for Docker.
+The following section covers the supported actions for the **HPE 3PAR Volume Plug-in** within a **Docker** environment.
+
+If you are using **Kubernetes** or **OpenShift**, please go the [Kubernetes/OpenShift Usage section](#k8_usage).
 
 ### Creating a basic HPE 3PAR volume<a name="basic"></a>
 ```
