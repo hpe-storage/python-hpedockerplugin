@@ -30,7 +30,7 @@ The following are the currently supported actions that can be taken using the HP
 sudo docker volume create -d hpe --name <vol_name>
 ```
 
-###### HPE 3PAR Docker Volume parameters<a name="options"></a>
+#### HPE 3PAR Docker Volume parameters<a name="options"></a>
 The **HPE 3PAR Docker Volume Plug-in** supports several optional parameters that can be used during volume creation:
 
 - **size** -- specifies the desired size in GB of the volume. If size is not specified during volume creation , it defaults to 100 GB.
