@@ -145,7 +145,9 @@ For 3PAR FC plugin, use this hpe.conf template https://github.com/hpe-storage/py
 
 ---
 
-**IMPORTANT** Before enabling the plugin, validate the following:
+**IMPORTANT**
+
+Before enabling the plugin, validate the following:
 
 * etcd container is in running state.
 * The host and 3PAR array has proper iSCSI connectivity if iSCSI is used
