@@ -343,10 +343,15 @@ class VolumePlugin(object):
                         return response
 
             rcg_name = contents['Opts'].get('replicationGroup', None)
-            try:
-                self._validate_rcg_params(rcg_name, current_backend)
-            except exception.InvalidInput as ex:
-                return json.dumps({u"Err": ex.msg})
+
+        # It is possible that the user configured replication in hpe.conf
+        # but didn't specify any options. In that case too, this operation
+        # must fail asking for "replicationGroup" parameter
+        # Hence this validation must be done whether "Opts" is there or not
+        try:
+            self._validate_rcg_params(rcg_name, current_backend)
+        except exception.InvalidInput as ex:
+            return json.dumps({u"Err": ex.msg})
 
         return self.orchestrator.volumedriver_create(volname, vol_size,
                                                      vol_prov,
