@@ -123,13 +123,15 @@ sudo docker run -d -v /usr/share/ca-certificates/:/etc/ssl/certs -p 4001:4001 \
 -initial-cluster-state new
 ```
 
-3. Add HPE 3PAR into ~/.ssh/known_hosts
+#### HPE 3PAR Volume Managed Plug-in config
+
+1. Add HPE 3PAR into ~/.ssh/known_hosts
 
 ```
 $ ssh -l username <3PAR IP Address>
 ```
 
-4. Configure hpe.conf for Managed plugin.
+2. Configure hpe.conf for Managed plugin.
 
 ```
 $ vi /etc/hpedockerplugin/hpe.conf
@@ -151,7 +153,7 @@ For 3PAR FC plugin, use this hpe.conf template https://github.com/hpe-storage/py
 
 ---
 
-5. Run the following commands to install the plugin:
+3. Run the following commands to install the plugin:
 
 **Ubuntu**
 
@@ -169,7 +171,7 @@ $ docker plugin set hpe glibc_libs.source=/lib64 certs.source=/tmp
 $ docker plugin enable hpe
 ```
 
-6. Confirm the plugin is successfully installed by
+4. Confirm the plugin is successfully installed by
 
 ```
 $ docker plugin ls
