@@ -2,7 +2,7 @@
 
 These are Ansible playbooks to install the HPE 3PAR Docker Volume Plug-in for Docker for use within Kubernetes/OpenShift environments. It simplifies the manual install process and automates the installation of the plugin and modifies the requisite files to deliver a Highly Available solution.
 
-If you are not using Kubernetes or OpenShift, we recommend you take a look at the Quick Start guide for using the HPE 3PAR Docker Volume Plug-in in a standalone Docker environment.
+If you are not using Kubernetes or OpenShift, we recommend you take a look at the [Quick Start guide](https://github.com/budhac/python-hpedockerplugin/blob/master/docs/quick_start_guide.md) for using the HPE 3PAR Docker Volume Plug-in in a standalone Docker environment.
 
 ### Getting Started
 

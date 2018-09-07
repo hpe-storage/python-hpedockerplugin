@@ -8,9 +8,6 @@
   * [Configuring etcd](#etcd)
   * [Installing the HPE 3PAR Volume Plug-in](#installing)
 * [Usage](#usage)
-* [Appendix](#appendix)
-  * [Restarting the Plugin](#restart)
-  * [More information](#info)
 
 
 ### Introduction <a name="introduction"></a>
@@ -283,11 +280,6 @@ $ cp /root/.kube/config /etc/kubernetes/admin.conf
 
 ## Usage <a name="usage"></a>
 
+For usage go to:
 
-## Appendix <a name="appendix"></a>
-
-
-#### Restarting the Plugin <a name="restart"></a>
-
-
-### More Information <a name="info"></a>  
+https://github.com/budhac/python-hpedockerplugin/blob/master/docs/usage.md

@@ -225,7 +225,7 @@ EOF
 | virtualCopyOf        | String  | volume name                                | virtualCopyOf: "<volume_name>"   |
 | expirationHours      | integer | option of virtualCopyOf                    | expirationHours: "10"            |
 | retentionHours       | integer | option of virtualCopyOf                    | retentionHours: "10"             |
-| accessModes          | String  | ReadWriteOnce, ReadOnlyMany, ReadWriteMany | accessModes: <br> &nbsp;&nbsp;  - ReadWriteOnce    |
+| accessModes          | String  | ReadWriteOnce                              | accessModes: <br> &nbsp;&nbsp;  - ReadWriteOnce    |
 
 
 ### Persistent Volume Claim Example<a name="pvc"></a>
