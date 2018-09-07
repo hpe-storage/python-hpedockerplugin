@@ -215,19 +215,19 @@ EOF
 
 #### Supported StorageClass parameters<a name="sc_parameters"></a>
 
-| StorageClass Options | Type    | Parameters                                 | Example                        |
-|----------------------|---------|--------------------------------------------|--------------------------------|
-| size                 | integer | -                                          | size: "10"                     |
-| provisioning         | String  | thin, thick                                | provisioning: thin             |
-| flash-cache          | String  | enable, disable                            | flash-cache: enable            |
-| compression          | boolean | true, false                                | compression: true              |
-| MountConflictDelay   | integer | -                                          | MountConflictDelay: "30"       |
-| qos_name             | String  | vvset name                                 | qos_name: "<vvset_name>"       |
-| cloneOf              | String  | volume name                                | cloneOf: "<volume_name>"       |
-| virtualCopyOf        | String  | volume name                                | virtualCopyOf: "<volume_name>" |
-| expirationHours      | integer | option of virtualCopyOf                    | expirationHours: "10"          |
-| retentionHours       | integer | option of virtualCopyOf                    | retentionHours: "10"           |
-| accessModes          | String  | ReadWriteOnce, ReadOnlyMany, ReadWriteMany | accessModes: <br> &nbsp;&nbsp;  - ReadWriteOnce  |
+| StorageClass Options | Type    | Parameters                                 | Example                          |
+|----------------------|---------|--------------------------------------------|----------------------------------|
+| size                 | integer | -                                          | size: "10"                       |
+| provisioning         | String  | thin, thick                                | provisioning: thin               |
+| flash-cache          | String  | enable, disable                            | flash-cache: enable              |
+| compression          | boolean | true, false                                | compression: true                |
+| MountConflictDelay   | integer | -                                          | MountConflictDelay: "30"         |
+| qos_name             | String  | vvset name                                 | qos_name: "<vvset_name>"         |
+| cloneOf              | String  | volume name                                | cloneOf: "<volume_name>"         |
+| virtualCopyOf        | String  | volume name                                | virtualCopyOf: "<volume_name>"   |
+| expirationHours      | integer | option of virtualCopyOf                    | expirationHours: "10"            |
+| retentionHours       | integer | option of virtualCopyOf                    | retentionHours: "10"             |
+| accessModes          | String  | ReadWriteOnce, ReadOnlyMany, ReadWriteMany | accessModes: <br> &nbsp;&nbsp;  - ReadWriteOnce    |
 
 
 ### Persistent Volume Claim Example<a name="pvc"></a>
