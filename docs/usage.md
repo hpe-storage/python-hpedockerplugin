@@ -4,7 +4,7 @@ The following guide covers many of the options used for provisioning volumes and
 
 ### Sections
 
-* #### [Using 3PAR Volume Plug-in with Docker](#docker_usage)
+* ### [Using 3PAR Volume Plug-in with Docker](#docker_usage)
   * [Create a basic HPE 3PAR volume](#basic)
   * [Volume optional parameters](#options)
   * [Deleting a Volume](#delete)
@@ -16,7 +16,7 @@ The following guide covers many of the options used for provisioning volumes and
   * [Cloning a Volume](#clone)
   * [Enabling compression on Volume](#compression)
 
-* #### [Using 3PAR Volume Plug-in with Kubernetes/OpenShift](#k8_usage)
+* ### [Using 3PAR Volume Plug-in with Kubernetes/OpenShift](#k8_usage)
   * [Kubernetes/OpenShift Terms](#terms)
   * [StorageClass Example](#sc)
     * [StorageClass options](#sc_parameters)
