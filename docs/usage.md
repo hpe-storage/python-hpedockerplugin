@@ -15,11 +15,15 @@ The following guide covers many of the options used for provisioning volumes and
   * [Creating a Volume with QoS rules](#qos)
   * [Cloning a Volume](#clone)
   * [Enabling compression on Volume](#compression)
+  * [Restarting the Plugin](#restart)
 
 * [Using 3PAR Volume Plug-in with Kubernetes/OpenShift](#k8_usage)
   * [Kubernetes/OpenShift Terms](#terms)
   * [StorageClass Example](#sc)
-    * [StorageClass options](#sc_options)
+    * [StorageClass options](#sc_parameters)
+  * [Persistent Volume Claim Example](#pvc)
+  * [Pod Example](#pod)
+
 
 
 
@@ -45,7 +49,6 @@ The **HPE 3PAR Docker Volume Plug-in** supports several optional parameters that
 - **compression** -- enables or disabled compression on the volume which is being created. It is only supported for thin/dedup volumes 16 GB in size or larger.
   * Valid values for compression are (true, false) or (True, False).
   * Compression is only supported on 3par OS version 3.3.1 (**introduced in plugin version 2.1**)
-
 
 - **mountConflictDelay** -- specifies period in seconds to wait for a mounted volume to gracefully unmount from a node before it can be mounted to another. If graceful unmount doesn't happen within the specified time then a forced cleanup of the VLUN is performed so that volume can be remounted to another node.(**introduced in plugin version 2.1**)
 
@@ -155,7 +158,6 @@ docker volume create -d hpe --name <snapshot_name> -o virtualCopyOf=<source_vol_
 
 >**Note:** To mount a snapshot, you can use the same commands as [mounting a volume](#mount) as specified above.
 
-
 ## Usage of the HPE 3PAR Volume Plug-in for Docker in Kubernetes/OpenShift<a name="k8_usage"></a>
 
 The following section will cover different operations and commands that can be used to familiarize yourself and verify the installation of the HPE 3PAR Volume Plug-in for Docker by provisioning storage using Kubernetes/OpenShift resources like **PersistentVolume**, **PersistentVolumeClaim**, **StorageClass**, **Pods**, etc.
@@ -187,17 +189,15 @@ $ oc edit scc restricted
 $ sudo systemctl restart origin-node.service
 ```
 
-Below is an example yaml specification to create Persistent Volumes using the HPE 3PAR FlexVolume driver.
+Below is an example yaml specification to create Persistent Volumes using the **HPE 3PAR FlexVolume driver**. The **HPE 3PAR FlexVolume driver** is a simple daemon that listens for **PVCs** and satisfies those claims based on the defined **StorageClass**.
 
 >Note: If you have OpenShift installed, **kubectl create** and **oc create** commands can be used interchangeably when creating **PVs**, **PVCs**, and **SCs**.
 
-**Dynamic volume provisioning** allows storage volumes to be created on-demand. To enable dynamic provisioning, a cluster administrator needs to pre-create one or more **StorageClass** objects for users.
-
-The **StorageClass** object defines the storage provisioner (in our case the HPE 3PAR Volume Plug-in for Docker) and parameters to be used when requesting persistent storage within a Kubernetes/Openshift environment. This provisioner is a simple daemon that listens for **PVCs** and satisfies those claims based on the defined **StorageClass**.
+**Dynamic volume provisioning** allows storage volumes to be created on-demand. To enable dynamic provisioning, a cluster administrator needs to pre-create one or more **StorageClass** objects for users. The **StorageClass** object defines the storage provisioner (in our case the **HPE 3PAR Volume Plug-in for Docker**) and parameters to be used when requesting persistent storage within a Kubernetes/Openshift environment. The **StorageClass** acts like a "storage profile" and gives the storage admin control over the types and characteristics of the volumes that can be provisioned within the Kubernetes/OpenShift environment. For example, the storage admin can create multiple **StorageClass** profiles that have size restrictions, if they are full or thin provisioned, compressed, etc.
 
 ### StorageClass Example<a name="sc"></a>
 
-The following creates a **StorageClass "sc1"** which provisions a compressed volume with the help of HPE 3PAR Docker Volume Plugin.
+The following creates a **StorageClass "sc1"** that provisions a compressed volume with the help of HPE 3PAR Docker Volume Plugin.
 
 ```yaml
 $ sudo kubectl create -f - << EOF
@@ -213,7 +213,7 @@ parameters:
 EOF
 ```
 
-#### Supported StorageClass options<a name="sc_options"></a>
+#### Supported StorageClass parameters<a name="sc_parameters"></a>
 
 | StorageClass Options | Type    | Parameters                                 | Example                        |
 |----------------------|---------|--------------------------------------------|--------------------------------|
@@ -228,3 +228,90 @@ EOF
 | expirationHours      | integer | option of virtualCopyOf                    | expirationHours: "10"          |
 | retentionHours       | integer | option of virtualCopyOf                    | retentionHours: "10"           |
 | accessModes          | String  | ReadWriteOnce, ReadOnlyMany, ReadWriteMany | accessModes: <br> &nbsp;&nbsp;  - ReadWriteOnce  |
+
+
+### Persistent Volume Claim Example<a name="pvc"></a>
+
+Now let’s create a claim **PersistentVolumeClaim** (**PVC**). Here we specify the **PVC** name **pvc1** and reference the **StorageClass "sc1"** that we created in the previous step.
+
+```yaml
+$ sudo kubectl create -f - << EOF
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pvc1
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: sc1
+EOF
+```
+
+At this point, after creating the **SC** and **PVC** definitions, the volume hasn’t been created yet. The actual volume gets created on-the-fly during the pod deployment and volume mount phase.
+
+### Pod Example<a name="pod"></a>
+
+So let’s create a **pod "pod1"** using the **nginx** container along with some persistent storage:
+
+```yaml
+$ sudo kubectl create -f - << EOF
+---
+kind: Pod   
+apiVersion: v1
+metadata:
+  name: pod1
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    volumeMounts:
+    - name: export
+      mountPath: /export
+  restartPolicy: Always
+  volumes:
+  - name: export
+    persistentVolumeClaim:
+      claimName: pvc1
+EOF
+```
+
+When the pod gets created and a mount request is made, the volume is now available and can be seen using the following command:
+
+```
+$ docker volume ls 
+DRIVER   VOLUME NAME
+hpe      export
+```
+
+On the Kubernetes/OpenShift side, it should now look something like this:
+
+```
+$ kubectl get pv,pvc,pod -o wide
+NAME       CAPACITY   ACCESSMODES   RECLAIMPOLICY   STATUS    CLAIM            STORAGECLASS   REASON   AGE
+pv/pv1     20Gi       RWO           Retain          Bound     default/pvc1                             11m
+
+NAME         STATUS    VOLUME    CAPACITY   ACCESSMODES   STORAGECLASS   AGE
+pvc/pvc1     Bound     pv100     20Gi       RWO                          11m
+
+NAME                          READY     STATUS    RESTARTS   AGE       IP             NODE
+po/pod1                       1/1       Running   0          11m       10.128.1.53    cld6b16
+
+```
+
+Now the **pod** can be deleted to unmount the Docker volume. Deleting a **Docker volume** does not require manual clean-up because the dynamic provisioner provides automatic clean-up. You can delete the **PersistentVolumeClaim** and see the **PersistentVolume** and **Docker volume** automatically deleted.
+
+
+Congratulations, you have completed all validation steps and have a working **Kubernetes/OpenShift** environment.
+
+### Restarting the Containerized plugin<a name="restart"></a>
+
+If you need to restart the containerized plugin used in Kubernetes/OpenShift environments, run the following command:
+
+```
+$ docker stop <container_id_of_plugin>
+
+```
