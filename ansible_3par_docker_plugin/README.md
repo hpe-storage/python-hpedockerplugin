@@ -6,7 +6,7 @@ If you are not using Kubernetes or OpenShift, we recommend you take a look at th
 
 ### Getting Started
 
-These playbooks perform the following tasks on the Master/Slave nodes as defined in the Ansible [hosts](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/hosts) file.
+These playbooks perform the following tasks on the Master/Worker nodes as defined in the Ansible [hosts](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/hosts) file.
 * Configure the Docker Services for the HPE 3PAR Docker Volume Plug-in
 * Deploys a 3-node Highly Available etcd cluster
 * Deploys the config files (iSCSI or FC) to support your environment
@@ -15,21 +15,31 @@ These playbooks perform the following tasks on the Master/Slave nodes as defined
 
 ### Prerequisites:
 
-  - login to 3PAR to create known_hosts file
-  - modify files/hpe.conf ([iSCSI](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/files/iSCSI_hpe.conf) or [FC](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/files/FC_hpe.conf)) based on your HPE 3PAR Storage array configuration. An example can be found here. [sample_hpe.conf](https://github.com/budhac/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/files/sample_hpe.conf)
-  - modify hosts file to match your cluster setup
+  - Install Ansible per [Installation Guide](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
+  - Login to 3PAR to create known_hosts file
+  > **Note:** Entries for the Master and Worker nodes should already exist within the /<user>/.ssh/known_hosts file from the OpenShift installation. If not, you will need to log into each of the Master and Worker nodes as well to prevent connection errors from Ansible.
 
-Run
+  - modify files/hpe.conf ([iSCSI](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/files/iSCSI_hpe.conf) or [FC](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/files/FC_hpe.conf)) based on your HPE 3PAR Storage array configuration. An example can be found here: [sample_hpe.conf](https://github.com/budhac/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/files/sample_hpe.conf)
+
+  - Modify [hosts](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/hosts) file to define your Master/Worker nodes as well as where you want to deploy your etcd cluster
+
+### Usage
+
+Once the prerequisites are complete, run the following command:
+
 ```
 $ ansible-playbook -i hosts install_hpe_3par_volume_driver.yml
 ```
 
-**Make sure proxy and no_proxy are configured correctly**
+Once complete you will be ready to start using the HPE 3PAR Docker Volume Plug-in within Kubernetes/OpenShift.
+
+Please refer to the Kubernetes/OpenShift section in the [Usage Guide](https://github.com/budhac/python-hpedockerplugin/blob/master/docs/usage.md) on how to create and deploy some sample SCs, PVCs, and Pods with persistent volumes using the HPE 3PAR Docker Volume Plug-in.
+
 
 <br><br>
 
 
-# Known Issues
+### Known Issues
 
 Ansible on some Linux Distros (i.e. CentOS and Ubuntu) may throw an error about missing the `docker` module.
 
