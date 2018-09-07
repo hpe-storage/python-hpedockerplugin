@@ -25,12 +25,12 @@ The following guide covers many of the options used for provisioning volumes and
 ## Within Docker<a name="docker_usage"></a>
 The following are the currently supported actions that can be taken using the HPE 3PAR Volume Plug-in for Docker.
 
-#### Creating a basic HPE 3PAR volume<a name="basic"></a>
+### Creating a basic HPE 3PAR volume<a name="basic"></a>
 ```
 sudo docker volume create -d hpe --name <vol_name>
 ```
 
-#### HPE 3PAR Docker Volume parameters<a name="options"></a>
+### HPE 3PAR Docker Volume parameters<a name="options"></a>
 The **HPE 3PAR Docker Volume Plug-in** supports several optional parameters that can be used during volume creation:
 
 - **size** -- specifies the desired size in GB of the volume. If size is not specified during volume creation , it defaults to 100 GB.
@@ -56,22 +56,22 @@ The following is an example Docker command creating a full provisioned, 50 GB vo
 docker volume create -d hpe --name <vol_name> -o size=50 -o provisioning=full
 ```
 
-#### Deleting a volume<a name="delete"></a>
+### Deleting a volume<a name="delete"></a>
 ```
 docker volume rm <vol_name>
 ```
 
-#### List volumes<a name="list"></a>
+### List volumes<a name="list"></a>
 ```
 docker volume ls
 ```
 
-#### Inspect a volume<a name="inspect"></a>
+### Inspect a volume<a name="inspect"></a>
 ```
 docker volume inspect <vol_name>
 ```
 
-#### Mounting a volume<a name="mount"></a>
+### Mounting a volume<a name="mount"></a>
 Use the following command to mount a volume and start a bash prompt:
 ```
 docker run -it -v <vol_name>:/<mount_point>/ --volume-driver hpe <image_name> bash
@@ -88,7 +88,7 @@ The image used for mounting can be any image located on https://hub.docker.com/ 
 the local filesystem. See https://docs.docker.com/v1.8/userguide/dockerimages/
 for more details.
 
-#### Unmounting a volume<a name="unmount"></a>
+### Unmounting a volume<a name="unmount"></a>
 Exiting the bash prompt will cause the volume to unmount:
 ```
 exit
@@ -116,22 +116,22 @@ Finally, remove the volume:
 sudo docker volume rm <vol_name>
 ```
 
-#### Creating a volume with existing vvset associated with QoS rules (**introduced in plugin version 2.1**)<a name="qos"></a>
+### Creating a volume with existing vvset associated with QoS rules (**introduced in plugin version 2.1**)<a name="qos"></a>
 ```
 docker volume create -d hpe --name <target_vol_name> -o qos-name=<vvset_name>
 ```
 Note -- 'vvset_name' should be present in 3par and should have QoS rules set to it.
 
-#### Creating a clone of a volume (**introduced in plugin version 2.1**)<a name="clone"></a>
+### Creating a clone of a volume (**introduced in plugin version 2.1**)<a name="clone"></a>
 ```
 docker volume create -d hpe --name <target_vol_name> -o cloneOf=<source_vol_name>
 ```
-#### Creating compressed volume (**introduced in plugin version 2.1**)<a name="compression"></a>
+### Creating compressed volume (**introduced in plugin version 2.1**)<a name="compression"></a>
 ```
 docker volume create -d hpe --name <target_vol_name> -o compression=true
 ```
 
-#### Creating a snapshot or virtualcopy of a volume (**introduced in plugin version 2.1**)<a name="snapshot"></a>
+### Creating a snapshot or virtualcopy of a volume (**introduced in plugin version 2.1**)<a name="snapshot"></a>
 ```
 docker volume create -d hpe --name <snapshot_name> -o virtualCopyOf=<source_vol_name>
 ```
