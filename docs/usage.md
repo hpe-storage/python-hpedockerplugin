@@ -162,7 +162,7 @@ The following section will cover different operations and commands that can be u
 To learn more about Persistent Volume Storage and Kubernetes/OpenShift, go to:
 https://kubernetes.io/docs/tasks/configure-pod-container/configure-persistent-volume-storage/
 
-#### Key Kubernetes/OpenShift Terms:
+### Key Kubernetes/OpenShift Terms:
 * **kubectl** – command line interface for running commands against Kubernetes clusters
 * **oc** – command line interface for running commands against OpenShift platform
 * **PV** – Persistent Volume is a piece of storage in the cluster that has been provisioned by an administrator.
@@ -194,7 +194,7 @@ Below is an example yaml specification to create Persistent Volumes using the HP
 
 The **StorageClass** object defines the storage provisioner (in our case the HPE 3PAR Volume Plug-in for Docker) and parameters to be used when requesting persistent storage within a Kubernetes/Openshift environment. This provisioner is a simple daemon that listens for **PVCs** and satisfies those claims based on the defined **StorageClass**.
 
-#### StorageClass example
+### StorageClass example
 
 The following creates a **StorageClass "sc1"** which provisions a compressed volume with the help of HPE 3PAR Docker Volume Plugin.
 
@@ -212,7 +212,7 @@ parameters:
 EOF
 ```
 
-##### Supported StorageClass options
+#### Supported StorageClass options
 
 | StorageClass Options | Type    | Parameters                                 | Example                        |
 |----------------------|---------|--------------------------------------------|--------------------------------|
