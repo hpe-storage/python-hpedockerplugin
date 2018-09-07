@@ -6,7 +6,7 @@ If you are not using Kubernetes or OpenShift, we recommend you take a look at th
 
 ### Getting Started
 
-These playbooks perform the following tasks on the Master/Slave nodes as defined in the Ansible hosts file.
+These playbooks perform the following tasks on the Master/Slave nodes as defined in the Ansible [hosts](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/hosts) file.
 * Configure the Docker Services for the HPE 3PAR Docker Volume Plug-in
 * Deploys a 3-node Highly Available etcd cluster
 * Deploys the config files (iSCSI or FC) to support your environment
