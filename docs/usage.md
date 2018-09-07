@@ -5,7 +5,8 @@ The following guide covers many of the options used for provisioning volumes and
 ### Sections
 
 * [Using 3PAR Volume Plug-in with Docker](#docker_usage)
-  * [Volume creation optional parameters](#options)
+  * [Create a basic HPE 3PAR volume](#basic)
+  * [Volume optional parameters](#options)
   * [Deleting a Volume](#delete)
   * [List Volumes](#list)
   * [Inspect a Volume](#inspect)
@@ -24,7 +25,7 @@ The following guide covers many of the options used for provisioning volumes and
 ## Within Docker<a name="docker_usage"></a>
 The following are the currently supported actions that can be taken using the HPE 3PAR Volume Plug-in for Docker.
 
-#### Creating a basic HPE 3PAR volume
+#### Creating a basic HPE 3PAR volume<a name="basic"></a>
 ```
 sudo docker volume create -d hpe --name <vol_name>
 ```
