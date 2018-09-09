@@ -16,7 +16,7 @@ class RemoveSnapshotUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):
         pass
 
     # To be overridden by the derived class if needed
-    def override_configuration(self, config):
+    def override_configuration(self, all_configs):
         pass
 
 

@@ -18,8 +18,8 @@ class TestCreateSnapRevertVolume(RevertSnapshotUnitTest):
         snap_name = data.volume_with_snapshots['snapshots'][0]['name']
         return {"Name": snap_name, "Opts": {"promote": vol_name}}
 
-#    def override_configuration(self, config):
-#        CONF.ssh_hosts_key_file = config.ssh_hosts_key_file
+#    def override_configuration(self, all_configs):
+#        all_configs['DEFAULT'].ssh_hosts_key_file = config.ssh_hosts_key_file
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']

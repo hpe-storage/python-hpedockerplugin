@@ -61,10 +61,10 @@ class HPE3PARISCSIDriver(object):
 
     VERSION = "0.0.2"
 
-    def __init__(self, hpe3parconfig, src_bkend_config,
+    def __init__(self, host_config, src_bkend_config,
                  tgt_bkend_config=None):
 
-        self.hpe3parconfig = hpe3parconfig
+        self._host_config = host_config
         self.configuration = src_bkend_config
 
         # Get source and target backend configs as separate dictionaries
@@ -72,7 +72,7 @@ class HPE3PARISCSIDriver(object):
         self.tgt_bkend_config = tgt_bkend_config
 
     def _init_common(self):
-        return hpecommon.HPE3PARCommon(self.hpe3parconfig,
+        return hpecommon.HPE3PARCommon(self._host_config,
                                        self.src_bkend_config,
                                        self.tgt_bkend_config)
 
@@ -90,7 +90,7 @@ class HPE3PARISCSIDriver(object):
         required_flags = ['hpe3par_api_url', 'hpe3par_username',
                           'hpe3par_password', 'san_ip', 'san_login',
                           'san_password']
-        common.check_flags(self.hpe3parconfig, required_flags)
+        common.check_flags(self.src_bkend_config, required_flags)
 
     def do_setup(self, timeout):
         common = self._init_common()

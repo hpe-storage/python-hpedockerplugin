@@ -107,8 +107,8 @@ class HPE3PARCommon(object):
     hpe3par_valid_keys = ['cpg', 'snap_cpg', 'provisioning', 'persona', 'vvs',
                           'flash_cache']
 
-    def __init__(self, config, src_bkend_config, tgt_bkend_config=None):
-        self.config = config
+    def __init__(self, host_config, src_bkend_config, tgt_bkend_config=None):
+        self._host_config = host_config
         self.src_bkend_config = src_bkend_config
         self.tgt_bkend_config = tgt_bkend_config
         self.client = None
@@ -166,17 +166,17 @@ class HPE3PARCommon(object):
             LOG.error(msg)
             raise exception.InvalidInput(reason=msg)
 
-        known_hosts_file = self.config.ssh_hosts_key_file
+        known_hosts_file = self._host_config.ssh_hosts_key_file
         policy = "AutoAddPolicy"
-        if self.config.strict_ssh_host_key_policy:
+        if self._host_config.strict_ssh_host_key_policy:
             policy = "RejectPolicy"
         self.client.setSSHOptions(
             self.src_bkend_config.san_ip,
             self.src_bkend_config.san_login,
             self.src_bkend_config.san_password,
-            port=self.config.san_ssh_port,
-            conn_timeout=self.config.ssh_conn_timeout,
-            privatekey=self.config.san_private_key,
+            port=self.src_bkend_config.san_ssh_port,
+            conn_timeout=self.src_bkend_config.ssh_conn_timeout,
+            privatekey=self.src_bkend_config.san_private_key,
             missing_key_policy=policy,
             known_hosts_file=known_hosts_file)
 
@@ -197,7 +197,7 @@ class HPE3PARCommon(object):
         except hpeexceptions.UnsupportedVersion as ex:
             raise exception.InvalidInput(ex)
 
-        if self.config.hpe3par_debug:
+        if self.src_bkend_config.hpe3par_debug:
             self.client.debug_rest(True)
 
     def check_for_setup_error(self):
@@ -776,7 +776,7 @@ class HPE3PARCommon(object):
             cpg = volume['cpg']
         else:
             # cpg = self.src_bkend_config.hpe3par_cpg[0]
-            cpg = self.config.hpe3par_cpg[0]
+            cpg = self.src_bkend_config.hpe3par_cpg[0]
             volume['cpg'] = cpg
 
         # check for valid provisioning type
@@ -1265,9 +1265,9 @@ class HPE3PARCommon(object):
         except hpeexceptions.HTTPForbidden as ex:
             LOG.error("Exception: %s", ex)
             raise exception.NotAuthorized()
-        except hpeexceptions.HTTPNotFound as ex:
+        except Exception as ex:
             LOG.error("Exception: %s", ex)
-            raise exception.NotFound()
+            raise exception.PluginException(ex)
 
     def create_cloned_volume(self, dst_volume, src_vref):
         LOG.info("Create clone of volume\n%s", json.dumps(src_vref, indent=2))
@@ -1363,8 +1363,6 @@ class HPE3PARCommon(object):
 
         except hpeexceptions.HTTPForbidden:
             raise exception.NotAuthorized()
-        except hpeexceptions.HTTPNotFound:
-            raise exception.NotFound()
         except Exception as ex:
             LOG.error("Exception: %s", ex)
             raise exception.PluginException(ex)
@@ -1431,8 +1429,6 @@ class HPE3PARCommon(object):
     def add_volume_to_rcg(self, **kwargs):
         bkend_vol_name = kwargs['bkend_vol_name']
         rcg_name = kwargs['rcg_name']
-
-        # LOG.info(self.config.replication_device)
 
         # Add volume to remote copy group.
         rcg_targets = []
@@ -1526,12 +1522,12 @@ class HPE3PARCommon(object):
                                               optional)
             LOG.info("Remote copy group successfully created: %s!" % rcg_name)
         except Exception as ex:
-            msg = (_("There was an error creating remote copy "
-                     "group: %s.") % six.text_type(ex))
+            msg = "Error encountered while creating remote copy group: %s" %\
+                  six.text_type(ex)
             LOG.error(msg)
             raise exception.HPERemoteCopyGroupBackendAPIException(data=msg)
 
-        if src_config.quorum_witness_ip:
+        if tgt_config.quorum_witness_ip:
             pp_params = {'targets': [
                 {'targetName': tgt_config.backend_id,
                  'policies': {'autoFailover': True,
@@ -1541,8 +1537,8 @@ class HPE3PARCommon(object):
             try:
                 self.client.modifyRemoteCopyGroup(rcg_name, pp_params)
             except Exception as ex:
-                msg = (_("There was an error modifying the remote copy "
-                         "group: %s.") % six.text_type(ex))
+                msg = "Error encountered while modifying remote copy group"\
+                      "%s: %s" % (rcg_name, six.text_type(ex))
                 LOG.error(msg)
                 raise exception.HPERemoteCopyGroupBackendAPIException(data=msg)
 
@@ -1561,9 +1557,8 @@ class HPE3PARCommon(object):
                 try:
                     self.client.modifyRemoteCopyGroup(rcg_name, opt)
                 except Exception as ex:
-                    msg = (_("There was an error setting the sync period for "
-                             "the remote copy group: %s.") %
-                           six.text_type(ex))
+                    msg = "Error encountered while setting the sync period "\
+                          "for the remote copy group: %s" % six.text_type(ex)
                     LOG.error(msg)
                     raise exception.HPERemoteCopyGroupBackendAPIException(
                         data=msg)
@@ -1575,8 +1570,8 @@ class HPE3PARCommon(object):
             return ret_val
 
         except Exception as ex:
-            msg = (_("There was an error fetching the remote copy "
-                     "group after its creation: %s.") % six.text_type(ex))
+            msg = "Error encountered while fetching the remote copy "\
+                  "group after its creation: %s" % six.text_type(ex)
             LOG.error(msg)
             raise exception.HPERemoteCopyGroupBackendAPIException(data=msg)
 
