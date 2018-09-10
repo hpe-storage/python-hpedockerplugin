@@ -48,9 +48,3 @@ See the [usage instructions](/docs/usage.md) for details on the supported operat
 ## Troubleshooting
 
 Troubleshooting issues with the plugin can be performed using these [tips](/docs/troubleshooting.md)
-
-## Contributions
-
-This section describes steps that should be done when creating contributions for this plugin.
-
-Review the [Contribution instructions](/docs/contribute.md)
