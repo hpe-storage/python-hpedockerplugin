@@ -124,7 +124,7 @@
   - name: Populate hpe.conf
     ini_file:
       path: /etc/hpedockerplugin/hpe.conf
-      section: DEFAULT
+      section: {{ item }}
       option: "{{ item.option }}"
       value: "{{ item.value }}"
       no_extra_spaces: true
@@ -149,6 +149,8 @@
       - { option: 'san_password', value: "{{ hpe3par_password }}" }
       - { option: 'hpe3par_iscsi_ips', value: "{{ result.stdout_lines[0] + ',' + result.stdout_lines[1] }}" }
     become: yes
+    with_items: "{{ INVENTORY.keys()}}"
+      
 
   - name: create hpedockerplugin container
     docker_container:
