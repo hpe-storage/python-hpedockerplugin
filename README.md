@@ -7,7 +7,8 @@ The HPE Docker Volume Plugin supports popular container platforms like Docker, K
 ## HPE Docker Volume Plugin Overview
 
 Before we get started, you need to make a choice on how you will be using the plugin.
----
+
+
 ### **Standalone Docker instance**
 
 Here is an example of the HPE Docker Volume plugin being used in a standalone Docker instance:
@@ -20,7 +21,7 @@ Here is an example of the HPE Docker Volume plugin being used in a standalone Do
 Here is an example of the HPE Docker Volume plugin being used in an OpenShift environment:
 
 ![HPE Docker Volume Plugin with OpenShift](https://github.com/budhac/python-hpedockerplugin/blob/master/docs/img/3PAR_k8_design_diagram_75.png)
----
+
 ## Install and Quick Start instructions
 
 * Review the [System Requirements](/docs/system-reqs.md) before installing the plugin
