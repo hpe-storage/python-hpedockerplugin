@@ -4,7 +4,7 @@ HPE Docker Volume Plugin is an open source project that provides persistent stor
 
 The HPE Docker Volume Plugin supports popular container platforms like Docker, Kubernetes, OpenShift and soon SuSE CaaS/CAP (coming in v3.0)
 
-## Getting Started
+## HPE Docker Volume Plugin Overview
 
 Before we get started, you need to make a choice on how you will be using the plugin.
 
@@ -15,16 +15,16 @@ Here is an example of the plugin being used in a standalone Docker instance:
 ![HPE Docker Volume Plugin](https://github.com/budhac/python-hpedockerplugin/blob/master/docs/img/3PAR_docker_design_diagram_75.png)
 
 
-## HPE Docker Volume Plugin Overview
-The following diagram illustrates the HPE Docker Volume Plugin configured on multiple hosts in a Docker cluster. The plugin is a part of Docker Engine Managed Plugin System. See the [quick start instructions](/quick-start/README.md) for details on how to install the plugin.
+#### Kubernetes/OpenShift environment
 
+Here is an example of the plugin being used in OpenShift environment:
 
-![HPE Docker Volume Plugin](/docs/img/HPE-DockerVolumePlugin-Overview.png "Storage Overview")
+![HPE Docker Volume Plugin with OpenShift](https://github.com/budhac/python-hpedockerplugin/blob/master/docs/img/3PAR_k8_design_diagram_75.png)
 
 ## Install and Quick Start instructions
 
 * Review the [System Requirements](/docs/system-reqs.md) before installing the plugin
-* Deploying the plugin into Docker Engine Managed Plugin System [quick-start instructions](/quick-start/README.md)
+* Check out the [Quick Start Guide](/docs/quick_start_guide.md) for deploying the HPE Docker Volume Plugin in Docker or in Kubernetes/OpenShift environments
 
 
 ## Supported Features
