@@ -23,16 +23,6 @@
   tasks:
     - name: Create etcd cluster for 3PAR Docker Volume plugin
       include: tasks/create_etcd_container.yml
-      
-- name: Get the master IP address
-  hosts: all
-  become: root
-  
-  tasks:
-    - name: Getting the master IP
-      set_fact: 
-        master_ip: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
-      when: inventory_hostname in groups['masters']
 
 - name: Install HPE 3PAR Volume Driver for Kubernetes/OpenShift
   hosts: all
@@ -62,7 +52,7 @@
         path: /etc/hpedockerplugin/hpe.conf
         section: "{{ item }}"
         option: 'host_etcd_ip_address'
-        value: "{{ master_ip }}"
+        value: "{{ groups['masters'][0] }}"
         no_extra_spaces: true
       with_items:
         - "{{ INVENTORY.keys()}}"
