@@ -1,6 +1,6 @@
 ## Multipath Support
 
-This section describes steps that should be performed to properly enable multipath support with the HPE 3PAR StoreServ and HPE Docker Volume Plugin. The below steps are only applicable if HPE 3PAR Docker Volume plugin is deployed as a container via Legacy Docker plugin system.
+This section describes steps that should be performed to properly enable multipath support with the HPE 3PAR StoreServ and HPE Docker Volume Plugin. The below steps are only applicable if HPE 3PAR Docker Volume plugin is deployed as a container via Containerized Docker plugin system.
 
 ### Multipath Settings
 
