@@ -1,6 +1,5 @@
 ## Install Guide for Integration of HPE 3PAR Containerized Plugin with RedHat OpenShift / Kubernetes
 
----
 * [Introduction](#introduction)
 * [Before you begin](#before)
 * [Support Matrix for Kubernetes and Openshift 3.7](#support)

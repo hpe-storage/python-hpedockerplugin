@@ -22,7 +22,7 @@ The following guide covers many of the options used for provisioning volumes and
   * [Pod Example](#pod)
   * [Restarting the Containerized HPE 3PAR Volume Plug-in](#restart)
 
-
+---
 
 
 ## Within Docker<a name="docker_usage"></a>
