@@ -1,10 +1,10 @@
 # Quick Start Guide to installing the HPE 3PAR Volume Plug-in for Docker
 
-* ### [Quick Start Guide for Standalone Docker environments](#docker)
-* ### [Quick Start Guide for Kubernetes/OpenShift environments](#k8)
-* ### [Usage](#usage)
+* #### [Quick Start Guide for Standalone Docker environments](#docker)
+* #### [Quick Start Guide for Kubernetes/OpenShift environments](#k8)
+* #### [Usage](#usage)
 
-### Quick Start Guide for Standalone Docker environments <a name="docker"></a>
+#### Quick Start Guide for Standalone Docker environments <a name="docker"></a>
 
 Steps for Deploying the Managed Plugin (HPE 3PAR Volume Plug-in for Docker) in a Standalone Docker environment
 
@@ -96,9 +96,9 @@ $ systemctl restart docker.service
 Now the systems are ready to setup the HPE 3PAR Volume Plug-in for Docker.
 
 
-### Next Steps:
+#### Next Steps:
 
-#### ETCD config
+##### ETCD config
 
 1. Export the Master Node IP address
 
@@ -123,7 +123,7 @@ sudo docker run -d -v /usr/share/ca-certificates/:/etc/ssl/certs -p 4001:4001 \
 -initial-cluster-state new
 ```
 
-#### HPE 3PAR Volume Managed Plug-in config
+##### HPE 3PAR Volume Managed Plug-in config
 
 1. Add HPE 3PAR into ~/.ssh/known_hosts
 
@@ -180,11 +180,11 @@ $ docker plugin ls
 
 ```
 
-### Quick Start Guide for Kubernetes/OpenShift environments <a name="k8"></a>
+#### Quick Start Guide for Kubernetes/OpenShift environments <a name="k8"></a>
 
 There are two methods for installing the HPE 3PAR Volume Plug-in for Docker for Kubernetes/OpenShift environments:
 
-1. [Ansible playbook to deploy the HPE 3PAR Volume Plug-in for Docker (**Recommended**)](https://github.com/budhac/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/README.md)
+1. [Ansible playbook to deploy the HPE 3PAR Volume Plug-in for Docker (**RECOMMENDED**)](https://github.com/budhac/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/README.md)
 
 
 2. [Manual install HPE 3PAR Volume Plug-in for Docker](https://github.com/budhac/python-hpedockerplugin/blob/master/docs/manual_install_guide_hpe_3par_plugin_with_openshift_kubernetes.md)
