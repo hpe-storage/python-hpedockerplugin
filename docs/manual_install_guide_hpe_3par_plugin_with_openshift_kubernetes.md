@@ -271,7 +271,7 @@ $ cp /root/.kube/config /etc/kubernetes/admin.conf
 
 >For more information on the HPE FlexVolume driver, please visit this link:
 >
->https://github.com/hpe-storage/dory/blob/master/README.md
+>https://github.com/hpe-storage/dory/
 
 13. Repeat steps 1-9 on all worker nodes. **Steps 10-12 only needs to be ran on the Master node.**
 
