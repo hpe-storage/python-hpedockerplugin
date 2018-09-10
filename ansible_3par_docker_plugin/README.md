@@ -33,7 +33,7 @@ $ ansible-playbook -i hosts install_hpe_3par_volume_driver.yml
 
 Once complete you will be ready to start using the HPE 3PAR Docker Volume Plug-in within Kubernetes/OpenShift.
 
-Please refer to the Kubernetes/OpenShift section in the [Usage Guide](/docs/usage.md) on how to create and deploy some sample SCs, PVCs, and Pods with persistent volumes using the HPE 3PAR Docker Volume Plug-in.
+Please refer to the Kubernetes/OpenShift section in the [Usage Guide](/docs/usage.md#k8_usage) on how to create and deploy some sample SCs, PVCs, and Pods with persistent volumes using the HPE 3PAR Docker Volume Plug-in.
 
 
 <br><br>
