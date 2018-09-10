@@ -846,6 +846,7 @@ class VolumeManager(object):
             # This will make get_vol_byname more efficient
             clone_vol['fsOwner'] = src_vol.get('fsOwner')
             clone_vol['fsMode'] = src_vol.get('fsMode')
+            clone_vol['backend'] = src_vol.get('backend')
             self._etcd.save_vol(clone_vol)
 
         except Exception as ex:
