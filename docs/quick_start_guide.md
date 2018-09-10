@@ -139,9 +139,11 @@ $ ssh -l username <3PAR IP Address>
 $ vi /etc/hpedockerplugin/hpe.conf
 ```
 
-For 3PAR iSCSI plugin, use this hpe.conf template https://github.com/hpe-storage/python-hpedockerplugin/blob/master/config/hpe.conf.sample.3parISCSI
+For 3PAR iSCSI plugin, use this hpe.conf template
+[/docs/config_examples/hpe.conf.sample.3parISCSI](/docs/config_examples/hpe.conf.sample.3parISCSI)
 
-For 3PAR FC plugin, use this hpe.conf template https://github.com/hpe-storage/python-hpedockerplugin/blob/master/config/hpe.conf.sample.3parFC
+For 3PAR FC plugin, use this hpe.conf template
+[/docs/config_examples/hpe.conf.sample.3parFC](/docs/config_examples/hpe.conf.sample.3parFC)
 
 >Note: The template has different place holders for the storage system to be configured. The parameter host_etcd_ip_address = <ip_address>, in **/etc/hpedockerplugin/hpe.conf**, needs to be replaced with the ip_address of the host where etcd is running.
 

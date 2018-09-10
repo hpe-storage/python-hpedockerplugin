@@ -53,7 +53,7 @@ $ sudo su -
 **Note:** For this quick start quide, we will be creating a single-node **etcd** deployment, as shown in the example below, but for production, it is **recommended** to deploy a High Availability **etcd** cluster.
 
 For more information on etcd and how to setup an **etcd** cluster for High Availability, please refer:
-https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/etcd_cluster_setup.md
+[/docs/advanced/etcd_cluster_setup.md](/docs/advanced/etcd_cluster_setup.md)
 
 1. Export the Kubernetes/OpenShift `Master` node IP address
 
