@@ -28,6 +28,17 @@ The following guide covers many of the options used for provisioning volumes and
 ## Within Docker<a name="docker_usage"></a>
 The following section covers the supported actions for the **HPE 3PAR Volume Plug-in** within a **Docker** environment.
 
+* [Create a basic HPE 3PAR volume](#basic)
+* [Volume optional parameters](#options)
+* [Deleting a Volume](#delete)
+* [List Volumes](#list)
+* [Inspect a Volume](#inspect)
+* [Mounting a Volume](#mount)
+* [Unmounting a Volume](#unmount)
+* [Creating a Volume with QoS rules](#qos)
+* [Cloning a Volume](#clone)
+* [Enabling compression on Volume](#compression)
+
 If you are using **Kubernetes** or **OpenShift**, please go the [Kubernetes/OpenShift Usage section](#k8_usage).
 
 ### Creating a basic HPE 3PAR volume<a name="basic"></a>
@@ -159,6 +170,13 @@ docker volume create -d hpe --name <snapshot_name> -o virtualCopyOf=<source_vol_
 ## Usage of the HPE 3PAR Volume Plug-in for Docker in Kubernetes/OpenShift<a name="k8_usage"></a>
 
 The following section will cover different operations and commands that can be used to familiarize yourself and verify the installation of the HPE 3PAR Volume Plug-in for Docker by provisioning storage using Kubernetes/OpenShift resources like **PersistentVolume**, **PersistentVolumeClaim**, **StorageClass**, **Pods**, etc.
+
+* [Kubernetes/OpenShift Terms](#terms)
+* [StorageClass Example](#sc)
+  * [StorageClass options](#sc_parameters)
+* [Persistent Volume Claim Example](#pvc)
+* [Pod Example](#pod)
+* [Restarting the Containerized HPE 3PAR Volume Plug-in](#restart)
 
 To learn more about Persistent Volume Storage and Kubernetes/OpenShift, go to:
 https://kubernetes.io/docs/tasks/configure-pod-container/configure-persistent-volume-storage/
