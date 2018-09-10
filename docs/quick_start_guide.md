@@ -4,6 +4,8 @@
 * #### [Quick Start Guide for Kubernetes/OpenShift environments](#k8)
 * #### [Usage](#usage)
 
+---
+
 #### Quick Start Guide for Standalone Docker environments <a name="docker"></a>
 
 Steps for Deploying the Managed Plugin (HPE 3PAR Volume Plug-in for Docker) in a Standalone Docker environment
@@ -190,7 +192,7 @@ There are two methods for installing the HPE 3PAR Volume Plug-in for Docker for 
 2. [Manual install HPE 3PAR Volume Plug-in for Docker](https://github.com/budhac/python-hpedockerplugin/blob/master/docs/manual_install_guide_hpe_3par_plugin_with_openshift_kubernetes.md)
 
 
-## Usage <a name="usage"></a>
+#### Usage <a name="usage"></a>
 
 For usage go to:
 
