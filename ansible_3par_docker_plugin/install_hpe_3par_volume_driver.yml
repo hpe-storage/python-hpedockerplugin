@@ -23,7 +23,16 @@
   tasks:
     - name: Create etcd cluster for 3PAR Docker Volume plugin
       include: tasks/create_etcd_container.yml
-
+      
+- name: Get the master IP address
+  hosts: all
+  become: root
+  
+  tasks:
+    - name: Getting the master IP
+      set_fact: 
+        master_ip: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+      when: inventory_hostname in groups['masters']
 
 - name: Install HPE 3PAR Volume Driver for Kubernetes/OpenShift
   hosts: all
@@ -32,18 +41,35 @@
   vars:
     driver_path: "/usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/"
 
-  vars_prompt:
-    - name: "storage_config"
-      prompt: "Configure for FC or iSCSI? Type: 'fc' or 'iscsi'."
-      private: no
-      default: "fc"
+  #vars_prompt:
+  #  - name: "storage_config"
+  #    prompt: "Configure for FC or iSCSI? Type: 'fc' or 'iscsi'."
+  #    private: no
+  #    default: "fc"
 
   tasks:
     - name: Configure multipath
       include: tasks/configure_multipath.yml
+      
+    - name: load plugin settings
+      include_vars: 'properties/plugin_configuration_properties.yml'
+      
+    - name: Create hpe.conf
+      include: create_conf_file.yml
+      
+    - name: Populate hpe.conf
+      ini_file:
+        path: /etc/hpedockerplugin/hpe.conf
+        section: "{{ item }}"
+        option: 'host_etcd_ip_address'
+        value: "{{ master_ip }}"
+        no_extra_spaces: true
+      with_items:
+        - "{{ INVENTORY.keys()}}"
+      become: yes
 
-    - name: Copy hpe.conf
-      include: tasks/copy_hpe_conf.yml
+    #- name: Copy hpe.conf
+    #  include: tasks/copy_hpe_conf.yml
 
     - name: Create 3PAR Docker Volume plugin
       include: tasks/create_3par_docker_volume_plugin.yml
