@@ -43,7 +43,7 @@ Here is an example of the HPE Docker Volume plugin being used in an OpenShift en
 
 ## Usage
 
-See the [usage instructions](/docs/usage.md) for details on the supported operations and usage of the plugin.
+See the [usage guide](/docs/usage.md) for details on the supported operations and usage of the plugin.
 
 ## Troubleshooting
 
