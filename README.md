@@ -6,9 +6,6 @@ The HPE Docker Volume Plugin supports popular container platforms like Docker, K
 
 ## HPE Docker Volume Plugin Overview
 
-Before we get started, you need to make a choice on how you will be using the plugin.
-
-
 ### **Standalone Docker instance**
 
 Here is an example of the HPE Docker Volume plugin being used in a standalone Docker instance:
