@@ -22,7 +22,7 @@ Here is an example of the HPE Docker Volume plugin being used in an OpenShift en
 ## Install and Quick Start instructions
 
 * Review the [System Requirements](/docs/system-reqs.md) before installing the plugin
-* Check out the [Quick Start Guide](/docs/quick_start_guide.md) for deploying the **HPE Docker Volume Plugin in Docker** or in **Kubernetes/OpenShift** environment
+* Check out the [Quick Start Guide](/docs/quick_start_guide.md) for deploying the **HPE Docker Volume Plugin** in [Docker](https://github.com/budhac/python-hpedockerplugin/blob/master/docs/quick_start_guide.md#docker) or in [Kubernetes/OpenShift](https://github.com/budhac/python-hpedockerplugin/blob/master/docs/quick_start_guide.md#k8) environment
 
 
 ## Supported Features
