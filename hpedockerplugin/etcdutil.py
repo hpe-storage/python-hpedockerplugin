@@ -120,6 +120,7 @@ class EtcdUtil(object):
         self.client.delete(volkey)
         LOG.info(_LI('Deleted key: %s from etcd'), volkey)
 
+    # TODO: Unused - should be removed
     def _get_vol_byuuid(self, voluuid):
         volkey = self.volumeroot + voluuid
         result = self.client.read(volkey)

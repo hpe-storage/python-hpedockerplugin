@@ -953,7 +953,7 @@ class HPE3PARCommon(object):
             # TODO(sonivi): avoid volume deletion incase of failover
             # avoid volume deletion incase of switchover
             rcg_info = self.client.getRemoteCopyGroup(rcg_name)
-            if rcg_info.get('role') != 1:
+            if rcg_info.get('role') != self.ROLE_PRIMARY:
                 # it's not primary
                 msg = (_("Failed to delete volume: %(vol)s as rcg: %(rcg)s do"
                          " not have valid role") % {
@@ -981,7 +981,8 @@ class HPE3PARCommon(object):
                 LOG.info("vol:%(vol_name)s succesfully removed from RCG: "
                          "%(rcg_name)s.",
                          {'vol_name': vol_name, 'rcg_name': rcg_name})
-            except Exception:
+            except Exception as ex:
+                LOG.error("%s" % six.iteritems(ex))
                 pass
 
             # Delete volume
@@ -1010,10 +1011,10 @@ class HPE3PARCommon(object):
                 # if other volumes are present, then start rcg
                 LOG.info("Other Volumes are present in RCG:%(rcg_info)s",
                          {'rcg_info': rcg_info})
-                LOG.info("Starting RCG:%(rcg_name)s.", {'rcg_info': rcg_name})
+                LOG.info("Starting RCG:%(rcg_name)s.", {'rcg_name': rcg_name})
                 self.client.startRemoteCopy(rcg_name)
-                LOG.info("Successfully started RCG:%(rcg_info)s.",
-                         {'rcg_info': rcg_info})
+                LOG.info("Successfully started RCG:%(rcg_name)s.",
+                         {'rcg_name': rcg_name})
 
     def _get_3par_hostname_from_wwn_iqn(self, wwns, iqns):
         if wwns is not None and not isinstance(wwns, list):

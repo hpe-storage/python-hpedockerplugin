@@ -56,8 +56,7 @@ host_opts = [
     cfg.StrOpt('ssh_hosts_key_file',
                default='/root/.ssh/ssh_known_hosts',
                help='File containing SSH host keys for the systems with which '
-                    'the plugin needs to communicate.  OPTIONAL: '
-                    'Default=$state_path/ssh_known_hosts'),
+                    'the plugin needs to communicate'),
 ]
 
 CONF = cfg.CONF
@@ -78,6 +77,12 @@ def setup_logging(name, level):
         LOG.logger.setLevel(logging.WARNING)
     if level == 'ERROR':
         LOG.logger.setLevel(logging.ERROR)
+
+
+def getdefaultconfig(configfile):
+    CONF(configfile, project='hpedockerplugin', version='1.0.0')
+    configuration = conf.Configuration(host_opts, config_group='DEFAULT')
+    return configuration
 
 
 def get_host_config(configfile):

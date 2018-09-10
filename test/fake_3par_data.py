@@ -108,6 +108,28 @@ volume = {
     'backend': 'DEFAULT'
 }
 
+replicated_volume = {
+    'name': VOLUME_NAME,
+    'id': VOLUME_ID,
+    'display_name': VOL_DISP_NAME,
+    'size': 2,
+    'host': FAKE_DOCKER_HOST,
+    'provisioning': THIN,
+    'flash_cache': None,
+    'qos_name': None,
+    'compression': None,
+    'fsMode': None,
+    'fsOwner': None,
+    'snapshots': [],
+    'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
+    'is_snap': False,
+    'cpg': HPE3PAR_CPG,
+    'snap_cpg': HPE3PAR_CPG2,
+    'backend': 'DEFAULT',
+    'rcg_info': {'local_rcg_name': RCG_NAME,
+                 'remote_rcg_name': REMOTE_RCG_NAME}
+}
+
 json_path_info = \
     '{"connection_info": {"driver_volume_type": "iscsi", ' \
     '"data": {"target_luns": [3, 3], "target_iqns": ' \
