@@ -328,6 +328,6 @@ Congratulations, you have completed all validation steps and have a working **Ku
 If you need to restart the containerized plugin used in Kubernetes/OpenShift environments, run the following command:
 
 ```
-$ docker stop <container_id_of_plugin>
+$ docker restart <container_id_of_plugin>
 
 ```
