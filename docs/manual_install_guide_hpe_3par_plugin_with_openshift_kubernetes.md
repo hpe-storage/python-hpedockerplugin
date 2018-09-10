@@ -161,12 +161,12 @@ $ vi hpe.conf
 
 >##### HPE 3PAR iSCSI:
 >
->/config_examples/hpe.conf.sample.3parISCSI
+>[/docs/config_examples/hpe.conf.sample.3parISCSI](/docs/config_examples/hpe.conf.sample.3parISCSI)
 
 
 >##### HPE 3PAR Fiber Channel:
 >
->/config_examples/hpe.conf.sample.3parFC
+>[/docs/config_examples/hpe.conf.sample.3parFC](/docs/config_examples/hpe.conf.sample.3parFC)
 
 7. Use Docker Compose to deploy the HPE 3PAR Volume Plug-In for Docker (Containerized Plug-in) from the pre-built image available on Docker Hub:
 
