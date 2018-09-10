@@ -1,4 +1,4 @@
-## Install Guide for Integration of HPE 3PAR Containerized Plugin with RedHat OpenShift / Kubernetes
+## Manual Install Guide for Integration of HPE 3PAR Containerized Plugin with RedHat OpenShift / Kubernetes (ADVANCED)
 
 * [Introduction](#introduction)
 * [Before you begin](#before)
@@ -11,6 +11,9 @@
 
 ### Introduction <a name="introduction"></a>
 This document details the installation steps in order to get up and running quickly with the HPE 3PAR Volume Plug-in for Docker within a Kubernetes 1.7/Openshift 3.7 environment.
+
+**We highly recommend to use the Ansible playbooks that simplify and automate the install process before using the manual install process.**
+[/ansible_3par_docker_plugin/README.md](/ansible_3par_docker_plugin/README.md)
 
 ## Before you begin <a name="before"></a>
 * You need to have a basic knowledge of containers
