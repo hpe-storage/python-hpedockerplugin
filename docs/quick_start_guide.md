@@ -1,18 +1,19 @@
 # Quick Start Guide to installing the HPE 3PAR Volume Plug-in for Docker
 
-* #### [Quick Start Guide for Standalone Docker environments](#docker)
-* #### [Quick Start Guide for Kubernetes/OpenShift environments](#k8)
-* #### [Usage](#usage)
+---
+* [Quick Start Guide for Standalone Docker environments](#docker)
+* [Quick Start Guide for Kubernetes/OpenShift environments](#k8)
+* [Usage](#usage)
 
 ---
 
-#### Quick Start Guide for Standalone Docker environments <a name="docker"></a>
+## Quick Start Guide for Standalone Docker environments <a name="docker"></a>
 
 Steps for Deploying the Managed Plugin (HPE 3PAR Volume Plug-in for Docker) in a Standalone Docker environment
 
-#### **Prerequisite packages to be installed on host OS:**
+### **Prerequisite packages to be installed on host OS:**
 
-##### Ubuntu 16.04 or later:
+#### Ubuntu 16.04 or later:
 
 
 1. Install the iSCSI (optional if you aren't using iSCSI) and Multipath packages
@@ -28,7 +29,7 @@ $ systemctl restart open-iscsi multipath-tools docker
 
 
 
-##### RHEL/CentOS 7.3 or later:
+#### RHEL/CentOS 7.3 or later:
 
 1. Install the iSCSI (optional if you aren't using iSCSI) and Multipath packages
 
@@ -98,9 +99,9 @@ $ systemctl restart docker.service
 Now the systems are ready to setup the HPE 3PAR Volume Plug-in for Docker.
 
 
-#### Next Steps:
+### Next Steps:
 
-##### ETCD config
+### ETCD config
 
 1. Export the Master Node IP address
 
@@ -125,7 +126,7 @@ sudo docker run -d -v /usr/share/ca-certificates/:/etc/ssl/certs -p 4001:4001 \
 -initial-cluster-state new
 ```
 
-##### HPE 3PAR Volume Managed Plug-in config
+### HPE 3PAR Volume Managed Plug-in config
 
 1. Add HPE 3PAR into ~/.ssh/known_hosts
 
@@ -182,7 +183,7 @@ $ docker plugin ls
 
 ```
 
-#### Quick Start Guide for Kubernetes/OpenShift environments <a name="k8"></a>
+## Quick Start Guide for Kubernetes/OpenShift environments <a name="k8"></a>
 
 There are two methods for installing the HPE 3PAR Volume Plug-in for Docker for Kubernetes/OpenShift environments:
 
@@ -192,7 +193,7 @@ There are two methods for installing the HPE 3PAR Volume Plug-in for Docker for 
 2. [Manual install HPE 3PAR Volume Plug-in for Docker](https://github.com/budhac/python-hpedockerplugin/blob/master/docs/manual_install_guide_hpe_3par_plugin_with_openshift_kubernetes.md)
 
 
-#### Usage <a name="usage"></a>
+## Usage <a name="usage"></a>
 
 For usage go to:
 

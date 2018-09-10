@@ -1,5 +1,6 @@
 ## Install Guide for Integration of HPE 3PAR Containerized Plugin with RedHat OpenShift / Kubernetes
 
+---
 ## Table of contents
 * [Introduction](#introduction)
 * [Before you begin](#before)
@@ -8,7 +9,7 @@
   * [Configuring etcd](#etcd)
   * [Installing the HPE 3PAR Volume Plug-in](#installing)
 * [Usage](#usage)
-
+---
 
 ### Introduction <a name="introduction"></a>
 This document details the installation steps in order to get up and running quickly with the HPE 3PAR Volume Plug-in for Docker within a Kubernetes 1.7/Openshift 3.7 environment.
