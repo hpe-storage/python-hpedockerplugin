@@ -186,14 +186,14 @@ $ docker plugin ls
 
 There are two methods for installing the HPE 3PAR Volume Plug-in for Docker for Kubernetes/OpenShift environments:
 
-1. [Ansible playbook to deploy the HPE 3PAR Volume Plug-in for Docker (**RECOMMENDED**)](https://github.com/budhac/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/README.md)
+1. [Ansible playbook to deploy the HPE 3PAR Volume Plug-in for Docker (**RECOMMENDED**)](/ansible_3par_docker_plugin/README.md)
 
 
-2. [Manual install HPE 3PAR Volume Plug-in for Docker](https://github.com/budhac/python-hpedockerplugin/blob/master/docs/manual_install_guide_hpe_3par_plugin_with_openshift_kubernetes.md)
+2. [Manual install HPE 3PAR Volume Plug-in for Docker](/docs/manual_install_guide_hpe_3par_plugin_with_openshift_kubernetes.md)
 
 
 ## Usage <a name="usage"></a>
 
 For usage go to:
 
-https://github.com/budhac/python-hpedockerplugin/blob/master/docs/usage.md
+[Usage](/docs/usage.md)

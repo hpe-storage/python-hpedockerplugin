@@ -25,7 +25,8 @@ Where username is the username for the 3PAR storage array that will be used by t
 
 If a secured etcd cluster is not desired the **host_etcd_client_cert** and **host_etcd_client_key** properties can be commented out safely. In the case where a secured etcd cluster is desired, the two properties must point to the respective certificate and key files.
 
-For setting up secured etcd cluster, refer this doc: https://github.com/budhac/python-hpedockerplugin/blob/master/docs/advanced/etcd_cluster_setup.md
+For setting up secured etcd cluster, refer this doc:
+[etcd cluster setup](/docs/advanced/etcd_cluster_setup.md)
 
 #### Debug Logging
 

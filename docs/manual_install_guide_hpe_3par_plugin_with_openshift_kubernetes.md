@@ -161,12 +161,12 @@ $ vi hpe.conf
 
 >##### HPE 3PAR iSCSI:
 >
->https://github.com/budhac/python-hpedockerplugin/blob/master/config_examples/hpe.conf.sample.3parISCSI
+>/config_examples/hpe.conf.sample.3parISCSI
 
 
 >##### HPE 3PAR Fiber Channel:
 >
->https://github.com/budhac/python-hpedockerplugin/blob/master/config_examples/hpe.conf.sample.3parFC
+>/config_examples/hpe.conf.sample.3parFC
 
 7. Use Docker Compose to deploy the HPE 3PAR Volume Plug-In for Docker (Containerized Plug-in) from the pre-built image available on Docker Hub:
 
@@ -281,4 +281,4 @@ $ cp /root/.kube/config /etc/kubernetes/admin.conf
 
 For usage go to:
 
-https://github.com/budhac/python-hpedockerplugin/blob/master/docs/usage.md
+[Usage](/docs/usage.md)
