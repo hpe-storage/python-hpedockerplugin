@@ -328,6 +328,11 @@ Congratulations, you have completed all validation steps and have a working **Ku
 If you need to restart the containerized plugin used in Kubernetes/OpenShift environments, run the following command:
 
 ```
-$ docker restart <container_id_of_plugin>
+$ docker stop <container_id_of_plugin>
+```
 
+>Note: The /run/docker/plugins/hpe.sock and /run/docker/plugins/hpe.sock.lock files are not automatically removed when you stop the container. Therefore, these files will need to be removed manually between each run of the plugin.
+
+```
+$ docker start <container_id_of_plugin>
 ```
