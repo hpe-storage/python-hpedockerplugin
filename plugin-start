@@ -3,6 +3,8 @@
 /sbin/multipathd
 /sbin/udevd &
 
+export PYTHONPATH=${HOME}/python-hpedockerplugin:/root/python-hpedockerplugin:/python-hpedockerplugin:/python-hpedockerplugin/hpedockerplugin
+
 # Perform cleanup of twistd.pid, hpe.sock.* files
 /usr/bin/cleanup.sh
 /usr/bin/twistd --nodaemon hpe_plugin_service

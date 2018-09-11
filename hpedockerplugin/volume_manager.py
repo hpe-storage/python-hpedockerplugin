@@ -52,6 +52,8 @@ class VolumeManager(object):
         self._etcd = etcd_util
 
         self._initialize_configuration()
+        self._decrypt_password(self.src_bkend_config,
+                               self.tgt_bkend_config, backend_name)
 
         # TODO: When multiple backends come into picture, consider
         # lazy initialization of individual driver
@@ -86,10 +88,6 @@ class VolumeManager(object):
                          six.text_type(ex))
                 LOG.info(msg)
                 raise exception.HPEPluginStartPluginException(reason=msg)
-
-        self._etcd = etcd_util
-        hpepluginconfig.hpe3par_password = \
-            self._decrypt_password(hpepluginconfig, backend_name)
 
         self._connector = self._get_connector(hpepluginconfig)
 
@@ -148,7 +146,11 @@ class VolumeManager(object):
         if hpeconf.hpe3par_snapcpg:
             config.hpe3par_snapcpg = hpeconf.hpe3par_snapcpg
         else:
-            config.hpe3par_snapcpg = hpeconf.hpe3par_cpg
+            # config.hpe3par_snapcpg = hpeconf.hpe3par_cpg
+            # if 'hpe3par_snapcpg' is NOT given in hpe.conf this should be
+            # default to empty list & populate volume's snap_cpg later with
+            # value given with '-o cpg'
+            config.hpe3par_snapcpg = []
 
         LOG.info("Got source backend configuration!")
         return config
@@ -224,6 +226,16 @@ class VolumeManager(object):
         if vol_qos is not None:
             try:
                 self._hpeplugin_driver.get_qos_detail(vol_qos)
+                # if vol_flash is not given in option & with qos
+                # if vvset is having flash-cache enabled, then set
+                # vol_flash=True
+                if vol_flash is None:
+                    vvset_detail = self._hpeplugin_driver.get_vvset_detail(
+                        vol_qos)
+                    if(vvset_detail.get('flashCachePolicy') is not None and
+                       vvset_detail.get('flashCachePolicy') == 1):
+                        vol_flash = True
+
             except Exception as ex:
                 msg = (_('Create volume failed because vvset is not present or'
                          'is not associated with qos: %s'), six.text_type(ex))
@@ -343,6 +355,8 @@ class VolumeManager(object):
 
         vol = volume.createvol(volname)
         vol['backend'] = backend
+        vol['fsOwner'] = None
+        vol['fsMode'] = None
 
         parent_vol = ""
         try:
@@ -356,7 +370,7 @@ class VolumeManager(object):
             LOG.exception(msg)
             return json.dumps({u"Err": six.text_type(msg)})
 
-        vvset_detail = self._hpeplugin_driver.get_vvset_detail(
+        vvset_detail = self._hpeplugin_driver.get_vvset_from_volume(
             existing_ref_details['name'])
         if vvset_detail is not None:
             vvset_name = vvset_detail.get('name')
@@ -405,8 +419,7 @@ class VolumeManager(object):
             except Exception as ex:
                 msg = (_(
                     'Manage snapshot failed because parent volume: '
-                    '%(parent_volume)s is unmanaged Error: %(error)s') % {
-                        'error': six.text_type(ex),
+                    '%(parent_volume)s is unmanaged.') % {
                         'parent_volume': existing_ref_details["copyOf"]})
                 LOG.exception(msg)
                 return json.dumps({u"Err": six.text_type(msg)})
@@ -427,6 +440,8 @@ class VolumeManager(object):
                 self.map_3par_volume_prov_to_docker(volume_detail_3par)
             vol['compression'] = \
                 self.map_3par_volume_compression_to_docker(volume_detail_3par)
+            vol['cpg'] = volume_detail_3par.get('userCPG')
+            vol['snap_cpg'] = volume_detail_3par.get('snapCPG')
 
             if is_snap:
                 # managing a snapshot
@@ -447,6 +462,8 @@ class VolumeManager(object):
                     'id': vol['id'],
                     'parent_name': parent_vol['display_name'],
                     'parent_id': parent_vol['id'],
+                    'fsOwner': parent_vol['fsOwner'],
+                    'fsMode': parent_vol['fsMode'],
                     'expiration_hours': expiration_hours,
                     'retention_hours': retention_hours}
                 if 'snapshots' not in parent_vol:
@@ -816,6 +833,7 @@ class VolumeManager(object):
             # This will make get_vol_byname more efficient
             clone_vol['fsOwner'] = src_vol.get('fsOwner')
             clone_vol['fsMode'] = src_vol.get('fsMode')
+            clone_vol['backend'] = src_vol.get('backend')
             self._etcd.save_vol(clone_vol)
 
         except Exception as ex:
@@ -1630,6 +1648,7 @@ class VolumeManager(object):
             if not vvs_name:
                 vvs_name = self._create_vvs(vol['id'], undo_steps)
 
+        if vvs_name is not None:
             self._set_flash_cache_for_volume(vvs_name,
                                              vol['flash_cache'])
 
@@ -1787,16 +1806,22 @@ class VolumeManager(object):
              'msg': 'Removing VV %s from Remote Copy Group %s...'
                     % (bkend_vol_name, rcg_name)})
 
-    def _decrypt_password(self, hpepluginconfig, backend_name):
+    def _decrypt_password(self, src_bknd, trgt_bknd, backend_name):
         try:
             passphrase = self._etcd.get_backend_key(backend_name)
         except Exception as ex:
             LOG.info("Using Plain Text")
-            return hpepluginconfig.hpe3par_password
         else:
             passphrase = self.key_check(passphrase)
-            return self._decrypt(hpepluginconfig.hpe3par_password,
-                                 passphrase)
+            src_bknd.hpe3par_password = \
+                self._decrypt(src_bknd.hpe3par_password, passphrase)
+            src_bknd.san_password =  \
+                self._decrypt(src_bknd.san_password, passphrase)
+            if trgt_bknd:
+                trgt_bknd.hpe3par_password = \
+                    self._decrypt(trgt_bknd.hpe3par_password, passphrase)
+                trgt_bknd.san_password = \
+                    self._decrypt(trgt_bknd.san_password, passphrase)
 
     def key_check(self, key):
         KEY_LEN = len(key)

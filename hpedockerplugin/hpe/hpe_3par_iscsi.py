@@ -643,10 +643,17 @@ class HPE3PARISCSIDriver(object):
         finally:
             self._logout(common)
 
-    def get_vvset_detail(self, volume):
+    def get_vvset_detail(self, vvset):
         common = self._login()
         try:
-            return common.get_vvset_detail(volume)
+            return common.get_vvset_detail(vvset)
+        finally:
+            self._logout(common)
+
+    def get_vvset_from_volume(self, volume):
+        common = self._login()
+        try:
+            return common.get_vvset_from_volume(volume)
         finally:
             self._logout(common)
 
