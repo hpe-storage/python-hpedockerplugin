@@ -412,7 +412,7 @@ class VolumePlugin(object):
             if (rep_mode == 'asynchronous' or rep_mode == 'streaming')\
                     and sync_period:
                 try:
-                    sync_period = int(replication_device.sync_period)
+                    sync_period = int(sync_period)
                 except ValueError as ex:
                     msg = "Non-integer value '%s' not allowed for " \
                           "'sync_period'" % replication_device.sync_period

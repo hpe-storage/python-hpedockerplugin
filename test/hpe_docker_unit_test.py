@@ -1,10 +1,12 @@
 import abc
 import json
+import mock
 import six
 
 from io import StringIO
 from twisted.internet import reactor
 
+import test.fake_3par_data as data
 from config import setupcfg
 from hpedockerplugin import exception
 from hpedockerplugin import hpe_storage_api as api

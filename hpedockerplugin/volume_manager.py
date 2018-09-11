@@ -730,9 +730,9 @@ class VolumeManager(object):
         vol = self._etcd.get_vol_byname(volname)
         if vol is None:
             # Just log an error, but don't fail the docker rm command
-            msg = (_LE('Volume remove name not found %s'), volname)
+            msg = 'Volume name to remove not found: %s' % volname
             LOG.error(msg)
-            return json.dumps({u"Err": ''})
+            return json.dumps({u"Err": msg})
         parent_name = None
         is_snap = False
         if 'is_snap' in vol and vol['is_snap']:
