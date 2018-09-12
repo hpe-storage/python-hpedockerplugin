@@ -142,11 +142,7 @@ Installing the HPE 3PAR Volume Plug-in for Docker (Containerized Plug-in) for SU
 
     **HPE 3PAR Fiber Channel:**
 
-    <https://github.com/hpe-storage/python-hpedockerplugin/blob/plugin_v2/config/hpe.conf.sample.3parFC>
-
-    >**Note:** Step 4 is needed for now, since we have not published the latest image
-    >to the Docker public registry. Once we have published the image, this
-    > is no longer necessary.
+    <https://github.com/hpe-storage/python-hpedockerplugin/blob/plugin_v2/config/hpe.conf.sample.3parFC>    
 
 4. Either you can build the container image by following instructions in step 5 below, or use an pre-existing 2.1 image of the plugin container by substituting `image: hpestorage/legacyvolumeplugin:2.1` in docker-compose.yml given in step 6
 
