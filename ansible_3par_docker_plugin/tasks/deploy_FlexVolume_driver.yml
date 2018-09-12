@@ -18,6 +18,7 @@
       dest: /etc/kubernetes/admin.conf
       owner: "root"
       mode: 0755
+      ignore_errors: yes
 
   - name: Install FlexVolume drivers
     copy:
@@ -25,5 +26,6 @@
       dest: "{{ driver_path }}"
       owner: "root"
       mode: 0755
+      remote_src: yes
     with_fileglob:
       - "../files/dory/*"
