@@ -131,10 +131,6 @@ class VolumeManager(object):
                     self.tgt_bkend_config.hpe3par_iscsi_ips = iscsi_ips.split(
                         ';')
 
-                    # Additional information from target_device
-                    self.src_bkend_config.replication_mode = \
-                        self.tgt_bkend_config.replication_mode
-
     def _get_src_bkend_config(self):
         LOG.info("Getting source backend configuration...")
         hpeconf = self._hpepluginconfig
