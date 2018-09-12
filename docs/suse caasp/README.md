@@ -148,7 +148,9 @@ Installing the HPE 3PAR Volume Plug-in for Docker (Containerized Plug-in) for SU
     >to the Docker public registry. Once we have published the image, this
     > is no longer necessary.
 
-4.  **Build the containerized image**
+4. Either you can build the container image by following instructions in step 5 below, or use an pre-existing 2.1 image of the plugin container by substituting `image: hpestorage/legacyvolumeplugin:2.1` in docker-compose.yml given in step 6
+
+5.  **Build the containerized image**
     ```bash
      $ git clone https://github.com/hpe-storage/python-hpedockerplugin.git ~/container_code
      $ cd ~/container_code
@@ -162,7 +164,7 @@ Installing the HPE 3PAR Volume Plug-in for Docker (Containerized Plug-in) for SU
     REPOSITORY                           TAG                 IMAGE ID            CREATED             SIZE
     hpe-storage/python-hpedockerplugin   plugin_v2          9b540a18a9b2        4 weeks ago         239MB
     ```
-5.  **Deploy the HPE 3PAR Volume Plug-In for Docker**
+6.  **Deploy the HPE 3PAR Volume Plug-In for Docker**
 
     ```bash
     $ cd ~
@@ -197,7 +199,7 @@ Installing the HPE 3PAR Volume Plug-in for Docker (Containerized Plug-in) for SU
 
     > **Note: Please make sure etcd service in running state.**
 
-6.  **Start the HPE 3PAR Volume Plug-in for Docker
+7.  **Start the HPE 3PAR Volume Plug-in for Docker
     (Containerized Plug-in)**
 
     Make sure you are in the location of the **docker-compose.yml** file
@@ -298,6 +300,14 @@ Installing the HPE 3PAR Volume Plug-in for Docker (Containerized Plug-in) for SU
 **Upon successful completion of the above steps, you should have a
 working installation of SUSE CaaS integrated with HPE 3PAR Volume
 Plug-in for Docker**
+
+##### Known Issues:
+
+All the known issues regarding plugin can be found at the link
+below:<https://github.com/hpe-storage/python-hpedockerplugin/issues>
+
+**Right now the containerized plugin on SUSE CaaS platform is qualified on Fibre Channel Driver only.**
+On iSCSI Driver, there is still an outstanding open issue -- https://github.com/hpe-storage/python-hpedockerplugin/issues/198
 
 
 Usage of the HPE 3PAR Volume Plug-in for Docker in Kubernetes/SUSE CaaS
@@ -475,10 +485,6 @@ features refer:
 
 <https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/usage.md>
 
-##### Known Issues:
-
-All the known issues regarding plugin can be found at the link
-below:<https://github.com/hpe-storage/python-hpedockerplugin/issues>
 
 
 Learn more visit
