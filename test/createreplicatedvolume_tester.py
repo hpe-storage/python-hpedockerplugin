@@ -20,6 +20,25 @@ class CreateReplicatedVolumeUnitTest(hpeunittest.HpeDockerUnitTestExecutor):
     # here for the normal happy path TCs here as they are same
 
 
+class TestCreateVolumeDefaultFails(CreateReplicatedVolumeUnitTest):
+    def get_request_params(self):
+        return {"Name": "test-vol-001",
+                "Opts": {}}
+
+    def setup_mock_objects(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.return_value = None
+
+    def check_response(self, resp):
+        self._test_case.assertEqual(resp, {u"Err": ''})
+
+        # Check if these functions were actually invoked
+        # in the flow or not
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.getWsApiVersion.assert_called()
+        mock_3parclient.createVolume.assert_called()
+
+
 class TestCreateReplicatedVolumeAndRCG(CreateReplicatedVolumeUnitTest):
     def __init__(self, backend_name):
         self._backend_name = backend_name

@@ -89,7 +89,6 @@ class TestRemoveNonExistentSnapshot(RemoveSnapshotUnitTest):
         mock_etcd.get_vol_byname.return_value = None
 
     def check_response(self, resp):
-        # expected = {u'Err': u'snapshot %s does not exist!'
-        #             % self.snapshot_name}
-        expected = {u'Err': u''}
+        msg = 'Volume name to remove not found: %s' % self.snapshot_name
+        expected = {u'Err': msg}
         self._test_case.assertEqual(expected, resp)

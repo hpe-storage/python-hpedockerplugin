@@ -120,14 +120,6 @@ class EtcdUtil(object):
         self.client.delete(volkey)
         LOG.info(_LI('Deleted key: %s from etcd'), volkey)
 
-    def _get_vol_byuuid(self, voluuid):
-        volkey = self.volumeroot + voluuid
-        result = self.client.read(volkey)
-
-        volval = json.loads(result.value)
-        LOG.info(_LI('Read key: %s from etcd, result is: %s'), volkey, volval)
-        return volval
-
     def get_lock(self, lock_type):
         # By default this is volume lock-root
         lock_root = LOCKROOT

@@ -5,9 +5,11 @@ import test.createvolume_tester as createvolume_tester
 import test.createreplicatedvolume_tester as createrepvolume_tester
 import test.clonevolume_tester as clonevolume_tester
 import test.createsnapshot_tester as createsnapshot_tester
+import test.fake_3par_data as data
 import test.getvolume_tester as getvolume_tester
 import test.mountvolume_tester as mountvolume_tester
 import test.removesnapshot_tester as removesnapshot_tester
+import test.removevolume_tester as removevolume_tester
 # import revertsnapshot_tester
 import test.unmountvolume_tester as unmountvolume_tester
 
@@ -140,6 +142,11 @@ class HpeDockerUnitTestsBase(object):
     """
     REPLICATION related tests
     """
+    @tc_banner_decorator
+    def test_create_default_replicated_volume_fails(self):
+        test = createrepvolume_tester.TestCreateVolumeDefaultFails()
+        test.run_test(self)
+
     @tc_banner_decorator
     def test_create_pp_replicated_volume_and_rcg(self):
         test = createrepvolume_tester.TestCreateReplicatedVolumeAndRCG(
@@ -309,6 +316,44 @@ class HpeDockerUnitTestsBase(object):
 
     """
     REMOVE VOLUME related tests
+    """
+    @tc_banner_decorator
+    def test_remove_regular_volume(self):
+        rm_regular_vol = removevolume_tester.TestRemoveVolume.Regular()
+        test = removevolume_tester.TestRemoveVolume(rm_regular_vol)
+        test.run_test(self)
+
+    def test_remove_replicated_volume_role_primary(self):
+        params = {'role': data.ROLE_PRIMARY}
+        rm_rep_vol = removevolume_tester.TestRemoveVolume.ReplicatedVolume(
+            params)
+        test = removevolume_tester.TestRemoveVolume(rm_rep_vol)
+        test.run_test(self)
+
+    def test_remove_replicated_volume_role_secondary(self):
+        params = {'role': data.ROLE_SECONDARY}
+        rm_rep_vol = removevolume_tester.TestRemoveVolume.ReplicatedVolume(
+            params)
+        test = removevolume_tester.TestRemoveVolume(rm_rep_vol)
+        test.run_test(self)
+
+    def test_remove_last_replicated_volume(self):
+        params = {'role': data.ROLE_PRIMARY, 'rm_last_volume': True}
+        rm_rep_vol = removevolume_tester.TestRemoveVolume.ReplicatedVolume(
+            params)
+        test = removevolume_tester.TestRemoveVolume(rm_rep_vol)
+        test.run_test(self)
+
+    def test_remove_non_existent_volume(self):
+        test = removevolume_tester.TestRemoveNonExistentVolume()
+        test.run_test(self)
+
+    def test_remove_volume_with_child_snapshot(self):
+        test = removevolume_tester.TestRemoveVolumeWithChildSnapshot()
+        test.run_test(self)
+
+    """
+    REMOVE SNAPSHOT related tests
     """
     @tc_banner_decorator
     def test_remove_snapshot(self):
