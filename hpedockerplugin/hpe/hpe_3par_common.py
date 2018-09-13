@@ -167,6 +167,7 @@ class HPE3PARCommon(object):
             raise exception.InvalidInput(reason=msg)
 
         known_hosts_file = self._host_config.ssh_hosts_key_file
+
         policy = "AutoAddPolicy"
         if self._host_config.strict_ssh_host_key_policy:
             policy = "RejectPolicy"
@@ -887,7 +888,7 @@ class HPE3PARCommon(object):
             if volume.get('rcg_info'):
                 # this is replicated volume
                 self._do_volume_replication_destroy(volume)
-                LOG.info("Deletion of replicated volume:%s successfull"
+                LOG.info("Deletion of replicated volume:%s successful"
                          % volume)
                 return
 
@@ -1488,7 +1489,7 @@ class HPE3PARCommon(object):
         src_config = self.src_bkend_config
         tgt_config = self.tgt_bkend_config
         bkend_replication_mode = self._get_backend_replication_mode(
-            src_config.replication_mode)
+            tgt_config.replication_mode)
 
         cpg = tgt_config.hpe3par_cpg
         if isinstance(cpg, list):

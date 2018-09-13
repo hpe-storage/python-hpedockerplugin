@@ -102,8 +102,14 @@ class VolumeManager(object):
             self.tgt_bkend_config = acp.ArrayConnectionParams(
                 self._hpepluginconfig.replication_device)
             if self.tgt_bkend_config:
-                self.tgt_bkend_config.hpedockerplugin_driver = \
-                    self.src_bkend_config.hpedockerplugin_driver
+
+                # Copy all the source configuration to target
+                hpeconf = self._hpepluginconfig
+                for key in hpeconf.keys():
+                    if not self.tgt_bkend_config.is_param_present(key):
+                        value = getattr(hpeconf, key)
+                        self.tgt_bkend_config.__setattr__(key, value)
+
                 self.tgt_bkend_config.hpe3par_cpg = self._extract_remote_cpgs(
                     self.tgt_bkend_config.cpg_map)
                 if not self.tgt_bkend_config.hpe3par_cpg:
@@ -125,30 +131,14 @@ class VolumeManager(object):
                     self.tgt_bkend_config.hpe3par_iscsi_ips = iscsi_ips.split(
                         ';')
 
-                    # Post failover, user would want to mount the volume to
-                    # target array. In which case, tgt_bkend_config would be
-                    # used to mount the volume. Copy the parameters that are
-                    # present with src_bkend_config and are applicable to
-                    # tgt_bkend_config as well
-                    self.tgt_bkend_config.hpe3par_iscsi_chap_enabled = \
-                        self.src_bkend_config.hpe3par_iscsi_chap_enabled
-
-            # Additional information from target_device
-            self.src_bkend_config.replication_mode = \
-                self.tgt_bkend_config.replication_mode
-
     def _get_src_bkend_config(self):
         LOG.info("Getting source backend configuration...")
         hpeconf = self._hpepluginconfig
         config = acp.ArrayConnectionParams()
-        config.hpedockerplugin_driver = hpeconf.hpedockerplugin_driver
-        config.hpe3par_api_url = hpeconf.hpe3par_api_url
-        config.hpe3par_username = hpeconf.hpe3par_username
-        config.hpe3par_password = hpeconf.hpe3par_password
-        config.san_ip = hpeconf.san_ip
-        config.san_login = hpeconf.san_login
-        config.san_password = hpeconf.san_password
-        config.hpe3par_cpg = hpeconf.hpe3par_cpg
+        for key in hpeconf.keys():
+            value = getattr(hpeconf, key)
+            config.__setattr__(key, value)
+
         if hpeconf.hpe3par_snapcpg:
             config.hpe3par_snapcpg = hpeconf.hpe3par_snapcpg
         else:
@@ -157,13 +147,6 @@ class VolumeManager(object):
             # default to empty list & populate volume's snap_cpg later with
             # value given with '-o cpg'
             config.hpe3par_snapcpg = []
-
-        if 'iscsi' in hpeconf.hpedockerplugin_driver:
-            config.hpe3par_iscsi_ips = hpeconf.hpe3par_iscsi_ips
-            config.iscsi_ip_address = hpeconf.iscsi_ip_address
-            config.iscsi_port = hpeconf.iscsi_port
-            config.hpe3par_iscsi_chap_enabled = \
-                hpeconf.hpe3par_iscsi_chap_enabled
 
         LOG.info("Got source backend configuration!")
         return config
@@ -259,7 +242,7 @@ class VolumeManager(object):
         vol = volume.createvol(volname, vol_size, vol_prov,
                                vol_flash, compression_val, vol_qos,
                                mount_conflict_delay, False, cpg, snap_cpg,
-                               False, current_backend, rcg_name)
+                               False, current_backend)
         try:
             self._create_volume(vol, undo_steps)
             self._apply_volume_specs(vol, undo_steps)
