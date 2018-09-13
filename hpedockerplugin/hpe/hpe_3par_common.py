@@ -888,7 +888,7 @@ class HPE3PARCommon(object):
             if volume.get('rcg_info'):
                 # this is replicated volume
                 self._do_volume_replication_destroy(volume)
-                LOG.info("Deletion of replicated volume:%s successfull"
+                LOG.info("Deletion of replicated volume:%s successful"
                          % volume)
                 return
 

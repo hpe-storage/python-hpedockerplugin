@@ -242,7 +242,7 @@ class VolumeManager(object):
         vol = volume.createvol(volname, vol_size, vol_prov,
                                vol_flash, compression_val, vol_qos,
                                mount_conflict_delay, False, cpg, snap_cpg,
-                               False, current_backend, rcg_name)
+                               False, current_backend)
         try:
             self._create_volume(vol, undo_steps)
             self._apply_volume_specs(vol, undo_steps)
