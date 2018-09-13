@@ -53,11 +53,17 @@ class Orchestrator(object):
         manager_objs = {}
 
         for backend_name, config in backend_configs.items():
-            LOG.info('INITIALIZING backend  : %s' % backend_name)
-            manager_objs[backend_name] = mgr.VolumeManager(host_config,
-                                                           config,
-                                                           self.etcd_util,
-                                                           backend_name)
+            try:
+                LOG.info('INITIALIZING backend: %s' % backend_name)
+                manager_objs[backend_name] = mgr.VolumeManager(
+                    host_config,
+                    config,
+                    self.etcd_util,
+                    backend_name)
+            except Exception as ex:
+                # lets log the error message and proceed with other backend
+                LOG.error('INITIALIZING backend: %s FAILED Error: %s'
+                          % (backend_name, ex))
 
         return manager_objs
 
