@@ -1043,18 +1043,8 @@ class VolumeManager(object):
             vol_detail['fsMode'] = volinfo.get('fsMode')
             vol_detail['mountConflictDelay'] = volinfo.get(
                 'mount_conflict_delay')
-
-            cpg = volinfo.get('cpg')
-            snap_cpg = volinfo.get('snap_cpg')
-            rcg_info = volinfo.get('rcg_info')
-            if rcg_info:
-                driver = self._get_target_driver(rcg_info)
-                if driver == self._remote_driver:
-                    cpg = self.tgt_bkend_config['hpe3par_cpg']
-                    snap_cpg = self.tgt_bkend_config['hpe3par_snapcpg']
-
-            vol_detail['cpg'] = cpg
-            vol_detail['snap_cpg'] = snap_cpg
+            vol_detail['cpg'] = volinfo.get('cpg')
+            vol_detail['snap_cpg'] = volinfo.get('snap_cpg')
             volume['Status'].update({'volume_detail': vol_detail})
 
         response = json.dumps({u"Err": err, u"Volume": volume})
