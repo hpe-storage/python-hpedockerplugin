@@ -15,3 +15,6 @@ class ArrayConnectionParams(object):
             object.__getattribute__(self, key)
         except AttributeError:
             return None
+
+    def is_param_present(self, param):
+        return param in dir(self)
