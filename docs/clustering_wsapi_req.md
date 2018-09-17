@@ -8,6 +8,28 @@ Ask here is to give an unified way of looking at all the arrays which are part o
 May be 3PAR WSAPI team, can give us a cluster IP from which all the requests are underneath re-routed to the appropriate array which serves the volume 
 (like GET volume API, Create Snapshot etc.)
 
+Additionally, the Get Volume API can return the array name on which the volume currently resides as a new JSON attribute
+"hostingArray" as shown below.
+
+Eg.
+
+``` GET on /volumes/v1```
+returns
+
+```
+{
+   .
+   .
+   .
+   .
+  "hostingArray" : "system id of array hosting this resource"  
+  .
+  .
+  .
+}
+
+```
+
 
 
 ## Usecase in case of Docker Container
@@ -20,4 +42,13 @@ May be 3PAR WSAPI team, can give us a cluster IP from which all the requests are
 
 
 
-## Diagrammatic
+### Older approach
+
+![Before Volume Movement](/docs/Slide1.JPG "Before Volume Movement")
+![After Volume Movement](/docs/Slide2.JPG "After Volume Movement")
+![Volume Tracing](/docs/Slide3.JPG "Volume Tracing")
+
+### Newer Approach
+
+![Clustered endpoint feature](/docs/Slide4.JPG "Clustered WSAPI Endpoint")
+
