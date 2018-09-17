@@ -173,6 +173,7 @@ Installing the HPE 3PAR Volume Plug-in for Docker (Containerized Plug-in) for SU
       image: hpe-storage/python-hpedockerplugin:plugin_v2
       container_name: volplugin
       net: host
+      restart: always
       privileged: true
       volumes:
          - /dev:/dev
