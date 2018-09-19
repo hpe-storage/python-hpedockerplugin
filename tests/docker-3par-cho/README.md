@@ -12,8 +12,8 @@ Install and enable the HPE 3PAR Docker Volume plugin
 
 ```
 Pull tests from Git
-git clone https://github.com/sumitshatwara/docker-3par-cho
-cd docker-3par-cho/
+git clone https://github.com/hpe-storage/python-hpedockerplugin -b test_automation
+cd python-hpedockerplugin/tests/docker-3par-cho/
 ```
  
 ### Run tests
