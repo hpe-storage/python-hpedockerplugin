@@ -109,7 +109,7 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
         self.assertIn('Status', inspect_volume)
         self.assertIn('volume_detail', inspect_volume['Status'])
 
-        volume_details = ['size', 'provisioning', 'flash_cache', 'compression', 'mountConflictDelay', 'importVol']
+        volume_details = ['size', 'provisioning', 'flash_cache', 'compression', 'mountConflictDelay', 'importVol', 'cpg', 'snapcpg']
         qos_detail = ['enabled', 'maxIOPS', 'minIOPS', 'priority', 'vvset_name']
 
         for option in volume_details:
@@ -117,6 +117,15 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
                 if option in kwargs:
                     self.assertIn(option, inspect_volume['Options'])
                     self.assertEqual(inspect_volume['Options'][option], kwargs[option])
+            elif option == 'cpg':
+                if option in kwargs:
+                    self.assertIn(option, inspect_volume['Options'])
+                    self.assertEqual(inspect_volume['Options'][option], kwargs[option])
+            elif option == 'snapcpg':
+                if option in kwargs:
+                    self.assertIn("snap_cpg", inspect_volume['Status']['volume_detail'])
+                    self.assertEqual(inspect_volume['Status']['volume_detail']['snap_cpg'], kwargs[option])
+
             else:
                 if option in kwargs:
                     self.assertIn(option, inspect_volume['Status']['volume_detail'])
@@ -207,6 +216,13 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
                              int(kwargs['retentionHours']))
         else:
             self.assertEqual(inspect_snapshot['Status']['snap_detail']['retention_hours'], None)
+        if 'snapcpg' in kwargs:
+            self.assertEqual(inspect_snapshot['Status']['snap_detail']['snap_cpg'],
+                             (kwargs['snapcpg']))
+        else:
+            self.assertEqual(inspect_snapshot['Status']['snap_detail']['snap_cpg'],
+                             SNAP_CPG)
+
 
         '''
         snap_details = ['compression', 'flash_cache', 'provisioning']
@@ -463,9 +479,13 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
             else:
                 self.assertEqual(hpe3par_volume['compressionState'], 2)
         if 'clone' in kwargs:
-            self.assertEqual(hpe3par_volume['snapCPG'], SNAP_CPG)
+            if "snapcpg" in kwargs:
+                self.assertEqual(hpe3par_volume['snapCPG'], kwargs['snapcpg'])
+            else:
+                self.assertEqual(hpe3par_volume['snapCPG'], SNAP_CPG)
             self.assertEqual(hpe3par_volume['copyType'], 1)
         if 'qos' in kwargs:
+            vvset = hpe3par_cli.getVolumeSet(vvs_name)
             self.assertEqual(vvset['qosEnabled'], True)
             qos = hpe3par_cli.queryQoSRule(vvs_name)
             self.assertNotEqual(qos, None)
@@ -475,6 +495,11 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
         if 'importVol' in kwargs:
             self.assertEqual(etcd_volume['display_name'],kwargs['importVol'])
             self.assertEqual(hpe3par_volume['name'][:3], "dcv")
+        if 'cpg' in kwargs:
+            self.assertEqual(hpe3par_volume['userCPG'],kwargs['cpg'])
+        if 'snapcpg' in kwargs:
+            self.assertEqual(hpe3par_volume['snapCPG'],kwargs['snapcpg'])
+
 
         hpe3par_cli.logout()
 
@@ -517,7 +542,10 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
                 self.assertEqual(hpe3par_snapshot['name'], backend_snapshot_name)
                 self.assertEqual(hpe3par_snapshot['state'], 1)
                 self.assertEqual(hpe3par_snapshot['provisioningType'], 3)
-                self.assertEqual(hpe3par_snapshot['snapCPG'], SNAP_CPG)
+                if "snapcpg" in kwargs:
+                    self.assertEqual(hpe3par_snapshot['snapCPG'], kwargs['snapcpg'])
+                else:
+                    self.assertEqual(hpe3par_snapshot['snapCPG'], SNAP_CPG)
                 self.assertEqual(hpe3par_snapshot['copyType'], 3)
                 self.assertEqual(hpe3par_snapshot['copyOf'], backend_volume_name)
                 if 'expirationHours' in kwargs:
