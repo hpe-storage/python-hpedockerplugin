@@ -1,0 +1,19 @@
+#!/bin/sh
+
+multipath=`grep use_multipath /etc/hpedockerplugin/hpe.conf`
+turnonmultipath=`echo $multipath | cut -d \= -f 2`
+
+nospacemultipath=`echo $turnonmultipath | xargs`
+
+# Start iscsid and multipathd
+/usr/sbin/iscsid start
+
+if [ "$nospacemultipath" = "True" ]; then
+        echo "Multipath configured: Turn on multipath services"
+        /sbin/multipathd
+        /sbin/udevd &
+else
+        echo "Multipath NOT configured: DO NO turn on multipath services"
+fi
+
+trial test_hpe_plugin.py
