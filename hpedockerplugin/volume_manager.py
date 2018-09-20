@@ -1045,6 +1045,11 @@ class VolumeManager(object):
                 'mount_conflict_delay')
             vol_detail['cpg'] = volinfo.get('cpg')
             vol_detail['snap_cpg'] = volinfo.get('snap_cpg')
+            if volinfo.get('rcg_info'):
+                vol_detail['secondary_cpg'] = \
+                    self.tgt_bkend_config.hpe3par_cpg[0]
+                vol_detail['secondary_snap_cpg'] = \
+                    self.tgt_bkend_config.hpe3par_snapcpg[0]
             volume['Status'].update({'volume_detail': vol_detail})
 
         response = json.dumps({u"Err": err, u"Volume": volume})
