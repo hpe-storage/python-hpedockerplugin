@@ -7,6 +7,7 @@ import test.clonevolume_tester as clonevolume_tester
 import test.createsnapshot_tester as createsnapshot_tester
 import test.fake_3par_data as data
 import test.getvolume_tester as getvolume_tester
+import test.listvolume_tester as listvolume_tester
 import test.mountvolume_tester as mountvolume_tester
 import test.removesnapshot_tester as removesnapshot_tester
 import test.removevolume_tester as removevolume_tester
@@ -453,6 +454,19 @@ class HpeDockerUnitTestsBase(object):
     @tc_banner_decorator
     def test_clone_vol(self):
         test = getvolume_tester.TestCloneVolume()
+        test.run_test(self)
+
+    """
+    LIST VOLUMES related tests
+    """
+    @tc_banner_decorator
+    def test_list_volumes(self):
+        test = listvolume_tester.TestListVolumeDefault()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_list_no_volumes(self):
+        test = listvolume_tester.TestListNoVolumes()
         test.run_test(self)
 
 
