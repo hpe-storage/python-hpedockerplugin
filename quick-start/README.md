@@ -22,8 +22,8 @@ docker --version
 
 ### Supported Kubernetes/OpenShift versions:
 
-Kubernetes 1.7
-Openshift 3.7
+* Kubernetes 1.7
+* Openshift 3.7
 
 ### Installation Guides
 
