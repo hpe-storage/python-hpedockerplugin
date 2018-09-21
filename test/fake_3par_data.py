@@ -146,6 +146,21 @@ json_path_info = \
     '/hpe/data/hpedocker-dm-uuid-mpath-360002ac00000000001008f99000' \
     '19d52"}'
 
+# Volumes list for list-volumes operation
+vols_list = [
+    {
+        'display_name': 'test-vol-001',
+        'size': 310,
+        'path_info': json_path_info
+    },
+    {
+        'display_name': 'test-vol-002',
+        'size': 555,
+        'path_info': json_path_info
+    }
+]
+
+
 path_info = json.loads(json_path_info)
 
 vol_mounted_on_this_node = {
