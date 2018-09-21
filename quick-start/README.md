@@ -1,4 +1,4 @@
-#### Quick Start
+# Quick Start
 
 This quick start guide is designed to allow you to get up and running quickly with the Docker Volume Plugin for HPE 3PAR Storeserv.
 
