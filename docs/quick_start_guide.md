@@ -127,13 +127,13 @@ sudo docker run -d -v /usr/share/ca-certificates/:/etc/ssl/certs -p 4001:4001 \
 
 ### HPE 3PAR Volume Managed Plug-in config
 
-1. Add HPE 3PAR into ~/.ssh/known_hosts
+1. Add HPE 3PAR into `~/.ssh/known_hosts`
 
 ```
 $ ssh -l username <3PAR IP Address>
 ```
 
-2. Configure hpe.conf for Managed plugin.
+2. Configure `hpe.conf` for Managed plugin.
 
 ```
 $ vi /etc/hpedockerplugin/hpe.conf
