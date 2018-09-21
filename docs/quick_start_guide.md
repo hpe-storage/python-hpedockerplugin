@@ -20,7 +20,7 @@ Steps for Deploying the Managed Plugin (HPE 3PAR Volume Plug-in for Docker) in a
 $ sudo apt-get install -y open-iscsi multipath-tools
 ```
 
-2. Enable the iscsid and multipathd services
+2. Enable the **iscsid** and **multipathd** services
 ```
 $ systemctl daemon-reload
 $ systemctl restart open-iscsi multipath-tools docker
@@ -36,13 +36,13 @@ $ systemctl restart open-iscsi multipath-tools docker
 $ yum install -y iscsi-initiator-utils device-mapper-multipath
 ```
 
-2. Configure /etc/multipath.conf
+2. Configure `/etc/multipath.conf`
 
 ```
 $ vi /etc/multipath.conf
 ```
 
->Copy the following into /etc/multipath.conf
+>Copy the following into `/etc/multipath.conf`
 
 ```
 defaults
