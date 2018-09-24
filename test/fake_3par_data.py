@@ -130,6 +130,16 @@ replicated_volume = {
                  'remote_rcg_name': REMOTE_RCG_NAME}
 }
 
+primary_3par_rcg = {
+    'role': ROLE_PRIMARY,
+    'targets': [{'roleReversed': False}]
+}
+
+secondary_3par_rcg = {
+    'role': ROLE_SECONDARY,
+    'targets': [{'roleReversed': False}]
+}
+
 json_path_info = \
     '{"connection_info": {"driver_volume_type": "iscsi", ' \
     '"data": {"target_luns": [3, 3], "target_iqns": ' \

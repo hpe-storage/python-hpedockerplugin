@@ -6,10 +6,22 @@ from hpe3parclient import exceptions
 
 
 class MountVolumeUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):
-    def __init__(self, is_snap=False):
+    def __init__(self, is_snap=False, vol_params=None):
+        self._backend_name = None
+        self._vol_type = None
+        self._rep_type = None
         self._is_snap = is_snap
         if not is_snap:
-            self._vol = copy.deepcopy(data.volume)
+            if vol_params:
+                self._vol_type = vol_params['vol_type']
+                if self._vol_type == 'replicated':
+                    self._rep_type = vol_params['rep_type']
+                    if self._rep_type == 'active-passive':
+                        self._backend_name = '3par_ap_sync_rep'
+                        self._vol = copy.deepcopy(data.replicated_volume)
+                        self._vol['backend'] = self._backend_name
+            else:
+                self._vol = copy.deepcopy(data.volume)
         else:
             self._vol = copy.deepcopy(data.snap1)
 
@@ -17,13 +29,22 @@ class MountVolumeUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):
         return 'volumedriver_mount'
 
     def get_request_params(self):
+        opts = {'mount-volume': 'True'}
+        if self._backend_name:
+            opts['backend'] = self._backend_name
         return {"Name": self._vol['display_name'],
                 "ID": "Fake-Mount-ID",
-                "Opts": {'mount-volume': 'True'}}
+                "Opts": opts}
 
     def setup_mock_objects(self):
         def _setup_mock_3parclient():
             # Allow child class to make changes
+            if self._rep_type == 'active-passive':
+                mock_3parclient = self.mock_objects['mock_3parclient']
+                mock_3parclient.getRemoteCopyGroup.side_effect = [
+                    data.primary_3par_rcg,
+                    data.secondary_3par_rcg
+                ]
             self.setup_mock_3parclient()
 
         def _setup_mock_etcd():

@@ -603,6 +603,13 @@ class HpeDockerFCUnitTests(HpeDockerUnitTestsBase, testtools.TestCase):
         test.run_test(self)
 
     @tc_banner_decorator
+    def test_mount_ap_replicated_volume_fc_host(self):
+        vol_params = {'vol_type': 'replicated',
+                      'rep_type': 'active-passive'}
+        test = mountvolume_tester.TestMountVolumeFCHost(vol_params=vol_params)
+        test.run_test(self)
+
+    @tc_banner_decorator
     def test_mount_volume_fc_host_vlun_exists(self):
         test = mountvolume_tester.TestMountVolumeFCHostVLUNExists()
         test.run_test(self)
