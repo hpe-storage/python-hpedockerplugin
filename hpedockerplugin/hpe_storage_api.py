@@ -359,7 +359,7 @@ class VolumePlugin(object):
             rcg_name = contents['Opts'].get('replicationGroup', None)
 
         if (cpg and rcg_name) or (snap_cpg and rcg_name):
-            msg = "cpg/snap_cpg and replicationGroup parameters cannot be " \
+            msg = "cpg/snap_cpg and replicationGroup options cannot be " \
                   "specified together"
             return json.dumps({u"Err": msg})
 
