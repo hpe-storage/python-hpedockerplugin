@@ -6,6 +6,10 @@
 
 ---
 
+## Source Availability
+- Source for the entire HPE 3PAR Volume Plugin for Docker is present in plugin_v2 branch of this repository.
+- Source for paramiko is present under [/source/paramiko_src](/source/paramiko_src)
+
 ## Quick Start Guide for Standalone Docker environments <a name="docker"></a>
 
 Steps for Deploying the Managed Plugin (HPE 3PAR Volume Plug-in for Docker) in a Standalone Docker environment

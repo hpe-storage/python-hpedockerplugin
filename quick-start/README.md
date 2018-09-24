@@ -2,6 +2,10 @@
 
 This quick start guide is designed to allow you to get up and running quickly with the Docker Volume Plugin for HPE 3PAR Storeserv.
 
+## Source Availability
+- Source for the entire HPE 3PAR Volume Plugin for Docker is present in plugin_v2 branch of this repository.
+- Source for paramiko is present under [/source/paramiko_src](/source/paramiko_src)
+
 ## Supported Operating Systems:
 
 * Ubuntu 16.04
