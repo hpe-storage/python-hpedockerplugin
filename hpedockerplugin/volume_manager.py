@@ -689,7 +689,9 @@ class VolumeManager(object):
         snap_vol['3par_vol_name'] = bkend_snap_name
 
         try:
-            self._create_snapshot_record(snap_vol, snapshot_name, undo_steps)
+            self._create_snapshot_record(snap_vol,
+                                         snapshot_name,
+                                         undo_steps)
 
             # For now just track volume to uuid mapping internally
             # TODO: Save volume name and uuid mapping in etcd as well
@@ -916,8 +918,13 @@ class VolumeManager(object):
         if 'snap_schedule' in metadata:
             snap_detail['snap_schedule'] = metadata['snap_schedule']
 
+        LOG.info('_get_snapshot_response: adding 3par vol info')
+
         if '3par_vol_name' in snapinfo:
             snap_detail['3par_vol_name'] = snapinfo.get('3par_vol_name')
+        else:
+            snap_detail['3par_vol_name'] = utils.get_3par_name(parent_id,
+                                                               True)
 
         snapshot['Status'].update({'snap_detail': snap_detail})
 
@@ -1058,8 +1065,13 @@ class VolumeManager(object):
             vol_detail['cpg'] = volinfo.get('cpg')
             vol_detail['snap_cpg'] = volinfo.get('snap_cpg')
 
+            LOG.info(' get_volume_snap_details : adding 3par vol info')
             if '3par_vol_name' in volinfo:
                 vol_detail['3par_vol_name'] = volinfo['3par_vol_name']
+            else:
+                vol_detail['3par_vol_name'] = \
+                    utils.get_3par_name(volinfo['id'],
+                                        False)
 
             if volinfo.get('rcg_info'):
                 vol_detail['secondary_cpg'] = \

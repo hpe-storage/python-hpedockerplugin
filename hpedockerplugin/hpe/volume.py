@@ -24,7 +24,7 @@ def createvol(name, size=DEFAULT_SIZE, prov=DEFAULT_PROV,
               rcg_info=None):
     volume = {}
     volume['id'] = str(uuid.uuid4())
-    volume['name'] = volume['id']
+    volume['name'] = name
     volume['host'] = ''
     volume['size'] = size
     volume['availability_zone'] = ''
