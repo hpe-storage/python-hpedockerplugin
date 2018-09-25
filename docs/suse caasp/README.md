@@ -144,7 +144,7 @@ Installing the HPE 3PAR Volume Plug-in for Docker (Containerized Plug-in) for SU
 
     <https://github.com/hpe-storage/python-hpedockerplugin/blob/plugin_v2/config/hpe.conf.sample.3parFC>    
 
-4. Either you can build the container image by following instructions in step 5 below, or use an pre-existing 2.1 image of the plugin container by substituting `image: hpestorage/legacyvolumeplugin:2.1` in docker-compose.yml given in step 6
+4. Either you can build the container image by following instructions in step 5 below, or use an pre-existing 2.1 image of the plugin container by substituting `image: hpestorage/legacyvolumeplugin:2.1-suse` in docker-compose.yml given in step 6
 
 5.  **Build the containerized image**
     ```bash
@@ -173,6 +173,7 @@ Installing the HPE 3PAR Volume Plug-in for Docker (Containerized Plug-in) for SU
       image: hpe-storage/python-hpedockerplugin:plugin_v2
       container_name: volplugin
       net: host
+      restart: always
       privileged: true
       volumes:
          - /dev:/dev
