@@ -130,6 +130,16 @@ replicated_volume = {
                  'remote_rcg_name': REMOTE_RCG_NAME}
 }
 
+primary_3par_rcg = {
+    'role': ROLE_PRIMARY,
+    'targets': [{'roleReversed': False}]
+}
+
+secondary_3par_rcg = {
+    'role': ROLE_SECONDARY,
+    'targets': [{'roleReversed': False}]
+}
+
 json_path_info = \
     '{"connection_info": {"driver_volume_type": "iscsi", ' \
     '"data": {"target_luns": [3, 3], "target_iqns": ' \
@@ -145,6 +155,21 @@ json_path_info = \
     '0000001008f9900019d52"}, "name": "test-vol-001", "mount_dir": "/opt' \
     '/hpe/data/hpedocker-dm-uuid-mpath-360002ac00000000001008f99000' \
     '19d52"}'
+
+# Volumes list for list-volumes operation
+vols_list = [
+    {
+        'display_name': 'test-vol-001',
+        'size': 310,
+        'path_info': json_path_info
+    },
+    {
+        'display_name': 'test-vol-002',
+        'size': 555,
+        'path_info': json_path_info
+    }
+]
+
 
 path_info = json.loads(json_path_info)
 

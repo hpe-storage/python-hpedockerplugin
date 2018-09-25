@@ -358,6 +358,11 @@ class VolumePlugin(object):
 
             rcg_name = contents['Opts'].get('replicationGroup', None)
 
+        if (cpg and rcg_name) or (snap_cpg and rcg_name):
+            msg = "cpg/snap_cpg and replicationGroup options cannot be " \
+                  "specified together"
+            return json.dumps({u"Err": msg})
+
         # It is possible that the user configured replication in hpe.conf
         # but didn't specify any options. In that case too, this operation
         # must fail asking for "replicationGroup" parameter
