@@ -45,14 +45,14 @@
       include_vars: 'properties/plugin_configuration_properties.yml'
       
     - name: Create hpe.conf
-      include: create_conf_file.yml
+      include: tasks/create_conf_file.yml
       
     - name: Populate hpe.conf
       ini_file:
         path: /etc/hpedockerplugin/hpe.conf
         section: "{{ item }}"
         option: 'host_etcd_ip_address'
-        value: "{{ groups['masters'][0] }}"
+        value: "{{ (':' + INVENTORY['DEFAULT']['host_etcd_port_number'] | string + ',').join(groups['masters']) + INVENTORY['DEFAULT']['host_etcd_port_number'] | string }}"
         no_extra_spaces: true
       with_items:
         - "{{ INVENTORY.keys()}}"

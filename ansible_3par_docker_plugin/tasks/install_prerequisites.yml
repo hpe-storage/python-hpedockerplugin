@@ -22,3 +22,18 @@
       name: docker
       state: present
     become: yes
+    
+  - name: install sshpass
+    package:
+      name: sshpass
+      state: present
+    become: yes
+    delegate_to: localhost
+    
+  - name: install py-3parencryptor
+    pip:
+      name: py-3parencryptor
+      state: present
+    become: yes
+    delegate_to: localhost
+

@@ -110,12 +110,12 @@
     include_vars: 'properties/plugin_configuration_properties.yml'
     
   - name: Create conf file
-    include: create_conf_file.yml
+    include: tasks/create_conf_file.yml
 
   - name: create hpedockerplugin container
     docker_container:
       name: plugin_container
-      image: farhan7500/python-hpedockerplugin:plugin_v2
+      image: "{{ INVENTORY['DEFAULT']['volume_plugin'] }}"
       privileged: true
       network_mode: host
       state: started

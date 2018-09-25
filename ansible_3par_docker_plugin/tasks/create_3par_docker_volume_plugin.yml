@@ -2,7 +2,7 @@
   - name: create hpedockerplugin container
     docker_container:
       name: plugin_container
-      image: farhan7500/python-hpedockerplugin:plugin_v2
+      image: "{{ INVENTORY['DEFAULT']['volume_plugin'] }}"
       privileged: true
       network_mode: host
       state: started
