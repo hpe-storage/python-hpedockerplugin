@@ -923,7 +923,7 @@ class VolumeManager(object):
         if '3par_vol_name' in snapinfo:
             snap_detail['3par_vol_name'] = snapinfo.get('3par_vol_name')
         else:
-            snap_detail['3par_vol_name'] = utils.get_3par_name(parent_id,
+            snap_detail['3par_vol_name'] = utils.get_3par_name(snapinfo['id'],
                                                                True)
 
         snapshot['Status'].update({'snap_detail': snap_detail})
