@@ -242,8 +242,10 @@ class VolumeManager(object):
                                vol_flash, compression_val, vol_qos,
                                mount_conflict_delay, False, cpg, snap_cpg,
                                False, current_backend)
+
+        bkend_vol_name = ""
         try:
-            self._create_volume(vol, undo_steps)
+            bkend_vol_name = self._create_volume(vol, undo_steps)
             self._apply_volume_specs(vol, undo_steps)
             if rcg_name:
                 # bkend_rcg_name = self._get_3par_rcg_name(rcg_name)
@@ -260,6 +262,7 @@ class VolumeManager(object):
             # This will make get_vol_byname more efficient
             vol['fsOwner'] = fs_owner
             vol['fsMode'] = fs_mode
+            vol['3par_vol_name'] = bkend_vol_name
             self._etcd.save_vol(vol)
 
         except Exception as ex:
@@ -508,13 +511,13 @@ class VolumeManager(object):
         # add prefix '*' because offline copy task name have pattern like
         # e.g. dcv-m0o5ZAwPReaZVoymnLTrMA->dcv-N.9ikeA.RiaxPP4LzecaEQ
         # this will check both offline as well as online copy task
-        if self._hpeplugin_driver.is_vol_having_active_task("*%s" % volume_3par):
+        if self._hpeplugin_driver.is_vol_having_active_task(
+           "*%s" % volume_3par):
             msg = 'source volume: %s / %s is having some active task ' \
                   'running on array' % (src_vol_name, volume_3par)
             LOG.debug(msg)
             response = json.dumps({u"Err": msg})
             return response
-
 
         if not size:
             size = src_vol['size']
@@ -602,13 +605,13 @@ class VolumeManager(object):
         # add prefix '*' because offline copy task name have pattern like
         # e.g. dcv-m0o5ZAwPReaZVoymnLTrMA->dcv-N.9ikeA.RiaxPP4LzecaEQ
         # this will check both offline as well as online copy task
-        if self._hpeplugin_driver.is_vol_having_active_task("*%s" % volume_3par):
+        if self._hpeplugin_driver.is_vol_having_active_task(
+           "*%s" % volume_3par):
             msg = 'source volume: %s / %s is having some active task ' \
                   'running on array' % (src_vol_name, volume_3par)
             LOG.debug(msg)
             response = json.dumps({u"Err": msg})
             return response
-        
 
         # Check if this is an old volume type. If yes, add is_snap flag to it
         if 'is_snap' not in vol:
@@ -677,6 +680,7 @@ class VolumeManager(object):
                     'display_description': 'snapshot of volume %s'
                                            % src_vol_name}
         undo_steps = []
+        bkend_snap_name = ""
         try:
             bkend_snap_name = self._hpeplugin_driver.create_snapshot(
                 snapshot)
@@ -714,9 +718,12 @@ class VolumeManager(object):
         vol['snapshots'].append(db_snapshot)
         snap_vol['snap_metadata'] = db_snapshot
         snap_vol['backend'] = current_backend
+        snap_vol['3par_vol_name'] = bkend_snap_name
 
         try:
-            self._create_snapshot_record(snap_vol, snapshot_name, undo_steps)
+            self._create_snapshot_record(snap_vol,
+                                         snapshot_name,
+                                         undo_steps)
 
             # For now just track volume to uuid mapping internally
             # TODO: Save volume name and uuid mapping in etcd as well
@@ -853,7 +860,9 @@ class VolumeManager(object):
                                      False, cpg, snap_cpg, False,
                                      current_backend)
         try:
-            self.__clone_volume__(src_vol, clone_vol, undo_steps)
+            bkend_clone_name = self.__clone_volume__(src_vol,
+                                                     clone_vol,
+                                                     undo_steps)
             self._apply_volume_specs(clone_vol, undo_steps)
             # For now just track volume to uuid mapping internally
             # TODO: Save volume name and uuid mapping in etcd as well
@@ -861,6 +870,7 @@ class VolumeManager(object):
             clone_vol['fsOwner'] = src_vol.get('fsOwner')
             clone_vol['fsMode'] = src_vol.get('fsMode')
             clone_vol['backend'] = src_vol.get('backend')
+            clone_vol['3par_vol_name'] = bkend_clone_name
             self._etcd.save_vol(clone_vol)
 
         except Exception as ex:
@@ -939,6 +949,14 @@ class VolumeManager(object):
         snap_detail['snap_cpg'] = snapinfo.get('snap_cpg')
         if 'snap_schedule' in metadata:
             snap_detail['snap_schedule'] = metadata['snap_schedule']
+
+        LOG.info('_get_snapshot_response: adding 3par vol info')
+
+        if '3par_vol_name' in snapinfo:
+            snap_detail['3par_vol_name'] = snapinfo.get('3par_vol_name')
+        else:
+            snap_detail['3par_vol_name'] = utils.get_3par_name(snapinfo['id'],
+                                                               True)
 
         snapshot['Status'].update({'snap_detail': snap_detail})
 
@@ -1076,6 +1094,15 @@ class VolumeManager(object):
                 'mount_conflict_delay')
             vol_detail['cpg'] = volinfo.get('cpg')
             vol_detail['snap_cpg'] = volinfo.get('snap_cpg')
+
+            LOG.info(' get_volume_snap_details : adding 3par vol info')
+            if '3par_vol_name' in volinfo:
+                vol_detail['3par_vol_name'] = volinfo['3par_vol_name']
+            else:
+                vol_detail['3par_vol_name'] = \
+                    utils.get_3par_name(volinfo['id'],
+                                        False)
+
             if volinfo.get('rcg_info'):
                 vol_detail['secondary_cpg'] = \
                     self.tgt_bkend_config.hpe3par_cpg[0]

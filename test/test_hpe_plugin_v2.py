@@ -219,11 +219,6 @@ class HpeDockerUnitTestsBase(object):
         test.run_test(self)
 
     @tc_banner_decorator
-    def test_clone_offline_copy_fails(self):
-        test = clonevolume_tester.TestCloneOfflineCopyFails()
-        test.run_test(self)
-
-    @tc_banner_decorator
     def test_clone_invalid_source_volume(self):
         test = clonevolume_tester.TestCloneInvalidSourceVolume()
         test.run_test(self)

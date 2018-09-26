@@ -20,7 +20,6 @@ import uuid
 from oslo_utils import importutils
 from oslo_config import cfg
 from oslo_log import log as logging
-from oslo_service import loopingcall
 from oslo_utils import units
 
 from hpedockerplugin import exception
@@ -1336,8 +1335,8 @@ class HPE3PARCommon(object):
 
                 optional = {'priority': 1}
                 self.client.copyVolume(src_3par_vol_name,
-                                              dst_3par_vol_name, None,
-                                              optional=optional)
+                                       dst_3par_vol_name, None,
+                                       optional=optional)
 
                 comments = {'volume_id': dst_volume['id'],
                             'name': dst_volume['name'],
