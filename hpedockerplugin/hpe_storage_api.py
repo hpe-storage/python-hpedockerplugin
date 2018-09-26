@@ -521,23 +521,16 @@ class VolumePlugin(object):
                 'scheduleName' in contents['Opts']:
             has_schedule = True
 
-        if 'Opts' in contents and contents['Opts'] and \
-                'expirationHours' in contents['Opts']:
-            expiration_hrs = int(contents['Opts']['expirationHours'])
-            if has_schedule:
-                msg = ('create schedule failed, error is: setting '
-                       'expiration_hours for docker snapshot is not'
-                       ' allowed while creating a schedule.')
+        if has_schedule:
+            if 'expirationHours' in contents['Opts'] or \
+                    'retentionHours' in contents['Opts']:
+                msg = ('create schedule failed, error is : setting '
+                       'expirationHours or retentionHours for docker '
+                       'snapshot is not allowed while creating a schedule')
                 LOG.error(msg)
                 response = json.dumps({'Err': msg})
                 return response
 
-        retention_hrs = None
-        if 'Opts' in contents and contents['Opts'] and \
-                'retentionHours' in contents['Opts']:
-            retention_hrs = int(contents['Opts']['retentionHours'])
-
-        if has_schedule:
             if 'scheduleFrequency' not in contents['Opts']:
                 msg = ('create schedule failed, error is: user  '
                        'has not passed scheduleFrequency to create'
