@@ -9,7 +9,6 @@ from Crypto.Cipher import AES
 import base64
 
 
-import hpedockerplugin.etcdutil as util
 from os_brick.initiator import connector
 from oslo_config import cfg
 from oslo_log import log as logging
@@ -1059,27 +1058,25 @@ class VolumeManager(object):
     def list_volumes(self):
         volumes = self._etcd.get_all_vols()
 
-        if volumes is None:
+        if not volumes:
             response = json.dumps({u"Err": ''})
             return response
 
         volumelist = []
-        for volinfo in volumes.children:
-            if volinfo.key != util.VOLUMEROOT:
-                path_info = self._etcd.get_path_info_from_vol(volinfo.value)
-                if path_info is not None and 'mount_dir' in path_info:
-                    mountdir = path_info['mount_dir']
-                    devicename = path_info['path']
-                else:
-                    mountdir = ''
-                    devicename = ''
-                info = json.loads(volinfo.value)
-                volume = {'Name': info['display_name'],
-                          'Devicename': devicename,
-                          'size': info['size'],
-                          'Mountpoint': mountdir,
-                          'Status': {}}
-                volumelist.append(volume)
+        for volinfo in volumes:
+            path_info = self._etcd.get_path_info_from_vol(volinfo)
+            if path_info is not None and 'mount_dir' in path_info:
+                mountdir = path_info['mount_dir']
+                devicename = path_info['path']
+            else:
+                mountdir = ''
+                devicename = ''
+            volume = {'Name': volinfo['display_name'],
+                      'Devicename': devicename,
+                      'size': volinfo['size'],
+                      'Mountpoint': mountdir,
+                      'Status': {}}
+            volumelist.append(volume)
 
         response = json.dumps({u"Err": '', u"Volumes": volumelist})
         return response

@@ -148,8 +148,13 @@ class EtcdUtil(object):
         return json.loads(result.value)
 
     def get_all_vols(self):
+        ret_vol_list = []
         volumes = self.client.read(self.volumeroot, recursive=True)
-        return volumes
+        for volinfo in volumes.children:
+            if volinfo.key != VOLUMEROOT:
+                vol = json.loads(volinfo.value)
+                ret_vol_list.append(vol)
+        return ret_vol_list
 
     def get_vol_path_info(self, volname):
         vol = self.get_vol_byname(volname)
@@ -161,9 +166,8 @@ class EtcdUtil(object):
 
     def get_path_info_from_vol(self, vol):
         if vol:
-            info = json.loads(vol)
-            if 'path_info' in info and info['path_info'] is not None:
-                return json.loads(info['path_info'])
+            if 'path_info' in vol and vol['path_info'] is not None:
+                return json.loads(vol['path_info'])
         return None
 
     def get_backend_key(self, backend):

@@ -23,7 +23,7 @@ def mock_decorator(func):
         spec=True
     )
     @mock.patch(
-        'hpedockerplugin.volume_manager.util.EtcdUtil',
+        'hpedockerplugin.backend_orchestrator.util.EtcdUtil',
         spec=True
     )
     @mock.patch(

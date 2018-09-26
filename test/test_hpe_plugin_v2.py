@@ -7,6 +7,7 @@ import test.clonevolume_tester as clonevolume_tester
 import test.createsnapshot_tester as createsnapshot_tester
 import test.fake_3par_data as data
 import test.getvolume_tester as getvolume_tester
+import test.listvolume_tester as listvolume_tester
 import test.mountvolume_tester as mountvolume_tester
 import test.removesnapshot_tester as removesnapshot_tester
 import test.removevolume_tester as removevolume_tester
@@ -455,6 +456,19 @@ class HpeDockerUnitTestsBase(object):
         test = getvolume_tester.TestCloneVolume()
         test.run_test(self)
 
+    """
+    LIST VOLUMES related tests
+    """
+    @tc_banner_decorator
+    def test_list_volumes(self):
+        test = listvolume_tester.TestListVolumeDefault()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_list_no_volumes(self):
+        test = listvolume_tester.TestListNoVolumes()
+        test.run_test(self)
+
 
 class HpeDockerISCSIUnitTests(HpeDockerUnitTestsBase, testtools.TestCase):
     @property
@@ -586,6 +600,13 @@ class HpeDockerFCUnitTests(HpeDockerUnitTestsBase, testtools.TestCase):
     @tc_banner_decorator
     def test_mount_snap_fc_host(self):
         test = mountvolume_tester.TestMountVolumeFCHost(is_snap=True)
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_mount_ap_replicated_volume_fc_host(self):
+        vol_params = {'vol_type': 'replicated',
+                      'rep_type': 'active-passive'}
+        test = mountvolume_tester.TestMountVolumeFCHost(vol_params=vol_params)
         test.run_test(self)
 
     @tc_banner_decorator
