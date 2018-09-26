@@ -1,4 +1,5 @@
 import uuid
+from hpedockerplugin.hpe import utils
 
 DEFAULT_SIZE = 100
 DEFAULT_PROV = "thin"
@@ -24,7 +25,9 @@ def createvol(name, size=DEFAULT_SIZE, prov=DEFAULT_PROV,
               rcg_info=None):
     volume = {}
     volume['id'] = str(uuid.uuid4())
-    volume['name'] = name
+    volume['name'] = volume['id']
+    volume['3par_vol_name'] = utils.get_3par_name(volume['id'],
+                                                  is_snap)
     volume['host'] = ''
     volume['size'] = size
     volume['availability_zone'] = ''
