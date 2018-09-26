@@ -342,6 +342,15 @@ class VolumePlugin(object):
                     LOG.error(msg)
                     response = json.dumps({u"Err": msg})
                     return response
+                schedule_opts = valid_snap_schedule_opts[1:]
+                for s_o in schedule_opts:
+                    if s_o in input_list:
+                        if "scheduleName" not in input_list:
+                            msg = (_('scheduleName is a mandatory parameter'
+                                     ' for creating a snapshot schedule'))
+                            LOG.error(msg)
+                            response = json.dumps({u"Err": msg})
+                            return response
                 return self.volumedriver_create_snapshot(name,
                                                          mount_conflict_delay,
                                                          opts)
