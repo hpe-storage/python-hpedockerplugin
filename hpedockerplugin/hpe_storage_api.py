@@ -521,6 +521,15 @@ class VolumePlugin(object):
                 'scheduleName' in contents['Opts']:
             has_schedule = True
 
+        if 'Opts' in contents and contents['Opts'] and \
+                'expirationHours' in contents['Opts']:
+            expiration_hrs = int(contents['Opts']['expirationHours'])
+
+        retention_hrs = None
+        if 'Opts' in contents and contents['Opts'] and \
+                'retentionHours' in contents['Opts']:
+            retention_hrs = int(contents['Opts']['retentionHours'])
+
         if has_schedule:
             if 'expirationHours' in contents['Opts'] or \
                     'retentionHours' in contents['Opts']:
