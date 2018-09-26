@@ -219,6 +219,11 @@ class HpeDockerUnitTestsBase(object):
         test.run_test(self)
 
     @tc_banner_decorator
+    def test_clone_from_base_volume_active_task(self):
+        test = clonevolume_tester.TestCloneFromBaseVolumeActiveTask()
+        test.run_test(self)
+
+    @tc_banner_decorator
     def test_clone_invalid_source_volume(self):
         test = clonevolume_tester.TestCloneInvalidSourceVolume()
         test.run_test(self)

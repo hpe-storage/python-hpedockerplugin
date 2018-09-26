@@ -86,6 +86,29 @@ class TestCloneOfflineCopy(CloneVolumeUnitTest):
         mock_3parclient.getTask.return_value = {'status': data.TASK_DONE}
 
 
+# Offline copy
+class TestCloneFromBaseVolumeActiveTask(CloneVolumeUnitTest):
+    def check_response(self, resp):
+        self._test_case.assertNotEqual(resp, {u"Err": ''})
+
+    def get_request_params(self):
+        return {"Name": "clone-vol-001",
+                "Opts": {"cloneOf": data.VOLUME_NAME,
+                         # Difference in size of source and cloned volume
+                         # triggers offline copy. Src volume size is 2.
+                         "size": 20}}
+
+    def setup_mock_objects(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.return_value = data.volume
+
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.copyVolume.return_value = {'taskid': data.TASK_ID}
+        mock_3parclient.isOnlinePhysicalCopy.return_value = True
+        mock_3parclient.getCPG.return_value = {}
+        mock_3parclient.getTask.return_value = {'status': data.TASK_DONE}
+
+
 class TestCloneInvalidSourceVolume(CloneVolumeUnitTest):
     def check_response(self, resp):
         expected_msg = "source volume: %s does not exist" % data.VOLUME_NAME
