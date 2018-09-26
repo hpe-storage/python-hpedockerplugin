@@ -768,3 +768,10 @@ class HPE3PARISCSIDriver(object):
             return common.get_rcg(rcg_name)
         finally:
             self._logout(common)
+
+    def is_vol_having_active_task(self, vol_name):
+        common = self._login()
+        try:
+            return common.is_vol_having_active_task(vol_name)
+        finally:
+            self._logout(common)
