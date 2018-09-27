@@ -27,7 +27,7 @@
       src: /root/.kube/config
       dest: /tmp/config
       flat: yes
-    when: inventory_hostname in groups['masters']
+    when: inventory_hostname in groups['masters'][0]
 
 
   - name: Verify /etc/kubernetes/admin.conf exists

@@ -40,23 +40,36 @@
   tasks:
     - name: Configure multipath
       include: tasks/configure_multipath.yml
-      
+
     - name: load plugin settings
       include_vars: 'properties/plugin_configuration_properties.yml'
-      
+
     - name: Create hpe.conf
       include: tasks/create_conf_file.yml
-      
+
     - name: Populate hpe.conf
       ini_file:
         path: /etc/hpedockerplugin/hpe.conf
         section: "{{ item }}"
         option: 'host_etcd_ip_address'
-        value: "{{ (':' + INVENTORY['DEFAULT']['host_etcd_port_number'] | string + ',').join(groups['masters']) + INVENTORY['DEFAULT']['host_etcd_port_number'] | string }}"
+        value: "{{ (':' + INVENTORY['DEFAULT']['host_etcd_port_number'] | string + ',').join(groups['masters']) + ':' +  INVENTORY['DEFAULT']['host_etcd_port_number'] | string }}"
         no_extra_spaces: true
       with_items:
         - "{{ INVENTORY.keys()}}"
       become: yes
+      when: groups['masters'] | length > 1
+
+    - name: Populate hpe.conf
+      ini_file:
+        path: /etc/hpedockerplugin/hpe.conf
+        section: "{{ item }}"
+        option: 'host_etcd_ip_address'
+        value: "{{ groups['masters'][0] }}"
+        no_extra_spaces: true
+      with_items:
+        - "{{ INVENTORY.keys()}}"
+      become: yes
+      when: groups['masters'] | length == 1
 
     #- name: Copy hpe.conf
     #  include: tasks/copy_hpe_conf.yml

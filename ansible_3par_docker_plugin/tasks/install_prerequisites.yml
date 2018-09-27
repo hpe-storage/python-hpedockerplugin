@@ -23,17 +23,22 @@
       state: present
     become: yes
     
-  - name: install sshpass
+  - name: install gcc
     package:
-      name: sshpass
+      name: gcc
       state: present
     become: yes
-    delegate_to: localhost
+    
+  - name: install python-devel
+    package:
+      name: python-devel
+      state: present
+    become: yes
     
   - name: install py-3parencryptor
     pip:
       name: py-3parencryptor
       state: present
     become: yes
-    delegate_to: localhost
+
 

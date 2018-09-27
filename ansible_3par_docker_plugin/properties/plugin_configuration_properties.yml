@@ -1,34 +1,34 @@
 INVENTORY:
   DEFAULT:    
-    ssh_hosts_key_file: '/root/.ssh/known_hosts'
+    #ssh_hosts_key_file: '/root/.ssh/known_hosts'
     host_etcd_port_number: 23790
     encryptor_key: first_key
-    logging: DEBUG
-    hpe3par_debug: True
-    suppress_requests_ssl_warning: True
+    #logging: DEBUG
+    #hpe3par_debug: True
+    #suppress_requests_ssl_warning: True
     hpe3par_ip: 15.212.192.251
     hpe3par_username: 3paradm
     hpe3par_password: 3pardata
     hpe3par_cpg: FC_r1
-    hpe3par_snapcpg: FC_r1
-    hpe3par_iscsi_chap_enabled: True
-    use_multipath: False
-    enforce_multipath: False
+    #hpe3par_snapcpg: FC_r1
+    #hpe3par_iscsi_chap_enabled: True
+    #use_multipath: False
+    #enforce_multipath: False
     hpedockerplugin_driver: hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver
     volume_plugin: farhan7500/python-hpedockerplugin:plugin_v2
   3PAR1:    
-    ssh_hosts_key_file: '/root/.ssh/known_hosts'
-    host_etcd_port_number: second_key
-    encryptor_key: abcdef
-    logging: DEBUG
-    hpe3par_debug: True
-    suppress_requests_ssl_warning: True
+    #ssh_hosts_key_file: '/root/.ssh/known_hosts'
+    host_etcd_port_number: 23790
+    encryptor_key: second_key
+    #logging: DEBUG
+    #hpe3par_debug: True
+    #suppress_requests_ssl_warning: True
     hpe3par_ip: 15.212.192.252
     hpe3par_username: 3paradm
     hpe3par_password: 3pardata
     hpe3par_cpg: FC_r1
-    hpe3par_snapcpg: FC_r1
-    hpe3par_iscsi_chap_enabled: True
-    use_multipath: False
-    enforce_multipath: False
+    #hpe3par_snapcpg: FC_r1
+    #hpe3par_iscsi_chap_enabled: True
+    #use_multipath: False
+    #enforce_multipath: False
     hpedockerplugin_driver: hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver
