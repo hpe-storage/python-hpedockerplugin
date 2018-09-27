@@ -1305,7 +1305,8 @@ class VolumeManager(object):
                         old_node_id = list(node_mount_info.keys())[0]
                         old_path_info = vol.get('old_path_info', [])
                         old_path_info.append((old_node_id, path_info))
-                        self._etcd.update_vol(volid, 'old_path_info', old_path_info)
+                        self._etcd.update_vol(volid, 'old_path_info',
+                                              old_path_info)
 
                 node_mount_info = {self._node_id: [mount_id]}
                 LOG.info("New node_mount_info set: %s" % node_mount_info)
@@ -1527,7 +1528,7 @@ class VolumeManager(object):
         if vol is None:
             msg = (_LE('Volume unmount name not found %s'), volname)
             LOG.error(msg)
-            raise exception.HPEPluginUMountException(reason=msg )
+            raise exception.HPEPluginUMountException(reason=msg)
 
         volid = vol['id']
         is_snap = vol['is_snap']
@@ -1568,7 +1569,8 @@ class VolumeManager(object):
                              "volume meta-data..." % self._node_id)
                     vol['old_path_info'].remove(path_info)
                     if len(vol['old_path_info']) == 0:
-                        LOG.info("Last old_path_info found. Removing it too...")
+                        LOG.info("Last old_path_info found. "
+                                 "Removing it too...")
                         vol.pop('old_path_info')
                     LOG.info("Updating volume meta-data: %s..." % vol)
                     self._etcd.save_vol(vol)
