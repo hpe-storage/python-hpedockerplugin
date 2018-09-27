@@ -1251,14 +1251,6 @@ class VolumeManager(object):
             self._primary_driver.force_remove_volume_vlun(bkend_vol_name)
             LOG.info("VLUNs forcefully removed from remote backend!")
 
-    def _replace_node_mount_info(self, node_mount_info, mount_id):
-        # Remove previous node info from volume meta-data
-        old_node_id = list(node_mount_info.keys())[0]
-        node_mount_info.pop(old_node_id)
-
-        # Add new node information to volume meta-data
-        node_mount_info[self._node_id] = [mount_id]
-
     @synchronization.synchronized_volume('{volname}')
     def mount_volume(self, volname, vol_mount, mount_id):
         vol = self._etcd.get_vol_byname(volname)
@@ -1309,9 +1301,19 @@ class VolumeManager(object):
                     LOG.info("%s" % vol)
                     self._force_remove_vlun(vol, is_snap)
 
-                LOG.info("Updating node_mount_info...")
-                self._replace_node_mount_info(node_mount_info, mount_id)
-                LOG.info("node_mount_info updated!")
+                    # Since VLUNs exported to previous node were forcefully
+                    # removed, cache the connection information so that it
+                    # can be used later when user tries to un-mount volume
+                    # from the previous node
+                    if 'path_info' in vol:
+                        path_info = vol['path_info']
+                        old_node_id = list(node_mount_info.keys())[0]
+                        old_path_info = vol.get('old_path_info', [])
+                        old_path_info.append((old_node_id, path_info))
+                        self._etcd.update_vol(volid, 'old_path_info', old_path_info)
+
+                node_mount_info = {self._node_id: [mount_id]}
+                LOG.info("New node_mount_info set: %s" % node_mount_info)
 
         root_helper = 'sudo'
         connector_info = connector.get_connector_properties(
@@ -1530,10 +1532,13 @@ class VolumeManager(object):
         if vol is None:
             msg = (_LE('Volume unmount name not found %s'), volname)
             LOG.error(msg)
-            raise exception.HPEPluginUMountException(reason=msg)
+            raise exception.HPEPluginUMountException(reason=msg )
 
         volid = vol['id']
         is_snap = vol['is_snap']
+
+        path_info = None
+        node_owns_volume = True
 
         # Start of volume fencing
         LOG.info('Unmounting volume: %s' % vol)
@@ -1551,48 +1556,78 @@ class VolumeManager(object):
             # by some other node, it can go to that different ETCD root to
             # fetch the volume meta-data and do the cleanup.
             if self._node_id not in node_mount_info:
-                return json.dumps({u"Err": "Volume '%s' is mounted on another"
-                                           " node. Cannot unmount it!" %
-                                           volname})
+                if 'old_path_info' in vol:
+                    LOG.info("Old path info present in volume: %s"
+                             % path_info)
+                    for pi in vol['old_path_info']:
+                        node_id = pi[0]
+                        if node_id == self._node_id:
+                            LOG.info("Found matching old path info for old "
+                                     "node ID: %s" % pi)
+                            path_info = pi
+                            node_owns_volume = False
+                            break
 
-            LOG.info("node_id '%s' is present in vol mount info"
-                     % self._node_id)
+                if path_info:
+                    LOG.info("Removing old path info for node %s from ETCD "
+                             "volume meta-data..." % self._node_id)
+                    vol['old_path_info'].remove(path_info)
+                    if len(vol['old_path_info']) == 0:
+                        LOG.info("Last old_path_info found. Removing it too...")
+                        vol.pop('old_path_info')
+                    LOG.info("Updating volume meta-data: %s..." % vol)
+                    self._etcd.save_vol(vol)
+                    LOG.info("Volume meta-data updated: %s" % vol)
 
-            mount_id_list = node_mount_info[self._node_id]
-
-            LOG.info("Current mount_id_list %s " % mount_id_list)
-
-            try:
-                mount_id_list.remove(mount_id)
-            except ValueError as ex:
-                pass
-
-            LOG.info("Updating node_mount_info '%s' in etcd..."
-                     % node_mount_info)
-            # Update the mount_id list in etcd
-            self._etcd.update_vol(volid, 'node_mount_info',
-                                  node_mount_info)
-
-            LOG.info("Updated node_mount_info '%s' in etcd!"
-                     % node_mount_info)
-
-            if len(mount_id_list) > 0:
-                # Don't proceed with unmount
-                LOG.info("Volume still in use by %s containers... "
-                         "no unmounting done!" % len(mount_id_list))
-                return json.dumps({u"Err": ''})
+                    path_info = json.loads(path_info[1])
+                    LOG.info("Cleaning up devices using old_path_info: %s"
+                             % path_info)
+                else:
+                    LOG.info("Volume '%s' is mounted on another node. "
+                             "No old_path_info is present on ETCD. Unable"
+                             "to cleanup devices!" % volname)
+                    return json.dumps({u"Err": ""})
             else:
-                # delete the node_id key from node_mount_info
-                LOG.info("Removing node_mount_info %s",
-                         node_mount_info)
-                vol.pop('node_mount_info')
-                LOG.info("Saving volume to etcd: %s..." % vol)
-                self._etcd.save_vol(vol)
-                LOG.info("Volume saved to etcd: %s!" % vol)
+                LOG.info("node_id '%s' is present in vol mount info"
+                         % self._node_id)
+
+                mount_id_list = node_mount_info[self._node_id]
+
+                LOG.info("Current mount_id_list %s " % mount_id_list)
+
+                try:
+                    mount_id_list.remove(mount_id)
+                except ValueError as ex:
+                    pass
+
+                LOG.info("Updating node_mount_info '%s' in etcd..."
+                         % node_mount_info)
+                # Update the mount_id list in etcd
+                self._etcd.update_vol(volid, 'node_mount_info',
+                                      node_mount_info)
+
+                LOG.info("Updated node_mount_info '%s' in etcd!"
+                         % node_mount_info)
+
+                if len(mount_id_list) > 0:
+                    # Don't proceed with unmount
+                    LOG.info("Volume still in use by %s containers... "
+                             "no unmounting done!" % len(mount_id_list))
+                    return json.dumps({u"Err": ''})
+                else:
+                    # delete the node_id key from node_mount_info
+                    LOG.info("Removing node_mount_info %s",
+                             node_mount_info)
+                    vol.pop('node_mount_info')
+                    LOG.info("Saving volume to etcd: %s..." % vol)
+                    self._etcd.save_vol(vol)
+                    LOG.info("Volume saved to etcd: %s!" % vol)
 
         # TODO: Requirement #5 will bring the flow here but the below flow
         # may result into exception. Need to ensure it doesn't happen
-        path_info = self._etcd.get_vol_path_info(volname)
+        if not path_info:
+            path_info = self._etcd.get_vol_path_info(volname)
+
         # path_info = vol.get('path_info', None)
         if path_info:
             path_name = path_info['path']
@@ -1669,7 +1704,8 @@ class VolumeManager(object):
         # TODO: Create path_info list as we can mount the volume to multiple
         # hosts at the same time.
         # If this node owns the volume then update path_info
-        self._etcd.update_vol(volid, 'path_info', None)
+        if node_owns_volume:
+            self._etcd.update_vol(volid, 'path_info', None)
 
         LOG.info(_LI('path for volume: %(name)s, was successfully removed: '
                      '%(path_name)s'), {'name': volname,
