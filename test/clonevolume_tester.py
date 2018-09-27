@@ -28,6 +28,7 @@ class TestCloneDefault(CloneVolumeUnitTest):
 
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.copyVolume.return_value = {'taskid': data.TASK_ID}
+        mock_3parclient.isOnlinePhysicalCopy.return_value = False
         mock_3parclient.getCPG.return_value = {}
 
 
@@ -44,6 +45,7 @@ class TestCloneDefaultEtcdSaveFails(CloneVolumeUnitTest):
 
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.copyVolume.return_value = {'taskid': data.TASK_ID}
+        mock_3parclient.isOnlinePhysicalCopy.return_value = False
         mock_3parclient.getCPG.return_value = {}
 
     def check_response(self, resp):
@@ -64,7 +66,6 @@ class TestCloneOfflineCopy(CloneVolumeUnitTest):
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.createVolume.assert_called()
         mock_3parclient.copyVolume.assert_called()
-        mock_3parclient.getTask.assert_called()
         mock_3parclient.modifyVolume.assert_called()
 
     def get_request_params(self):
@@ -80,29 +81,21 @@ class TestCloneOfflineCopy(CloneVolumeUnitTest):
 
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.copyVolume.return_value = {'taskid': data.TASK_ID}
+        mock_3parclient.isOnlinePhysicalCopy.return_value = False
         mock_3parclient.getCPG.return_value = {}
         mock_3parclient.getTask.return_value = {'status': data.TASK_DONE}
 
 
-# Make copyVolume operation fail
-class TestCloneOfflineCopyFails(CloneVolumeUnitTest):
+# Offline copy
+class TestCloneFromBaseVolumeActiveTask(CloneVolumeUnitTest):
     def check_response(self, resp):
-        # Match error substring with returned error string
-        err_received = resp['Err']
-        err_expected = 'copy volume task failed: create_cloned_volume'
-        self._test_case.assertIn(err_expected, err_received)
-
-        # Check following 3PAR APIs were invoked
-        mock_3parclient = self.mock_objects['mock_3parclient']
-        mock_3parclient.createVolume.assert_called()
-        mock_3parclient.copyVolume.assert_called()
-        mock_3parclient.getTask.assert_called()
+        self._test_case.assertNotEqual(resp, {u"Err": ''})
 
     def get_request_params(self):
         return {"Name": "clone-vol-001",
                 "Opts": {"cloneOf": data.VOLUME_NAME,
                          # Difference in size of source and cloned volume
-                         # triggers offline copy. Src size is 2.
+                         # triggers offline copy. Src volume size is 2.
                          "size": 20}}
 
     def setup_mock_objects(self):
@@ -110,10 +103,10 @@ class TestCloneOfflineCopyFails(CloneVolumeUnitTest):
         mock_etcd.get_vol_byname.return_value = data.volume
 
         mock_3parclient = self.mock_objects['mock_3parclient']
-        mock_3parclient.getCPG.return_value = {}
         mock_3parclient.copyVolume.return_value = {'taskid': data.TASK_ID}
-        # TASK_FAILED simulates failure of copyVolume() operation
-        mock_3parclient.getTask.return_value = {'status': data.TASK_FAILED}
+        mock_3parclient.isOnlinePhysicalCopy.return_value = True
+        mock_3parclient.getCPG.return_value = {}
+        mock_3parclient.getTask.return_value = {'status': data.TASK_DONE}
 
 
 class TestCloneInvalidSourceVolume(CloneVolumeUnitTest):
@@ -147,6 +140,8 @@ class TestCloneWithInvalidSize(CloneVolumeUnitTest):
         mock_etcd = self.mock_objects['mock_etcd']
         # Source volume that is to be cloned
         mock_etcd.get_vol_byname.return_value = data.volume
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.isOnlinePhysicalCopy.return_value = False
 
     def check_response(self, resp):
         expected_msg = "clone volume size 1 is less than source volume size 2"
@@ -174,6 +169,7 @@ class TestCloneDedupVolume(CloneVolumeUnitTest):
 
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.copyVolume.return_value = {'taskid': data.TASK_ID}
+        mock_3parclient.isOnlinePhysicalCopy.return_value = False
         mock_3parclient.getCPG.return_value = {}
 
 
@@ -198,6 +194,7 @@ class TestCloneWithFlashCache(CloneVolumeUnitTest):
 
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.copyVolume.return_value = {'taskid': data.TASK_ID}
+        mock_3parclient.isOnlinePhysicalCopy.return_value = False
         mock_3parclient.getCPG.return_value = {}
 
 
@@ -220,6 +217,7 @@ class TestCloneWithQOS(CloneVolumeUnitTest):
 
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.copyVolume.return_value = {'taskid': data.TASK_ID}
+        mock_3parclient.isOnlinePhysicalCopy.return_value = False
         mock_3parclient.getCPG.return_value = {}
 
 
@@ -251,6 +249,7 @@ class TestCloneWithFlashCacheAddVVSetFails(CloneVolumeUnitTest):
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.copyVolume.return_value = {'taskid': data.TASK_ID}
         mock_3parclient.getCPG.return_value = {}
+        mock_3parclient.isOnlinePhysicalCopy.return_value = False
         # Make addVolumeToVolumeSet fail by throwing exception
         mock_3parclient.addVolumeToVolumeSet.side_effect = \
             [exceptions.HTTPNotFound('fake')]
@@ -286,6 +285,7 @@ class TestCloneWithFlashCacheEtcdSaveFails(CloneVolumeUnitTest):
 
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.copyVolume.return_value = {'taskid': data.TASK_ID}
+        mock_3parclient.isOnlinePhysicalCopy.return_value = False
         mock_3parclient.getCPG.return_value = {}
 
 
@@ -315,6 +315,7 @@ class TestCloneSetFlashCacheFails(CloneVolumeUnitTest):
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.copyVolume.return_value = {'taskid': data.TASK_ID}
         mock_3parclient.getCPG.return_value = {}
+        mock_3parclient.isOnlinePhysicalCopy.return_value = False
         # Make addVolumeToVolumeSet fail by throwing exception
         mock_3parclient.modifyVolumeSet.side_effect = [
             exceptions.HTTPInternalServerError("Internal server error")
@@ -350,6 +351,7 @@ class TestCloneWithFlashCacheAndQOSEtcdSaveFails(CloneVolumeUnitTest):
 
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.copyVolume.return_value = {'taskid': data.TASK_ID}
+        mock_3parclient.isOnlinePhysicalCopy.return_value = False
         mock_3parclient.getCPG.return_value = {}
 
 
@@ -381,6 +383,7 @@ class TestCloneWithCHAP(CloneVolumeUnitTest):
         mock_3parclient.copyVolume.return_value = {'taskid': data.TASK_ID}
         mock_3parclient.getCPG.return_value = {}
         mock_3parclient.getVolumeMetaData.return_value = {'value': True}
+        mock_3parclient.isOnlinePhysicalCopy.return_value = False
         mock_3parclient.getTask.return_value = {'status': data.TASK_DONE}
 
 
@@ -411,5 +414,6 @@ class TestCloneCompressedVolume(CloneVolumeUnitTest):
              'revision': 0}
         mock_3parclient.copyVolume.return_value = {'taskid': data.TASK_ID}
         mock_3parclient.getCPG.return_value = {}
+        mock_3parclient.isOnlinePhysicalCopy.return_value = False
         mock_3parclient.getStorageSystemInfo.return_value = \
             {'licenseInfo': {'licenses': [{'name': 'Compression'}]}}

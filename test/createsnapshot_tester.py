@@ -29,6 +29,8 @@ class TestCreateSnapshotDefault(CreateSnapshotUnitTest):
             copy.deepcopy(data.volume),
             None
         ]
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.isOnlinePhysicalCopy.return_value = False
 
     def check_response(self, resp):
         self._test_case.assertEqual(resp, {u"Err": ''})
@@ -52,6 +54,8 @@ class TestCreateSnapshotWithExpiryRetentionTimes(CreateSnapshotUnitTest):
             None,
             copy.deepcopy(data.volume)
         ]
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.isOnlinePhysicalCopy.return_value = False
 
     def check_response(self, resp):
         self._test_case.assertEqual(resp, {u"Err": ''})
@@ -124,6 +128,8 @@ class TestCreateSnapshotEtcdSaveFails(CreateSnapshotUnitTest):
         ]
         mock_etcd.save_vol.side_effect = \
             [hpe_exc.HPEPluginSaveFailed(obj='snap-001')]
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.isOnlinePhysicalCopy.return_value = False
 
     def check_response(self, resp):
         expected = "ETCD data save failed: snap-001"

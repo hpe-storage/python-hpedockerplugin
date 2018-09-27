@@ -503,6 +503,22 @@ class VolumeManager(object):
             response = json.dumps({u"Err": msg})
             return response
 
+        # TODO(sonivi): remove below conversion to 3par volume name, once we
+        # we have code in place to store 3par volume name in etcd vol object
+        volume_3par = utils.get_3par_vol_name(src_vol.get('id'))
+
+        # check if volume having any active task, it yes return with error
+        # add prefix '*' because offline copy task name have pattern like
+        # e.g. dcv-m0o5ZAwPReaZVoymnLTrMA->dcv-N.9ikeA.RiaxPP4LzecaEQ
+        # this will check both offline as well as online copy task
+        if self._hpeplugin_driver.is_vol_having_active_task(
+           "*%s" % volume_3par):
+            msg = 'source volume: %s / %s is having some active task ' \
+                  'running on array' % (src_vol_name, volume_3par)
+            LOG.debug(msg)
+            response = json.dumps({u"Err": msg})
+            return response
+
         if not size:
             size = src_vol['size']
         if not cpg:
@@ -580,6 +596,22 @@ class VolumeManager(object):
             vol_sched_flag = volume.DEFAULT_SCHEDULE
             vol['has_schedule'] = vol_sched_flag
             self._etcd.update_vol(volid, 'has_schedule', vol_sched_flag)
+
+        # TODO(sonivi): remove below conversion to 3par volume name, once we
+        # we have code in place to store 3par volume name in etcd vol object
+        volume_3par = utils.get_3par_vol_name(volid)
+
+        # check if volume having any active task, it yes return with error
+        # add prefix '*' because offline copy task name have pattern like
+        # e.g. dcv-m0o5ZAwPReaZVoymnLTrMA->dcv-N.9ikeA.RiaxPP4LzecaEQ
+        # this will check both offline as well as online copy task
+        if self._hpeplugin_driver.is_vol_having_active_task(
+           "*%s" % volume_3par):
+            msg = 'source volume: %s / %s is having some active task ' \
+                  'running on array' % (src_vol_name, volume_3par)
+            LOG.debug(msg)
+            response = json.dumps({u"Err": msg})
+            return response
 
         # Check if this is an old volume type. If yes, add is_snap flag to it
         if 'is_snap' not in vol:
@@ -953,7 +985,6 @@ class VolumeManager(object):
                 response = json.dumps({u"Err": msg})
                 return response
             snapinfo['snap_cpg'] = snapshot_cpg
-
             self._etcd.update_vol(snapinfo['id'], 'snap_cpg', snapshot_cpg)
             return self._get_snapshot_response(snapinfo, snapname)
         else:
@@ -1017,7 +1048,6 @@ class VolumeManager(object):
                 settings = {"Settings": {
                     'expirationHours': snapshot['expiration_hours'],
                     'retentionHours': snapshot['retention_hours']}}
-
                 volume['Status'].update(settings)
             else:
                 msg = (_LE('Snapshot Get: Snapshot name not found %s'),
