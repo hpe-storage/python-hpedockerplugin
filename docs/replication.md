@@ -16,15 +16,15 @@ being served from secondary array post-failover.
 Following configuration entry needs to be added to hpe.conf for it to be called active/passive based replication:
 
 replication_device = backend_id:<Array-Name>,
-                     replication_mode:<synchronous|asynchronous|streaming>,
-                     cpg_map:<Source-CPG>:<Target-CPG>,
-                     snap_cpg_map:<Source-Snap-CPG>:<Target-Snap-CPG>
-                     hpe3par_api_url:https://<IP>:8080/api/v1,
-                     hpe3par_username:<3PAR-Username>,
-                     hpe3par_password:<3PAR-Password>,
-                     san_ip:<IP>,
-                     san_login:<3PAR-SAN-Username>,
-                     san_password:<3PAR-SAN-Password>
+    replication_mode:<synchronous|asynchronous|streaming>,
+    cpg_map:<Source-CPG>:<Target-CPG>,
+    snap_cpg_map:<Source-Snap-CPG>:<Target-Snap-CPG>
+    hpe3par_api_url:https://<IP>:8080/api/v1,
+    hpe3par_username:<3PAR-Username>,
+    hpe3par_password:<3PAR-Password>,
+    san_ip:<IP>,
+    san_login:<3PAR-SAN-Username>,
+    san_password:<3PAR-SAN-Password>
 
 In case of asynchronous replication mode, ‘sync_period’ must be defined between range 300 and 31622400 seconds.
 If not defined, it defaults to 900.
@@ -69,16 +69,16 @@ secondary array starts serving the VLUNs.
 Following configuration entry needs to be added to hpe.conf for it to be called Peer Persistence based replication:
 
 replication_device = backend_id:<Array-Name>,
-                     quorum_witness_ip:<IP>,
-                     replication_mode:synchronous,
-                     cpg_map:<Source-CPG>:<Target-CPG>,
-                     snap_cpg_map:<Source-Snap-CPG>:<Target-Snap-CPG>
-                     hpe3par_api_url:https://<IP>:8080/api/v1,
-                     hpe3par_username:<3PAR-Username>,
-                     hpe3par_password:<3PAR-Password>,
-                     san_ip:<IP>,
-                     san_login:<3PAR-SAN-Username>,
-                     san_password:<3PAR-SAN-Password>
+    quorum_witness_ip:<IP>,
+    replication_mode:synchronous,
+    cpg_map:<Source-CPG>:<Target-CPG>,
+    snap_cpg_map:<Source-Snap-CPG>:<Target-Snap-CPG>
+    hpe3par_api_url:https://<IP>:8080/api/v1,
+    hpe3par_username:<3PAR-Username>,
+    hpe3par_password:<3PAR-Password>,
+    san_ip:<IP>,
+    san_login:<3PAR-SAN-Username>,
+    san_password:<3PAR-SAN-Password>
 
 Presence of "quorum_witness_ip" field makes it a Peer Persistence based replication configuration.
 "replication_mode" MUST be set to "synchronous" as a pre-requisite for Peer Persistence based replication.
