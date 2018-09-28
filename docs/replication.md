@@ -34,7 +34,7 @@ If this is for ISCSI based protocol, and if there are multiple ISCSI IP addresse
 assigned ISCSI IP addresses delimited by semi-colon. This is applicable for replication_device section ONLY.
 
 
-### Creation of replicated volume ###
+### Create replicated volume ###
 ```sh
 docker volume create -d hpe --name <volume_name> -o replicationGroup=<3PAR_RCG_Name> [Options...]
 ```
@@ -91,6 +91,14 @@ replication_device = backend_id:<Array-Name>,
 
 Presence of "quorum_witness_ip" field makes it a Peer Persistence based replication configuration.
 "replication_mode" MUST be set to "synchronous" as a pre-requisite for Peer Persistence based replication.
+
+### Create replicated volume ###
+```sh
+docker volume create -d hpe --name <volume_name> -o replicationGroup=<3PAR_RCG_Name> [Options...]
+```
+
+For replication, new option "replicationGroup" has been added. This denotes 3PAR Remote Copy Group.
+In case RCG doesn't exist on the array, it gets created
 
 ### Manual switchover workflow for Peer Persistence based replication ###
 Following command must be executed on primary array in order to do switchover:
