@@ -9,7 +9,7 @@ need to be replicated simultaneously.
 ## Active/Passive based replication ##
 In Active/Passive based replication, VLUNs corresponding to the replicated volumes are served by active array
 only - no VLUNs for these volumes exist on secondary array at this time. When a RCG is failed over manually
-to secondary array, the secondary array becomes active and start serving these VLUNs the host(s). In this case,
+to secondary array, the secondary array becomes active and start serving these VLUNs to the host(s). In this case,
 any container that had the volume(s) mounted would need to be restarted for it to be able to use the volume(s)
 being served from secondary array post-failover.
 
@@ -30,7 +30,7 @@ replication_device = backend_id:<Array-Name>,
 In case of asynchronous replication mode, ‘sync_period’ must be defined between range 300 and 31622400 seconds.
 If not defined, it defaults to 900.
 
-If this is for ISCSI based protocol, and if there are multiple ISCSI IP addresses, the hpe_iscsi_address must be
+If this is for ISCSI based protocol, and if there are multiple ISCSI IP addresses, the hpe3par_iscsi_ips must be
 assigned ISCSI IP addresses delimited by semi-colon. This is applicable for replication_device section ONLY.
 
 
