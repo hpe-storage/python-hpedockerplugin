@@ -15,17 +15,18 @@ being served from secondary array post-failover.
 
 Following configuration entry needs to be added to hpe.conf for it to be called active/passive based replication:
 
+```sh
 replication_device = backend_id:<Array-Name>,
-    replication_mode:<synchronous|asynchronous|streaming>,
-    cpg_map:<Source-CPG>:<Target-CPG>,
-    snap_cpg_map:<Source-Snap-CPG>:<Target-Snap-CPG>
-    hpe3par_api_url:https://<IP>:8080/api/v1,
-    hpe3par_username:<3PAR-Username>,
-    hpe3par_password:<3PAR-Password>,
-    san_ip:<IP>,
-    san_login:<3PAR-SAN-Username>,
-    san_password:<3PAR-SAN-Password>
-
+                     replication_mode:<synchronous|asynchronous|streaming>,
+                     cpg_map:<Source-CPG>:<Target-CPG>,
+                     snap_cpg_map:<Source-Snap-CPG>:<Target-Snap-CPG>
+                     hpe3par_api_url:https://<IP>:8080/api/v1,
+                     hpe3par_username:<3PAR-Username>,
+                     hpe3par_password:<3PAR-Password>,
+                     san_ip:<IP>,
+                     san_login:<3PAR-SAN-Username>,
+                     san_password:<3PAR-SAN-Password>
+```
 In case of asynchronous replication mode, ‘sync_period’ must be defined between range 300 and 31622400 seconds.
 If not defined, it defaults to 900.
 
@@ -34,7 +35,9 @@ assigned ISCSI IP addresses delimited by semi-colon. This is applicable for repl
 
 
 ### Creation of replicated volume ###
+```sh
 docker volume create -d hpe --name <volume_name> -o replicationGroup=<3PAR_RCG_Name> [Options...]
+```
 
 For replication, new option "replicationGroup" has been added. This denotes 3PAR Remote Copy Group.
 In case RCG doesn't exist on the array, it gets created
@@ -45,8 +48,10 @@ Following steps must be carried out in order to do failover:
 is unmounted from the primary array.
 
 2. Perform manual failover on the secondary array using the below command:
+```sh
 setrcopygroup failover <RCG_Name_On_Secondary_Array>
 setrcopygroup recover <RCG_Name_On_Secondary_Array>
+```
 
 3. Restart the container so that volume that is served by failed over array is mounted this time
 
@@ -56,7 +61,9 @@ Following steps must be carried out in order to do failover:
 is unmounted from the secondary array.
 
 2. Perform manual restore on the secondary array
+```sh
 setrcopygroup restore <RCG_Name_On_Secondary_Array>
+```
 
 3. Restart the container so that volume that is served by primary array is mounted this time
 
@@ -68,26 +75,31 @@ secondary array starts serving the VLUNs.
 
 Following configuration entry needs to be added to hpe.conf for it to be called Peer Persistence based replication:
 
+```sh
 replication_device = backend_id:<Array-Name>,
-    quorum_witness_ip:<IP>,
-    replication_mode:synchronous,
-    cpg_map:<Source-CPG>:<Target-CPG>,
-    snap_cpg_map:<Source-Snap-CPG>:<Target-Snap-CPG>
-    hpe3par_api_url:https://<IP>:8080/api/v1,
-    hpe3par_username:<3PAR-Username>,
-    hpe3par_password:<3PAR-Password>,
-    san_ip:<IP>,
-    san_login:<3PAR-SAN-Username>,
-    san_password:<3PAR-SAN-Password>
+                     quorum_witness_ip:<IP>,
+                     replication_mode:synchronous,
+                     cpg_map:<Source-CPG>:<Target-CPG>,
+                     snap_cpg_map:<Source-Snap-CPG>:<Target-Snap-CPG>
+                     hpe3par_api_url:https://<IP>:8080/api/v1,
+                     hpe3par_username:<3PAR-Username>,
+                     hpe3par_password:<3PAR-Password>,
+                     san_ip:<IP>,
+                     san_login:<3PAR-SAN-Username>,
+                     san_password:<3PAR-SAN-Password>
+```
 
 Presence of "quorum_witness_ip" field makes it a Peer Persistence based replication configuration.
 "replication_mode" MUST be set to "synchronous" as a pre-requisite for Peer Persistence based replication.
 
 ### Manual switchover workflow for Peer Persistence based replication ###
 Following command must be executed on primary array in order to do switchover:
-setrcopygroup switchover <RCG_Name_On_Secondary_Array>
-
+```sh
+$ setrcopygroup switchover <RCG_Name_On_Secondary_Array>
+```
 ### Delete replicated volume ###
+```sh
 docker volume rm <volume_name>
+```
 
 This deletes the volume. If this was the last volume present in RCG then the RCG is also removed from the backend.
