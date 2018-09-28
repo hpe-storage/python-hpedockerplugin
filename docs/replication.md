@@ -109,10 +109,12 @@ For replication, new option "replicationGroup" has been added. This denotes 3PAR
 In case RCG doesn't exist on the array, it gets created
 
 ### Manual switchover workflow for Peer Persistence based replication ###
-Following command must be executed on primary array in order to do switchover:
+Following command must be executed on the array in order to do switchover:
 ```sh
-$ setrcopygroup switchover <RCG_Name_On_Secondary_Array>
+$ setrcopygroup switchover <RCG_Name>
 ```
+RCG_Name is the name of RCG on the array where above command is executed.
+
 ### Delete replicated volume ###
 ```sh
 docker volume rm <volume_name>
