@@ -263,7 +263,6 @@ class VolumeManager(object):
             vol['fsOwner'] = fs_owner
             vol['fsMode'] = fs_mode
             vol['3par_vol_name'] = bkend_vol_name
-            vol['backend'] = current_backend
 
             self._etcd.save_vol(vol)
 
@@ -871,9 +870,7 @@ class VolumeManager(object):
             # This will make get_vol_byname more efficient
             clone_vol['fsOwner'] = src_vol.get('fsOwner')
             clone_vol['fsMode'] = src_vol.get('fsMode')
-            clone_vol['backend'] = src_vol.get('backend')
             clone_vol['3par_vol_name'] = bkend_clone_name
-            clone_vol['backend'] = src_vol['backend']
 
             self._etcd.save_vol(clone_vol)
 
