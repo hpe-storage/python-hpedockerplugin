@@ -941,6 +941,9 @@ class TestVolFencingForcedUnmount(MountVolumeUnitTest):
         self._test_case.assertEqual(resp['Err'], u'')
         self._test_case.assertEqual(resp['Devicename'], u'/tmp')
 
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.update_vol.assert_called()
+
         # Check if these functions were actually invoked
         # in the flow or not
         mock_3parclient = self.mock_objects['mock_3parclient']

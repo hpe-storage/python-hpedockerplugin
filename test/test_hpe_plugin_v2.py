@@ -438,6 +438,16 @@ class HpeDockerUnitTestsBase(object):
         # This will un-mount the volume as the last mount-id gets removed
         test.run_test(self)
 
+    @tc_banner_decorator
+    def test_unmount_vol_not_owned_by_this_node(self):
+        # This is a special test case which makes use of the same tester
+        # to execute this TC twice. The idea
+        # is to start with a volume which has two mount-ids i.e. it has been
+        # mounted twice. This TC tries to unmount it twice and checks if
+        # node_mount_info got removed from the volume object
+        test = unmountvolume_tester.TestUnmountVolNotOwnedByThisNode()
+        test.run_test(self)
+
     """
     INSPECT SNAPSHOT related tests
     """

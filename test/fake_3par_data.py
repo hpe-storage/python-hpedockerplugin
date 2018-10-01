@@ -208,6 +208,7 @@ vol_mounted_on_other_node = {
     'snapshots': [],
     'node_mount_info': {OTHER_NODE_ID: ['Fake-Mount-ID']},
     'path_info': path_info,
+    'old_path_info': [(THIS_NODE_ID, json_path_info)],
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
     'is_snap': False,
     'backend': 'DEFAULT'

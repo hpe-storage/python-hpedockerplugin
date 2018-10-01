@@ -213,6 +213,52 @@ class TestUnmountVolMountedTwiceOnThisNode(UnmountVolumeUnitTest):
 
         self._tc_run_cnt += 1
 
+
+# This TC should carry out the cleanup steps
+class TestUnmountVolNotOwnedByThisNode(UnmountVolumeUnitTest):
+    # This TC needs to be executed twice from outside and for each
+    # execution, the state of volume gets modified. Setting up
+    # the volume object to be used across two runs along with
+    # the run-count that is used to take decisions
+    def __init__(self, **kwargs):
+        super(type(self), self).__init__(**kwargs)
+        self._vol = copy.deepcopy(data.vol_mounted_on_other_node)
+
+    def _setup_mock_3parclient(self):
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.queryHost.return_value = data.fake_hosts
+        # Returning more VLUNs
+        if not self._is_snap:
+            mock_3parclient.getHostVLUNs.side_effect = \
+                [data.host_vluns, data.host_vluns]
+        else:
+            mock_3parclient.getHostVLUNs.side_effect = \
+                [data.snap_host_vluns, data.snap_host_vluns]
+
+    def _setup_mock_etcd(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.return_value = self._vol
+        mock_etcd.get_vol_path_info.return_value = \
+            {'path': '/dummy-path',
+             'connection_info': {'data': 'dummy-conn-inf'},
+             'mount_dir': '/dummy-mnt-dir'}
+
+    def check_response(self, resp):
+        self._test_case.assertEqual(resp, {u"Err": ''})
+
+        vol = self._vol
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.save_vol.assert_called_with(vol)
+        self._test_case.assertIn('node_mount_info',
+                                 self._vol)
+
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.getWsApiVersion.assert_called()
+        mock_3parclient.queryHost.assert_called()
+        mock_3parclient.getHostVLUNs.assert_called()
+        mock_3parclient.deleteVLUN.assert_called()
+        mock_3parclient.deleteHost.assert_called()
+
 # # TODO:
 # class TestUnmountVolumeChapCredentialsNotFound(UnmountVolumeUnitTest):
 #     pass
