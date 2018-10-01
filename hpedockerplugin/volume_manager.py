@@ -263,6 +263,7 @@ class VolumeManager(object):
             vol['fsOwner'] = fs_owner
             vol['fsMode'] = fs_mode
             vol['3par_vol_name'] = bkend_vol_name
+
             self._etcd.save_vol(vol)
 
         except Exception as ex:
@@ -869,8 +870,8 @@ class VolumeManager(object):
             # This will make get_vol_byname more efficient
             clone_vol['fsOwner'] = src_vol.get('fsOwner')
             clone_vol['fsMode'] = src_vol.get('fsMode')
-            clone_vol['backend'] = src_vol.get('backend')
             clone_vol['3par_vol_name'] = bkend_clone_name
+
             self._etcd.save_vol(clone_vol)
 
         except Exception as ex:
@@ -947,6 +948,8 @@ class VolumeManager(object):
         snap_detail['mountConflictDelay'] = snapinfo.get(
             'mount_conflict_delay')
         snap_detail['snap_cpg'] = snapinfo.get('snap_cpg')
+        snap_detail['backend'] = snapinfo.get('backend')
+
         if 'snap_schedule' in metadata:
             snap_detail['snap_schedule'] = metadata['snap_schedule']
 
@@ -1094,6 +1097,7 @@ class VolumeManager(object):
                 'mount_conflict_delay')
             vol_detail['cpg'] = volinfo.get('cpg')
             vol_detail['snap_cpg'] = volinfo.get('snap_cpg')
+            vol_detail['backend'] = volinfo.get('backend')
 
             LOG.info(' get_volume_snap_details : adding 3par vol info')
             if '3par_vol_name' in volinfo:
