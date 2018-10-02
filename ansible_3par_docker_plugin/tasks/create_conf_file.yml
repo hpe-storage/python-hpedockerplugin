@@ -17,12 +17,24 @@
       path: /etc/hpedockerplugin/hpe.conf
       section: "{{ item[0] }}"
       option: "{{ item[1]['option'] }}"
-      value: "{{ INVENTORY[item[0]][item[1].value] | default('')}}"
+      value: "{{ INVENTORY[item[0]][item[1].value] | default(None)}}"
       no_extra_spaces: true
     with_nested:
       - "{{ INVENTORY.keys()}}"
       - [{ option: 'ssh_hosts_key_file', value: 'ssh_hosts_key_file' }, { option: 'host_etcd_port_number', value: 'host_etcd_port_number' }, { option: 'logging', value: 'logging' }, { option: 'hpe3par_debug', value: 'hpe3par_debug' }, { option: 'suppress_requests_ssl_warning', value: 'suppress_requests_ssl_warning' }, { option: 'hpe3par_username', value: 'hpe3par_username' }, { option: 'hpe3par_password', value: 'hpe3par_password' }, { option: 'hpe3par_cpg', value: 'hpe3par_cpg' }, { option: 'hpe3par_snapcpg', value: 'hpe3par_snapcpg' }, { option: 'hpe3par_iscsi_chap_enabled', value: 'hpe3par_iscsi_chap_enabled' }, { option: 'use_multipath', value: 'use_multipath' }, { option: 'enforce_multipath', value: 'enforce_multipath' }, { option: 'hpedockerplugin_driver', value: 'hpedockerplugin_driver' }, { option: 'san_ip', value: 'hpe3par_ip' }, { option: 'san_login', value: 'hpe3par_username' }, { option: 'san_password', value: 'hpe3par_password' }]
     become: yes
+    when:  item.1.value in INVENTORY[item.0].keys()
+    
+  #- name: Populate hpe.conf
+  #  ini_file:
+  #    path: /etc/hpedockerplugin/hpe.conf
+  #    section: "{{ item[0] }}"
+  #    option: "{{ item[1]['option'] }}"
+  #    value: "{{ INVENTORY[item[0]][item[1].value] | default(None)}}"
+  #    no_extra_spaces: true
+  #  with_nested:
+  #    - "{{ INVENTORY.keys()}}"
+  #    - [{ option: 'ssh_hosts_key_file', value: 'ssh_hosts_key_file' }]
       
   - name: Populate hpe.conf
     ini_file:
@@ -58,5 +70,23 @@
     with_items:
       - "{{ ports.results }}"
     become: yes
-
-
+    
+  - name: Get the password
+    shell: hpe3parencryptor -a {{INVENTORY[item[0]]['encryptor_key']}} "{{ INVENTORY[item[0]][(item[1].value)] }}"
+    ignore_errors: yes
+    register: passwords
+    ignore_errors: yes
+    with_nested:
+      - "{{ INVENTORY.keys()}}"
+      - [{ option: 'hpe3par_password', value: 'hpe3par_password' }, { option: 'san_password', value: 'san_password' }]
+      
+  - name: Populate hpe.conf
+    ini_file:
+      path: /etc/hpedockerplugin/hpe.conf
+      section: "{{ passwords['results'][item | int]['item'][0] }}"
+      option:  "{{ passwords['results'][item | int]['item'][1]['option'] }}"
+      value: "{{ passwords['results'][item | int]['stdout_lines'][0].split('password: ')[1] }} "
+      no_extra_spaces: true
+    with_items:
+      - "{{ lookup('sequence','start=0 end='+((INVENTORY.keys() | count)*2 -1) |string,wantlist=True) }}"
+    become: yes

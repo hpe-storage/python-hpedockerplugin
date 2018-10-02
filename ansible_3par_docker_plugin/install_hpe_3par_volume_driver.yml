@@ -31,12 +31,6 @@
   vars:
     driver_path: "/usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/"
 
-  #vars_prompt:
-  #  - name: "storage_config"
-  #    prompt: "Configure for FC or iSCSI? Type: 'fc' or 'iscsi'."
-  #    private: no
-  #    default: "fc"
-
   tasks:
     - name: Configure multipath
       include: tasks/configure_multipath.yml
@@ -70,9 +64,6 @@
         - "{{ INVENTORY.keys()}}"
       become: yes
       when: groups['masters'] | length == 1
-
-    #- name: Copy hpe.conf
-    #  include: tasks/copy_hpe_conf.yml
 
     - name: Create 3PAR Docker Volume plugin
       include: tasks/create_3par_docker_volume_plugin.yml

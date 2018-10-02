@@ -2,7 +2,7 @@ INVENTORY:
   DEFAULT:    
     #ssh_hosts_key_file: '/root/.ssh/known_hosts'
     host_etcd_port_number: 23790
-    encryptor_key: first_key
+    encryptor_key: 12345
     #logging: DEBUG
     #hpe3par_debug: True
     #suppress_requests_ssl_warning: True
@@ -18,7 +18,7 @@ INVENTORY:
     volume_plugin: farhan7500/python-hpedockerplugin:plugin_v2
   3PAR1:    
     #ssh_hosts_key_file: '/root/.ssh/known_hosts'
-    host_etcd_port_number: 23790
+    host_etcd_port_number: 67890
     encryptor_key: second_key
     #logging: DEBUG
     #hpe3par_debug: True
@@ -32,3 +32,4 @@ INVENTORY:
     #use_multipath: False
     #enforce_multipath: False
     hpedockerplugin_driver: hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver
+s
