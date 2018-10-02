@@ -35,6 +35,13 @@
       state: present
     become: yes
     
+  - name: update setuptools
+    pip:
+      name: setuptools
+      state: latest
+      extra_args: --upgrade
+    become: yes
+    
   - name: install py-3parencryptor
     pip:
       name: py-3parencryptor

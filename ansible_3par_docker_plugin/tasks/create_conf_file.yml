@@ -78,7 +78,11 @@
     ignore_errors: yes
     with_nested:
       - "{{ INVENTORY.keys()}}"
-      - [{ option: 'hpe3par_password', value: 'hpe3par_password' }, { option: 'san_password', value: 'san_password' }]
+      - [{ option: 'hpe3par_password', value: 'hpe3par_password' }, { option: 'san_password', value: 'hpe3par_password' }]
+    when: INVENTORY[item[0]]['encryptor_key'] is defined
+
+  - name: Wait 15 seconds
+    wait_for: timeout=10
       
   - name: Populate hpe.conf
     ini_file:
@@ -90,3 +94,4 @@
     with_items:
       - "{{ lookup('sequence','start=0 end='+((INVENTORY.keys() | count)*2 -1) |string,wantlist=True) }}"
     become: yes
+    when:  passwords['results'][item | int]['stdout_lines'] is defined
