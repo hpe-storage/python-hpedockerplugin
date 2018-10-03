@@ -167,6 +167,8 @@ Before enabling the plugin, validate the following:
 
 **Ubuntu**
 
+>version=2.1
+
 ```
 $ docker plugin install store/hpestorage/hpedockervolumeplugin:<version>  --disable --alias hpe
 $ docker plugin set hpe certs.source=/tmp
@@ -174,6 +176,8 @@ $ docker plugin enable hpe
 ```
 
 **RHEL/CentOS**
+
+>version=2.1
 
 ```
 $ docker plugin install store/hpestorage/hpedockervolumeplugin:<version> –-disable –-alias hpe
