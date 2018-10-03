@@ -51,6 +51,7 @@ class TestQosVolume(GetVolumeUnitTest):
                     },
                     u'volume_detail': {
                         u'3par_vol_name': data.VOLUME_3PAR_NAME,
+                        u'backend': 'DEFAULT',
                         u'compression': None,
                         u'flash_cache': None,
                         u'fsMode': None,
@@ -96,6 +97,7 @@ class TestCloneVolume(GetVolumeUnitTest):
                 u'Status': {
                     u'volume_detail': {
                         u'3par_vol_name': data.VOLUME_3PAR_NAME,
+                        u'backend': 'DEFAULT',
                         u'compression': None,
                         u'flash_cache': None,
                         u'provisioning': u'dedup',
@@ -154,6 +156,7 @@ class TestSyncSnapshots(GetSnapshotUnitTest):
     def check_response(self, resp):
         snap_detail = {
             u'3par_vol_name': data.SNAPSHOT_3PAR_NAME,
+            u'backend': 'DEFAULT',
             u'compression': None,
             u'is_snap': True,
             u'parent_id': data.VOLUME_ID,

@@ -110,7 +110,8 @@ class Orchestrator(object):
     def clone_volume(self, src_vol_name, clone_name, size, cpg, snap_cpg):
         backend = self.get_volume_backend_details(src_vol_name)
         return self._manager[backend].clone_volume(src_vol_name, clone_name,
-                                                   size, cpg, snap_cpg)
+                                                   size, cpg, snap_cpg,
+                                                   backend)
 
     def create_snapshot(self, src_vol_name, schedName, snapshot_name,
                         snapPrefix, expiration_hrs, exphrs, retention_hrs,
