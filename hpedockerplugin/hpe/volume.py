@@ -12,6 +12,7 @@ DEFAULT_TO_SNAP_TYPE = False
 DEFAULT_SCHEDULE = False
 
 QOS_PRIORITY = {1: 'Low', 2: 'Normal', 3: 'High'}
+RCG_ROLE = {1: 'Primary', 2: 'Secondary'}
 PROVISIONING = {1: 'full', 2: 'thin', 6: 'dedup'}
 COMPRESSION = {1: 'true'}
 COPYTYPE = {1: 'base', 2: 'physical', 3: 'virtual'}

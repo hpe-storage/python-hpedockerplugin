@@ -1081,10 +1081,11 @@ class VolumeManager(object):
                     qos_filter = self._get_required_qos_field(qos_detail)
                     volume['Status'].update({'qos_detail': qos_filter})
                 except Exception as ex:
-                    msg = (_('unable to get/filter qos from 3par, error is:'
-                             ' %s'), six.text_type(ex))
+                    msg = 'unable to get/filter qos from 3par, error is: '\
+                          '%s' % six.text_type(ex)
                     LOG.error(msg)
-                    return json.dumps({u"Err": six.text_type(ex)})
+                    # until #347 fix let's just log error and not return
+                    # return json.dumps({u"Err": six.text_type(ex)})
 
             vol_detail = {}
             vol_detail['size'] = volinfo.get('size')
@@ -1112,6 +1113,20 @@ class VolumeManager(object):
                     self.tgt_bkend_config.hpe3par_cpg[0]
                 vol_detail['secondary_snap_cpg'] = \
                     self.tgt_bkend_config.hpe3par_snapcpg[0]
+
+                # fetch rcg details and display
+                try:
+                    rcg_name = volinfo['rcg_info']['local_rcg_name']
+                    rcg_detail = self._hpeplugin_driver.get_rcg(rcg_name)
+                    rcg_filter = self._get_required_rcg_field(rcg_detail)
+                    volume['Status'].update({'rcg_detail': rcg_filter})
+                except Exception as ex:
+                    msg = 'unable to get/filter rcg from 3par, error is: '\
+                          '%s' % six.text_type(ex)
+                    LOG.error(msg)
+                    # until #347 fix let's just log error and not return
+                    # return json.dumps({u"Err": six.text_type(ex)})
+
             volume['Status'].update({'volume_detail': vol_detail})
 
         response = json.dumps({u"Err": err, u"Volume": volume})
@@ -1821,11 +1836,23 @@ class VolumeManager(object):
                                   db_snapshots)
 
     @staticmethod
+    def _get_required_rcg_field(rcg_detail):
+        rcg_filter = {}
+
+        msg = 'get_required_rcg_field: %s' % rcg_detail
+        LOG.info(msg)
+        rcg_filter['rcg_name'] = rcg_detail.get('name')
+        # TODO(sonivi): handle in case of multiple target
+        rcg_filter['policies'] = rcg_detail['targets'][0].get('policies')
+        rcg_filter['role'] = volume.RCG_ROLE.get(rcg_detail.get('role'))
+
+        return rcg_filter
+
+    @staticmethod
     def _get_required_qos_field(qos_detail):
         qos_filter = {}
 
-        msg = (_LI('get_required_qos_field: %(qos_detail)s'),
-               {'qos_detail': qos_detail})
+        msg = 'get_required_qos_field: %s' % qos_detail
         LOG.info(msg)
 
         qos_filter['enabled'] = qos_detail.get('enabled')
