@@ -315,6 +315,46 @@ class HpeDockerUnitTestsBase(object):
         test = createsnapshot_tester.TestCreateSnapshotEtcdSaveFails()
         test.run_test(self)
 
+    @tc_banner_decorator
+    def test_create_snap_schedule(self):
+        test = createsnapshot_tester.TestCreateSnpSchedule()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_create_snap_schedule_neg_freq(self):
+        test = createsnapshot_tester.TestCreateSnpSchedNegFreq()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_create_snap_schedule_neg_prefx(self):
+        test = createsnapshot_tester.TestCreateSnpSchedNegPrefx()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_create_snap_schedule_inv_prefx_len(self):
+        test = createsnapshot_tester.TestCreateSnpSchedInvPrefxLen()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_create_snap_schedule_no_schedname(self):
+        test = createsnapshot_tester.TestCreateSnpSchedNoSchedName()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_create_snap_schedule_with_ret_to_base(self):
+        test = createsnapshot_tester.TestCreateSnpSchedwithRetToBase()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_create_snap_schedule_ret_exp_neg(self):
+        test = createsnapshot_tester.TestCreateSnpSchedRetExpNeg()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_create_snap_schedule_inv_sched_freq(self):
+        test = createsnapshot_tester.TestCreateSnpSchedInvSchedFreq()
+        test.run_test(self)
+
     """
     REMOVE VOLUME related tests
     """
@@ -359,6 +399,11 @@ class HpeDockerUnitTestsBase(object):
     @tc_banner_decorator
     def test_remove_snapshot(self):
         test = removesnapshot_tester.TestRemoveSnapshot()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_remove_snapshot_schedule(self):
+        test = removesnapshot_tester.TestRemoveSnapshotSchedule()
         test.run_test(self)
 
     # @tc_banner_decorator

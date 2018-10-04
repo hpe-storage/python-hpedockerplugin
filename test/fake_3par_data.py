@@ -38,6 +38,8 @@ SNAPSHOT_ID2 = '8da7488a-7920-451a-ad18-0e41eca15d25'
 SNAPSHOT_NAME2 = 'snapshot-2'
 SNAPSHOT_ID3 = 'f5d9e226-2995-4d66-a5bd-3e373f4ff772'
 SNAPSHOT_NAME3 = 'snapshot-3'
+SNAPSHOT_ID4 = 'f5d9e226-2995-4d66-a5bd-3e373f4ff774'
+SNAPSHOT_NAME4 = 'snapshot-4'
 VOLUME_3PAR_NAME = 'dcv-0DM4qZEVSKON-DXN-NwVpw'
 SNAPSHOT_3PAR_NAME1 = 'dcs-0DM4qZEVSKON-DXN-NwVpw'
 SNAPSHOT_3PAR_NAME = 'dcs-L4I73ONuTci9Fd4ceij-MQ'
@@ -309,6 +311,40 @@ snap3 = {
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
 }
 
+snap4_schedule = {
+    'schedule_name': "3parsched1",
+    'snap_name_prefix': "pqrst",
+    'sched_frequency': "10 * * * *",
+    'sched_snap_exp_hrs': 4,
+    'sched_snap_ret_hrs': 2
+}
+snap4_metadata = {
+    'name': SNAPSHOT_NAME4,
+    'id': SNAPSHOT_ID4,
+    'parent_name': SNAPSHOT_NAME1,
+    'parent_id': SNAPSHOT_ID1,
+    'expiration_hours': None,
+    'retention_hours': None,
+    'fsOwner': None,
+    'fsMode': None,
+    'snap_schedule': snap4_schedule,
+}
+snap4 = {
+    'name': SNAPSHOT_NAME4,
+    'id': SNAPSHOT_ID4,
+    'display_name': SNAPSHOT_NAME4,
+    # This is a child of ref_to_snap1
+    'parent_id': VOLUME_ID,
+    'ParentName': VOLUME_NAME,
+    'is_snap': True,
+    'has_schedule': True,
+    'size': 2,
+    'snap_metadata': snap4_metadata,
+    'snapshots': [],
+    'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
+    'backend': 'DEFAULT'
+}
+
 ref_to_snap1 = {
     'name': SNAPSHOT_NAME1,
     'id': SNAPSHOT_ID1,
@@ -329,6 +365,14 @@ ref_to_snap3 = {
     # This is a child of ref_to_snap1
     'parent_id': SNAPSHOT_ID1,
     'ParentName': VOLUME_NAME
+}
+
+ref_to_snap4 = {
+    'name': SNAPSHOT_NAME4,
+    'id': SNAPSHOT_ID4,
+    'parent_id': VOLUME_ID,
+    'ParentName': VOLUME_NAME,
+    'snap_schedule': snap4_schedule
 }
 
 bkend_snapshots = [SNAPSHOT_3PAR_NAME]
@@ -354,6 +398,22 @@ volume_with_snapshots = {
     'flash_cache': None,
     'compression': None,
     'snapshots': [ref_to_snap1, ref_to_snap2],
+    'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
+    'is_snap': False,
+    'has_schedule': False,
+    'backend': 'DEFAULT'
+}
+
+volume_with_snap_schedule = {
+    'name': VOLUME_NAME,
+    'id': VOLUME_ID,
+    'display_name': VOL_DISP_NAME,
+    'size': 2,
+    'host': FAKE_DOCKER_HOST,
+    'provisioning': THIN,
+    'flash_cache': None,
+    'compression': None,
+    'snapshots': [ref_to_snap4],
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
     'is_snap': False,
     'has_schedule': False,
