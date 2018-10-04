@@ -46,7 +46,7 @@ class TestRemoveSnapshotSchedule(RemoveSnapshotUnitTest):
         return {"Name": data.snap4['display_name']}
 
     def setup_mock_objects(self):
-        parent_vol = copy.deepcopy(data.volume_with_snap_schedule )
+        parent_vol = copy.deepcopy(data.volume_with_snap_schedule)
         snapshot = copy.deepcopy(data.snap4)
         mock_etcd = self.mock_objects['mock_etcd']
         mock_etcd.get_vol_byname.side_effect = [
