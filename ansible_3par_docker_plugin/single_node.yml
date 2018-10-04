@@ -5,6 +5,9 @@
     https_proxy: "http://web-proxy.in.hpecorp.net:8080"
 
   tasks:
+  
+  - name: load plugin settings
+    include_vars: 'properties/plugin_configuration_properties.yml'
 
   - name: Install prerequistes
     include: tasks/install_prerequisites.yml
@@ -105,9 +108,6 @@
         ETCD_INITIAL_CLUSTER_STATE: "{{ etcd_initial_cluster_state }}"
       restart_policy: always
     become: yes
-    
-  - name: load plugin settings
-    include_vars: 'properties/plugin_configuration_properties.yml'
     
   - name: Create conf file
     include: tasks/create_conf_file.yml

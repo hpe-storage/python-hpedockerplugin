@@ -6,6 +6,9 @@
     http_proxy: "http://web-proxy.in.hpecorp.net:8080"
     https_proxy: "http://web-proxy.in.hpecorp.net:8080"
   tasks:
+    - name: load plugin settings
+      include_vars: 'properties/plugin_configuration_properties.yml'
+      
     - name: Install prerequisites
       include: tasks/install_prerequisites.yml
 
