@@ -401,6 +401,11 @@ class HpeDockerUnitTestsBase(object):
         test = removesnapshot_tester.TestRemoveSnapshot()
         test.run_test(self)
 
+    @tc_banner_decorator
+    def test_remove_snapshot_schedule(self):
+        test = removesnapshot_tester.TestRemoveSnapshotSchedule()
+        test.run_test(self)
+
     # @tc_banner_decorator
     # def test_remove_multilevel_snapshot(self):
     #     test = removesnapshot_tester.TestRemoveMultilevelSnapshot()
