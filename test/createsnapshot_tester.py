@@ -142,5 +142,147 @@ class TestCreateSnapshotEtcdSaveFails(CreateSnapshotUnitTest):
         # Rollback
         mock_3parclient.deleteVolume.assert_called()
 
+
+class TestCreateSnpSchedule(CreateSnapshotUnitTest):
+    def get_request_params(self):
+        return {"Name": data.SNAPSHOT_NAME4,
+                "Opts": {"virtualCopyOf": data.VOLUME_NAME,
+                         "scheduleName": '3parsched1',
+                         "scheduleFrequency": "10 * * * *",
+                         "snapshotPrefix": "pqrst",
+                         "expHrs": '4',
+                         "retHrs": '2'}}
+
+    def setup_mock_objects(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.side_effect = [
+            data.volume,
+            None,
+            copy.deepcopy(data.volume)
+        ]
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.isOnlinePhysicalCopy.return_value = False
+
+    def check_response(self, resp):
+        self._test_case.assertEqual(resp, {u"Err": ''})
+
+        # Ensure that createSnapshot was called on 3PAR Client
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient._run.assert_called()
+        mock_3parclient.createSnapshot.assert_called()
+
+
+class TestCreateSnpSchedNegFreq(CreateSnapshotUnitTest):
+    def get_request_params(self):
+        return {"Name": data.SNAPSHOT_NAME4,
+                "Opts": {"virtualCopyOf": data.VOLUME_NAME,
+                         "scheduleName": '3parsched1',
+                         "snapshotPrefix": "pqrst",
+                         "expHrs": '4',
+                         "retHrs": '2'}}
+
+    def check_response(self, resp):
+        expected = 'create schedule failed, error is: user  has not passed'\
+                   ' scheduleFrequency to create snapshot schedule.'
+        self._test_case.assertEqual(resp, {u"Err": expected})
+
+
+class TestCreateSnpSchedNegPrefx(CreateSnapshotUnitTest):
+    def get_request_params(self):
+        return {"Name": data.SNAPSHOT_NAME4,
+                "Opts": {"virtualCopyOf": data.VOLUME_NAME,
+                         "scheduleName": '3parsched1',
+                         "scheduleFrequency": "10 * * * *",
+                         "expHrs": '4',
+                         "retHrs": '2'}}
+
+    def check_response(self, resp):
+        expected = 'Please make sure that valid schedule name is passed '\
+                   'and please provide max 15 letter prefix for the '\
+                   'scheduled snapshot names '
+        self._test_case.assertEqual(resp, {u"Err": expected})
+
+
+class TestCreateSnpSchedInvPrefxLen(CreateSnapshotUnitTest):
+    def get_request_params(self):
+        return {"Name": data.SNAPSHOT_NAME4,
+                "Opts": {"virtualCopyOf": data.VOLUME_NAME,
+                         "scheduleName": '3parsched1',
+                         "scheduleFrequency": "10 * * * *",
+                         "snapshotPrefix": "pqrstwdstyuijowkdlasihguf",
+                         "expHrs": '4',
+                         "retHrs": '2'}}
+
+    def check_response(self, resp):
+        expected = 'Please provide a schedlueName with max 31 characters '\
+                   'and snapshotPrefix with max length of 15 characters'
+        self._test_case.assertEqual(resp, {u"Err": expected})
+
+
+class TestCreateSnpSchedNoSchedName(CreateSnapshotUnitTest):
+    def get_request_params(self):
+        return {"Name": data.SNAPSHOT_NAME4,
+                "Opts": {"virtualCopyOf": data.VOLUME_NAME,
+                         "scheduleFrequency": "10 * * * *",
+                         "snapshotPrefix": "pqrst",
+                         "expHrs": '4',
+                         "retHrs": '2'}}
+
+    def check_response(self, resp):
+        expected = 'scheduleName is a mandatory parameter for creating a '\
+                   'snapshot schedule'
+        self._test_case.assertEqual(resp, {u"Err": expected})
+
+
+class TestCreateSnpSchedwithRetToBase(CreateSnapshotUnitTest):
+    def get_request_params(self):
+        return {"Name": data.SNAPSHOT_NAME4,
+                "Opts": {"virtualCopyOf": data.VOLUME_NAME,
+                         "scheduleName": '3parsched1',
+                         "scheduleFrequency": "10 * * * *",
+                         "snapshotPrefix": "pqrst",
+                         "retentionHours": '5',
+                         "expHrs": '4',
+                         "retHrs": '2'}}
+
+    def check_response(self, resp):
+        expected = 'create schedule failed, error is : setting '\
+                   'expirationHours or retentionHours for docker base '\
+                   'snapshot is not allowed while creating a schedule'
+        self._test_case.assertEqual(resp, {u"Err": expected})
+
+
+class TestCreateSnpSchedRetExpNeg(CreateSnapshotUnitTest):
+    def get_request_params(self):
+        return {"Name": data.SNAPSHOT_NAME4,
+                "Opts": {"virtualCopyOf": data.VOLUME_NAME,
+                         "scheduleName": '3parsched1',
+                         "scheduleFrequency": "10 * * * *",
+                         "snapshotPrefix": "pqrst",
+                         "expHrs": '2',
+                         "retHrs": '4'}}
+
+    def check_response(self, resp):
+        expected = 'create schedule failed, error is: expiration hours '\
+                   'cannot be greater than retention hours'
+        self._test_case.assertEqual(resp, {u"Err": expected})
+
+
+class TestCreateSnpSchedInvSchedFreq(CreateSnapshotUnitTest):
+    def get_request_params(self):
+        return {"Name": data.SNAPSHOT_NAME4,
+                "Opts": {"virtualCopyOf": data.VOLUME_NAME,
+                         "scheduleName": '3parsched1',
+                         "scheduleFrequency": "10 * * * * *",
+                         "snapshotPrefix": "pqrst",
+                         "expHrs": '4',
+                         "retHrs": '2'}}
+
+    def check_response(self, resp):
+        expected = 'Invalid schedule string is passed: HPE Docker Volume '\
+                   'plugin Create volume failed: create schedule failed, '\
+                   'error is: Improper string passed. '
+        self._test_case.assertEqual(resp, {u"Err": expected})
+
 # class TestCreateSnapshotUnauthorized(CreateSnapshotUnitTest):
 #     pass

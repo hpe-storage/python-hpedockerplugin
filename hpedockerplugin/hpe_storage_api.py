@@ -342,9 +342,6 @@ class VolumePlugin(object):
                     LOG.error(msg)
                     response = json.dumps({u"Err": msg})
                     return response
-                return self.volumedriver_create_snapshot(name,
-                                                         mount_conflict_delay,
-                                                         opts)
                 schedule_opts = valid_snap_schedule_opts[1:]
                 for s_o in schedule_opts:
                     if s_o in input_list:
@@ -354,6 +351,10 @@ class VolumePlugin(object):
                             LOG.error(msg)
                             response = json.dumps({u"Err": msg})
                             return response
+                        break
+                return self.volumedriver_create_snapshot(name,
+                                                         mount_conflict_delay,
+                                                         opts)
             elif 'cloneOf' in contents['Opts']:
                 return self.volumedriver_clone_volume(name, opts)
             for i in input_list:
@@ -534,7 +535,7 @@ class VolumePlugin(object):
             if 'expirationHours' in contents['Opts'] or \
                     'retentionHours' in contents['Opts']:
                 msg = ('create schedule failed, error is : setting '
-                       'expirationHours or retentionHours for docker '
+                       'expirationHours or retentionHours for docker base '
                        'snapshot is not allowed while creating a schedule')
                 LOG.error(msg)
                 response = json.dumps({'Err': msg})
