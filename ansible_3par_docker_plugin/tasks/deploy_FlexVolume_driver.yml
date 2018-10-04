@@ -19,14 +19,6 @@
       src: /root/.kube/config
       dest: /tmp/config
       flat: yes
-    when: inventory_hostname in groups['masters']
-   
-
-  - name: Copy over the kube config file into /tmp
-    fetch:
-      src: /root/.kube/config
-      dest: /tmp/config
-      flat: yes
     when: inventory_hostname in groups['masters'][0]
 
 

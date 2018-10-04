@@ -9,8 +9,7 @@
 [masters]
 #10.10.1.60
 15.213.67.74 ansible_user=root ansible_ssh_pass=nomani
-#15.213.67.75 ansible_user=root ansible_ssh_pass=nomani
-#15.213.67.76 ansible_user=root ansible_ssh_pass=nomani
+
 
 [workers]
 #10.10.1.61

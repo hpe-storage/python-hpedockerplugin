@@ -1,4 +1,4 @@
----     
+---
   - name: download get-pip.py
     get_url:
       url: https://bootstrap.pypa.io/get-pip.py
@@ -12,36 +12,45 @@
     file:
       state: absent
       path: /tmp/get-pip.py
-    
+
   - name: delete requests library
     shell: rm -rf /usr/lib/python2.7/site-packages/requests*
     become: yes
+    warn: False
 
   - name: install docker
     pip:
       name: docker
       state: present
     become: yes
-    
+
   - name: install gcc
     package:
       name: gcc
       state: present
     become: yes
-    
+
   - name: install python-devel
     package:
       name: python-devel
       state: present
     become: yes
-    
+    when: ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+
+  - name: install python-dev
+    package:
+      name: python-dev
+      state: present
+    become: yes
+    when: ansible_distribution == 'Ubuntu'
+
   - name: update setuptools
     pip:
       name: setuptools
       state: latest
       extra_args: --upgrade
     become: yes
-    
+
   - name: install py-3parencryptor
     pip:
       name: py-3parencryptor
