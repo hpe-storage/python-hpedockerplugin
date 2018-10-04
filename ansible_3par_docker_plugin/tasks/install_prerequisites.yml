@@ -1,0 +1,24 @@
+---     
+  - name: download get-pip.py
+    get_url:
+      url: https://bootstrap.pypa.io/get-pip.py
+      dest: /tmp
+
+  - name: install pip
+    command: "python /tmp/get-pip.py"
+    become: yes
+
+  - name: delete get-pip.py
+    file:
+      state: absent
+      path: /tmp/get-pip.py
+    
+  - name: delete requests library
+    shell: rm -rf /usr/lib/python2.7/site-packages/requests*
+    become: yes
+
+  - name: install docker
+    pip:
+      name: docker
+      state: present
+    become: yes

@@ -1,0 +1,21 @@
+dist: xenial
+sudo: false
+language: generic
+branches:
+  only:
+    - plugin_v2
+
+install:
+  - sudo pip install tox
+python:
+  - "2.7"
+
+matrix:
+  include:
+  - python: "2.7"
+    env: TOXENV=py27
+
+# command to run tests
+script:
+  - tox -e py27 --  test.test_hpe_plugin_v2
+

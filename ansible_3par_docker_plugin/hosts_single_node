@@ -1,0 +1,4 @@
+[all]
+#15.213.67.69 ansible_user=fnomani ansible_ssh_pass=nomani
+15.213.67.70 ansible_user=root ansible_ssh_pass=nomani
+#15.213.67.71 ansible_user=root ansible_ssh_pass=nomani
