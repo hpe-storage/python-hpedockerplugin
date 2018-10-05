@@ -20,7 +20,6 @@ import uuid
 from oslo_utils import importutils
 from oslo_config import cfg
 from oslo_log import log as logging
-from oslo_service import loopingcall
 from oslo_utils import units
 
 from hpedockerplugin import exception
@@ -1335,21 +1334,9 @@ class HPE3PARCommon(object):
                 self.create_volume(dst_volume)
 
                 optional = {'priority': 1}
-                body = self.client.copyVolume(src_3par_vol_name,
-                                              dst_3par_vol_name, None,
-                                              optional=optional)
-                task_id = body['taskid']
-
-                task_status = self._wait_for_task_completion(task_id)
-                if task_status['status'] is not self.client.TASK_DONE:
-                    dbg = {'status': task_status, 'id': dst_volume['id']}
-                    msg = _('copy volume task failed: create_cloned_volume '
-                            'id=%(id)s, status=%(status)s.') % dbg
-                    LOG.error(msg)
-                    raise exception.PluginException(msg)
-                else:
-                    LOG.debug('Copy volume completed: create_cloned_volume: '
-                              'id=%s.', dst_volume['id'])
+                self.client.copyVolume(src_3par_vol_name,
+                                       dst_3par_vol_name, None,
+                                       optional=optional)
 
                 comments = {'volume_id': dst_volume['id'],
                             'name': dst_volume['name'],
@@ -1388,28 +1375,6 @@ class HPE3PARCommon(object):
 
         body = self.client.copyVolume(src_name, dest_name, cpg, optional)
         return body['taskid']
-
-    def _wait_for_task_completion(self, task_id):
-        """This waits for a 3PAR background task complete or fail.
-
-        This looks for a task to get out of the 'active' state.
-        """
-        # Wait for the physical copy task to complete
-        def _wait_for_task(task_id):
-            status = self.client.getTask(task_id)
-            LOG.debug("3PAR Task id %(id)s status = %(status)s",
-                      {'id': task_id,
-                       'status': status['status']})
-            if status['status'] is not self.client.TASK_ACTIVE:
-                self._task_status = status
-                raise loopingcall.LoopingCallDone()
-
-        self._task_status = None
-        timer = loopingcall.FixedIntervalLoopingCall(
-            _wait_for_task, task_id)
-        timer.start(interval=1).wait()
-
-        return self._task_status
 
     def get_snapshots_by_vol(self, vol_id, snap_cpg):
         bkend_vol_name = utils.get_3par_vol_name(vol_id)
@@ -1589,3 +1554,6 @@ class HPE3PARCommon(object):
                    (rcg_name, six.text_type(ex)))
             LOG.error(msg)
             raise exception.HPERemoteCopyGroupBackendAPIException(data=msg)
+
+    def is_vol_having_active_task(self, vol_name):
+        return self.client.isOnlinePhysicalCopy(vol_name)

@@ -53,11 +53,17 @@ class Orchestrator(object):
         manager_objs = {}
 
         for backend_name, config in backend_configs.items():
-            LOG.info('INITIALIZING backend  : %s' % backend_name)
-            manager_objs[backend_name] = mgr.VolumeManager(host_config,
-                                                           config,
-                                                           self.etcd_util,
-                                                           backend_name)
+            try:
+                LOG.info('INITIALIZING backend: %s' % backend_name)
+                manager_objs[backend_name] = mgr.VolumeManager(
+                    host_config,
+                    config,
+                    self.etcd_util,
+                    backend_name)
+            except Exception as ex:
+                # lets log the error message and proceed with other backend
+                LOG.error('INITIALIZING backend: %s FAILED Error: %s'
+                          % (backend_name, ex))
 
         return manager_objs
 
@@ -104,7 +110,8 @@ class Orchestrator(object):
     def clone_volume(self, src_vol_name, clone_name, size, cpg, snap_cpg):
         backend = self.get_volume_backend_details(src_vol_name)
         return self._manager[backend].clone_volume(src_vol_name, clone_name,
-                                                   size, cpg, snap_cpg)
+                                                   size, cpg, snap_cpg,
+                                                   backend)
 
     def create_snapshot(self, src_vol_name, schedName, snapshot_name,
                         snapPrefix, expiration_hrs, exphrs, retention_hrs,

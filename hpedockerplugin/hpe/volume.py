@@ -1,4 +1,5 @@
 import uuid
+from hpedockerplugin.hpe import utils
 
 DEFAULT_SIZE = 100
 DEFAULT_PROV = "thin"
@@ -11,6 +12,7 @@ DEFAULT_TO_SNAP_TYPE = False
 DEFAULT_SCHEDULE = False
 
 QOS_PRIORITY = {1: 'Low', 2: 'Normal', 3: 'High'}
+RCG_ROLE = {1: 'Primary', 2: 'Secondary'}
 PROVISIONING = {1: 'full', 2: 'thin', 6: 'dedup'}
 COMPRESSION = {1: 'true'}
 COPYTYPE = {1: 'base', 2: 'physical', 3: 'virtual'}
@@ -25,6 +27,8 @@ def createvol(name, size=DEFAULT_SIZE, prov=DEFAULT_PROV,
     volume = {}
     volume['id'] = str(uuid.uuid4())
     volume['name'] = volume['id']
+    volume['3par_vol_name'] = utils.get_3par_name(volume['id'],
+                                                  is_snap)
     volume['host'] = ''
     volume['size'] = size
     volume['availability_zone'] = ''

@@ -169,6 +169,9 @@ class VolumePlugin(object):
                                         'replicationGroup']
             valid_snap_schedule_opts = ['scheduleName', 'scheduleFrequency',
                                         'snapshotPrefix', 'expHrs', 'retHrs']
+            mutually_exclusive = [['virtualCopyOf', 'cloneOf', 'qos-name',
+                                   'replicationGroup'],
+                                  ['virtualCopyOf', 'cloneOf', 'backend']]
             for key in contents['Opts']:
                 if key not in valid_volume_create_opts:
                     msg = (_('create volume/snapshot/clone failed, error is: '
@@ -180,19 +183,30 @@ class VolumePlugin(object):
                     return json.dumps({u"Err": six.text_type(msg)})
 
             # mutually exclusive options check
-            mutually_exclusive_list = ['virtualCopyOf', 'cloneOf', 'qos-name',
-                                       'replicationGroup']
             input_list = list(contents['Opts'].keys())
-            if (len(list(set(input_list) &
-                    set(mutually_exclusive_list))) >= 2):
-                msg = (_('%(exclusive)s cannot be specified at the same '
-                         'time') % {'exclusive': mutually_exclusive_list, })
-                LOG.error(msg)
-                return json.dumps({u"Err": six.text_type(msg)})
+            for li in mutually_exclusive:
+                if (len(list(set(input_list) & set(li))) >= 2):
+                    msg = (_('%(exclusive)s cannot be specified at the same '
+                             'time') % {'exclusive': li, })
+                    LOG.error(msg)
+                    return json.dumps({u"Err": six.text_type(msg)})
 
             if ('backend' in contents['Opts'] and
                     contents['Opts']['backend'] != ""):
                 current_backend = str(contents['Opts']['backend'])
+                # check if current_backend present in config file
+                if current_backend in self._backend_configs:
+                    # check if current_backend is initialised
+                    if current_backend not in self.orchestrator._manager:
+                        msg = 'Backend: %s having incorrect/missing some ' \
+                              'configuration.' % current_backend
+                        LOG.error(msg)
+                        return json.dumps({u"Err": msg})
+                else:
+                    msg = 'Backend: %s not present in config.' \
+                          % current_backend
+                    LOG.error(msg)
+                    return json.dumps({u"Err": msg})
 
             if 'importVol' in input_list:
                 if not len(input_list) == 1:
@@ -328,6 +342,16 @@ class VolumePlugin(object):
                     LOG.error(msg)
                     response = json.dumps({u"Err": msg})
                     return response
+                schedule_opts = valid_snap_schedule_opts[1:]
+                for s_o in schedule_opts:
+                    if s_o in input_list:
+                        if "scheduleName" not in input_list:
+                            msg = (_('scheduleName is a mandatory parameter'
+                                     ' for creating a snapshot schedule'))
+                            LOG.error(msg)
+                            response = json.dumps({u"Err": msg})
+                            return response
+                        break
                 return self.volumedriver_create_snapshot(name,
                                                          mount_conflict_delay,
                                                          opts)
@@ -501,13 +525,6 @@ class VolumePlugin(object):
         if 'Opts' in contents and contents['Opts'] and \
                 'expirationHours' in contents['Opts']:
             expiration_hrs = int(contents['Opts']['expirationHours'])
-            if has_schedule:
-                msg = ('create schedule failed, error is: setting '
-                       'expiration_hours for docker snapshot is not'
-                       ' allowed while creating a schedule.')
-                LOG.error(msg)
-                response = json.dumps({'Err': msg})
-                return response
 
         retention_hrs = None
         if 'Opts' in contents and contents['Opts'] and \
@@ -515,6 +532,15 @@ class VolumePlugin(object):
             retention_hrs = int(contents['Opts']['retentionHours'])
 
         if has_schedule:
+            if 'expirationHours' in contents['Opts'] or \
+                    'retentionHours' in contents['Opts']:
+                msg = ('create schedule failed, error is : setting '
+                       'expirationHours or retentionHours for docker base '
+                       'snapshot is not allowed while creating a schedule')
+                LOG.error(msg)
+                response = json.dumps({'Err': msg})
+                return response
+
             if 'scheduleFrequency' not in contents['Opts']:
                 msg = ('create schedule failed, error is: user  '
                        'has not passed scheduleFrequency to create'

@@ -38,6 +38,24 @@ class TestRemoveSnapshot(RemoveSnapshotUnitTest):
         ]
 
 
+class TestRemoveSnapshotSchedule(RemoveSnapshotUnitTest):
+    def check_response(self, resp):
+        self._test_case.assertEqual(resp, {u"Err": ''})
+
+    def get_request_params(self):
+        return {"Name": data.snap4['display_name']}
+
+    def setup_mock_objects(self):
+        parent_vol = copy.deepcopy(data.volume_with_snap_schedule)
+        snapshot = copy.deepcopy(data.snap4)
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.side_effect = [
+            snapshot,
+            snapshot,
+            parent_vol
+        ]
+
+
 # # Tries to remove a snapshot present at the second level
 # # This shouldn't even enter driver code
 # class TestRemoveMultilevelSnapshot(RemoveSnapshotUnitTest):

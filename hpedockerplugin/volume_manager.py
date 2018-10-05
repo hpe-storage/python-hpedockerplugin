@@ -242,8 +242,10 @@ class VolumeManager(object):
                                vol_flash, compression_val, vol_qos,
                                mount_conflict_delay, False, cpg, snap_cpg,
                                False, current_backend)
+
+        bkend_vol_name = ""
         try:
-            self._create_volume(vol, undo_steps)
+            bkend_vol_name = self._create_volume(vol, undo_steps)
             self._apply_volume_specs(vol, undo_steps)
             if rcg_name:
                 # bkend_rcg_name = self._get_3par_rcg_name(rcg_name)
@@ -260,6 +262,8 @@ class VolumeManager(object):
             # This will make get_vol_byname more efficient
             vol['fsOwner'] = fs_owner
             vol['fsMode'] = fs_mode
+            vol['3par_vol_name'] = bkend_vol_name
+
             self._etcd.save_vol(vol)
 
         except Exception as ex:
@@ -500,6 +504,22 @@ class VolumeManager(object):
             response = json.dumps({u"Err": msg})
             return response
 
+        # TODO(sonivi): remove below conversion to 3par volume name, once we
+        # we have code in place to store 3par volume name in etcd vol object
+        volume_3par = utils.get_3par_vol_name(src_vol.get('id'))
+
+        # check if volume having any active task, it yes return with error
+        # add prefix '*' because offline copy task name have pattern like
+        # e.g. dcv-m0o5ZAwPReaZVoymnLTrMA->dcv-N.9ikeA.RiaxPP4LzecaEQ
+        # this will check both offline as well as online copy task
+        if self._hpeplugin_driver.is_vol_having_active_task(
+           "*%s" % volume_3par):
+            msg = 'source volume: %s / %s is having some active task ' \
+                  'running on array' % (src_vol_name, volume_3par)
+            LOG.debug(msg)
+            response = json.dumps({u"Err": msg})
+            return response
+
         if not size:
             size = src_vol['size']
         if not cpg:
@@ -578,6 +598,22 @@ class VolumeManager(object):
             vol['has_schedule'] = vol_sched_flag
             self._etcd.update_vol(volid, 'has_schedule', vol_sched_flag)
 
+        # TODO(sonivi): remove below conversion to 3par volume name, once we
+        # we have code in place to store 3par volume name in etcd vol object
+        volume_3par = utils.get_3par_vol_name(volid)
+
+        # check if volume having any active task, it yes return with error
+        # add prefix '*' because offline copy task name have pattern like
+        # e.g. dcv-m0o5ZAwPReaZVoymnLTrMA->dcv-N.9ikeA.RiaxPP4LzecaEQ
+        # this will check both offline as well as online copy task
+        if self._hpeplugin_driver.is_vol_having_active_task(
+           "*%s" % volume_3par):
+            msg = 'source volume: %s / %s is having some active task ' \
+                  'running on array' % (src_vol_name, volume_3par)
+            LOG.debug(msg)
+            response = json.dumps({u"Err": msg})
+            return response
+
         # Check if this is an old volume type. If yes, add is_snap flag to it
         if 'is_snap' not in vol:
             vol_snap_flag = volume.DEFAULT_TO_SNAP_TYPE
@@ -645,6 +681,7 @@ class VolumeManager(object):
                     'display_description': 'snapshot of volume %s'
                                            % src_vol_name}
         undo_steps = []
+        bkend_snap_name = ""
         try:
             bkend_snap_name = self._hpeplugin_driver.create_snapshot(
                 snapshot)
@@ -682,9 +719,12 @@ class VolumeManager(object):
         vol['snapshots'].append(db_snapshot)
         snap_vol['snap_metadata'] = db_snapshot
         snap_vol['backend'] = current_backend
+        snap_vol['3par_vol_name'] = bkend_snap_name
 
         try:
-            self._create_snapshot_record(snap_vol, snapshot_name, undo_steps)
+            self._create_snapshot_record(snap_vol,
+                                         snapshot_name,
+                                         undo_steps)
 
             # For now just track volume to uuid mapping internally
             # TODO: Save volume name and uuid mapping in etcd as well
@@ -821,14 +861,17 @@ class VolumeManager(object):
                                      False, cpg, snap_cpg, False,
                                      current_backend)
         try:
-            self.__clone_volume__(src_vol, clone_vol, undo_steps)
+            bkend_clone_name = self.__clone_volume__(src_vol,
+                                                     clone_vol,
+                                                     undo_steps)
             self._apply_volume_specs(clone_vol, undo_steps)
             # For now just track volume to uuid mapping internally
             # TODO: Save volume name and uuid mapping in etcd as well
             # This will make get_vol_byname more efficient
             clone_vol['fsOwner'] = src_vol.get('fsOwner')
             clone_vol['fsMode'] = src_vol.get('fsMode')
-            clone_vol['backend'] = src_vol.get('backend')
+            clone_vol['3par_vol_name'] = bkend_clone_name
+
             self._etcd.save_vol(clone_vol)
 
         except Exception as ex:
@@ -905,8 +948,18 @@ class VolumeManager(object):
         snap_detail['mountConflictDelay'] = snapinfo.get(
             'mount_conflict_delay')
         snap_detail['snap_cpg'] = snapinfo.get('snap_cpg')
+        snap_detail['backend'] = snapinfo.get('backend')
+
         if 'snap_schedule' in metadata:
             snap_detail['snap_schedule'] = metadata['snap_schedule']
+
+        LOG.info('_get_snapshot_response: adding 3par vol info')
+
+        if '3par_vol_name' in snapinfo:
+            snap_detail['3par_vol_name'] = snapinfo.get('3par_vol_name')
+        else:
+            snap_detail['3par_vol_name'] = utils.get_3par_name(snapinfo['id'],
+                                                               True)
 
         snapshot['Status'].update({'snap_detail': snap_detail})
 
@@ -1028,10 +1081,11 @@ class VolumeManager(object):
                     qos_filter = self._get_required_qos_field(qos_detail)
                     volume['Status'].update({'qos_detail': qos_filter})
                 except Exception as ex:
-                    msg = (_('unable to get/filter qos from 3par, error is:'
-                             ' %s'), six.text_type(ex))
+                    msg = 'unable to get/filter qos from 3par, error is: '\
+                          '%s' % six.text_type(ex)
                     LOG.error(msg)
-                    return json.dumps({u"Err": six.text_type(ex)})
+                    # until #347 fix let's just log error and not return
+                    # return json.dumps({u"Err": six.text_type(ex)})
 
             vol_detail = {}
             vol_detail['size'] = volinfo.get('size')
@@ -1044,11 +1098,35 @@ class VolumeManager(object):
                 'mount_conflict_delay')
             vol_detail['cpg'] = volinfo.get('cpg')
             vol_detail['snap_cpg'] = volinfo.get('snap_cpg')
+            vol_detail['backend'] = volinfo.get('backend')
+
+            LOG.info(' get_volume_snap_details : adding 3par vol info')
+            if '3par_vol_name' in volinfo:
+                vol_detail['3par_vol_name'] = volinfo['3par_vol_name']
+            else:
+                vol_detail['3par_vol_name'] = \
+                    utils.get_3par_name(volinfo['id'],
+                                        False)
+
             if volinfo.get('rcg_info'):
                 vol_detail['secondary_cpg'] = \
                     self.tgt_bkend_config.hpe3par_cpg[0]
                 vol_detail['secondary_snap_cpg'] = \
                     self.tgt_bkend_config.hpe3par_snapcpg[0]
+
+                # fetch rcg details and display
+                try:
+                    rcg_name = volinfo['rcg_info']['local_rcg_name']
+                    rcg_detail = self._hpeplugin_driver.get_rcg(rcg_name)
+                    rcg_filter = self._get_required_rcg_field(rcg_detail)
+                    volume['Status'].update({'rcg_detail': rcg_filter})
+                except Exception as ex:
+                    msg = 'unable to get/filter rcg from 3par, error is: '\
+                          '%s' % six.text_type(ex)
+                    LOG.error(msg)
+                    # until #347 fix let's just log error and not return
+                    # return json.dumps({u"Err": six.text_type(ex)})
+
             volume['Status'].update({'volume_detail': vol_detail})
 
         response = json.dumps({u"Err": err, u"Volume": volume})
@@ -1758,11 +1836,23 @@ class VolumeManager(object):
                                   db_snapshots)
 
     @staticmethod
+    def _get_required_rcg_field(rcg_detail):
+        rcg_filter = {}
+
+        msg = 'get_required_rcg_field: %s' % rcg_detail
+        LOG.info(msg)
+        rcg_filter['rcg_name'] = rcg_detail.get('name')
+        # TODO(sonivi): handle in case of multiple target
+        rcg_filter['policies'] = rcg_detail['targets'][0].get('policies')
+        rcg_filter['role'] = volume.RCG_ROLE.get(rcg_detail.get('role'))
+
+        return rcg_filter
+
+    @staticmethod
     def _get_required_qos_field(qos_detail):
         qos_filter = {}
 
-        msg = (_LI('get_required_qos_field: %(qos_detail)s'),
-               {'qos_detail': qos_detail})
+        msg = 'get_required_qos_field: %s' % qos_detail
         LOG.info(msg)
 
         qos_filter['enabled'] = qos_detail.get('enabled')
