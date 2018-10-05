@@ -377,7 +377,6 @@ class ManageVolumeTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
 
     def test_manage_volume_which_is_in_vvset_with_flashcache(self):
 
-        urllib3.disable_warnings()
         vol_name = "python_vol_8"
         vvset_name = "python_vvset_8"
         sizeMiB = 1024
