@@ -1,0 +1,14 @@
+---
+  - name: remove doryd files
+    file:
+      state: absent
+      path: '/usr/libexec/kubernetes/kubelet-plugins/volume/exec/{{ item }}'
+    with_items:
+      - hpe.com~hpe/*
+
+  - name: Delete any existing sock files
+    file:
+      state: absent
+      path: /run/docker/plugins/{{ item }}
+    with_items:
+      - hpe/*

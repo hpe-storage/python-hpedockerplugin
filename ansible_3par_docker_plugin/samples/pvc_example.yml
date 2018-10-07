@@ -2,11 +2,11 @@
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: pvc-chris
+  name: pvc-hpe
 spec:
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
       storage: 16Gi
-  storageClassName: sc-chris
+  storageClassName: sc-hpe

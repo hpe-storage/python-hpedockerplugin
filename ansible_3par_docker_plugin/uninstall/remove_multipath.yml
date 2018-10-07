@@ -1,0 +1,19 @@
+---
+  - name: stop multipath services, also issue daemon-reload to pick up config changes
+    action: service name={{ item }} state=present name={{ item }} enabled=no state=stopped
+    with_items:
+      - iscsid
+      - multipathd
+
+  - pause:
+      seconds: 10
+
+  - name: remove multipath.conf file
+    file:
+      path: /etc/multipath.conf
+      state: absent
+
+  - name: remove hpe.conf file
+    file:
+      path: /etc/hpedockerplugin
+      state: absent
