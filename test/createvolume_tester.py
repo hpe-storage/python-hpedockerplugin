@@ -198,28 +198,6 @@ class TestCreateVolumeWithInvalidQOS(CreateVolumeUnitTest):
             [exceptions.HTTPNotFound('fake')]
 
 
-class TestCreateVolumeWithMutuallyExclusiveList(CreateVolumeUnitTest):
-    def check_response(self, resp):
-        self._test_case.assertEqual(
-            {"Err": "['virtualCopyOf', 'cloneOf', 'qos-name',"
-                    " 'replicationGroup'] cannot be specified at the"
-                    " same time"}, resp)
-
-    def get_request_params(self):
-        return {"Name": "test-vol-001",
-                "Opts": {"qos-name": "soni_vvset",
-                         "provisioning": "thin",
-                         "size": "2",
-                         "cloneOf": "clone_of"}}
-
-    def setup_mock_objects(self):
-        mock_etcd = self.mock_objects['mock_etcd']
-        mock_etcd.get_vol_byname.return_value = None
-
-        mock_3parclient = self.mock_objects['mock_3parclient']
-        mock_3parclient.getCPG.return_value = {}
-
-
 # FlashCache = True and qos-name=<vvset_name>
 class TestCreateVolumeWithFlashCacheAndQOS(CreateVolumeUnitTest):
     def check_response(self, resp):
@@ -514,6 +492,24 @@ class TestCreateVolSetFlashCacheFails(CreateVolumeUnitTest):
         mock_3parclient.modifyVolumeSet.side_effect = [
             exceptions.HTTPInternalServerError("Internal server error")
         ]
+
+
+class TestCreateVolumeWithMutuallyExclusiveOptions(CreateVolumeUnitTest):
+    def check_response(self, resp):
+        mutually_exclusive_ops = ['virtualCopyOf', 'cloneOf', 'importVol',
+                                  'replicationGroup']
+        mutually_exclusive_ops.sort()
+        expected_error_msg = "Invalid input received: Operations " \
+                             "%s are mutually exclusive and cannot be " \
+                             "specified together. Please check help for " \
+                             "usage." % mutually_exclusive_ops
+        self._test_case.assertEqual(expected_error_msg, resp['Err'])
+
+    def get_request_params(self):
+        return {"Name": "test-vol-001",
+                "Opts": {"virtualCopyOf": "my-vol",
+                         "cloneOf": "my-vol",
+                         "replicationGroup": "my-rcg"}}
 
 
 # More cases of flash cache

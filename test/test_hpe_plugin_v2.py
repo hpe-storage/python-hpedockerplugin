@@ -89,11 +89,6 @@ class HpeDockerUnitTestsBase(object):
         test.run_test(self)
 
     @tc_banner_decorator
-    def test_create_volume_with_mutually_exclusive_list(self):
-        test = createvolume_tester.TestCreateVolumeWithMutuallyExclusiveList()
-        test.run_test(self)
-
-    @tc_banner_decorator
     def test_create_volume_with_flashcache_and_qos(self):
         test = createvolume_tester.TestCreateVolumeWithFlashCacheAndQOS()
         test.run_test(self)
@@ -138,6 +133,12 @@ class HpeDockerUnitTestsBase(object):
     @tc_banner_decorator
     def test_create_vol_set_flash_cache_fails(self):
         test = createvolume_tester.TestCreateVolSetFlashCacheFails()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_create_vol_with_mutually_exclusive_opts(self):
+        test = createvolume_tester.\
+            TestCreateVolumeWithMutuallyExclusiveOptions()
         test.run_test(self)
 
     """
@@ -271,6 +272,11 @@ class HpeDockerUnitTestsBase(object):
     @tc_banner_decorator
     def test_clone_with_flashcache_and_qos_etcd_save_fails(self):
         test = clonevolume_tester.TestCloneWithFlashCacheAndQOSEtcdSaveFails()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_clone_volume_with_invalid_options(self):
+        test = clonevolume_tester.TestCloneVolumeWithInvalidOptions()
         test.run_test(self)
 
     """
