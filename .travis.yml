@@ -19,7 +19,7 @@ python:
 matrix:
   include:
   - python: "3.5"
-    env: TOXENV=py27
+    env: TOXENV=py35
 
 # command to run tests
 script:
