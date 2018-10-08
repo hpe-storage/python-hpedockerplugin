@@ -28,7 +28,7 @@ def validate_request(contents):
         _validate_mutually_exclusive_ops(contents)
 
         validated = False
-        for op_name,validator in operations_map.items():
+        for op_name, validator in operations_map.items():
             op_name = op_name.split(',')
             found = not (set(op_name) - set(contents['Opts'].keys()))
             if found:
@@ -47,7 +47,7 @@ def _validate_mutually_exclusive_ops(contents):
     if 'Opts' in contents:
         received_opts = contents.get('Opts').keys()
         diff = set(mutually_exclusive_ops) - set(received_opts)
-        if len(diff) < len(mutually_exclusive_ops)-1:
+        if len(diff) < len(mutually_exclusive_ops) - 1:
             mutually_exclusive_ops.sort()
             msg = "Operations %s are mutually exclusive and cannot " \
                   "be specified together. Please check help for usage." % \
@@ -65,7 +65,7 @@ def _validate_opts(operation, contents, valid_opts, mandatory_opts=None):
                 # Print options in sorted manner
                 mandatory_opts.sort()
                 msg = "One or more mandatory options %s are missing for " \
-                      "operation %s" %(mandatory_opts, operation)
+                      "operation %s" % (mandatory_opts, operation)
                 raise exception.InvalidInput(reason=msg)
 
         diff = set(received_opts) - set(valid_opts)

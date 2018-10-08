@@ -421,8 +421,9 @@ class TestCloneCompressedVolume(CloneVolumeUnitTest):
 class TestCloneVolumeWithInvalidOptions(CloneVolumeUnitTest):
     def check_response(self, resp):
         expected_error_msg = "Invalid input received: Invalid option(s) " \
-                    "['provisioning', 'qos-name'] specified for " \
-                    "operation clone volume. Please check help for usage."
+                             "['provisioning', 'qos-name'] specified for " \
+                             "operation clone volume. Please check help " \
+                             "for usage."
         self._test_case.assertEqual(expected_error_msg, resp['Err'])
 
     def get_request_params(self):

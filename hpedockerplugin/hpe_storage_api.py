@@ -176,9 +176,10 @@ class VolumePlugin(object):
                                         'replicationGroup']
             valid_snap_schedule_opts = ['scheduleName', 'scheduleFrequency',
                                         'snapshotPrefix', 'expHrs', 'retHrs']
-            mutually_exclusive = [['virtualCopyOf', 'cloneOf', 'qos-name',
-                                   'replicationGroup'],
-                                  ['virtualCopyOf', 'cloneOf', 'backend']]
+            mutually_exclusive = [
+                ['virtualCopyOf', 'cloneOf', 'qos-name', 'replicationGroup'],
+                ['virtualCopyOf', 'cloneOf', 'backend']
+            ]
             for key in contents['Opts']:
                 if key not in valid_volume_create_opts:
                     msg = (_('create volume/snapshot/clone failed, error is: '
