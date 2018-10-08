@@ -4,6 +4,8 @@ language: generic
 branches:
   only:
     - plugin_v2
+before_install:
+   sudo sudo rm /var/lib/apt/lists/lock /var/cache/apt/archives/lock /var/cache/apt/archives/lock
 addons:
   apt:
     sources:
