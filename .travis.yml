@@ -1,0 +1,26 @@
+dist: xenial
+sudo: false
+language: generic
+branches:
+  only:
+    - plugin_v2
+addons:
+  apt:
+    sources:
+      - deadsnakes
+    packages:
+      - python3.5
+
+install:
+  - sudo pip install tox
+python:
+  - "3.5"
+
+matrix:
+  include:
+  - python: "3.5"
+    env: TOXENV=py27
+
+# command to run tests
+script:
+  - tox -e py35 --  test.test_hpe_plugin_v2
