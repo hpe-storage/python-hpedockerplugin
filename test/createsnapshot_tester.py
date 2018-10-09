@@ -292,5 +292,21 @@ class TestCreateSnpSchedInvSchedFreq(CreateSnapshotUnitTest):
                    'error is: Improper string passed. '
         self._test_case.assertEqual(resp, {u"Err": expected})
 
+
+class TestCreateSnapshotInvalidOptions(CreateSnapshotUnitTest):
+    def get_request_params(self):
+        return {"Name": data.SNAPSHOT_NAME4,
+                "Opts": {"virtualCopyOf": data.VOLUME_NAME,
+                         "mountConflictDelay": 22,
+                         "backend": "dummy"}}
+
+    def check_response(self, resp):
+        invalid_opts = ['backend', 'mountConflictDelay']
+        invalid_opts.sort()
+        expected = "Invalid input received: Invalid option(s) " \
+                   "%s specified for operation create snapshot. " \
+                   "Please check help for usage." % invalid_opts
+        self._test_case.assertEqual(resp, {u"Err": expected})
+
 # class TestCreateSnapshotUnauthorized(CreateSnapshotUnitTest):
 #     pass

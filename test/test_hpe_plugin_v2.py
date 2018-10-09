@@ -79,6 +79,11 @@ class HpeDockerUnitTestsBase(object):
         test.run_test(self)
 
     @tc_banner_decorator
+    def test_import_volume_with_invalid_options(self):
+        test = createvolume_tester.TestImportVolumeWithInvalidOptions()
+        test.run_test(self)
+
+    @tc_banner_decorator
     def test_create_volume_with_qos(self):
         test = createvolume_tester.TestCreateVolumeWithQOS()
         test.run_test(self)
@@ -141,6 +146,11 @@ class HpeDockerUnitTestsBase(object):
             TestCreateVolumeWithMutuallyExclusiveOptions()
         test.run_test(self)
 
+    @tc_banner_decorator
+    def test_create_vol_with_invalid_options(self):
+        test = createvolume_tester.TestCreateVolumeWithInvalidOptions()
+        test.run_test(self)
+
     """
     REPLICATION related tests
     """
@@ -199,6 +209,12 @@ class HpeDockerUnitTestsBase(object):
         test = createrepvolume_tester.\
             TestCreateReplicatedVolumeAndRCGCreateFails(
                 backend_name=BKEND_3PAR_AP_STREAMING_REP)
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_create_replicated_vol_with_invalid_opts(self):
+        test = createrepvolume_tester.\
+            TestCreateReplicatedVolumeWithInvalidOptions()
         test.run_test(self)
 
     """
@@ -321,6 +337,14 @@ class HpeDockerUnitTestsBase(object):
         test = createsnapshot_tester.TestCreateSnapshotEtcdSaveFails()
         test.run_test(self)
 
+    @tc_banner_decorator
+    def test_create_snapshot_invalid_options(self):
+        test = createsnapshot_tester.TestCreateSnapshotInvalidOptions()
+        test.run_test(self)
+
+    """
+    CREATE SNAPSHOT SCHEDULE related tests
+    """
     @tc_banner_decorator
     def test_create_snap_schedule(self):
         test = createsnapshot_tester.TestCreateSnpSchedule()
