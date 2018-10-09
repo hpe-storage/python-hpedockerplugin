@@ -105,7 +105,7 @@ def _validate_snapshot_schedule_opts(contents):
 
 
 def _validate_import_vol_opts(contents):
-    valid_opts = ['importVol']
+    valid_opts = ['importVol', 'backend']
     _validate_opts("import volume", contents, valid_opts)
 
 
