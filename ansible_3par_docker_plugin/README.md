@@ -1,4 +1,4 @@
-# ansible_3par_docker_plugin
+# Automated Installer for 3PAR Docker Volume plugin (Ansible)
 
 These are Ansible playbooks to automate the install of the HPE 3PAR Docker Volume Plug-in for Docker for use within Kubernetes/OpenShift environments.
 
