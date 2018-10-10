@@ -4,6 +4,8 @@ These are Ansible playbooks to automate the install of the HPE 3PAR Docker Volum
 
 If you are not using Kubernetes or OpenShift, we recommend you take a look at the [Quick Start guide](/docs/quick_start_guide.md) for using the HPE 3PAR Docker Volume Plug-in in a standalone Docker environment.
 
+>**NOTE:** The Ansible installer only supports RHEL/CentOS. If you are using another distribution of Linux, you will need to modify the playbooks to support your application manager (apt, etc.) and the pre-requisite packages.
+
 ### Getting Started
 
 These playbooks perform the following tasks on the Master/Worker nodes as defined in the Ansible [hosts](/ansible_3par_docker_plugin/hosts) file.
