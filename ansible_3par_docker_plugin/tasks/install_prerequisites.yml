@@ -29,10 +29,6 @@
       array_keys: "{{ INVENTORY.keys() }}"
       install_encryptor_packages: false
       
-  - name: Print array_keys
-    debug:
-      msg: "{{ array_keys }}"
-      
   - name: Check if the encryptor specific packages must be installed
     set_fact:
       install_encryptor_packages: true
