@@ -29,6 +29,7 @@ from klein import Klein
 from hpedockerplugin.hpe import volume
 
 import hpedockerplugin.backend_orchestrator as orchestrator
+import hpedockerplugin.request_validator as req_validator
 
 LOG = logging.getLogger(__name__)
 
@@ -131,6 +132,12 @@ class VolumePlugin(object):
             msg = (_('create volume failed, error is: Name is required.'))
             LOG.error(msg)
             raise exception.HPEPluginCreateException(reason=msg)
+
+        try:
+            req_validator.validate_request(contents)
+        except exception.InvalidInput as ex:
+            return json.dumps({"Err": ex.msg})
+
         volname = contents['Name']
 
         is_valid_name = re.match("^[A-Za-z0-9]+[A-Za-z0-9_-]+$", volname)
@@ -169,9 +176,10 @@ class VolumePlugin(object):
                                         'replicationGroup']
             valid_snap_schedule_opts = ['scheduleName', 'scheduleFrequency',
                                         'snapshotPrefix', 'expHrs', 'retHrs']
-            mutually_exclusive = [['virtualCopyOf', 'cloneOf', 'qos-name',
-                                   'replicationGroup'],
-                                  ['virtualCopyOf', 'cloneOf', 'backend']]
+            mutually_exclusive = [
+                ['virtualCopyOf', 'cloneOf', 'qos-name', 'replicationGroup'],
+                ['virtualCopyOf', 'cloneOf', 'backend']
+            ]
             for key in contents['Opts']:
                 if key not in valid_volume_create_opts:
                     msg = (_('create volume/snapshot/clone failed, error is: '

@@ -59,11 +59,11 @@ Import Volume Options:
 Create Snapshot Schedule:
  -o virtualCopyOf=x             This option is mandatory. x is the name of the volume for which snapshot schedule has to be created.
  -o scheduleFrequency=x         This option is mandatory. x is the string that indicates the snapshot schedule frequency.
-                                This string will contain 5 values which are seperated by space.
+                                This string will contain 5 values which are separated by space.
                                 Example x can be replaced with "5 * * * *"
                                 First field in the string is an Integer and represents the number of minutes that should be passed the scheduled
-                                clock hour to exucute the scheduled task.
-                                Second field in the string is an Integer  and represents hour at which task needs to be executed. 
+                                clock hour to execute the scheduled task.
+                                Second field in the string is an integer  and represents hour at which task needs to be executed.
                                 User can specify a valid range ex:2-5.
                                 Third field in the string is an Integer and represents day of the month on which scheduled task has to be executed.
                                 User can specify a valid range ex:12-15.
@@ -79,12 +79,20 @@ Create Snapshot Schedule:
                                 day-of-month  * or 1-31
                                 month         * or 1-12
                                 day-of-week   * or 0-6 (0 is Sunday)
+
+                                ========
+                                Examples
+                                ========
+                                1. To create snapshot at midnight and at noon, specify x as "0 0,12 * * *"
+                                2. To create snapshot on 5th, 15th and 25th of month, specify x as "0 * 5,15,25 * *"
+                                3. To create snapshot every quarter, specify x as "0 * * 3,6,9,12 *"
+                                4. To create snapshot on Monday, Wednesday and Friday, specify x as "0 * * * 1,3,5"
 -o scheduleName=x               This option is mandatory. x is a string which indicates name for the schedule on 3PAR.
 -o retentionHours=x             This option is not mandatory option. x is an integer, indicates number of hours this snapshot will be retained.
--o snaphotPrefix=x              This option is mandatory. x is prefix string for the scheduled snapshots which will get created on 3PAR.
-                                We recommend to use 3 letter string. If prefix is abc then name of the snapshot which gets created on the 3PAR
+-o snapshotPrefix=x             This option is mandatory. x is prefix string for the scheduled snapshots which will get created on 3PAR.
+                                We recommend using 3 letter string. If prefix is abc then name of the snapshot which gets created on the 3PAR
                                 will be in the format abc.@y@@m@@d@@H@@M@@S@
--o expHrs=x                     This option is not mandatory option. x is an integer, indicates number of hours after which snapshot created via
+-o expHrs=x                     This option is not mandatory. x is an integer, indicates number of hours after which snapshot created via
                                 snapshot schedule will be deleted from 3PAR.
 -o retHrs=x                     This option is not mandetory option. x is an integer, indicates number of hours for which snapshot created via 
                                 snapshot schedule will be retained.

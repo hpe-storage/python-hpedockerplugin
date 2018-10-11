@@ -134,6 +134,23 @@ class TestCreateReplicatedVolumeAndRCGCreateFails(
         mock_3parclient.createRemoteCopyGroup.assert_called()
 
 
+class TestCreateReplicatedVolumeWithInvalidOptions(
+        CreateReplicatedVolumeUnitTest):
+    def check_response(self, resp):
+        in_valid_opts = ['expHrs', 'retHrs']
+        in_valid_opts.sort()
+        op = "create replicated volume"
+        expected = "Invalid input received: Invalid option(s) " \
+                   "%s specified for operation %s. " \
+                   "Please check help for usage." % (in_valid_opts, op)
+        self._test_case.assertEqual(expected, resp['Err'])
+
+    def get_request_params(self):
+        return {"Name": "test-vol-001",
+                "Opts": {"replicationGroup": "Dummy-RCG",
+                         "expHrs": 111,
+                         "retHrs": 123}}
+
 # TODO:
 # class TestCreateVolumeWithMutuallyExclusiveList(
 #       CreateReplicatedVolumeUnitTest):

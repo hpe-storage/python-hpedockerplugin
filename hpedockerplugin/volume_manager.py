@@ -1576,7 +1576,7 @@ class VolumeManager(object):
                         node_id = pi[0]
                         if node_id == self._node_id:
                             LOG.info("Found matching old path info for old "
-                                     "node ID: %s" % pi)
+                                     "node ID: %s" % six.text_type(pi))
                             path_info = pi
                             node_owns_volume = False
                             break

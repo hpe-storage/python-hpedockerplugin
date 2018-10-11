@@ -65,6 +65,11 @@ sudo docker run -d -v /usr/share/ca-certificates/:/etc/ssl/certs -p 4001:4001 \
 -initial-cluster-state new
 ```
 
+This has to be followed by the below command so that whenever Docker service restarts, etcd is also restarted:
+docker update --restart always etcd
+
+It is highly recommended that existing etcd installations must also run the above update command to avoid manual restarts of etcd.
+
 NOTE: If you want to save your etcd data you'll need to use the docker -v option to specify a local directory (or external volume) to save your data. In addition, if you are configuring an etcd cluster then you need to you "existing" instead of "new" if you want a specific node to rejoing an existing cluster.
 
 For more information on setting up an etcd cluster see:

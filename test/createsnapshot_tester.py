@@ -182,8 +182,11 @@ class TestCreateSnpSchedNegFreq(CreateSnapshotUnitTest):
                          "retHrs": '2'}}
 
     def check_response(self, resp):
-        expected = 'create schedule failed, error is: user  has not passed'\
-                   ' scheduleFrequency to create snapshot schedule.'
+        opts = ['scheduleName', 'snapshotPrefix', 'scheduleFrequency']
+        opts.sort()
+        expected = "Invalid input received: One or more mandatory options " \
+                   "%s are missing for operation create snapshot schedule" \
+                   % opts
         self._test_case.assertEqual(resp, {u"Err": expected})
 
 
@@ -197,9 +200,11 @@ class TestCreateSnpSchedNegPrefx(CreateSnapshotUnitTest):
                          "retHrs": '2'}}
 
     def check_response(self, resp):
-        expected = 'Please make sure that valid schedule name is passed '\
-                   'and please provide max 15 letter prefix for the '\
-                   'scheduled snapshot names '
+        opts = ['scheduleName', 'snapshotPrefix', 'scheduleFrequency']
+        opts.sort()
+        expected = "Invalid input received: One or more mandatory options " \
+                   "%s are missing for operation create snapshot schedule" \
+                   % opts
         self._test_case.assertEqual(resp, {u"Err": expected})
 
 
@@ -229,8 +234,11 @@ class TestCreateSnpSchedNoSchedName(CreateSnapshotUnitTest):
                          "retHrs": '2'}}
 
     def check_response(self, resp):
-        expected = 'scheduleName is a mandatory parameter for creating a '\
-                   'snapshot schedule'
+        opts = ['scheduleName', 'snapshotPrefix', 'scheduleFrequency']
+        opts.sort()
+        expected = "Invalid input received: One or more mandatory options " \
+                   "%s are missing for operation create snapshot schedule" \
+                   % opts
         self._test_case.assertEqual(resp, {u"Err": expected})
 
 
@@ -282,6 +290,22 @@ class TestCreateSnpSchedInvSchedFreq(CreateSnapshotUnitTest):
         expected = 'Invalid schedule string is passed: HPE Docker Volume '\
                    'plugin Create volume failed: create schedule failed, '\
                    'error is: Improper string passed. '
+        self._test_case.assertEqual(resp, {u"Err": expected})
+
+
+class TestCreateSnapshotInvalidOptions(CreateSnapshotUnitTest):
+    def get_request_params(self):
+        return {"Name": data.SNAPSHOT_NAME4,
+                "Opts": {"virtualCopyOf": data.VOLUME_NAME,
+                         "mountConflictDelay": 22,
+                         "backend": "dummy"}}
+
+    def check_response(self, resp):
+        invalid_opts = ['backend', 'mountConflictDelay']
+        invalid_opts.sort()
+        expected = "Invalid input received: Invalid option(s) " \
+                   "%s specified for operation create snapshot. " \
+                   "Please check help for usage." % invalid_opts
         self._test_case.assertEqual(resp, {u"Err": expected})
 
 # class TestCreateSnapshotUnauthorized(CreateSnapshotUnitTest):

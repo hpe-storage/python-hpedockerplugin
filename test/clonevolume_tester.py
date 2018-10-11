@@ -398,7 +398,6 @@ class TestCloneCompressedVolume(CloneVolumeUnitTest):
     def get_request_params(self):
         return {"Name": "clone-vol-001",
                 "Opts": {"cloneOf": data.VOLUME_NAME,
-                         "compression": 'true',
                          "size": '16'}}
 
     def setup_mock_objects(self):
@@ -417,3 +416,26 @@ class TestCloneCompressedVolume(CloneVolumeUnitTest):
         mock_3parclient.isOnlinePhysicalCopy.return_value = False
         mock_3parclient.getStorageSystemInfo.return_value = \
             {'licenseInfo': {'licenses': [{'name': 'Compression'}]}}
+
+
+class TestCloneVolumeWithInvalidOptions(CloneVolumeUnitTest):
+    def check_response(self, resp):
+        expected_error_msg = "Invalid input received: Invalid option(s) " \
+                             "['provisioning', 'qos-name'] specified for " \
+                             "operation clone volume. Please check help " \
+                             "for usage."
+        self._test_case.assertEqual(expected_error_msg, resp['Err'])
+
+    def get_request_params(self):
+        return {"Name": "test-vol-001",
+                "Opts": {"qos-name": "soni_vvset",
+                         "provisioning": "thin",
+                         "size": "2",
+                         "cloneOf": "clone_of"}}
+
+    def setup_mock_objects(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.return_value = None
+
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.getCPG.return_value = {}

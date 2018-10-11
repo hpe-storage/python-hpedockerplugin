@@ -80,6 +80,22 @@ class TestImportVolumeOtherOption(CreateVolumeUnitTest):
         mock_etcd.get_vol_byname.return_value = None
 
 
+class TestImportVolumeWithInvalidOptions(CreateVolumeUnitTest):
+    def check_response(self, resp):
+        in_valid_opts = ['expHrs', 'retHrs']
+        in_valid_opts.sort()
+        expected = "Invalid input received: Invalid option(s) " \
+                   "%s specified for operation import volume. " \
+                   "Please check help for usage." % in_valid_opts
+        self._test_case.assertEqual(expected, resp['Err'])
+
+    def get_request_params(self):
+        return {"Name": "test-vol-001",
+                "Opts": {"importVol": "DummyVol",
+                         "expHrs": 111,
+                         "retHrs": 123}}
+
+
 class TestCreateVolumeInvalidName(CreateVolumeUnitTest):
     def check_response(self, resp):
         self._test_case.assertEqual(resp, {u"Err": 'Invalid volume '
@@ -196,28 +212,6 @@ class TestCreateVolumeWithInvalidQOS(CreateVolumeUnitTest):
         # vvset does not exist
         mock_3parclient.addVolumeToVolumeSet.side_effect = \
             [exceptions.HTTPNotFound('fake')]
-
-
-class TestCreateVolumeWithMutuallyExclusiveList(CreateVolumeUnitTest):
-    def check_response(self, resp):
-        self._test_case.assertEqual(
-            {"Err": "['virtualCopyOf', 'cloneOf', 'qos-name',"
-                    " 'replicationGroup'] cannot be specified at the"
-                    " same time"}, resp)
-
-    def get_request_params(self):
-        return {"Name": "test-vol-001",
-                "Opts": {"qos-name": "soni_vvset",
-                         "provisioning": "thin",
-                         "size": "2",
-                         "cloneOf": "clone_of"}}
-
-    def setup_mock_objects(self):
-        mock_etcd = self.mock_objects['mock_etcd']
-        mock_etcd.get_vol_byname.return_value = None
-
-        mock_3parclient = self.mock_objects['mock_3parclient']
-        mock_3parclient.getCPG.return_value = {}
 
 
 # FlashCache = True and qos-name=<vvset_name>
@@ -514,6 +508,41 @@ class TestCreateVolSetFlashCacheFails(CreateVolumeUnitTest):
         mock_3parclient.modifyVolumeSet.side_effect = [
             exceptions.HTTPInternalServerError("Internal server error")
         ]
+
+
+class TestCreateVolumeWithMutuallyExclusiveOptions(CreateVolumeUnitTest):
+    def check_response(self, resp):
+        mutually_exclusive_ops = ['virtualCopyOf', 'cloneOf', 'importVol',
+                                  'replicationGroup']
+        mutually_exclusive_ops.sort()
+        expected_error_msg = "Invalid input received: Operations " \
+                             "%s are mutually exclusive and cannot be " \
+                             "specified together. Please check help for " \
+                             "usage." % mutually_exclusive_ops
+        self._test_case.assertEqual(expected_error_msg, resp['Err'])
+
+    def get_request_params(self):
+        return {"Name": "test-vol-001",
+                "Opts": {"virtualCopyOf": "my-vol",
+                         "cloneOf": "my-vol",
+                         "replicationGroup": "my-rcg"}}
+
+
+class TestCreateVolumeWithInvalidOptions(CreateVolumeUnitTest):
+    def check_response(self, resp):
+        invalid_opts = ['expHrs', 'retHrs']
+        invalid_opts.sort()
+        op = "create volume"
+        expected_error_msg = "Invalid input received: Invalid option(s) " \
+                             "%s specified for operation %s. " \
+                             "Please check help for usage." % \
+                             (invalid_opts, op)
+        self._test_case.assertEqual(expected_error_msg, resp['Err'])
+
+    def get_request_params(self):
+        return {"Name": "test-vol-001",
+                "Opts": {"expHrs": 111,
+                         "retHrs": 123}}
 
 
 # More cases of flash cache
