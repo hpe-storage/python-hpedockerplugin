@@ -18,8 +18,8 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
 ### Prerequisites:
 
   - Install Ansible per [Installation Guide](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
-  - Login to 3PAR to create known_hosts file
-  > **Note:** Entries for the Master and Worker nodes should already exist within the /<user>/.ssh/known_hosts file from the OpenShift installation. If not, you will need to log into each of the Master and Worker nodes as well to prevent connection errors from Ansible.
+  - Login to 3PAR via SSH to create entry in /\<user>\/.ssh/known_hosts file
+  > **Note:** Entries for the Master and Worker nodes should already exist within the /\<user>\/.ssh/known_hosts file from the OpenShift installation. If not, you will need to log into each of the Master and Worker nodes as well to prevent connection errors from Ansible.
 
   - modify files/hpe.conf ([iSCSI](/ansible_3par_docker_plugin/files/iSCSI_hpe.conf) or [FC](/ansible_3par_docker_plugin/files/FC_hpe.conf)) based on your HPE 3PAR Storage array configuration. An example can be found here: [sample_hpe.conf](/ansible_3par_docker_plugin/files/sample_hpe.conf)
 
