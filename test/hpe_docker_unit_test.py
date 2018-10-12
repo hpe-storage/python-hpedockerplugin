@@ -125,7 +125,11 @@ class HpeDockerUnitTestExecutor(object):
         return False
 
     def _get_configuration(self):
-        cfg_file_name = './test/config/hpe_%s.conf' % self._protocol.lower()
+        if self.use_real_flow():
+            cfg_file_name = '/etc/hpedockerplugin/hpe.conf'
+        else:
+            cfg_file_name = './test/config/hpe_%s.conf' % \
+                            self._protocol.lower()
         cfg_param = ['--config-file', cfg_file_name]
         try:
             host_config = setupcfg.get_host_config(cfg_param)
