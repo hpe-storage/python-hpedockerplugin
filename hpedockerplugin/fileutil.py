@@ -70,7 +70,7 @@ def create_filesystem(path):
     return True
 
 
-def mkdir_for_mounting(path):
+def mkdir_for_mounting(path, mount_prefix):
     try:
         data = path.split("/")
         # TODO: Investigate what triggers OS Brick to return a
@@ -79,6 +79,13 @@ def mkdir_for_mounting(path):
             uuid = data[3]
         else:
             uuid = data[4]
+
+        if mount_prefix:
+            global prefix
+            prefix = mount_prefix
+
+        LOG.info('MOUNT PREFIX : %s' % prefix)
+
         directory = prefix + uuid
         mkdir("-p", directory)
     except Exception as ex:
