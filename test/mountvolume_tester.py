@@ -11,8 +11,10 @@ class MountVolumeUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):
         self._vol_type = None
         self._rep_type = None
         self._is_snap = is_snap
+        self._rcg_state = None
         if not is_snap:
             if vol_params:
+                self._rcg_state = vol_params.get('rcg_state')
                 self._vol_type = vol_params['vol_type']
                 if self._vol_type == 'replicated':
                     self._rep_type = vol_params['rep_type']
@@ -41,10 +43,39 @@ class MountVolumeUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):
             # Allow child class to make changes
             if self._rep_type == 'active-passive':
                 mock_3parclient = self.mock_objects['mock_3parclient']
-                mock_3parclient.getRemoteCopyGroup.side_effect = [
-                    data.primary_3par_rcg,
-                    data.secondary_3par_rcg
-                ]
+                if self._rcg_state == 'normal':
+                    mock_3parclient.getRemoteCopyGroup.side_effect = [
+                        data.normal_rcg['primary_3par_rcg'],
+                        data.normal_rcg['secondary_3par_rcg']
+                    ]
+                elif self._rcg_state == 'failover':
+                    mock_3parclient.getRemoteCopyGroup.side_effect = [
+                        data.failover_rcg['primary_3par_rcg'],
+                        data.failover_rcg['secondary_3par_rcg']
+                    ]
+                elif self._rcg_state == 'recover':
+                    mock_3parclient.getRemoteCopyGroup.side_effect = [
+                        data.recover_rcg['primary_3par_rcg'],
+                        data.recover_rcg['secondary_3par_rcg']
+                    ]
+                elif self._rcg_state == 'rcgs_not_gettable':
+                    mock_3parclient.getRemoteCopyGroup.side_effect = [
+                        exceptions.HTTPNotFound("Primary RCG not found"),
+                        exceptions.HTTPNotFound("Secondary RCG not found"),
+                    ]
+                elif self._rcg_state == 'only_primary_rcg_gettable':
+                    mock_3parclient.getRemoteCopyGroup.side_effect = [
+                        data.normal_rcg['primary_3par_rcg'],
+                        exceptions.HTTPNotFound("Secondary RCG not found"),
+                    ]
+                elif self._rcg_state == 'only_secondary_rcg_gettable':
+                    mock_3parclient.getRemoteCopyGroup.side_effect = [
+                        exceptions.HTTPNotFound("Primary RCG not found"),
+                        data.failover_rcg['secondary_3par_rcg'],
+                    ]
+                else:
+                    raise Exception("Invalid rcg_state specified")
+
             self.setup_mock_3parclient()
 
         def _setup_mock_etcd():
@@ -132,43 +163,52 @@ class TestMountVolumeFCHost(MountVolumeUnitTest):
     def check_response(self, resp):
         # resp -> {"Mountpoint": "/tmp", "Name": "test-vol-001",
         # "Err": "", "Devicename": "/tmp"}
-        expected_keys = ["Mountpoint", "Name", "Err", "Devicename"]
-        for key in expected_keys:
-            self._test_case.assertIn(key, resp)
+        # In case of 'rcgs_not_gettable', 'Err' is returned
+        if self._rcg_state == 'rcgs_not_gettable':
+            expected = {'Err': "Remote copy group 'TEST-RCG' not found"}
+            self._test_case.assertEqual(resp, expected)
+        else:
+            expected_keys = ["Mountpoint", "Name", "Err", "Devicename"]
+            for key in expected_keys:
+                self._test_case.assertIn(key, resp)
 
-        # resp -> {u'Mountpoint': u'/tmp', u'Name': u'test-vol-001',
-        #          u'Err': u'', u'Devicename': u'/tmp'}
-        self._test_case.assertEqual(resp['Mountpoint'], u'/tmp')
-        self._test_case.assertEqual(resp['Name'], self._vol['display_name'])
-        self._test_case.assertEqual(resp['Err'], u'')
-        self._test_case.assertEqual(resp['Devicename'], u'/tmp')
+            # resp -> {u'Mountpoint': u'/tmp', u'Name': u'test-vol-001',
+            #          u'Err': u'', u'Devicename': u'/tmp'}
+            self._test_case.assertEqual(resp['Mountpoint'], u'/tmp')
+            self._test_case.assertEqual(resp['Name'],
+                                        self._vol['display_name'])
+            self._test_case.assertEqual(resp['Err'], u'')
+            self._test_case.assertEqual(resp['Devicename'], u'/tmp')
 
         # Check if these functions were actually invoked
         # in the flow or not
+        mock_etcd = self.mock_objects['mock_etcd']
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.getWsApiVersion.assert_called()
-        mock_3parclient.getVolume.assert_called()
-        mock_3parclient.getCPG.assert_called()
-        mock_3parclient.getHost.assert_called()
-        mock_3parclient.queryHost.assert_called()
-        # mock_3parclient.getPorts.assert_called()
-        mock_3parclient.getHostVLUNs.assert_called()
-        mock_3parclient.createVLUN.assert_called()
+        if self._rcg_state != 'rcgs_not_gettable':
+            mock_3parclient.getVolume.assert_called()
+            mock_3parclient.getCPG.assert_called()
+            mock_3parclient.getHost.assert_called()
+            mock_3parclient.queryHost.assert_called()
+            # mock_3parclient.getPorts.assert_called()
+            mock_3parclient.getHostVLUNs.assert_called()
+            mock_3parclient.createVLUN.assert_called()
 
-        mock_fileutil = self.mock_objects['mock_fileutil']
-        mock_fileutil.has_filesystem.assert_called()
-        mock_fileutil.create_filesystem.assert_called()
-        mock_fileutil.mkdir_for_mounting.assert_called()
-        mock_fileutil.mount_dir.assert_called()
-        # lost+found directory removed or not
-        mock_fileutil.remove_dir.assert_called()
+            mock_fileutil = self.mock_objects['mock_fileutil']
+            mock_fileutil.has_filesystem.assert_called()
+            mock_fileutil.create_filesystem.assert_called()
+            mock_fileutil.mkdir_for_mounting.assert_called()
+            mock_fileutil.mount_dir.assert_called()
+            # lost+found directory removed or not
+            mock_fileutil.remove_dir.assert_called()
 
-        mock_etcd = self.mock_objects['mock_etcd']
+            mock_etcd.update_vol.assert_called()
+
+            mock_protocol_connector = \
+                self.mock_objects['mock_protocol_connector']
+            mock_protocol_connector.connect_volume.assert_called()
+
         mock_etcd.get_vol_byname.assert_called()
-        mock_etcd.update_vol.assert_called()
-
-        mock_protocol_connector = self.mock_objects['mock_protocol_connector']
-        mock_protocol_connector.connect_volume.assert_called()
 
 
 # Host not registered with supplied name

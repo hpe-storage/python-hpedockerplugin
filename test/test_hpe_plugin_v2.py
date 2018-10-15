@@ -688,9 +688,50 @@ class HpeDockerFCUnitTests(HpeDockerUnitTestsBase, testtools.TestCase):
         test.run_test(self)
 
     @tc_banner_decorator
-    def test_mount_ap_replicated_volume_fc_host(self):
+    def test_mount_ap_replicated_volume_fc_host_rcg_normal(self):
         vol_params = {'vol_type': 'replicated',
-                      'rep_type': 'active-passive'}
+                      'rep_type': 'active-passive',
+                      'rcg_state': 'normal'}
+        test = mountvolume_tester.TestMountVolumeFCHost(vol_params=vol_params)
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_mount_ap_replicated_volume_fc_host_rcg_failover(self):
+        vol_params = {'vol_type': 'replicated',
+                      'rep_type': 'active-passive',
+                      'rcg_state': 'failover'}
+        test = mountvolume_tester.TestMountVolumeFCHost(vol_params=vol_params)
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_mount_ap_replicated_volume_fc_host_rcg_recover(self):
+        vol_params = {'vol_type': 'replicated',
+                      'rep_type': 'active-passive',
+                      'rcg_state': 'recover'}
+        test = mountvolume_tester.TestMountVolumeFCHost(vol_params=vol_params)
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_mount_ap_replicated_volume_fc_host_rcgs_ungettable(self):
+        vol_params = {'vol_type': 'replicated',
+                      'rep_type': 'active-passive',
+                      'rcg_state': 'rcgs_not_gettable'}
+        test = mountvolume_tester.TestMountVolumeFCHost(vol_params=vol_params)
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_mount_ap_replicated_volume_fc_host_pri_rcg_gettable(self):
+        vol_params = {'vol_type': 'replicated',
+                      'rep_type': 'active-passive',
+                      'rcg_state': 'only_primary_rcg_gettable'}
+        test = mountvolume_tester.TestMountVolumeFCHost(vol_params=vol_params)
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_mount_ap_replicated_volume_fc_host_sec_rcg_gettable(self):
+        vol_params = {'vol_type': 'replicated',
+                      'rep_type': 'active-passive',
+                      'rcg_state': 'only_secondary_rcg_gettable'}
         test = mountvolume_tester.TestMountVolumeFCHost(vol_params=vol_params)
         test.run_test(self)
 
