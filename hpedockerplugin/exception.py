@@ -333,3 +333,7 @@ class InvalidRcgRoleForDeleteVolume(PluginException):
 
 class DeleteReplicatedVolumeFailed(PluginException):
     message = _("Delete Replication Volume Failed: %(reason)s")
+
+
+class RcgStateInTransitionException(PluginException):
+    message = _("Remote copy group state is in transition: %(reason)s")

@@ -56,6 +56,7 @@ REMOTE_RCG_NAME = "TEST-RCG.r123456"
 RCG_STARTED = 3
 RCG_STOPPED = 5
 ROLE_PRIMARY = 1
+ROLE_PRIMARY_REV = 1
 ROLE_SECONDARY = 2
 
 FAKE_DESC = 'test description name'
@@ -133,15 +134,39 @@ replicated_volume = {
                  'remote_rcg_name': REMOTE_RCG_NAME}
 }
 
-primary_3par_rcg = {
-    'role': ROLE_PRIMARY,
-    'targets': [{'roleReversed': False}]
+normal_rcg = {
+    'primary_3par_rcg': {
+        'role': ROLE_PRIMARY,
+        'targets': [{'roleReversed': False}]
+    },
+    'secondary_3par_rcg': {
+        'role': ROLE_SECONDARY,
+        'targets': [{'roleReversed': False}]
+    }
 }
 
-secondary_3par_rcg = {
-    'role': ROLE_SECONDARY,
-    'targets': [{'roleReversed': False}]
+failover_rcg = {
+    'primary_3par_rcg': {
+        'role': ROLE_PRIMARY,
+        'targets': [{'roleReversed': False}]
+    },
+    'secondary_3par_rcg': {
+        'role': ROLE_PRIMARY_REV,
+        'targets': [{'roleReversed': True}]
+    }
 }
+
+recover_rcg = {
+    'primary_3par_rcg': {
+        'role': ROLE_SECONDARY,
+        'targets': [{'roleReversed': True}]
+    },
+    'secondary_3par_rcg': {
+        'role': ROLE_PRIMARY,
+        'targets': [{'roleReversed': True}]
+    }
+}
+
 
 json_path_info = \
     '{"connection_info": {"driver_volume_type": "iscsi", ' \
@@ -216,6 +241,7 @@ vol_mounted_on_other_node = {
     'is_snap': False,
     'backend': 'DEFAULT'
 }
+
 
 volume_mounted_twice_on_this_node = {
     'name': VOLUME_NAME,

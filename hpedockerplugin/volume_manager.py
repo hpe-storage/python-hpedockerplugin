@@ -30,6 +30,7 @@ import hpedockerplugin.synchronization as synchronization
 
 LOG = logging.getLogger(__name__)
 PRIMARY = 1
+PRIMARY_REV = 1
 SECONDARY = 2
 
 CONF = cfg.CONF
@@ -1251,13 +1252,29 @@ class VolumeManager(object):
                          "removed from remote backend!")
             else:
                 LOG.info("Active/Passive setup: Getting active driver...")
-                driver = self._get_target_driver(vol['rcg_info'])
-                LOG.info("Active/Passive setup: Got active driver!")
-                LOG.info("Active/Passive setup: Removing VLUNs "
-                         "forcefully from remote backend...")
-                driver.force_remove_volume_vlun(bkend_vol_name)
-                LOG.info("Active/Passive setup: VLUNs forcefully "
-                         "removed from remote backend!")
+                try:
+                    driver = self._get_target_driver(vol['rcg_info'])
+                    if driver:
+                        LOG.info("Active/Passive setup: Got active driver!")
+                        LOG.info("Active/Passive setup: Removing VLUNs "
+                                 "forcefully from remote backend...")
+                        driver.force_remove_volume_vlun(bkend_vol_name)
+                        LOG.info("Active/Passive setup: VLUNs forcefully "
+                                 "removed from remote backend!")
+                    else:
+                        msg = "Failed to force remove VLUN(s) " \
+                              "Could not determine the target array based on" \
+                              "state of RCG %s." % \
+                              vol['rcg_info']['local_rcg_name']
+                        LOG.error(msg)
+                        raise exception.HPEDriverForceRemoveVLUNFailed(
+                            reason=msg)
+                except Exception as ex:
+                    msg = "Failed to force remove VLUN(s). " \
+                          "Exception: %s" % six.text_type(ex)
+                    LOG.error(msg)
+                    raise exception.HPEDriverForceRemoveVLUNFailed(
+                        reason=six.text_type(ex))
         else:
             LOG.info("Removing VLUNs forcefully from remote backend...")
             self._primary_driver.force_remove_volume_vlun(bkend_vol_name)
@@ -1490,54 +1507,71 @@ class VolumeManager(object):
 
     def _get_target_driver(self, rcg_info):
         local_rcg = None
+        rcg_name = rcg_info.get('local_rcg_name')
         try:
-            rcg_name = rcg_info['local_rcg_name']
+            LOG.info("Getting local RCG: %s" % rcg_name)
             local_rcg = self._primary_driver.get_rcg(rcg_name)
             local_role_reversed = local_rcg['targets'][0]['roleReversed']
         except Exception as ex:
-            msg = (_("There was an error fetching the remote copy "
-                     "group from primary array: %s.") % six.text_type(ex))
+            msg = "There was an error fetching the remote copy " \
+                  "group %s from primary array: %s" % \
+                  (rcg_name, six.text_type(ex))
             LOG.error(msg)
 
         remote_rcg = None
+        remote_rcg_name = rcg_info.get('remote_rcg_name')
         try:
-            remote_rcg_name = rcg_info['remote_rcg_name']
+            LOG.info("Getting remote RCG: %s" % remote_rcg_name)
             remote_rcg = self._remote_driver.get_rcg(remote_rcg_name)
             remote_role_reversed = remote_rcg['targets'][0]['roleReversed']
         except Exception as ex:
-            msg = (_("There was an error fetching the remote copy "
-                     "group from secondary array: %s.") % six.text_type(ex))
+            msg = "There was an error fetching the remote copy " \
+                  "group %s from secondary array: %s" % \
+                  (remote_rcg_name, six.text_type(ex))
             LOG.error(msg)
-
-        if not (local_rcg and remote_rcg):
-            msg = (_("Failed to get remote copy group role: %s") % rcg_name)
-            LOG.error(msg)
-            raise exception.HPEPluginMountException(reason=msg)
 
         # Both arrays are up - this could just be a group fail-over
         if local_rcg and remote_rcg:
+            LOG.info("Got both local and remote RCGs! Checking roles...")
             # State before to fail-over
             if local_rcg['role'] == PRIMARY and not local_role_reversed and \
                remote_rcg['role'] == SECONDARY and not remote_role_reversed:
+                LOG.info("Primary array is the active array")
                 return self._primary_driver
+
+            # Primary array is either down or RCG under maintenance
+            # Allow remote target driver to take over
+            if local_rcg['role'] == PRIMARY and not local_role_reversed and \
+               remote_rcg['role'] == PRIMARY_REV and remote_role_reversed:
+                msg = "Secondary array is the active array"
+                LOG.info(msg)
+                return self._remote_driver
 
             # State post recover
             if remote_rcg['role'] == PRIMARY and remote_role_reversed and \
                local_rcg['role'] == SECONDARY and local_role_reversed:
+                LOG.info("Secondary array is the active array")
                 return self._remote_driver
 
-            msg = (_("Cannot perform mount at this time as remote copy group "
-                     " %s is being failed over or failed back. Please try "
-                     "after some time.") % rcg_name)
-            raise exception.HPEPluginMountException(reason=msg)
+            msg = (_("Remote copy group %s is being failed over or failed "
+                     "back. Unable to determine RCG location") % rcg_name)
+            LOG.error(msg)
+            raise exception.RcgStateInTransitionException(reason=msg)
 
         if local_rcg:
             if local_rcg['role'] == PRIMARY and not local_role_reversed:
+                LOG.info("Primary array is the active array")
                 return self._primary_driver
 
         if remote_rcg:
             if remote_rcg['role'] == PRIMARY and remote_role_reversed:
+                LOG.info("Secondary array is the active array")
                 return self._remote_driver
+
+        msg = (_("Failed to get RCG %s. Unable to determine RCG location")
+               % rcg_name)
+        LOG.error(msg)
+        raise exception.HPEDriverRemoteCopyGroupNotFound(name=rcg_name)
 
     @synchronization.synchronized_volume('{volname}')
     def unmount_volume(self, volname, vol_mount, mount_id):

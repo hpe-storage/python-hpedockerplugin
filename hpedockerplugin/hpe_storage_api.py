@@ -105,9 +105,6 @@ class VolumePlugin(object):
         volname = contents['Name']
 
         vol_mount = volume.DEFAULT_MOUNT_VOLUME
-        if ('Opts' in contents and contents['Opts'] and
-                'mount-volume' in contents['Opts']):
-            vol_mount = str(contents['Opts']['mount-volume'])
 
         mount_id = contents['ID']
         return self.orchestrator.volumedriver_unmount(volname,
@@ -163,17 +160,15 @@ class VolumePlugin(object):
         current_backend = DEFAULT_BACKEND_NAME
         if 'Opts' in contents and contents['Opts']:
             # Verify valid Opts arguments.
-            valid_volume_create_opts = ['mount-volume', 'compression',
-                                        'size', 'provisioning', 'flash-cache',
-                                        'cloneOf', 'virtualCopyOf',
-                                        'expirationHours', 'retentionHours',
-                                        'qos-name', 'fsOwner', 'fsMode',
-                                        'mountConflictDelay',
-                                        'help', 'importVol', 'cpg',
-                                        'snapcpg', 'scheduleName',
-                                        'scheduleFrequency', 'snapshotPrefix',
-                                        'expHrs', 'retHrs', 'backend',
-                                        'replicationGroup']
+            valid_volume_create_opts = [
+                'compression', 'size', 'provisioning', 'flash-cache',
+                'cloneOf', 'virtualCopyOf', 'expirationHours',
+                'retentionHours', 'qos-name', 'fsOwner', 'fsMode',
+                'mountConflictDelay', 'help', 'importVol', 'cpg',
+                'snapcpg', 'scheduleName', 'scheduleFrequency',
+                'snapshotPrefix', 'expHrs', 'retHrs', 'backend',
+                'replicationGroup'
+            ]
             valid_snap_schedule_opts = ['scheduleName', 'scheduleFrequency',
                                         'snapshotPrefix', 'expHrs', 'retHrs']
             mutually_exclusive = [
@@ -418,8 +413,9 @@ class VolumePlugin(object):
 
         if replication_device and not rcg_name:
             msg = "Request to create replicated volume cannot be fulfilled " \
-                  "without specifying 'rcg_name' parameter in the request. " \
-                  "Please specify 'rcg_name' and execute the request again."
+                  "without specifying 'replicationGroup' option in the " \
+                  "request. Please specify 'replicationGroup' and execute " \
+                  "the request again."
             raise exception.InvalidInput(reason=msg)
 
         if rcg_name and replication_device:
@@ -642,16 +638,13 @@ class VolumePlugin(object):
         volname = contents['Name']
 
         vol_mount = volume.DEFAULT_MOUNT_VOLUME
-        if ('Opts' in contents and contents['Opts'] and
-                'mount-volume' in contents['Opts']):
-            vol_mount = str(contents['Opts']['mount-volume'])
 
         mount_id = contents['ID']
 
         try:
             return self.orchestrator.mount_volume(volname, vol_mount, mount_id)
         except Exception as ex:
-            return {'Err': six.text_type(ex)}
+            return json.dumps({'Err': six.text_type(ex)})
 
     @app.route("/VolumeDriver.Path", methods=["POST"])
     def volumedriver_path(self, name):
