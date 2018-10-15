@@ -1433,7 +1433,7 @@ class VolumeManager(object):
         if vol_mount == volume.DEFAULT_MOUNT_VOLUME:
             # mkdir for mounting the filesystem
             if self._host_config.mount_prefix:
-                mount_prefix = self._hpepluginconfig.mount_prefix
+                mount_prefix = self._host_config.mount_prefix
             else:
                 mount_prefix = None
             mount_dir = fileutil.mkdir_for_mounting(device_info['path'],
