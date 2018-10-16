@@ -1449,7 +1449,12 @@ class VolumeManager(object):
         # Determine if we need to mount the volume
         if vol_mount == volume.DEFAULT_MOUNT_VOLUME:
             # mkdir for mounting the filesystem
-            mount_dir = fileutil.mkdir_for_mounting(device_info['path'])
+            if self._host_config.mount_prefix:
+                mount_prefix = self._host_config.mount_prefix
+            else:
+                mount_prefix = None
+            mount_dir = fileutil.mkdir_for_mounting(device_info['path'],
+                                                    mount_prefix)
             LOG.debug('Directory: %(mount_dir)s, '
                       'successfully created to mount: '
                       '%(mount)s',
