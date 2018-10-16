@@ -23,6 +23,7 @@ def validate_request(contents):
         _validate_import_vol_opts
     operations_map['replicationGroup'] = \
         _validate_rcg_opts
+    operations_map['help'] = _validate_help_opt
 
     if 'Opts' in contents:
         _validate_mutually_exclusive_ops(contents)
@@ -111,5 +112,10 @@ def _validate_import_vol_opts(contents):
 
 def _validate_rcg_opts(contents):
     valid_opts = ['replicationGroup', 'size', 'provisioning',
-                  'backend', 'mountConflictDelay']
+                  'backend', 'mountConflictDelay', 'compression']
     _validate_opts('create replicated volume', contents, valid_opts)
+
+
+def _validate_help_opt(contents):
+    valid_opts = ['help']
+    _validate_opts('display help', contents, valid_opts)
