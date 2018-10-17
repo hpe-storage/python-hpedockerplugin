@@ -94,6 +94,6 @@ Create Snapshot Schedule:
                                 will be in the format abc.@y@@m@@d@@H@@M@@S@
 -o expHrs=x                     This option is not mandatory. x is an integer, indicates number of hours after which snapshot created via
                                 snapshot schedule will be deleted from 3PAR.
--o retHrs=x                     This option is not mandetory option. x is an integer, indicates number of hours for which snapshot created via 
+-o retHrs=x                     This option is not mandatory. x is an integer, indicates number of hours for which snapshot created via
                                 snapshot schedule will be retained.
 
