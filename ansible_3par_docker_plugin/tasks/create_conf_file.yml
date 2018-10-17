@@ -86,7 +86,7 @@
       path: /etc/hpedockerplugin/hpe.conf
       section: "{{ passwords['results'][item | int]['item'][0] }}"
       option:  "{{ passwords['results'][item | int]['item'][1]['option'] }}"
-      value: "{{ passwords['results'][item | int]['stdout_lines'][0].split('password: ')[1] }} "
+      value: "{{ passwords['results'][item | int]['stdout'].split('password: ')[1] }} "
       no_extra_spaces: true
     with_items:
       - "{{ lookup('sequence','start=0 end='+((INVENTORY.keys() | count)*2 -1) |string,wantlist=True) }}"
@@ -111,7 +111,7 @@
       path: /etc/hpedockerplugin/hpe.conf
       section: "{{ passwords['results'][item | int]['item'][0] }}"
       option:  "{{ passwords['results'][item | int]['item'][1]['option'] }}"
-      value: "{{ passwords['results'][item | int]['stdout_lines'][0].split('password: ')[1] }} "
+      value: "{{ passwords['results'][item | int]['stdout'].split('password: ')[1] }} "
       no_extra_spaces: true
     with_items:
       - "{{ lookup('sequence','start=0 end='+((INVENTORY.keys() | count)*2 -1) |string,wantlist=True) }}"
