@@ -1,5 +1,7 @@
 import copy
 
+from hpe3parclient import exceptions
+
 import test.fake_3par_data as data
 import test.hpe_docker_unit_test as hpedockerunittest
 from oslo_config import cfg
@@ -18,7 +20,7 @@ class GetVolumeUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):
         pass
 
 
-class TestQosVolume(GetVolumeUnitTest):
+class TestGetVolumeWithQos(GetVolumeUnitTest):
     def get_request_params(self):
         return {"Name": data.VOLUME_NAME,
                 "Opts": {"provisioning": "thin",
@@ -76,6 +78,176 @@ class TestQosVolume(GetVolumeUnitTest):
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.getWsApiVersion.assert_called()
         mock_3parclient.queryQoSRule.assert_called()
+
+
+class TestGetVolumeWithGetQoSFails(GetVolumeUnitTest):
+    def get_request_params(self):
+        return {"Name": data.VOLUME_NAME,
+                "Opts": {"provisioning": "thin",
+                         "qos-name": "vvk_vvset",
+                         "size": "2",
+                         "backend": "DEFAULT"}}
+
+    def setup_mock_objects(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.return_value = data.volume_qos
+        mock_etcd.get_vol_path_info.return_value = None
+
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.queryQoSRule.side_effect = [
+            exceptions.HTTPNotFound("QoS vvk_vvset not found")
+        ]
+
+    def check_response(self, resp):
+        expected = {
+            u'Volume': {
+                u'Devicename': u'',
+                u'Status': {
+                    u'qos_detail': "ERROR: Failed to retrieve QoS "
+                                   "'vvk_vvset' from 3PAR",
+                    u'volume_detail': {
+                        u'3par_vol_name': data.VOLUME_3PAR_NAME,
+                        u'backend': 'DEFAULT',
+                        u'compression': None,
+                        u'flash_cache': None,
+                        u'fsMode': None,
+                        u'fsOwner': None,
+                        u'provisioning': u'thin',
+                        u'size': 2,
+                        u'mountConflictDelay': data.MOUNT_CONFLICT_DELAY,
+                        u'cpg': data.HPE3PAR_CPG,
+                        u'snap_cpg': data.HPE3PAR_CPG2
+                    }
+                },
+                u'Name': u'volume-d03338a9-9115-48a3-8dfc-35cdfcdc15a7',
+                u'Mountpoint': u''
+            },
+            u'Err': u''
+        }
+
+        self._test_case.assertEqual(resp, expected)
+
+        # Check if these functions were actually invoked
+        # in the flow or not
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.getWsApiVersion.assert_called()
+        mock_3parclient.queryQoSRule.assert_called()
+
+
+class TestGetRcgVolume(GetVolumeUnitTest):
+    def get_request_params(self):
+        return {"Name": data.VOLUME_NAME,
+                "Opts": {"provisioning": "thin",
+                         "replicationGroup": data.RCG_NAME,
+                         "size": "2",
+                         "backend": "3par_pp_rep"}}
+
+    def setup_mock_objects(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        self.rep_vol = copy.deepcopy(data.replicated_volume)
+        self.rep_vol['backend'] = '3par_pp_rep'
+        mock_etcd.get_vol_byname.return_value = self.rep_vol
+        mock_etcd.get_vol_path_info.return_value = None
+
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.getRemoteCopyGroup.return_value = \
+            data.normal_rcg['primary_3par_rcg']
+
+    def check_response(self, resp):
+        expected = {
+            u'Volume': {
+                u'Devicename': u'',
+                u'Status': {
+                    u'rcg_detail': {'rcg_name': data.RCG_NAME,
+                                    'policies': data.pp_rcg_policies,
+                                    'role': 'Primary'},
+                    u'volume_detail': {
+                        u'3par_vol_name': data.VOLUME_3PAR_NAME,
+                        u'backend': '3par_pp_rep',
+                        u'compression': None,
+                        u'flash_cache': None,
+                        u'fsMode': None,
+                        u'fsOwner': None,
+                        u'provisioning': u'thin',
+                        u'size': 2,
+                        u'mountConflictDelay': data.MOUNT_CONFLICT_DELAY,
+                        u'cpg': data.HPE3PAR_CPG,
+                        u'snap_cpg': data.HPE3PAR_CPG2,
+                        u'secondary_cpg': 'FC_r1',
+                        u'secondary_snap_cpg': 'FC_r5',
+                    }
+                },
+                u'Name': u'volume-d03338a9-9115-48a3-8dfc-35cdfcdc15a7',
+                u'Mountpoint': u''
+            },
+            u'Err': u''
+        }
+
+        self._test_case.assertEqual(resp, expected)
+
+        # Check if these functions were actually invoked
+        # in the flow or not
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.getWsApiVersion.assert_called()
+        mock_3parclient.getRemoteCopyGroup.assert_called()
+
+
+class TestGetRcgVolumeFails(GetVolumeUnitTest):
+    def get_request_params(self):
+        return {"Name": data.VOLUME_NAME,
+                "Opts": {"provisioning": "thin",
+                         "replicationGroup": data.RCG_NAME,
+                         "size": "2",
+                         "backend": "3par_pp_rep"}}
+
+    def setup_mock_objects(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        self.rep_vol = copy.deepcopy(data.replicated_volume)
+        self.rep_vol['backend'] = '3par_pp_rep'
+        mock_etcd.get_vol_byname.return_value = self.rep_vol
+        mock_etcd.get_vol_path_info.return_value = None
+
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.getRemoteCopyGroup.side_effect = [
+            exceptions.HTTPNotFound("RCG %s not found" % data.RCG_NAME)
+        ]
+
+    def check_response(self, resp):
+        expected = {
+            u'Volume': {
+                u'Devicename': u'',
+                u'Status': {
+                    u'rcg_detail': "ERROR: Failed to retrieve RCG '%s' "
+                                   "from 3PAR" % data.RCG_NAME,
+                    u'volume_detail': {
+                        u'3par_vol_name': data.VOLUME_3PAR_NAME,
+                        u'backend': '3par_pp_rep',
+                        u'compression': None,
+                        u'flash_cache': None,
+                        u'fsMode': None,
+                        u'fsOwner': None,
+                        u'provisioning': u'thin',
+                        u'size': 2,
+                        u'mountConflictDelay': data.MOUNT_CONFLICT_DELAY,
+                        u'cpg': data.HPE3PAR_CPG,
+                        u'snap_cpg': data.HPE3PAR_CPG2,
+                        u'secondary_cpg': 'FC_r1',
+                        u'secondary_snap_cpg': 'FC_r5',
+                    }
+                },
+                u'Name': u'volume-d03338a9-9115-48a3-8dfc-35cdfcdc15a7',
+                u'Mountpoint': u''
+            },
+            u'Err': u''
+        }
+
+        self._test_case.assertEqual(resp, expected)
+
+        # Check if these functions were actually invoked
+        # in the flow or not
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.getWsApiVersion.assert_called()
+        mock_3parclient.getRemoteCopyGroup.assert_called()
 
 
 class TestCloneVolume(GetVolumeUnitTest):

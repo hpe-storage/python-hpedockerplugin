@@ -134,10 +134,17 @@ replicated_volume = {
                  'remote_rcg_name': REMOTE_RCG_NAME}
 }
 
+pp_rcg_policies = {'autoRecover': False,
+                   'overPeriodAlert': False,
+                   'autoFailover': False,
+                   'pathManagement': False}
 normal_rcg = {
     'primary_3par_rcg': {
+        'name': RCG_NAME,
         'role': ROLE_PRIMARY,
-        'targets': [{'roleReversed': False}]
+        'targets': [{'roleReversed': False,
+                     'policies': pp_rcg_policies
+                     }],
     },
     'secondary_3par_rcg': {
         'role': ROLE_SECONDARY,

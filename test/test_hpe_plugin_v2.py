@@ -524,7 +524,7 @@ class HpeDockerUnitTestsBase(object):
         test.run_test(self)
 
     """
-    INSPECT SNAPSHOT related tests
+    INSPECT VOLUME/SNAPSHOT related tests
     """
     @tc_banner_decorator
     def test_sync_snapshots(self):
@@ -533,12 +533,27 @@ class HpeDockerUnitTestsBase(object):
 
     @tc_banner_decorator
     def test_qos_vol(self):
-        test = getvolume_tester.TestQosVolume()
+        test = getvolume_tester.TestGetVolumeWithQos()
         test.run_test(self)
 
     @tc_banner_decorator
     def test_clone_vol(self):
         test = getvolume_tester.TestCloneVolume()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_get_vol_with_get_qos_fails(self):
+        test = getvolume_tester.TestGetVolumeWithGetQoSFails()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_get_rcg_vol(self):
+        test = getvolume_tester.TestGetRcgVolume()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_get_rcg_vol_fails(self):
+        test = getvolume_tester.TestGetRcgVolumeFails()
         test.run_test(self)
 
     """

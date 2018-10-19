@@ -1082,11 +1082,11 @@ class VolumeManager(object):
                     qos_filter = self._get_required_qos_field(qos_detail)
                     volume['Status'].update({'qos_detail': qos_filter})
                 except Exception as ex:
-                    msg = 'unable to get/filter qos from 3par, error is: '\
-                          '%s' % six.text_type(ex)
+                    msg = "ERROR: Failed to retrieve QoS '%s' from 3PAR" \
+                          % qos_name
+                    volume['Status'].update({'qos_detail': msg})
+                    msg += ' %s' % six.text_type(ex)
                     LOG.error(msg)
-                    # until #347 fix let's just log error and not return
-                    # return json.dumps({u"Err": six.text_type(ex)})
 
             vol_detail = {}
             vol_detail['size'] = volinfo.get('size')
@@ -1116,17 +1116,17 @@ class VolumeManager(object):
                     self.tgt_bkend_config.hpe3par_snapcpg[0]
 
                 # fetch rcg details and display
+                rcg_name = volinfo['rcg_info']['local_rcg_name']
                 try:
-                    rcg_name = volinfo['rcg_info']['local_rcg_name']
                     rcg_detail = self._hpeplugin_driver.get_rcg(rcg_name)
                     rcg_filter = self._get_required_rcg_field(rcg_detail)
                     volume['Status'].update({'rcg_detail': rcg_filter})
                 except Exception as ex:
-                    msg = 'unable to get/filter rcg from 3par, error is: '\
-                          '%s' % six.text_type(ex)
+                    msg = "ERROR: Failed to retrieve RCG '%s' from 3PAR" \
+                          % rcg_name
+                    volume['Status'].update({'rcg_detail': msg})
+                    msg += ' %s' % six.text_type(ex)
                     LOG.error(msg)
-                    # until #347 fix let's just log error and not return
-                    # return json.dumps({u"Err": six.text_type(ex)})
 
             volume['Status'].update({'volume_detail': vol_detail})
 
