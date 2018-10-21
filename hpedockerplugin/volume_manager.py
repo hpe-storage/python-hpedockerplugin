@@ -884,35 +884,36 @@ class VolumeManager(object):
         else:
             return json.dumps({u"Err": ''})
 
-    @synchronization.synchronized_volume('{volumename}')
-    def revert_to_snapshot(self, volumename, snapname):
-        volume = self._etcd.get_vol_byname(volumename)
-        if volume is None:
-            msg = (_LE('Volume: %s does not exist' % volumename))
-            LOG.info(msg)
-            response = json.dumps({u"Err": msg})
-            return response
-
-        snapshots = volume['snapshots']
-        LOG.info("Getting snapshot by name: %s" % snapname)
-        snapshot, idx = self._get_snapshot_by_name(snapshots,
-                                                   snapname)
-        if snapshot:
-            try:
-                LOG.info("Found snapshot by name %s" % snapname)
-                self._hpeplugin_driver.revert_snap_to_vol(volume, snapshot)
-                response = json.dumps({u"Err": ''})
-                return response
-            except Exception as ex:
-                msg = (_('revert snapshot failed, error is: %s'),
-                       six.text_type(ex))
-                LOG.error(msg)
-                return json.dumps({u"Err": six.text_type(ex)})
-        else:
-            msg = (_LE('snapshot: %s does not exist!' % snapname))
-            LOG.info(msg)
-            response = json.dumps({u"Err": msg})
-            return response
+    # Commenting out unused function to increase coverage
+    # @synchronization.synchronized_volume('{volumename}')
+    # def revert_to_snapshot(self, volumename, snapname):
+    #     volume = self._etcd.get_vol_byname(volumename)
+    #     if volume is None:
+    #         msg = (_LE('Volume: %s does not exist' % volumename))
+    #         LOG.info(msg)
+    #         response = json.dumps({u"Err": msg})
+    #         return response
+    #
+    #     snapshots = volume['snapshots']
+    #     LOG.info("Getting snapshot by name: %s" % snapname)
+    #     snapshot, idx = self._get_snapshot_by_name(snapshots,
+    #                                                snapname)
+    #     if snapshot:
+    #         try:
+    #             LOG.info("Found snapshot by name %s" % snapname)
+    #             self._hpeplugin_driver.revert_snap_to_vol(volume, snapshot)
+    #             response = json.dumps({u"Err": ''})
+    #             return response
+    #         except Exception as ex:
+    #             msg = (_('revert snapshot failed, error is: %s'),
+    #                    six.text_type(ex))
+    #             LOG.error(msg)
+    #             return json.dumps({u"Err": six.text_type(ex)})
+    #     else:
+    #         msg = (_LE('snapshot: %s does not exist!' % snapname))
+    #         LOG.info(msg)
+    #         response = json.dumps({u"Err": msg})
+    #         return response
 
     def _get_snapshot_response(self, snapinfo, snapname):
         err = ''
