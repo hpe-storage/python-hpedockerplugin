@@ -79,6 +79,16 @@ class HpeDockerUnitTestsBase(object):
         test.run_test(self)
 
     @tc_banner_decorator
+    def test_import_already_managed_volume(self):
+        test = createvolume_tester.TestImportAlreadyManagedVolume()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_import_volume_with_different_domain(self):
+        test = createvolume_tester.TestImportVolumeDifferentDomain()
+        test.run_test(self)
+
+    @tc_banner_decorator
     def test_import_volume_with_invalid_options(self):
         test = createvolume_tester.TestImportVolumeWithInvalidOptions()
         test.run_test(self)

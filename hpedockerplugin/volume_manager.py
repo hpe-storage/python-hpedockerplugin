@@ -370,6 +370,19 @@ class VolumeManager(object):
             LOG.exception(msg)
             return json.dumps({u"Err": six.text_type(msg)})
 
+        # TODO: Check if domain of the unmanaged volume matches with that
+        # of CPGs specified in hpe.conf
+        unmanaged_vol_domain = existing_ref_details['domain']
+        cpg = self.src_bkend_config.hpe3par_cpg[0]
+        expected_domain = self._hpeplugin_driver.get_domain(cpg)
+
+        if expected_domain != unmanaged_vol_domain:
+            msg = "Failed to import volume due to domain mismatch." \
+                  "[Target Domain: %s, Unmanaged volume domain: %s]" % \
+                  (expected_domain, unmanaged_vol_domain)
+            LOG.error(msg)
+            return json.dumps({"Err": six.text_type(msg)})
+
         vvset_detail = self._hpeplugin_driver.get_vvset_from_volume(
             existing_ref_details['name'])
         if vvset_detail is not None:

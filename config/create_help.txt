@@ -1,12 +1,13 @@
-HPE 3PAR volume plug-in for Docker: Create help
+
+
+===============================================
+HPE 3PAR Volume Plug-in For Docker: Create Help
+===============================================
 Create a volume in HPE 3PAR or create a clone of a Docker volume or create a snapshot of a Docker volume using HPE 3PAR volume plug-in for Docker.
-Default Options:
--o mountConflictDelay=x 	x is the number of seconds to delay a mount request when there is a conflict. Default value is 30 seconds.
--o size=x 			x is a size of a Docker volume to be created, default value of x is 100 (in GiB)
--o provisioning=x 		x is a provision type of a volume to be created, valid values are thin, dedup, full. Default value is thin.
 
-
+---------------------------------
 Create Volume Options:
+---------------------------------
  -o cpg=x                       x is the User CPG used for provisioning the volume
  -o snapcpg=x                   x is the Snap CPG used for provisioning the snapshots of the volume
  -o size=x 			x is the size of a Docker volume to be created. Default value is 100 (in GiB)
@@ -25,6 +26,22 @@ Create Volume Options:
                                 create options along with -o importVol
                                 Backend represents a group of configuration parameters for a particular 3PAR Array
                                 Documentation: https://github.com/hpe-storage/python-hpedockerplugin/blob/plugin_v2/docs/multi-array-feature.md
+-o mountConflictDelay=x 	x is the number of seconds to delay a mount request when there is a conflict. Default value is 30 seconds.
+
+
+---------------------------------
+Create Replicated Volume Options:
+---------------------------------
+ -o size=x 			x is the size of a Docker volume to be created. Default value is 100 (in GiB)
+ -o provisioning=x 		x is the provision type of a volume to be created. Valid values are thin, dedup, full with thin as default.
+ -o compression=x 		x is a boolean with true and false as valid values. To create a compressed volume, minimum size of a
+				volume should be 16 GiB. It also requires 3PAR OS version 3.3.1 or more and underlying disks should be SSD. Default value is false.
+ -o backend=x                   x is the name of the backend identified by square brackets in hpe.conf, and the volume creation happens on this identified
+                                backend. Default value of this option is DEFAULT when not specified. This can be used in combination with other volume
+                                create options along with -o importVol
+                                Backend represents a group of configuration parameters for a particular 3PAR Array
+                                Documentation: https://github.com/hpe-storage/python-hpedockerplugin/blob/plugin_v2/docs/multi-array-feature.md
+ -o mountConflictDelay=x 	x is the number of seconds to delay a mount request when there is a conflict. Default value is 30 seconds.
  -o replicationGroup=x 	        x is name of the 3PAR replication group to which the newly created volume is added. If the replication
                                 group doesn't exist on 3PAR array then it is created. Configuration parameter, 'replication_device',
                                 must be defined in the hpe.conf file in conjunction with this option. Not doing so results in rejection
@@ -33,27 +50,43 @@ Create Volume Options:
                                 Active/Passive based replication configuration.
 
 
-
+---------------------------------
 Create Clone Options:
+---------------------------------
  -o cloneOf=x			x is the name of the source Docker volume of which the clone is to be created.
  -o size=x 			x is the size of cloned volume. It should be greater than or equal to the size of the source volume.
  -o cpg=x                       x is the User CPG used for provisioning the volume
  -o snapcpg=x                   x is the Snap CPG used for provisioning the snapshots of the volume
+ -o mountConflictDelay=x 	This option is ignored for this operation. It is present so that it can work with orchestrators like K8S and Openshift.
 
 
+---------------------------------
 Create Snapshot Options:
+---------------------------------
  -o virtualCopyOf=x		x is the name of the source Docker volume whose snapshot/virtual copy is to be created.
  -o retentionHours=x 		x is the number of hours the snapshot will be retained. Retention time begins from the time of snapshot creation.
                                 During this time the snapshot cannot be removed.
  -o expirationHours=x		x is the number of hours after which snapshot is removed from 3PAR. If both retentionHours and expirationHours
 				are specified then expirationHours must be greater than or equal to retentionHours.
+ -o mountConflictDelay=x 	This option is ignored for this operation. It is present so that it can work with orchestrators like K8S and Openshift.
 
+
+---------------------------------
 Import Volume Options:
+---------------------------------
  -o importVol=x                 x is the name of 3PAR volume or snapshot that needs to be imported. As a prerequisite, the volume or snapshot being imported
                                 must not be in attached/mounted state.
+ -o backend=x                   x is the name of the backend identified by square brackets in hpe.conf, and the volume creation happens on this identified
+                                backend. Default value of this option is DEFAULT when not specified. This can be used in combination with other volume
+                                create options along with -o importVol
+                                Backend represents a group of configuration parameters for a particular 3PAR Array
+                                Documentation: https://github.com/hpe-storage/python-hpedockerplugin/blob/plugin_v2/docs/multi-array-feature.md
+ -o mountConflictDelay=x 	This option is ignored for this operation. It is present so that it can work with orchestrators like K8S and Openshift.
 
 
+---------------------------------
 Create Snapshot Schedule:
+---------------------------------
  -o virtualCopyOf=x             This option is mandatory. x is the name of the volume for which snapshot schedule has to be created.
  -o scheduleFrequency=x         This option is mandatory. x is the string which indicates the snapshot schedule frequency.
                                 This string will contain 5 values which are separated by space.
@@ -77,9 +110,9 @@ Create Snapshot Schedule:
                                 month         * or 1-12
                                 day-of-week   * or 0-6 (0 is Sunday)
 
-                                ========
-                                Examples
-                                ========
+                                ---------
+                                Examples:
+                                ---------
                                 1. To create snapshot at midnight and at noon, specify x as "0 0,12 * * *"
                                 2. To create snapshot on 5th, 15th and 25th of month, specify x as "0 * 5,15,25 * *"
                                 3. To create snapshot every quarter, specify x as "0 * * 3,6,9,12 *"
@@ -92,3 +125,4 @@ Create Snapshot Schedule:
                                 snapshot schedule will be deleted from 3PAR.
 -o retHrs=x                     This option is not mandatory. x is an integer which indicates number of hours for which snapshot created via
                                 snapshot schedule will be retained.
+-o mountConflictDelay=x 	This option is ignored for this operation. It is present so that it can work with orchestrators like K8S and Openshift.
