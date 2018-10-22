@@ -77,9 +77,9 @@ Create Snapshot Schedule:
                                 month         * or 1-12
                                 day-of-week   * or 0-6 (0 is Sunday)
 
-                                =========
-                                Examples:
-                                =========
+                                ========
+                                Examples
+                                ========
                                 1. To create snapshot at midnight and at noon, specify x as "0 0,12 * * *"
                                 2. To create snapshot on 5th, 15th and 25th of month, specify x as "0 * 5,15,25 * *"
                                 3. To create snapshot every quarter, specify x as "0 * * 3,6,9,12 *"
