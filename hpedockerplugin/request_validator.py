@@ -98,8 +98,8 @@ def _validate_snapshot_opts(contents):
 
 
 def _validate_snapshot_schedule_opts(contents):
-    valid_opts = ['virtualCopyOf', 'retentionHours', 'scheduleFrequency',
-                  'scheduleName', 'snapshotPrefix', 'expHrs', 'retHrs']
+    valid_opts = ['virtualCopyOf', 'scheduleFrequency', 'scheduleName',
+                  'snapshotPrefix', 'expHrs', 'retHrs']
     mandatory_opts = ['scheduleName', 'snapshotPrefix', 'scheduleFrequency']
     _validate_opts("create snapshot schedule", contents,
                    valid_opts, mandatory_opts)
