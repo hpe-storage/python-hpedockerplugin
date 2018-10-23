@@ -254,9 +254,10 @@ class TestCreateSnpSchedwithRetToBase(CreateSnapshotUnitTest):
                          "retHrs": '2'}}
 
     def check_response(self, resp):
-        expected = 'create schedule failed, error is : setting '\
-                   'expirationHours or retentionHours for docker base '\
-                   'snapshot is not allowed while creating a schedule'
+        invalid_opts = ['retentionHours']
+        expected = "Invalid input received: Invalid option(s) %s " \
+                   "specified for operation create snapshot schedule. " \
+                   "Please check help for usage." % invalid_opts
         self._test_case.assertEqual(resp, {u"Err": expected})
 
 
