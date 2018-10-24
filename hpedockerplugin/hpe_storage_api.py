@@ -448,7 +448,8 @@ class VolumePlugin(object):
                     sync_period = int(sync_period)
                 except ValueError as ex:
                     msg = "Non-integer value '%s' not allowed for " \
-                          "'sync_period'" % replication_device.sync_period
+                          "'sync_period'. %s" % (
+                              replication_device.sync_period, ex)
                     raise exception.InvalidInput(reason=msg)
                 else:
                     SYNC_PERIOD_LOW = 300
