@@ -302,7 +302,7 @@ class TestCreateSnapshotInvalidOptions(CreateSnapshotUnitTest):
                          "backend": "dummy"}}
 
     def check_response(self, resp):
-        invalid_opts = ['backend', 'mountConflictDelay']
+        invalid_opts = ['backend']
         invalid_opts.sort()
         expected = "Invalid input received: Invalid option(s) " \
                    "%s specified for operation create snapshot. " \

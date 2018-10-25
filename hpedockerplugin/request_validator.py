@@ -102,25 +102,26 @@ def validate_create_volume_opts(contents):
 
 
 def _validate_clone_opts(contents):
-    valid_opts = ['cloneOf', 'size', 'cpg', 'snapcpg']
+    valid_opts = ['cloneOf', 'size', 'cpg', 'snapcpg', 'mountConflictDelay']
     _validate_opts("clone volume", contents, valid_opts)
 
 
 def _validate_snapshot_opts(contents):
-    valid_opts = ['virtualCopyOf', 'retentionHours', 'expirationHours']
+    valid_opts = ['virtualCopyOf', 'retentionHours', 'expirationHours',
+                  'mountConflictDelay']
     _validate_opts("create snapshot", contents, valid_opts)
 
 
 def _validate_snapshot_schedule_opts(contents):
     valid_opts = ['virtualCopyOf', 'scheduleFrequency', 'scheduleName',
-                  'snapshotPrefix', 'expHrs', 'retHrs']
+                  'snapshotPrefix', 'expHrs', 'retHrs', 'mountConflictDelay']
     mandatory_opts = ['scheduleName', 'snapshotPrefix', 'scheduleFrequency']
     _validate_opts("create snapshot schedule", contents,
                    valid_opts, mandatory_opts)
 
 
 def _validate_import_vol_opts(contents):
-    valid_opts = ['importVol', 'backend']
+    valid_opts = ['importVol', 'backend', 'mountConflictDelay']
     _validate_opts("import volume", contents, valid_opts)
 
 
