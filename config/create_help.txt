@@ -2,6 +2,8 @@ HPE 3PAR volume plug-in for Docker: Create help
 Create a volume in HPE 3PAR or create a clone of a Docker volume or create a snapshot of a Docker volume using HPE 3PAR volume plug-in for Docker.
 Default Options:
 -o mountConflictDelay=x 	x is the number of seconds to delay a mount request when there is a conflict. Default value is 30 seconds.
+                                Note: This flag when passed along with other volume create options like cloneOf, virtualCopyOf, importVol
+                                      it's ignored.
 -o size=x 			x is a size of a Docker volume to be created, default value of x is 100 (in GiB)
 -o provisioning=x 		x is a provision type of a volume to be created, valid values are thin, dedup, full. Default value is thin.
 
