@@ -704,8 +704,8 @@ class VolumeManager(object):
                        'id': snapshot_id,
                        'parent_name': src_vol_name,
                        'parent_id': vol['id'],
-                       'fsMode': vol['fsMode'],
-                       'fsOwner': vol['fsOwner'],
+                       'fsMode': vol.get('fsMode'),
+                       'fsOwner': vol.get('fsOwner'),
                        'expiration_hours': expiration_hrs,
                        'retention_hours': retention_hrs}
         if has_schedule:
