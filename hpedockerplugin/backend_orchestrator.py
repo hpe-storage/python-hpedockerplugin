@@ -41,6 +41,10 @@ class Orchestrator(object):
         self._manager = self.initialize_manager_objects(host_config,
                                                         backend_configs)
 
+        # This is the dictionary which have the volume -> backend map entries
+        # cache after doing an etcd volume read operation.
+        self.volume_backends_map = {}
+
     @staticmethod
     def _get_etcd_util(host_config):
         return util.EtcdUtil(
@@ -69,11 +73,21 @@ class Orchestrator(object):
 
     def get_volume_backend_details(self, volname):
         LOG.info('Getting details for volume : %s ' % (volname))
-        vol = self.etcd_util.get_vol_byname(volname)
-
         current_backend = DEFAULT_BACKEND_NAME
+
+        if volname in self.volume_backends_map:
+            current_backend = self.volume_backends_map[volname]
+            LOG.debug(' Returning the backend details from cache %s , %s'
+                      % (volname, current_backend))
+            return current_backend
+
+        vol = self.etcd_util.get_vol_byname(volname)
         if vol is not None and 'backend' in vol:
             current_backend = vol['backend']
+            # populate the volume backend map for caching
+            LOG.debug(' Populating cache %s, %s '
+                      % (volname, current_backend))
+            self.volume_backends_map[volname] = current_backend
 
         return current_backend
 
