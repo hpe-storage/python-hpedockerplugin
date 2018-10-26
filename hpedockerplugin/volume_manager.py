@@ -704,8 +704,8 @@ class VolumeManager(object):
                        'id': snapshot_id,
                        'parent_name': src_vol_name,
                        'parent_id': vol['id'],
-                       'fsMode': vol['fsMode'],
-                       'fsOwner': vol['fsOwner'],
+                       'fsMode': vol.get('fsMode'),
+                       'fsOwner': vol.get('fsOwner'),
                        'expiration_hours': expiration_hrs,
                        'retention_hours': retention_hrs}
         if has_schedule:
@@ -1452,7 +1452,12 @@ class VolumeManager(object):
         # Determine if we need to mount the volume
         if vol_mount == volume.DEFAULT_MOUNT_VOLUME:
             # mkdir for mounting the filesystem
-            mount_dir = fileutil.mkdir_for_mounting(device_info['path'])
+            if self._host_config.mount_prefix:
+                mount_prefix = self._host_config.mount_prefix
+            else:
+                mount_prefix = None
+            mount_dir = fileutil.mkdir_for_mounting(device_info['path'],
+                                                    mount_prefix)
             LOG.debug('Directory: %(mount_dir)s, '
                       'successfully created to mount: '
                       '%(mount)s',
@@ -1649,6 +1654,7 @@ class VolumeManager(object):
                 try:
                     mount_id_list.remove(mount_id)
                 except ValueError as ex:
+                    LOG.exception('Ignoring exception: %s' % ex)
                     pass
 
                 LOG.info("Updating node_mount_info '%s' in etcd..."
@@ -1834,6 +1840,7 @@ class VolumeManager(object):
                 undo_action['undo_func'](**undo_action['params'])
             except Exception as ex:
                 # TODO: Implement retry logic
+                LOG.exception('Ignoring exception: %s' % ex)
                 pass
 
     @staticmethod
@@ -1964,6 +1971,7 @@ class VolumeManager(object):
             passphrase = self._etcd.get_backend_key(backend_name)
         except Exception as ex:
             LOG.info("Using Plain Text")
+            LOG.exception('Ignoring exception: %s' % ex)
         else:
             passphrase = self.key_check(passphrase)
             src_bknd.hpe3par_password = \

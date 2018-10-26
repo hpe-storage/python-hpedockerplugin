@@ -190,6 +190,7 @@ class EtcdLock(object):
         except Exception as ex:
             msg = 'Name: %(name)s is already locked' % {'name': name}
             LOG.exception(msg)
+            LOG.exception(ex)
             raise exception.HPEPluginLockFailed(obj=name)
 
     def try_unlock_name(self, name):
@@ -200,4 +201,5 @@ class EtcdLock(object):
         except Exception as ex:
             msg = 'Name: %(name)s unlock failed' % {'name': name}
             LOG.exception(msg)
+            LOG.exception(ex)
             raise exception.HPEPluginUnlockFailed(obj=name)
