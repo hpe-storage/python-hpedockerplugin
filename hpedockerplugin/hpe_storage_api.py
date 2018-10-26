@@ -53,6 +53,7 @@ class VolumePlugin(object):
         self._reactor = reactor
         self._host_config = host_config
         self._backend_configs = backend_configs
+        self._req_validator = req_validator.RequestValidator(backend_configs)
 
         # TODO: make device_scan_attempts configurable
         # see nova/virt/libvirt/volume/iscsi.py
@@ -130,19 +131,11 @@ class VolumePlugin(object):
             LOG.error(msg)
             raise exception.HPEPluginCreateException(reason=msg)
 
+        volname = contents['Name']
         try:
-            req_validator.validate_request(contents)
+            self._req_validator.validate_request(contents)
         except exception.InvalidInput as ex:
             return json.dumps({"Err": ex.msg})
-
-        volname = contents['Name']
-
-        is_valid_name = re.match("^[A-Za-z0-9]+[A-Za-z0-9_-]+$", volname)
-        if not is_valid_name:
-            msg = 'Invalid volume name: %s is passed.' % volname
-            LOG.debug(msg)
-            response = json.dumps({u"Err": msg})
-            return response
 
         vol_size = volume.DEFAULT_SIZE
         vol_prov = volume.DEFAULT_PROV
@@ -212,16 +205,6 @@ class VolumePlugin(object):
                     return json.dumps({u"Err": msg})
 
             if 'importVol' in input_list:
-                if not len(input_list) == 1:
-                    if len(input_list) == 2 and 'backend' in input_list:
-                        pass
-                    else:
-                        msg = (_('%(input_list)s cannot be '
-                                 ' specified at the same '
-                                 'time') % {'input_list': input_list, })
-                        LOG.error(msg)
-                        return json.dumps({u"Err": six.text_type(msg)})
-
                 existing_ref = str(contents['Opts']['importVol'])
                 return self.orchestrator.manage_existing(volname,
                                                          existing_ref,
