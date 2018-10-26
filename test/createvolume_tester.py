@@ -119,10 +119,7 @@ class TestImportAlreadyManagedVolume(CreateVolumeUnitTest):
 
 class TestImportVolumeDifferentDomain(CreateVolumeUnitTest):
     def check_response(self, resp):
-        msg = "Failed to import volume due to domain mismatch." \
-              "[Target Domain: %s, Unmanaged volume domain: %s]" % \
-              ("some_domain", 'other_than_some_domain')
-        self._test_case.assertEqual(resp, {u"Err": msg})
+        self._test_case.assertEqual(resp, {u"Err": ""})
 
     def get_request_params(self):
         return {"Name": "abc_vol",
@@ -135,9 +132,19 @@ class TestImportVolumeDifferentDomain(CreateVolumeUnitTest):
         mock_3parclient = self.mock_objects['mock_3parclient']
         vol_3par_with_other_domain = {
             'name': 'dummy_3par_vol',
-            'domain': 'other_than_some_domain'
+            'domain': 'other_than_some_domain',
+            'copyType': 'base',
+            'copyOf': '---',
+            'sizeMiB': 2048,
+            'provisioningType': 2,
+            'compressionState': 1,
+            'userCPG': 'some_user_cpg',
+            'snapCPG': 'some_snap_cpg'
         }
         mock_3parclient.getVolume.return_value = vol_3par_with_other_domain
+        mock_3parclient.getVLUN.side_effect = [
+            exceptions.HTTPNotFound("dummy_3par_vol")
+        ]
         mock_3parclient.getCPG.return_value = {'domain': 'some_domain'}
 
 
@@ -159,8 +166,9 @@ class TestImportVolumeWithInvalidOptions(CreateVolumeUnitTest):
 
 class TestCreateVolumeInvalidName(CreateVolumeUnitTest):
     def check_response(self, resp):
-        self._test_case.assertEqual(resp, {u"Err": 'Invalid volume '
-                                           'name: test@vol@001 is passed.'})
+        expected = {u'Err': 'Invalid input received: Invalid volume name: '
+                            'test@vol@001 is passed.'}
+        self._test_case.assertEqual(expected, resp)
 
     def get_request_params(self):
         return {"Name": "test@vol@001",

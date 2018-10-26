@@ -19,7 +19,6 @@ See https://github.com/docker/docker/tree/master/docs/extend for details.
 """
 import json
 import six
-import re
 
 from oslo_log import log as logging
 
