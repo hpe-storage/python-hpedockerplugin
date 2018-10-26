@@ -123,7 +123,7 @@ class RequestValidator(object):
                 backend_name = 'DEFAULT'
             try:
                 config = self._backend_configs[backend_name]
-            except KeyError as err:
+            except KeyError:
                 backend_names = list(self._backend_configs.keys())
                 backend_names.sort()
                 msg = "ERROR: Backend '%s' doesn't exist. Available " \
