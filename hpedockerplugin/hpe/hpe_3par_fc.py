@@ -557,3 +557,10 @@ class HPE3PARFCDriver(object):
             return common.is_vol_having_active_task(vol_name)
         finally:
             self._logout(common)
+
+    def get_domain(self, cpg_name):
+        common = self._login()
+        try:
+            return common.get_domain(cpg_name)
+        finally:
+            self._logout(common)

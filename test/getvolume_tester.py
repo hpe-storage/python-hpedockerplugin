@@ -62,7 +62,8 @@ class TestGetVolumeWithQos(GetVolumeUnitTest):
                         u'size': 2,
                         u'mountConflictDelay': data.MOUNT_CONFLICT_DELAY,
                         u'cpg': data.HPE3PAR_CPG,
-                        u'snap_cpg': data.HPE3PAR_CPG2
+                        u'snap_cpg': data.HPE3PAR_CPG2,
+                        u'domain': None
                     }
                 },
                 u'Name': u'volume-d03338a9-9115-48a3-8dfc-35cdfcdc15a7',
@@ -116,7 +117,8 @@ class TestGetVolumeWithGetQoSFails(GetVolumeUnitTest):
                         u'size': 2,
                         u'mountConflictDelay': data.MOUNT_CONFLICT_DELAY,
                         u'cpg': data.HPE3PAR_CPG,
-                        u'snap_cpg': data.HPE3PAR_CPG2
+                        u'snap_cpg': data.HPE3PAR_CPG2,
+                        u'domain': None
                     }
                 },
                 u'Name': u'volume-d03338a9-9115-48a3-8dfc-35cdfcdc15a7',
@@ -175,6 +177,7 @@ class TestGetRcgVolume(GetVolumeUnitTest):
                         u'snap_cpg': data.HPE3PAR_CPG2,
                         u'secondary_cpg': 'FC_r1',
                         u'secondary_snap_cpg': 'FC_r5',
+                        u'domain': None
                     }
                 },
                 u'Name': u'volume-d03338a9-9115-48a3-8dfc-35cdfcdc15a7',
@@ -233,6 +236,7 @@ class TestGetRcgVolumeFails(GetVolumeUnitTest):
                         u'snap_cpg': data.HPE3PAR_CPG2,
                         u'secondary_cpg': 'FC_r1',
                         u'secondary_snap_cpg': 'FC_r5',
+                        u'domain': None
                     }
                 },
                 u'Name': u'volume-d03338a9-9115-48a3-8dfc-35cdfcdc15a7',
@@ -278,7 +282,8 @@ class TestCloneVolume(GetVolumeUnitTest):
                         u'fsOwner': None,
                         u'mountConflictDelay': data.MOUNT_CONFLICT_DELAY,
                         u'cpg': data.HPE3PAR_CPG,
-                        u'snap_cpg': data.HPE3PAR_CPG
+                        u'snap_cpg': data.HPE3PAR_CPG,
+                        u'domain': None
                     }
                 },
                 u'Name': u'volume-d03338a9-9115-48a3-8dfc-35cdfcdc15a7',

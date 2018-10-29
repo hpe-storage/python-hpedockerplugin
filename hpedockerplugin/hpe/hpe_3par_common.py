@@ -339,8 +339,8 @@ class HPE3PARCommon(object):
             LOG.info(msg)
             pass
         else:
-            msg = _("Managing volume %s failed because its attached.") %\
-                   (existing_ref)
+            msg = "Managing volume %s failed because it is attached." % \
+                  existing_ref
             LOG.error(msg)
             raise exception.HPEDriverManageVolumeAttached(reason=msg)
 

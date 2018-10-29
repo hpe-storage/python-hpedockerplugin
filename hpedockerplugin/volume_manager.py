@@ -1101,6 +1101,8 @@ class VolumeManager(object):
             vol_detail['cpg'] = volinfo.get('cpg')
             vol_detail['snap_cpg'] = volinfo.get('snap_cpg')
             vol_detail['backend'] = volinfo.get('backend')
+            vol_detail['domain'] = self._hpeplugin_driver.get_domain(
+                vol_detail['cpg'])
 
             LOG.info(' get_volume_snap_details : adding 3par vol info')
             if '3par_vol_name' in volinfo:

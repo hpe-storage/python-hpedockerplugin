@@ -62,6 +62,29 @@ class TestImportVolume(CreateVolumeUnitTest):
         mock_etcd.get_vol_byname.return_value = None
 
         mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.getCPG.return_value = {'domain': 'some_domain'}
+        vol_3par_some_domain = {
+            'name': 'dummy_3par_vol',
+            'domain': 'some_domain',
+            'copyType': 'base',
+            'copyOf': '---',
+            'sizeMiB': 2048,
+            'provisioningType': 2,
+            'compressionState': 1,
+            'userCPG': 'some_user_cpg',
+            'snapCPG': 'some_snap_cpg'
+        }
+        mock_3parclient.getVolume.return_value = vol_3par_some_domain
+        mock_3parclient.findVolumeSet.return_value = "some_vvset"
+
+        some_vvset = {
+            'name': 'dummy_vvset',
+            'flashCachePolicy': 1,
+        }
+        mock_3parclient.getVolumeSet.return_value = some_vvset
+
+        mock_3parclient.queryQoSRule.return_value = {'name': 'dummy_qos'}
+
         mock_3parclient.getVLUN.side_effect = \
             [exceptions.HTTPNotFound('fake')]
 
@@ -78,6 +101,51 @@ class TestImportVolumeOtherOption(CreateVolumeUnitTest):
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
         mock_etcd.get_vol_byname.return_value = None
+
+
+class TestImportAlreadyManagedVolume(CreateVolumeUnitTest):
+    def check_response(self, resp):
+        msg = 'target: %s is already in-use' % 'dcv-vvk_vol'
+        self._test_case.assertEqual(resp, {u"Err": msg})
+
+    def get_request_params(self):
+        return {"Name": "abc_vol",
+                "Opts": {"importVol": "dcv-vvk_vol"}}
+
+    def setup_mock_objects(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.return_value = None
+
+
+class TestImportVolumeDifferentDomain(CreateVolumeUnitTest):
+    def check_response(self, resp):
+        self._test_case.assertEqual(resp, {u"Err": ""})
+
+    def get_request_params(self):
+        return {"Name": "abc_vol",
+                "Opts": {"importVol": "dummy_3par_vol"}}
+
+    def setup_mock_objects(self):
+        mock_etcd = self.mock_objects['mock_etcd']
+        mock_etcd.get_vol_byname.return_value = None
+
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        vol_3par_with_other_domain = {
+            'name': 'dummy_3par_vol',
+            'domain': 'other_than_some_domain',
+            'copyType': 'base',
+            'copyOf': '---',
+            'sizeMiB': 2048,
+            'provisioningType': 2,
+            'compressionState': 1,
+            'userCPG': 'some_user_cpg',
+            'snapCPG': 'some_snap_cpg'
+        }
+        mock_3parclient.getVolume.return_value = vol_3par_with_other_domain
+        mock_3parclient.getVLUN.side_effect = [
+            exceptions.HTTPNotFound("dummy_3par_vol")
+        ]
+        mock_3parclient.getCPG.return_value = {'domain': 'some_domain'}
 
 
 class TestImportVolumeWithInvalidOptions(CreateVolumeUnitTest):
@@ -98,8 +166,9 @@ class TestImportVolumeWithInvalidOptions(CreateVolumeUnitTest):
 
 class TestCreateVolumeInvalidName(CreateVolumeUnitTest):
     def check_response(self, resp):
-        self._test_case.assertEqual(resp, {u"Err": 'Invalid volume '
-                                           'name: test@vol@001 is passed.'})
+        expected = {u'Err': 'Invalid input received: Invalid volume name: '
+                            'test@vol@001 is passed.'}
+        self._test_case.assertEqual(expected, resp)
 
     def get_request_params(self):
         return {"Name": "test@vol@001",
