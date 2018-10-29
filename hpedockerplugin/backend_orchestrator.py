@@ -28,6 +28,7 @@ Eg.
 from oslo_log import log as logging
 import hpedockerplugin.etcdutil as util
 import hpedockerplugin.volume_manager as mgr
+import threading
 
 LOG = logging.getLogger(__name__)
 
@@ -44,6 +45,7 @@ class Orchestrator(object):
         # This is the dictionary which have the volume -> backend map entries
         # cache after doing an etcd volume read operation.
         self.volume_backends_map = {}
+        self.volume_backend_lock = threading.Lock()
 
     @staticmethod
     def _get_etcd_util(host_config):
@@ -87,12 +89,19 @@ class Orchestrator(object):
             # populate the volume backend map for caching
             LOG.debug(' Populating cache %s, %s '
                       % (volname, current_backend))
-            self.volume_backends_map[volname] = current_backend
+            with(self.volume_backend_lock):
+                self.volume_backends_map[volname] = current_backend
 
         return current_backend
 
     def volumedriver_remove(self, volname):
         backend = self.get_volume_backend_details(volname)
+        with(self.volume_backend_lock):
+            LOG.debug('Removing entry for volume %s from cache' %
+                      volname)
+            # This if condition is to make the test code happy
+            if volname in self.volume_backends_map:
+                del self.volume_backends_map[volname]
         return self._manager[backend].remove_volume(volname)
 
     def volumedriver_unmount(self, volname, vol_mount, mount_id):
