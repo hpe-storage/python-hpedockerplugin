@@ -125,7 +125,7 @@ Note:
 1. If the volume does not exist it will be created.
 2. Volume created through this command will always be via backend 'DEFAULT'.
 3. If the backend 'DEFAULT' is replication enabled and volume doesn't exist, this command will not succeed
-   Hence it is highly recommended that DEFAULT backend is not replication enabled.
+   Hence it is highly recommended that 'DEFAULT' backend is not replication enabled.
 
 The image used for mounting can be any image located on https://hub.docker.com/ or
 the local filesystem. See https://docs.docker.com/v1.8/userguide/dockerimages/
