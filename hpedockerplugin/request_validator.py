@@ -33,7 +33,7 @@ class RequestValidator(object):
             self._validate_rcg_opts
         operations_map['help'] = self._validate_help_opt
 
-        if 'Opts' in contents:
+        if 'Opts' in contents and contents['Opts']:
             self._validate_mutually_exclusive_ops(contents)
 
             validated = False
@@ -53,7 +53,7 @@ class RequestValidator(object):
     def _validate_mutually_exclusive_ops(contents):
         mutually_exclusive_ops = ['virtualCopyOf', 'cloneOf', 'importVol',
                                   'replicationGroup']
-        if 'Opts' in contents:
+        if 'Opts' in contents and contents['Opts']:
             received_opts = contents.get('Opts').keys()
             diff = set(mutually_exclusive_ops) - set(received_opts)
             if len(diff) < len(mutually_exclusive_ops) - 1:
@@ -65,7 +65,7 @@ class RequestValidator(object):
 
     @staticmethod
     def _validate_opts(operation, contents, valid_opts, mandatory_opts=None):
-        if 'Opts' in contents:
+        if 'Opts' in contents and contents['Opts']:
             received_opts = contents.get('Opts').keys()
 
             if mandatory_opts:
@@ -117,7 +117,7 @@ class RequestValidator(object):
         self._validate_opts("import volume", contents, valid_opts)
 
         # Replication enabled backend cannot be used for volume import
-        if 'Opts' in contents:
+        if 'Opts' in contents and contents['Opts']:
             backend_name = contents['Opts'].get('backend', None)
             if not backend_name:
                 backend_name = 'DEFAULT'
