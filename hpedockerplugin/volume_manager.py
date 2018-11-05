@@ -444,6 +444,9 @@ class VolumeManager(object):
             vol['snap_cpg'] = volume_detail_3par.get('snapCPG')
 
             if is_snap:
+                if vol['3par_vol_name'].startswith("dcv-"):
+                    vol['3par_vol_name'] = \
+                        str.replace(vol['3par_vol_name'], "dcv-", "dcs-", 1)
                 # managing a snapshot
                 if volume_detail_3par.get("expirationTime8601"):
                     expiration_hours = \
@@ -1970,8 +1973,7 @@ class VolumeManager(object):
         try:
             passphrase = self._etcd.get_backend_key(backend_name)
         except Exception as ex:
-            LOG.info("Using Plain Text")
-            LOG.exception('Ignoring exception: %s' % ex)
+            LOG.info("Using PLAIN TEXT for backend '%s'" % backend_name)
         else:
             passphrase = self.key_check(passphrase)
             src_bknd.hpe3par_password = \

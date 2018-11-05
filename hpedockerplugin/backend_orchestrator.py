@@ -29,6 +29,7 @@ import json
 from oslo_log import log as logging
 import hpedockerplugin.etcdutil as util
 import hpedockerplugin.volume_manager as mgr
+import threading
 
 import hpedockerplugin.exception as exception
 
@@ -43,6 +44,11 @@ class Orchestrator(object):
         self.etcd_util = self._get_etcd_util(host_config)
         self._manager = self.initialize_manager_objects(host_config,
                                                         backend_configs)
+
+        # This is the dictionary which have the volume -> backend map entries
+        # cache after doing an etcd volume read operation.
+        self.volume_backends_map = {}
+        self.volume_backend_lock = threading.Lock()
 
     @staticmethod
     def _get_etcd_util(host_config):
@@ -63,10 +69,13 @@ class Orchestrator(object):
                     config,
                     self.etcd_util,
                     backend_name)
+                LOG.info("Backend '%s' INITIALIZED!" % backend_name)
             except Exception as ex:
                 # lets log the error message and proceed with other backend
                 LOG.error('INITIALIZING backend: %s FAILED Error: %s'
                           % (backend_name, ex))
+            except:
+                LOG.error("UKNOWN ERROR OCCURED DURING initialization of backend: %s" % backend_name)
 
         if not manager_objs:
             msg = "ERROR: None of the backends could be initialized " \
@@ -74,17 +83,29 @@ class Orchestrator(object):
                   "in hpe.conf and retry enable."
             LOG.error(msg)
             raise exception.HPEPluginNotInitializedException(reason=msg)
-
+        else:
+            LOG.info("Backends INITIALIZED => %s" % manager_objs.keys())
 
         return manager_objs
 
     def get_volume_backend_details(self, volname):
         LOG.info('Getting details for volume : %s ' % (volname))
-        vol = self.etcd_util.get_vol_byname(volname)
-
         current_backend = DEFAULT_BACKEND_NAME
+
+        if volname in self.volume_backends_map:
+            current_backend = self.volume_backends_map[volname]
+            LOG.debug(' Returning the backend details from cache %s , %s'
+                      % (volname, current_backend))
+            return current_backend
+
+        vol = self.etcd_util.get_vol_byname(volname)
         if vol is not None and 'backend' in vol:
             current_backend = vol['backend']
+            # populate the volume backend map for caching
+            LOG.debug(' Populating cache %s, %s '
+                      % (volname, current_backend))
+            with(self.volume_backend_lock):
+                self.volume_backends_map[volname] = current_backend
 
         return current_backend
 
@@ -101,6 +122,12 @@ class Orchestrator(object):
         return json.dumps({u'Err': msg})
 
     def volumedriver_remove(self, volname):
+        with self.volume_backend_lock:
+            LOG.debug('Removing entry for volume %s from cache' %
+                      volname)
+            # This if condition is to make the test code happy
+            if volname in self.volume_backends_map:
+                del self.volume_backends_map[volname]
         return self._execute_request('remove_volume', volname)
 
     def volumedriver_unmount(self, volname, vol_mount, mount_id):
