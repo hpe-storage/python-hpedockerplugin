@@ -74,8 +74,6 @@ class Orchestrator(object):
                 # lets log the error message and proceed with other backend
                 LOG.error('INITIALIZING backend: %s FAILED Error: %s'
                           % (backend_name, ex))
-            except:
-                LOG.error("UKNOWN ERROR OCCURED DURING initialization of backend: %s" % backend_name)
 
         if not manager_objs:
             msg = "ERROR: None of the backends could be initialized " \
