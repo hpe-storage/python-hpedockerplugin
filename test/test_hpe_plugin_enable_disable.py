@@ -49,4 +49,3 @@ class HpeDockerMixedFcDefaultUnitTest(HpeDockerEnableDisableUnitTests,
     @property
     def protocol(self):
         return 'mixed_fc_default'
-

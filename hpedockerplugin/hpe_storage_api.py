@@ -381,16 +381,16 @@ class VolumePlugin(object):
             line = "=" * 54
             spaces = ' ' * 42
             resp = "\n%s\nNAME%sSTATUS\n%s\n" % (line, spaces, line)
-            failed_backends = set(all_backend_names) - \
-                              set(initialized_backend_names)
+            failed_backends = \
+                set(all_backend_names) - set(initialized_backend_names)
             printable_len = 45
             for backend in initialized_backend_names:
                 padding = (printable_len - len(backend)) * ' '
-                resp += "%s%s  OK\n" %(backend, padding)
+                resp += "%s%s  OK\n" % (backend, padding)
 
             for backend in failed_backends:
                 padding = (printable_len - len(backend)) * ' '
-                resp += "%s%s  FAILED\n" %(backend, padding)
+                resp += "%s%s  FAILED\n" % (backend, padding)
             resp += "%s\n" % line
             return json.dumps({u'Err': resp})
         else:
