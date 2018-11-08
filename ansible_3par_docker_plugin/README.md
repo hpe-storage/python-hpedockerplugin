@@ -11,8 +11,8 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
 * Deploys a 3-node Highly Available etcd cluster
 * Deploys the config files (iSCSI or FC) to support your environment
 * Installs the HPE 3PAR Docker Volume Plug-in (Containerized version)
-For Kubernetes/OpenShift, 
-* Deploys the HPE FlexVolume Drivers
+* For Kubernetes/OpenShift, 
+  * Deploys the HPE FlexVolume Drivers
 
 ### Prerequisites:
 
