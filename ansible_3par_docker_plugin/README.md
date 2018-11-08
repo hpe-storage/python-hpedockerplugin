@@ -1,10 +1,8 @@
 # Automated Installer for 3PAR Docker Volume plugin (Ansible)
 
-These are Ansible playbooks to automate the install of the HPE 3PAR Docker Volume Plug-in for Docker for use within Kubernetes/OpenShift environments.
+These are Ansible playbooks to automate the install of the HPE 3PAR Docker Volume Plug-in for Docker for use within standalone docker environment or Kubernetes/OpenShift environments.
 
-If you are not using Kubernetes or OpenShift, we recommend you take a look at the [Quick Start guide](/docs/quick_start_guide.md) for using the HPE 3PAR Docker Volume Plug-in in a standalone Docker environment.
-
->**NOTE:** The Ansible installer only supports RHEL/CentOS. If you are using another distribution of Linux, you will need to modify the playbooks to support your application manager (apt, etc.) and the pre-requisite packages.
+>**NOTE:** The Ansible installer only supports Ubuntu/RHEL/CentOS. If you are using another distribution of Linux, you will need to modify the playbooks to support your application manager (apt, etc.) and the pre-requisite packages.
 
 ### Getting Started
 
@@ -12,7 +10,8 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
 * Configure the Docker Services for the HPE 3PAR Docker Volume Plug-in
 * Deploys a 3-node Highly Available etcd cluster
 * Deploys the config files (iSCSI or FC) to support your environment
-* Installs the HPE 3PAR Docker Volume Plug-in (Containerized version) for Kubernetes/OpenShift
+* Installs the HPE 3PAR Docker Volume Plug-in (Containerized version)
+For Kubernetes/OpenShift, 
 * Deploys the HPE FlexVolume Drivers
 
 ### Prerequisites:
@@ -44,6 +43,8 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
         enforce_multipath
         ssh_hosts_key_file
     ```
+    
+    It is recommended that the properties file is encrypted using Ansible Vault.
 
   - Modify [hosts](/ansible_3par_docker_plugin/hosts) file to define your Master/Worker nodes as well as where you want to deploy your etcd cluster
 
