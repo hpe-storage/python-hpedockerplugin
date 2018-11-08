@@ -20,8 +20,30 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
   - Install Ansible 2.6 or above as per [Installation Guide](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
   - Login to 3PAR via SSH to create entry in /\<user>\/.ssh/known_hosts file
   > **Note:** Entries for the Master and Worker nodes should already exist within the /\<user>\/.ssh/known_hosts file from the OpenShift installation. If not, you will need to log into each of the Master and Worker nodes as well to prevent connection errors from Ansible.
-
-  - modify files/hpe.conf ([iSCSI](/ansible_3par_docker_plugin/files/iSCSI_hpe.conf) or [FC](/ansible_3par_docker_plugin/files/FC_hpe.conf)) based on your HPE 3PAR Storage array configuration. An example can be found here: [sample_hpe.conf](/ansible_3par_docker_plugin/files/sample_hpe.conf)
+  
+  - Modify [plugin configuration properties](/ansible_3par_docker_plugin/properties/plugin_configuration_properties.yml) based on your HPE 3PAR Storage array configuration. Some of the properties are mandatory and must be specified in the properties file while others are optional. 
+    - Mandatory properties
+    ```
+        host_etcd_port_number
+        hpedockerplugin_driver
+        hpe3par_ip
+        hpe3par_username
+        hpe3par_password
+        hpe3par_cpg
+        volume_plugin
+    ```
+    - Optional properties
+    ```
+        encryptor_key
+        logging
+        hpe3par_debug
+        suppress_requests_ssl_warning
+        hpe3par_snapcpg
+        hpe3par_iscsi_chap_enabled
+        use_multipath
+        enforce_multipath
+        ssh_hosts_key_file
+    ```
 
   - Modify [hosts](/ansible_3par_docker_plugin/hosts) file to define your Master/Worker nodes as well as where you want to deploy your etcd cluster
 
