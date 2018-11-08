@@ -54,13 +54,15 @@ Once the prerequisites are complete, run the following command:
 
 - Installation on standalone docker environment:
 ```
-$ ansible-playbook -i hosts install_standalone_hpe_3par_volume_driver.yml
+$ ansible-playbook -i hosts install_standalone_hpe_3par_volume_driver.yml --ask-vault-pass
 ```
 
 - Installation on Openshift/Kubernetes environment:
 ```
-$ ansible-playbook -i hosts install_hpe_3par_volume_driver.yml
+$ ansible-playbook -i hosts install_hpe_3par_volume_driver.yml --ask-vault-pass
 ```
+> **Note:** ```--ask-vault-pass``` is required only when the properties file is encrypted
+
 
 Once complete you will be ready to start using the HPE 3PAR Docker Volume Plug-in.
 
