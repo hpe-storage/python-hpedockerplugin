@@ -1973,6 +1973,7 @@ class VolumeManager(object):
         try:
             passphrase = self._etcd.get_backend_key(backend_name)
         except Exception as ex:
+            LOG.info('Exception occurred %s ' % ex)
             LOG.info("Using PLAIN TEXT for backend '%s'" % backend_name)
         else:
             passphrase = self.key_check(passphrase)
