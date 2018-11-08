@@ -55,8 +55,8 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
         ssh_hosts_key_file
     ```
     
-  ```volume_plugin``` expects the docker volume pluginn image name
-  ```encryptor_key``` expects an encryption key to encrypt the array passwords in hpe.conf file
+      - ```volume_plugin``` expects the docker volume plugin image name
+      - ```encryptor_key``` expects an encryption key to encrypt the array passwords in hpe.conf file
     
   - It is recommended that the properties file is [encrypted using Ansible Vault](/ansible_3par_docker_plugin/encrypt_properties.md).
 
