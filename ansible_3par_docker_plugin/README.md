@@ -8,10 +8,12 @@ These are Ansible playbooks to automate the install of the HPE 3PAR Docker Volum
 
 These playbooks perform the following tasks on the Master/Worker nodes as defined in the Ansible [hosts](/ansible_3par_docker_plugin/hosts) file.
 * Configure the Docker Services for the HPE 3PAR Docker Volume Plug-in
-* Deploys a 3-node Highly Available etcd cluster
 * Deploys the config files (iSCSI or FC) to support your environment
 * Installs the HPE 3PAR Docker Volume Plug-in (Containerized version)
+* For standalone docker environment,
+  * Deploys an etcd cluster
 * For Kubernetes/OpenShift, 
+  * Deploys a 3-node Highly Available etcd cluster
   * Deploys the HPE FlexVolume Drivers
 
 ### Prerequisites:
@@ -31,6 +33,7 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
         hpe3par_cpg
         volume_plugin
     ```
+    
     - Optional properties
     ```
         encryptor_key
@@ -44,7 +47,10 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
         ssh_hosts_key_file
     ```
     
-    It is recommended that the properties file is [encrypted using Ansible Vault](/ansible_3par_docker_plugin/encrypt_properties.md).
+  ```volume_plugin``` expects the docker volume pluginn image name
+  ```encryptor_key``` expects an encryption key to encrypt the array passwords in hpe.conf file
+    
+  - It is recommended that the properties file is [encrypted using Ansible Vault](/ansible_3par_docker_plugin/encrypt_properties.md).
 
   - Modify [hosts](/ansible_3par_docker_plugin/hosts) file to define your Master/Worker nodes as well as where you want to deploy your etcd cluster
 
@@ -65,6 +71,8 @@ $ ansible-playbook -i hosts install_hpe_3par_volume_driver.yml --ask-vault-pass
 
 
 Once complete you will be ready to start using the HPE 3PAR Docker Volume Plug-in.
+
+Please refer to [Usage Guide](/docs/usage.md) on how to perform volume related actions on the standalone docker environment.
 
 Please refer to the Kubernetes/OpenShift section in the [Usage Guide](/docs/usage.md#k8_usage) on how to create and deploy some sample SCs, PVCs, and Pods with persistent volumes using the HPE 3PAR Docker Volume Plug-in.
 
