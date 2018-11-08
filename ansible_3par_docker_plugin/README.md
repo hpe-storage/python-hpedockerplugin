@@ -17,8 +17,16 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
   * Deploys the HPE FlexVolume Drivers
 
 ### Prerequisites:
-
   - Install Ansible 2.6 or above as per [Installation Guide](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
+  - Install sshpass on the ansible host
+      - On RHEL/Centos
+        ```
+         yum install sshpass
+        ```
+      - On Ubuntu
+        ```
+         apt-get install sshpass
+        ```
   - Login to 3PAR via SSH to create entry in /\<user>\/.ssh/known_hosts file
   > **Note:** Entries for the Master and Worker nodes should already exist within the /\<user>\/.ssh/known_hosts file from the OpenShift installation. If not, you will need to log into each of the Master and Worker nodes as well to prevent connection errors from Ansible.
   
