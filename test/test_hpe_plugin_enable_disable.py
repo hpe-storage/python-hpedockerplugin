@@ -31,6 +31,11 @@ class HpeDockerEnableDisableUnitTests(object):
         test = enableplugin_tester.TestEnablePlugin()
         test.run_test(self)
 
+    @tc_banner_decorator
+    def test_plugin_init_fails(self):
+        test = enableplugin_tester.TestPluginInitializationFails()
+        test.run_test(self)
+
 
 class HpeDockerMixedIscsiDefaultUnitTest(HpeDockerEnableDisableUnitTests,
                                          testtools.TestCase):

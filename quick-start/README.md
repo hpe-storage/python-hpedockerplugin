@@ -180,7 +180,7 @@ or `` /var/log/messages ``
 - For upgrading the plugin from older version 2.0 or 2.0.2 to 2.1 user needs to unmount all the volumes and follow the standard
  upgrade procedure described in docker guide. 
  
-- Volumes created using older plugins (2.0.2 or below) do not have snp_cpg associated with them, hence when the plugin is upgraded to      2.1 and user wants to perform clone/snapshot operations on these old volumes, he/she must set the snap_cpg for the
+- Volumes created using older plugins (2.0.2 or below) do not have snap_cpg associated with them, hence when the plugin is upgraded to      2.1 and user wants to perform clone/snapshot operations on these old volumes, he/she must set the snap_cpg for the
    corresponding volumes using 3par cli or any tool before performing clone/snapshot operations.
 
 - While inspecting a snapshot, its provisioning field is set to that of parent volume's provisioning type. In 3PAR however, it is shown as 'snp'.

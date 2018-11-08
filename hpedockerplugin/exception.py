@@ -175,7 +175,7 @@ class HPEPluginStartPluginException(PluginException):
 
 
 class HPEPluginNotInitializedException(PluginException):
-    message = _("HPE Docker Volume plugin not ready.")
+    message = _("HPE Docker Volume plugin not ready: %(reason)s")
 
 
 class HPEPluginCreateException(PluginException):

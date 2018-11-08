@@ -126,3 +126,9 @@ Create Snapshot Schedule:
 -o retHrs=x                     This option is not mandatory. x is an integer which indicates number of hours for which snapshot created via
                                 snapshot schedule will be retained.
 -o mountConflictDelay=x 	This option is ignored for this operation. It is present so that it can work with orchestrators like K8S and Openshift.
+
+
+---------------------------------
+Display available backends:
+---------------------------------
+ -o help=backends               This option displays list of available backends along with their status

@@ -1973,8 +1973,8 @@ class VolumeManager(object):
         try:
             passphrase = self._etcd.get_backend_key(backend_name)
         except Exception as ex:
-            LOG.info("Using Plain Text")
-            LOG.exception('Ignoring exception: %s' % ex)
+            LOG.info('Exception occurred %s ' % ex)
+            LOG.info("Using PLAIN TEXT for backend '%s'" % backend_name)
         else:
             passphrase = self.key_check(passphrase)
             src_bknd.hpe3par_password = \

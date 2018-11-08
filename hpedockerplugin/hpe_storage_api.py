@@ -210,12 +210,7 @@ class VolumePlugin(object):
                                                          current_backend)
 
             if 'help' in contents['Opts']:
-                create_help_path = "./config/create_help.txt"
-                create_help_file = open(create_help_path, "r")
-                create_help_content = create_help_file.read()
-                create_help_file.close()
-                LOG.error(create_help_content)
-                return json.dumps({u"Err": create_help_content})
+                return self._process_help(contents['Opts']['help'])
 
             # Populating the values
             if ('size' in contents['Opts'] and
@@ -377,6 +372,34 @@ class VolumePlugin(object):
                                                      cpg, snap_cpg,
                                                      current_backend,
                                                      rcg_name)
+
+    def _process_help(self, help):
+        LOG.info("Working on help content generation...")
+        if help == 'backends':
+            all_backend_names = self._backend_configs.keys()
+            initialized_backend_names = self.orchestrator._manager.keys()
+            line = "=" * 54
+            spaces = ' ' * 42
+            resp = "\n%s\nNAME%sSTATUS\n%s\n" % (line, spaces, line)
+            failed_backends = \
+                set(all_backend_names) - set(initialized_backend_names)
+            printable_len = 45
+            for backend in initialized_backend_names:
+                padding = (printable_len - len(backend)) * ' '
+                resp += "%s%s  OK\n" % (backend, padding)
+
+            for backend in failed_backends:
+                padding = (printable_len - len(backend)) * ' '
+                resp += "%s%s  FAILED\n" % (backend, padding)
+            resp += "%s\n" % line
+            return json.dumps({u'Err': resp})
+        else:
+            create_help_path = "./config/create_help.txt"
+            create_help_file = open(create_help_path, "r")
+            create_help_content = create_help_file.read()
+            create_help_file.close()
+            LOG.error(create_help_content)
+            return json.dumps({u"Err": create_help_content})
 
     def _validate_rcg_params(self, rcg_name, backend_name):
         LOG.info("Validating RCG: %s, backend name: %s..." % (rcg_name,
