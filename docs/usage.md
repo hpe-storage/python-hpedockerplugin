@@ -56,6 +56,12 @@ Note -- 'vvset_name' should be present in 3par
 docker volume create -d hpe --name <target_vol_name> -o importVol=<3par_volume|3par_snapshot>
 ```
 
+#### Displaying help
+
+```
+docker volume create -d hpe -o help
+```
+
 #### Displaying available backends with their status
 
 ```
