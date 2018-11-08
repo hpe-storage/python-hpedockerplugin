@@ -44,7 +44,7 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
         ssh_hosts_key_file
     ```
     
-    It is recommended that the properties file is encrypted using Ansible Vault.
+    It is recommended that the properties file is [encrypted using Ansible Vault](/ansible_3par_docker_plugin/encrypt_properties.md).
 
   - Modify [hosts](/ansible_3par_docker_plugin/hosts) file to define your Master/Worker nodes as well as where you want to deploy your etcd cluster
 
