@@ -19,11 +19,11 @@ RUN apk add --no-cache --update \
     util-linux \
     sg3_utils\
     eudev \
-    libssl1.0 \
-	sudo \
+    openssl-dev \
+        sudo \
  && apk update \
  && apk upgrade \
- && apk add e2fsprogs ca-certificates \ 
+ && apk add e2fsprogs ca-certificates \
  && pip install --upgrade pip \
     setuptools \
  && rm -rf /var/cache/apk/*
