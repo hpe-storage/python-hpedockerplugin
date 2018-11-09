@@ -40,9 +40,8 @@ RUN apk add --virtual /tmp/.temp --no-cache --update \
     libffi-dev \
     linux-headers \
     make \
-    libssl1.0 \
-	openssh-client \
-	openssl-dev \
+    openssh-client \
+    openssl-dev \
     python3-dev \
 
 # build and install hpedockerplugin
