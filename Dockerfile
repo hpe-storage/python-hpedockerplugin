@@ -1,4 +1,4 @@
-FROM alpine:edge
+FROM alpine:3.8
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONPATH=${HOME}/python-hpedockerplugin:/root/python-hpedockerplugin
