@@ -16,7 +16,6 @@
   - name: delete requests library
     shell: rm -rf /usr/lib/python2.7/site-packages/requests*
     become: yes
-    warn: False
 
   - name: install docker
     pip:

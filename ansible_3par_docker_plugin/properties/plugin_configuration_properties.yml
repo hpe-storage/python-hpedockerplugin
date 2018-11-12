@@ -3,10 +3,10 @@ INVENTORY:
     # Set of mandatory properties
     host_etcd_port_number: 23790
     hpedockerplugin_driver: hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver
-    hpe3par_ip: 15.212.192.251
+    hpe3par_ip: 192.168.67.7
     hpe3par_username: 3paradm
     hpe3par_password: 3pardata
-    hpe3par_cpg: FC_r1
+    hpe3par_cpg: SHASHI-PRIM
 
     # Required only in DEFAULT backend
     volume_plugin: dockerciuser/legacyvolumeplugin:plugin_v2
@@ -22,19 +22,31 @@ INVENTORY:
     #hpe3par_iscsi_chap_enabled: True
     #use_multipath: False
     #enforce_multipath: False
+    replication_device:
+      backend_id: CSSOS-SSA05
+      replication_mode: synchronous
+      cpg_map: "SHASHI-PRIM:SHASHI-SEC"
+      snap_cpg_map: "SHASHI-PRIM-SNAP:SHASHI-SEC-SNAP"
+      hpe3par_ip: 192.168.67.5
+      hpe3par_username: 3paradm
+      hpe3par_password: 3pardata
 
   3PAR1:
     # Set of mandatory properties
     host_etcd_port_number: 23790
-    hpedockerplugin_driver: hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver
-    hpe3par_ip: 15.212.192.252
+    hpedockerplugin_driver: hpedockerplugin.hpe.hpe_3par_fc.HPE3PARFCDriver
+    hpe3par_ip: 192.168.67.5
     hpe3par_username: 3paradm
     hpe3par_password: 3pardata
-    hpe3par_cpg: FC_r1
+    hpe3par_cpg: SHASHI-SEC
+
+    # Required only in DEFAULT backend
+    volume_plugin: dockerciuser/legacyvolumeplugin:plugin_v2
 
     # Set of optional parameters
     # If encryptor key is set, the passwords in hpe.conf would be encrypted
     encryptor_key: second_key
+    #ssh_hosts_key_file: '/root/.ssh/known_hosts'
     logging: DEBUG
     #hpe3par_debug: True
     #suppress_requests_ssl_warning: True
@@ -42,5 +54,4 @@ INVENTORY:
     #hpe3par_iscsi_chap_enabled: True
     #use_multipath: False
     #enforce_multipath: False
-    #ssh_hosts_key_file: '/root/.ssh/known_hosts'
 

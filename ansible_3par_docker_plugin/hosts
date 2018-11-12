@@ -2,25 +2,25 @@
 #10.10.1.60
 #10.10.1.61
 #10.10.1.62
-15.213.67.74 ansible_user=root ansible_ssh_pass=nomani
-15.213.67.75 ansible_user=root ansible_ssh_pass=nomani
-15.213.67.76 ansible_user=root ansible_ssh_pass=nomani
+192.168.120.2 ansible_user=root ansible_ssh_pass=nomani
+192.168.120.3 ansible_user=root ansible_ssh_pass=nomani
+192.168.120.4 ansible_user=root ansible_ssh_pass=nomani
 
 [masters]
 #10.10.1.60
-15.213.67.74 ansible_user=root ansible_ssh_pass=nomani
+192.168.120.2 ansible_user=root ansible_ssh_pass=nomani
 
 
 [workers]
 #10.10.1.61
 #10.10.1.62
-15.213.67.75 ansible_user=root ansible_ssh_pass=nomani
-15.213.67.76 ansible_user=root ansible_ssh_pass=nomani
+192.168.120.3 ansible_user=root ansible_ssh_pass=nomani
+192.168.120.4 ansible_user=root ansible_ssh_pass=nomani
 
 [etcd]
 #10.10.1.60
 #10.10.1.61
 #10.10.1.62
-15.213.67.74 ansible_user=root ansible_ssh_pass=nomani
-15.213.67.75 ansible_user=root ansible_ssh_pass=nomani
-15.213.67.76 ansible_user=root ansible_ssh_pass=nomani
+192.168.120.2 ansible_user=root ansible_ssh_pass=nomani
+192.168.120.3 ansible_user=root ansible_ssh_pass=nomani
+192.168.120.4 ansible_user=root ansible_ssh_pass=nomani
