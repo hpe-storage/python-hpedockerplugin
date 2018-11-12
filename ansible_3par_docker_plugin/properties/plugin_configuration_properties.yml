@@ -40,9 +40,6 @@ INVENTORY:
     hpe3par_password: 3pardata
     hpe3par_cpg: SHASHI-SEC
 
-    # Required only in DEFAULT backend
-    volume_plugin: dockerciuser/legacyvolumeplugin:plugin_v2
-
     # Set of optional parameters
     # If encryptor key is set, the passwords in hpe.conf would be encrypted
     encryptor_key: second_key
