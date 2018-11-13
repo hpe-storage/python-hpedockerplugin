@@ -42,7 +42,7 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
       | ```hpe3par_iscsi_ips```  | No  |No default value | Comma separated iscsi port IPs (only required if driver is ISCSI based) |
       | ```use_multipath```  | No  | ```False``` | Mutltipath toggle |
       | ```enforce_multipath```  | No  | ```False``` | Forcefully enforce multipath |
-      | ```ssh_hosts_key_file```  | No  | '''~/.ssh/id_rsa.pub''' | Path to hosts key file |
+      | ```ssh_hosts_key_file```  | No  | ```~/.ssh/id_rsa.pub``` | Path to hosts key file |
       | ```quorum_witness_ip```  | No  | No default value | Quorum witness IP |
       | ```mount_prefix```  | No  | No default value | Alternate mount path prefix |
       | ```replication_device```  | No  | No default value | Replication backend properties |
