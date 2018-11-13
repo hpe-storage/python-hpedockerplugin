@@ -36,9 +36,10 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
       | ```encryptor_key```  | No  | No defualt value | Encryption key string for 3PAR password |
       | ```logging```  | No  | ```INFO``` | Log level |
       | ```hpe3par_debug```  | No  | No defualt value | 3PAR log level |
-      | ```suppress_requests_ssl_warning```  | ```False```  | True | Suppress request SSL warnings |
+      | ```suppress_requests_ssl_warning```  | No  | ```True``` | Suppress request SSL warnings |
       | ```hpe3par_snapcpg```  | No  | ```hpe3par_cpg``` | Snapshot CPG |
       | ```hpe3par_iscsi_chap_enabled```  | No  | ```False``` | ISCSI chap toggle |
+      | ```hpe3par_iscsi_ips```  | No  |No default value | Comma separated iscsi port IPs (only required if driver is ISCSI based) |
       | ```use_multipath```  | No  | ```False``` | Mutltipath toggle |
       | ```enforce_multipath```  | No  | ```False``` | Forcefully enforce multipath |
       | ```ssh_hosts_key_file```  | No  | '''~/.ssh/id_rsa.pub''' | Path to hosts key file |
