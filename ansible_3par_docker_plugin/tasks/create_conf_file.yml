@@ -180,14 +180,6 @@
     register: replication_device_encrypted_passwords
     when: INVENTORY[item['item'][0]]['replication_device'] is defined and INVENTORY[item['item'][0]]['encryptor_key'] is defined
 
-  - name: Get the replication_device_final_passwords
-    debug:
-      msg: "{{ replication_device_unencrypted_passwords }}"
-
-  - name: Get the replication_device_final_passwords
-    debug:
-      msg: "{{ replication_device_encrypted_passwords }}"
-
   - name: Populate the replication device information
     ini_file:
       path: /etc/hpedockerplugin/hpe.conf
