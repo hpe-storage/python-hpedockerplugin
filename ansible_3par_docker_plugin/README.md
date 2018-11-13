@@ -23,31 +23,28 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
   > **Note:** Entries for the Master and Worker nodes should already exist within the /\<user>\/.ssh/known_hosts file from the OpenShift installation. If not, you will need to log into each of the Master and Worker nodes as well to prevent connection errors from Ansible.
   
   - Modify [plugin configuration properties](/ansible_3par_docker_plugin/properties/plugin_configuration_properties.yml) based on your HPE 3PAR Storage array configuration. Some of the properties are mandatory and must be specified in the properties file while others are optional. 
-    - Mandatory properties
-    
-        - ```host_etcd_port_number``` Etcd port number
-        - ```hpedockerplugin_driver``` ISCSI/FC driver (hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver|hpedockerplugin.hpe.hpe_3par_fc.HPE3PARFCDriver)
-        - ```hpe3par_ip``` IP address of 3PAR array
-        - ```hpe3par_username``` 3PAR username
-        - ```hpe3par_password``` 3PAR password
-        - ```hpe3par_cpg``` Primary user CPG
-        - ```volume_plugin``` Name of the docker volume image (onyl required with DEFAULT backend)
-    
-    
-    - Optional properties
-    
-        - ```encryptor_key``` Encryption key string for 3PAR password
-        - ```logging``` Log level (True|False)
-        - ```hpe3par_debug``` Log level (True|False)
-        - ```suppress_requests_ssl_warning``` True|False
-        - ```hpe3par_snapcpg``` Snapshot CPG
-        - ```hpe3par_iscsi_chap_enabled``` True|False
-        - ```use_multipath``` True|False
-        - ```enforce_multipath``` True|False
-        - ```ssh_hosts_key_file``` Path yo hosts key file
-        - ```quorum_witness_ip``` Quorum witness IP
-        - ```mount_prefix``` Mount prefix
-        - ```replication_device``` Replication backend properties
+  
+      | Property  | Mandatory | Default Value | Description |
+      | ------------- | ------------- | ------------- | ------------- |
+      | ```host_etcd_port_number```  | Yes  | No defualt value | Etcd port number |
+      | ```hpedockerplugin_driver```  | Yes  | No defualt value  | ISCSI/FC driver  (hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver/hpedockerplugin.hpe.hpe_3par_fc.HPE3PARFCDriver) |
+      | ```hpe3par_ip```  | Yes  | No defualt value | IP address of 3PAR array |
+      | ```hpe3par_username```  | Yes  | No defualt value | 3PAR username |
+      | ```hpe3par_password```  | Yes  | No defualt value | 3PAR password |
+      | ```hpe3par_cpg```  | Yes  | No defualt value | Primary user CPG |
+      | ```volume_plugin```  | Yes  | No defualt value | Name of the docker volume image (only required with DEFAULT backend) |
+      | ```encryptor_key```  | No  | No defualt value | Encryption key string for 3PAR password |
+      | ```logging```  | No  | ```INFO``` | Log level |
+      | ```hpe3par_debug```  | No  | No defualt value | 3PAR log level |
+      | ```suppress_requests_ssl_warning```  | ```False```  | True | Suppress request SSL warnings |
+      | ```hpe3par_snapcpg```  | No  | ```hpe3par_cpg``` | Snapshot CPG |
+      | ```hpe3par_iscsi_chap_enabled```  | No  | ```False``` | ISCSI chap toggle |
+      | ```use_multipath```  | No  | ```False``` | Mutltipath toggle |
+      | ```enforce_multipath```  | No  | ```False``` | Forcefully enforce multipath |
+      | ```ssh_hosts_key_file```  | No  | '''~/.ssh/id_rsa.pub''' | Path to hosts key file |
+      | ```quorum_witness_ip```  | No  | No default value | Quorum witness IP |
+      | ```mount_prefix```  | No  | No default value | Alternate mount path prefix |
+      | ```replication_device```  | No  | No default value | Replication backend properties |
     
   - It is recommended that the properties file is [encrypted using Ansible Vault](/ansible_3par_docker_plugin/encrypt_properties.md).
 
