@@ -146,7 +146,7 @@ class VolumeManager(object):
             # if 'hpe3par_snapcpg' is NOT given in hpe.conf this should be
             # default to empty list & populate volume's snap_cpg later with
             # value given with '-o cpg'
-            config.hpe3par_snapcpg = []
+            config.hpe3par_snapcpg = hpeconf.hpe3par_cpg
 
         LOG.info("Got source backend configuration!")
         return config
