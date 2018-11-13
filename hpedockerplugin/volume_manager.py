@@ -336,7 +336,8 @@ class VolumeManager(object):
             return True
         return volume.DEFAULT_COMPRESSION_VAL
 
-    def manage_existing(self, volname, existing_ref, backend='DEFAULT'):
+    def manage_existing(self, volname, existing_ref, backend='DEFAULT',
+                        manage_opts=None):
         LOG.info('Managing a %(vol)s' % {'vol': existing_ref})
 
         # NOTE: Since Docker passes user supplied names and not a unique
@@ -357,6 +358,7 @@ class VolumeManager(object):
         vol['backend'] = backend
         vol['fsOwner'] = None
         vol['fsMode'] = None
+        vol['Options'] = manage_opts
 
         parent_vol = ""
         try:
@@ -498,8 +500,9 @@ class VolumeManager(object):
     @synchronization.synchronized_volume('{src_vol_name}')
     def clone_volume(self, src_vol_name, clone_name,
                      size=None, cpg=None, snap_cpg=None,
-                     current_backend='DEFAULT'):
+                     current_backend='DEFAULT', clone_opts=None):
         # Check if volume is present in database
+        LOG.info('hpedockerplugin : clone options 5 %s ' % clone_opts)
         src_vol = self._etcd.get_vol_byname(src_vol_name)
         mnt_conf_delay = volume.DEFAULT_MOUNT_CONFLICT_DELAY
         if src_vol is None:
@@ -555,7 +558,7 @@ class VolumeManager(object):
             self._etcd.save_vol(src_vol)
 
         return self._clone_volume(clone_name, src_vol, size, cpg,
-                                  snap_cpg, current_backend)
+                                  snap_cpg, current_backend, clone_opts)
 
     def _create_snapshot_record(self, snap_vol, snapshot_name, undo_steps):
         self._etcd.save_vol(snap_vol)
@@ -852,7 +855,7 @@ class VolumeManager(object):
 
     @synchronization.synchronized_volume('{clone_name}')
     def _clone_volume(self, clone_name, src_vol, size, cpg,
-                      snap_cpg, current_backend):
+                      snap_cpg, current_backend, clone_opts):
 
         # Create clone volume specification
         undo_steps = []
@@ -875,6 +878,8 @@ class VolumeManager(object):
             clone_vol['fsOwner'] = src_vol.get('fsOwner')
             clone_vol['fsMode'] = src_vol.get('fsMode')
             clone_vol['3par_vol_name'] = bkend_clone_name
+            if clone_opts is not None:
+                clone_vol['Options'] = clone_opts
 
             self._etcd.save_vol(clone_vol)
 
@@ -1114,6 +1119,9 @@ class VolumeManager(object):
                 vol_detail['3par_vol_name'] = \
                     utils.get_3par_name(volinfo['id'],
                                         False)
+
+            if 'Options' in volinfo:
+                vol_detail['Options'] = volinfo['Options']
 
             if volinfo.get('rcg_info'):
                 vol_detail['secondary_cpg'] = \
