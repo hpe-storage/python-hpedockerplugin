@@ -234,11 +234,11 @@ EOF
 | StorageClass Options | Type    | Parameters                                 | Example                          |
 |----------------------|---------|--------------------------------------------|----------------------------------|
 | size                 | integer | -                                          | size: "10"                       |
-| provisioning         | String  | thin, thick                                | provisioning: thin               |
-| flash-cache          | String  | enable, disable                            | flash-cache: enable              |
-| compression          | boolean | true, false                                | compression: true                |
+| provisioning         | String  | thin, thick                                | provisioning: "thin"             |
+| flash-cache          | String  | true, false                                | flash-cache: "true"              |
+| compression          | boolean | true, false                                | compression: "true"              |
 | MountConflictDelay   | integer | -                                          | MountConflictDelay: "30"         |
-| qos_name             | String  | vvset name                                 | qos_name: "<vvset_name>"         |
+| qos-name             | String  | vvset name                                 | qos-name: "<vvset_name>"         |
 | cloneOf              | String  | volume name                                | cloneOf: "<volume_name>"         |
 | virtualCopyOf        | String  | volume name                                | virtualCopyOf: "<volume_name>"   |
 | expirationHours      | integer | option of virtualCopyOf                    | expirationHours: "10"            |
