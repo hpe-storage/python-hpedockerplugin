@@ -20,7 +20,7 @@ RUN apk add --no-cache --update \
     sg3_utils\
     eudev \
     libssl1.1 \
-	sudo \
+    sudo \
  && apk update \
  && apk upgrade \
  && apk add e2fsprogs ca-certificates \ 
@@ -41,8 +41,8 @@ RUN apk add --virtual /tmp/.temp --no-cache --update \
     linux-headers \
     make \
     libssl1.1 \
-	openssh-client \
-	openssl-dev \
+    openssh-client \
+    openssl-dev \
     python3-dev \
 
 # build and install hpedockerplugin
