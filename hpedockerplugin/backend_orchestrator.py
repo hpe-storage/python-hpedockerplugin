@@ -103,6 +103,11 @@ class Orchestrator(object):
         return current_backend
 
     def __execute_request(self, backend, request, volname, *args, **kwargs):
+        LOG.info('WILLIAM: %s ' % self._manager)
+        LOG.info('WILLIAM backend : %s ' % backend)
+        LOG.info('WILLIAM args %s ' % str(args))
+        LOG.info('WILLIAM kwargs is %s ' % str(kwargs))
+        
         volume_mgr = self._manager.get(backend)
         if volume_mgr:
             # populate the volume backend map for caching
@@ -210,8 +215,13 @@ class Orchestrator(object):
 
     def manage_existing(self, volname, existing_ref, backend, manage_opts):
         return self.__execute_request(backend, 'manage_existing',
+<<<<<<< ed36dcfcfba309dac9e4c7e9176f41e0094d73a6
                                       volname, existing_ref,
                                       backend, manage_opts)
+=======
+                                      volname, existing_ref, backend,
+                                      manage_opts)
+>>>>>>> Rebase with latest code
 
     def volumedriver_list(self):
         # Use the first volume manager list volumes
