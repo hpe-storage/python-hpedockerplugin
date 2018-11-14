@@ -207,7 +207,8 @@ class VolumePlugin(object):
                 existing_ref = str(contents['Opts']['importVol'])
                 return self.orchestrator.manage_existing(volname,
                                                          existing_ref,
-                                                         current_backend)
+                                                         current_backend,
+                                                         contents['Opts'])
 
             if 'help' in contents['Opts']:
                 return self._process_help(contents['Opts']['help'])
@@ -336,7 +337,10 @@ class VolumePlugin(object):
                                                          mount_conflict_delay,
                                                          opts)
             elif 'cloneOf' in contents['Opts']:
-                return self.volumedriver_clone_volume(name, opts)
+                LOG.info('hpe_storage_api: clone options : %s' %
+                         contents['Opts'])
+                return self.volumedriver_clone_volume(name,
+                                                      contents['Opts'])
             for i in input_list:
                 if i in valid_snap_schedule_opts:
                     if 'virtualCopyOf' not in input_list:
@@ -480,7 +484,7 @@ class VolumePlugin(object):
             LOG.error(msg)
             raise exception.HPEPluginCreateException(reason=msg)
 
-    def volumedriver_clone_volume(self, name, opts=None):
+    def volumedriver_clone_volume(self, name, clone_opts=None):
         # Repeating the validation here in anticipation that when
         # actual REST call for clone is added, this
         # function will have minimal impact
@@ -505,9 +509,11 @@ class VolumePlugin(object):
 
         src_vol_name = str(contents['Opts']['cloneOf'])
         clone_name = contents['Name']
+        LOG.info('hpe_storage_api - volumedriver_clone_volume '
+                 'clone_options 1 : %s ' % clone_opts)
 
         return self.orchestrator.clone_volume(src_vol_name, clone_name, size,
-                                              cpg, snap_cpg)
+                                              cpg, snap_cpg, clone_opts)
 
     def volumedriver_create_snapshot(self, name, mount_conflict_delay,
                                      opts=None):

@@ -103,6 +103,11 @@ class Orchestrator(object):
         return current_backend
 
     def __execute_request(self, backend, request, volname, *args, **kwargs):
+        LOG.info(' Operating on backend : %s on volume %s '
+                 % (backend, volname))
+        LOG.info(' Request %s ' % request)
+        LOG.info(' with  args %s ' % str(args))
+        LOG.info(' with  kwargs is %s ' % str(kwargs))
         volume_mgr = self._manager.get(backend)
         if volume_mgr:
             # populate the volume backend map for caching
@@ -165,13 +170,16 @@ class Orchestrator(object):
 
             return ret_val
 
-    def clone_volume(self, src_vol_name, clone_name, size, cpg, snap_cpg):
+    def clone_volume(self, src_vol_name, clone_name, size, cpg,
+                     snap_cpg, clone_options):
         # Imran: Redundant call to get_volume_backend_details
         # Why is backend being passed to clone_volume when it can be
         # retrieved from src_vol or use DEFAULT if src_vol doesn't have it
         backend = self.get_volume_backend_details(src_vol_name)
+        LOG.info('orchestrator clone_opts : %s' % (clone_options))
         return self._execute_request('clone_volume', src_vol_name, clone_name,
-                                     size, cpg, snap_cpg, backend)
+                                     size, cpg, snap_cpg, backend,
+                                     clone_options)
 
     def create_snapshot(self, src_vol_name, schedName, snapshot_name,
                         snapPrefix, expiration_hrs, exphrs, retention_hrs,
@@ -205,9 +213,10 @@ class Orchestrator(object):
         return self._execute_request('get_volume_snap_details', volname,
                                      snapname, qualified_name)
 
-    def manage_existing(self, volname, existing_ref, backend):
+    def manage_existing(self, volname, existing_ref, backend, manage_opts):
         return self.__execute_request(backend, 'manage_existing',
-                                      volname, existing_ref)
+                                      volname, existing_ref,
+                                      backend, manage_opts)
 
     def volumedriver_list(self):
         # Use the first volume manager list volumes
