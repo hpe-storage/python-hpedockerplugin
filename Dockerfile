@@ -19,7 +19,7 @@ RUN apk add --no-cache --update \
     util-linux \
     sg3_utils\
     eudev \
-    libssl1.0 \
+    libssl1.1 \
 	sudo \
  && apk update \
  && apk upgrade \
@@ -40,7 +40,7 @@ RUN apk add --virtual /tmp/.temp --no-cache --update \
     libffi-dev \
     linux-headers \
     make \
-    libssl1.0 \
+    libssl1.1 \
 	openssh-client \
 	openssl-dev \
     python3-dev \
