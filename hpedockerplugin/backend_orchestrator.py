@@ -206,7 +206,7 @@ class Orchestrator(object):
                                      snapname, qualified_name)
 
     def manage_existing(self, volname, existing_ref, backend):
-        return self.__execute_request(backend,'manage_existing',
+        return self.__execute_request(backend, 'manage_existing',
                                       volname, existing_ref)
 
     def volumedriver_list(self):
