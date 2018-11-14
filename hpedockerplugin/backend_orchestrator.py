@@ -103,11 +103,11 @@ class Orchestrator(object):
         return current_backend
 
     def __execute_request(self, backend, request, volname, *args, **kwargs):
-        LOG.info('WILLIAM: %s ' % self._manager)
-        LOG.info('WILLIAM backend : %s ' % backend)
-        LOG.info('WILLIAM args %s ' % str(args))
-        LOG.info('WILLIAM kwargs is %s ' % str(kwargs))
-        
+        LOG.info(' Operating on backend : %s on volume %s '
+                 % (backend, volname))
+        LOG.info(' Request %s ' % request)
+        LOG.info(' with  args %s ' % str(args))
+        LOG.info(' with  kwargs is %s ' % str(kwargs))
         volume_mgr = self._manager.get(backend)
         if volume_mgr:
             # populate the volume backend map for caching
