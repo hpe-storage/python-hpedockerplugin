@@ -25,6 +25,7 @@ class TestCreateSnapshotDefault(CreateSnapshotUnitTest):
         mock_etcd = self.mock_objects['mock_etcd']
         mock_etcd.get_vol_byname.side_effect = [
             data.volume,
+            data.volume,
             None,
             copy.deepcopy(data.volume),
             None
@@ -50,6 +51,7 @@ class TestCreateSnapshotWithExpiryRetentionTimes(CreateSnapshotUnitTest):
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
         mock_etcd.get_vol_byname.side_effect = [
+            data.volume,
             data.volume,
             None,
             copy.deepcopy(data.volume)
@@ -123,6 +125,7 @@ class TestCreateSnapshotEtcdSaveFails(CreateSnapshotUnitTest):
         mock_etcd = self.mock_objects['mock_etcd']
         mock_etcd.get_vol_byname.side_effect = [
             data.volume,
+            data.volume,
             None,
             copy.deepcopy(data.volume)
         ]
@@ -156,6 +159,7 @@ class TestCreateSnpSchedule(CreateSnapshotUnitTest):
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
         mock_etcd.get_vol_byname.side_effect = [
+            data.volume,
             data.volume,
             None,
             copy.deepcopy(data.volume)
