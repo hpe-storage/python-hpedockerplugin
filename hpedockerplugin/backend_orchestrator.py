@@ -215,13 +215,8 @@ class Orchestrator(object):
 
     def manage_existing(self, volname, existing_ref, backend, manage_opts):
         return self.__execute_request(backend, 'manage_existing',
-<<<<<<< ed36dcfcfba309dac9e4c7e9176f41e0094d73a6
                                       volname, existing_ref,
                                       backend, manage_opts)
-=======
-                                      volname, existing_ref, backend,
-                                      manage_opts)
->>>>>>> Rebase with latest code
 
     def volumedriver_list(self):
         # Use the first volume manager list volumes
