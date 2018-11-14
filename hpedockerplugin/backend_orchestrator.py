@@ -99,18 +99,17 @@ class Orchestrator(object):
         vol = self.etcd_util.get_vol_byname(volname)
         if vol is not None and 'backend' in vol:
             current_backend = vol['backend']
-            # populate the volume backend map for caching
-            LOG.debug(' Populating cache %s, %s '
-                      % (volname, current_backend))
-            with(self.volume_backend_lock):
-                self.volume_backends_map[volname] = current_backend
 
         return current_backend
 
-    def _execute_request(self, request, volname, *args, **kwargs):
-        backend = self.get_volume_backend_details(volname)
+    def __execute_request(self, backend, request, volname, *args, **kwargs):
+        LOG.info('WILLIAM: %s ' % self._manager)
+        LOG.info('WILLIAM backend : %s ' % backend)
+        LOG.info('WILLIAM args %s ' % str(args))
+        LOG.info('WILLIAM kwargs is %s ' % str(kwargs))
         volume_mgr = self._manager.get(backend)
         if volume_mgr:
+            # populate the volume backend map for caching
             return getattr(volume_mgr, request)(volname, *args, **kwargs)
 
         msg = "ERROR: Backend '%s' was NOT initialized successfully." \
@@ -119,14 +118,20 @@ class Orchestrator(object):
         LOG.error(msg)
         return json.dumps({u'Err': msg})
 
+    def _execute_request(self, request, volname, *args, **kwargs):
+        backend = self.get_volume_backend_details(volname)
+        return self.__execute_request(
+            backend, request, volname, *args, **kwargs)
+
     def volumedriver_remove(self, volname):
+        ret_val = self._execute_request('remove_volume', volname)
         with self.volume_backend_lock:
             LOG.debug('Removing entry for volume %s from cache' %
                       volname)
             # This if condition is to make the test code happy
             if volname in self.volume_backends_map:
                 del self.volume_backends_map[volname]
-        return self._execute_request('remove_volume', volname)
+        return ret_val
 
     def volumedriver_unmount(self, volname, vol_mount, mount_id):
         return self._execute_request('unmount_volume',
@@ -140,19 +145,29 @@ class Orchestrator(object):
                             fs_mode, fs_owner,
                             mount_conflict_delay, cpg,
                             snap_cpg, current_backend, rcg_name):
-        return self._manager[current_backend].create_volume(
-            volname,
-            vol_size,
-            vol_prov,
-            vol_flash,
-            compression_val,
-            vol_qos,
-            fs_mode, fs_owner,
-            mount_conflict_delay,
-            cpg,
-            snap_cpg,
-            current_backend,
-            rcg_name)
+        if current_backend in self._manager:
+            ret_val = self.__execute_request(
+                current_backend,
+                'create_volume',
+                volname,
+                vol_size,
+                vol_prov,
+                vol_flash,
+                compression_val,
+                vol_qos,
+                fs_mode, fs_owner,
+                mount_conflict_delay,
+                cpg,
+                snap_cpg,
+                current_backend,
+                rcg_name)
+
+            with self.volume_backend_lock:
+                LOG.debug(' Populating cache %s, %s '
+                          % (volname, current_backend))
+                self.volume_backends_map[volname] = current_backend
+
+            return ret_val
 
     def clone_volume(self, src_vol_name, clone_name, size, cpg,
                      snap_cpg, clone_options):
@@ -198,9 +213,9 @@ class Orchestrator(object):
                                      snapname, qualified_name)
 
     def manage_existing(self, volname, existing_ref, backend, manage_opts):
-        return self._execute_request('manage_existing', volname,
-                                     existing_ref, backend,
-                                     manage_opts)
+        return self.__execute_request(backend, 'manage_existing',
+                                      volname, existing_ref, backend,
+                                      manage_opts)
 
     def volumedriver_list(self):
         # Use the first volume manager list volumes
