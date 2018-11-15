@@ -122,7 +122,7 @@ This triggers unmount of the volume(s) from the primary array.
 
 2. On the primary array, stop the remote copy group manually:
 ```sh
-$ stoprcopygroup <RCG_Name_>
+$ stoprcopygroup <RCG_Name>
 ```
 
 3. On the secondary array, execute *failover* command:
@@ -153,3 +153,7 @@ $ docker volume rm <volume_name>
 ```
 This command allows the user to delete a replicated volume. If this was the last 
 volume present in RCG then the RCG is also removed from the backend.
+
+
+**See also**
+[Peer Persistence Based Replication](peer-persistence-based-replication.md).
