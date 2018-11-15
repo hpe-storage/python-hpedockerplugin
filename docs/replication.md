@@ -1,4 +1,4 @@
-# Replication: HPE 3PAR Storage Plugin #
+# Replication: HPE 3PAR Docker Storage Plugin #
 
 This feature allows Docker users to create replicated volume(s) using
 HPE 3PAR Storage Plugin. Docker CLI does not directly support 
@@ -29,7 +29,7 @@ permutations and combinations can be configured.
 1. For a replication-enabled backend, it is mandatory to specify 
 'replicationGroup' option while creating replicated volume.
 2. User cannot create non-replicated/standard volume(s) using 
-replication-enabled backend. In order to do so, she would need to 
+replication-enabled backend. In order to do so, user would need to 
 define another backend in hpe.conf with similar details as that of 
 replication-enabled backend except that "replication_device" field is
 omitted.
