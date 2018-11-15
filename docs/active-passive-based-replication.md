@@ -7,7 +7,7 @@ When a remote copy group (RCG) is failed over manually via 3PAR CLI to the
 secondary array, the secondary array becomes active. However, the VLUNs
 of the failed over volumes are still not exported by the secondary array
 to the host. In order to trigger that, the container/POD running on the 
-host need to be restarted.
+host needs to be restarted.
 
 ## Configuring replication enabled backend
 **For FC Host** 
