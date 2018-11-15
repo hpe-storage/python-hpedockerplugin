@@ -2,7 +2,7 @@
   - name: create hpedockerplugin container
     docker_container:
       name: plugin_container
-      image: hpestorage/legacyvolumeplugin:2.1
+      image: "{{ INVENTORY['DEFAULT']['volume_plugin'] }}"
       privileged: true
       network_mode: host
       state: started
@@ -22,3 +22,4 @@
         - /var/run/docker.sock:/var/run/docker.sock
         - /opt/hpe/data:/opt/hpe/data:rshared
       restart_policy: on-failure
+
