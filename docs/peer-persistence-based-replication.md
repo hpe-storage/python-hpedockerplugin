@@ -1,4 +1,4 @@
-## Peer Persistence based replication ##
+# Peer Persistence based replication #
 In case of Peer Persistence based replication, VLUNs corresponding to the replicated volumes are created on BOTH
 the arrays but served only by the primary array. When RCG is switched over or primary array goes down, the
 secondary array takes over and starts serving the VLUNs.
