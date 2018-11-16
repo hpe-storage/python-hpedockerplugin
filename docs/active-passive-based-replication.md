@@ -37,9 +37,12 @@ replication_device = backend_id:<Target-Array-Hostname>,
 
 *Note*:
 
-1. In case of asynchronous replication mode, ‘sync_period’ field can optionally be defined as part of 'replication_device' entry and it should be between range 300 and 31622400 seconds.
-If not defined, it defaults to 900 seconds.
-2. Both 'cpg_map' and 'snap_cpg_map' in 'replication_device' section are mandatory
+1. In case of asynchronous replication mode, *sync_period* field can optionally be 
+defined as part of *replication_device* entry and it should be between range 300 
+and 31622400 seconds. If not defined, it defaults to 900 seconds.
+2. Both *cpg_map* and *snap_cpg_map* in *replication_device* section are mandatory.
+3. If password is encrypted for primary array, it must be encrypted for secondary array
+as well using the same *pass-phrase*
 
 
 **For ISCSI Host** 
@@ -71,14 +74,21 @@ replication_device = backend_id:<Target-Array-Name>,
 ```
 *Note*:
 
-1. In case of asynchronous replication mode, ‘sync_period’ field can optionally be defined as part of 'replication_device' entry and it should be between range 300 and 31622400 seconds.
-If not defined, it defaults to 900 seconds.
-2. Both 'cpg_map' and 'snap_cpg_map' in 'replication_device' section are mandatory
-3. 'hpe3par_iscsi_ips' can be a single ISCSI IP or a list of ISCSI IPs delimited by semi-colon. Delimiter for this field is applicable for 'replication_device' section ONLY.
+1. In case of asynchronous replication mode, *sync_period* field can optionally be
+defined as part of *replication_device* entry and it should be between range 300 
+and 31622400 seconds. If not defined, it defaults to 900 seconds.
+2. Both *cpg_map* and *snap_cpg_map* in *replication_device* section are mandatory
+3. *hpe3par_iscsi_ips* can be a single ISCSI IP or a list of ISCSI IPs delimited by 
+semi-colon. Delimiter for this field is applicable for *replication_device* section ONLY.
+4. If password is encrypted for primary array, it must be encrypted for secondary array
+as well using the same *pass-phrase*
 
 
-## Commands and Workflows (Need better title) ###
+## Managing Replicated Volumes ###
 ### Create replicated volume ###
+This command allows creation of replicated volume along with RCG creation if the RCG
+does not exist on the array. Newly created volume is then added to the RCG.
+Existing RCG name can be used to add multiple newly created volumes to it.
 ```sh
 $ docker volume create -d hpe --name <volume_name> -o replicationGroup=<3PAR_RCG_Name> [Options...]
 ```
@@ -108,12 +118,13 @@ $ docker volume create -d hpe --name Test_RCG_Vol -o replicationGroup=Test_RCG -
 ```
 This will create volume Test_RCG_Vol along with TEST_RCG remote copy group. The volume
 will then be added to the TEST_RCG.
-Please note that in case of failure during the operation at any stage, previous actions will be rolled back.
-E.g. if for some reason, volume Test_RCG_Vol cound not be added to Test_RCG, the volume
-will be removed from the array.
+Please note that in case of failure during the operation at any stage, previous actions
+are rolled back.
+E.g. if for some reason, volume Test_RCG_Vol could not be added to Test_RCG, the volume
+is removed from the array.
 
 
-### Failover workflow for Active/Passive based replication ###
+### Failover a remote copy group ###
 
 There is no single Docker command or option to support failover of a RCG. Instead, following 
 steps must be carried out in order to do it:
@@ -155,5 +166,5 @@ This command allows the user to delete a replicated volume. If this was the last
 volume present in RCG then the RCG is also removed from the backend.
 
 
-**See also**
+**See also:**
 [Peer Persistence Based Replication](peer-persistence-based-replication.md).
