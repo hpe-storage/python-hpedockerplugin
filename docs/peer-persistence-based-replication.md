@@ -5,7 +5,7 @@ array and start seeing the VLUNs which were earlier exported by the failed array
 
 With Peer Persistence, when a Docker user mounts a replicated volume(s), HPE 3PAR Docker
 Plugin creates VLUNs corresponding to the replicated volume(s) on BOTH
-the arrays. However, they are served only by an active array the other array being on
+the arrays. However, they are served only by the active array with the other array being on
 standby mode. When the corresponding RCG is switched over or primary array goes down, 
 the secondary array takes over and makes the VLUN(s) available. After swithover, the 
 active array goes in standby mode while the other array becomes active.
@@ -87,13 +87,14 @@ replication_device = backend_id:<Target-Array-Name>,
 ```
 *Note*:
 
-1. *replication_mode* MUST be set to *synchronous* as a pre-requisite for Peer 
-Persistence based replication.
-2. Both *cpg_map* and *snap_cpg_map* in *replication_device* section are mandatory.
+1. Both *cpg_map* and *snap_cpg_map* in *replication_device* section are mandatory.
+2. *hpe3par_iscsi_ips* MUST be defined upfront for both source and target arrays.
 3. *hpe3par_iscsi_ips* can be a single ISCSI IP or a list of ISCSI IPs delimited by
 semi-colon. Delimiter for this field is applicable for *replication_device* section ONLY.
 4. If password is encrypted for primary array, it must be encrypted for secondary array
 as well using the same *pass-phrase*
+5. *replication_mode* MUST be set to *synchronous* as a pre-requisite for Peer 
+Persistence based replication.
 
 ## Managing Replicated Volumes ###
 
