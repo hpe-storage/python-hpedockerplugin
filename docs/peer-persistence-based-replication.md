@@ -78,6 +78,8 @@ Persistence based replication.
 2. Both *cpg_map* and *snap_cpg_map* in *replication_device* section are mandatory.
 3. *hpe3par_iscsi_ips* can be a single ISCSI IP or a list of ISCSI IPs delimited by
 semi-colon. Delimiter for this field is applicable for *replication_device* section ONLY.
+4. If password is encrypted for primary array, it must be encrypted for secondary array
+as well using the same *pass-phrase*
 
 ## Managing Replicated Volumes ###
 
