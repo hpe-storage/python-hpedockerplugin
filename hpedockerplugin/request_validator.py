@@ -100,13 +100,13 @@ class RequestValidator(object):
 
     def _validate_snapshot_opts(self, contents):
         valid_opts = ['virtualCopyOf', 'retentionHours', 'expirationHours',
-                      'mountConflictDelay']
+                      'mountConflictDelay', 'size']
         self._validate_opts("create snapshot", contents, valid_opts)
 
     def _validate_snapshot_schedule_opts(self, contents):
         valid_opts = ['virtualCopyOf', 'scheduleFrequency', 'scheduleName',
                       'snapshotPrefix', 'expHrs', 'retHrs',
-                      'mountConflictDelay']
+                      'mountConflictDelay', 'size']
         mandatory_opts = ['scheduleName', 'snapshotPrefix',
                           'scheduleFrequency']
         self._validate_opts("create snapshot schedule", contents,

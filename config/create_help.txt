@@ -69,6 +69,7 @@ Create Snapshot Options:
  -o expirationHours=x		x is the number of hours after which snapshot is removed from 3PAR. If both retentionHours and expirationHours
 				are specified then expirationHours must be greater than or equal to retentionHours.
  -o mountConflictDelay=x 	This option is ignored for this operation. It is present so that it can work with orchestrators like K8S and Openshift.
+ -o size=x                      This option is ignored for this operation. It is present so that it can work with orchestrators like K8S and Openshift.
 
 
 ---------------------------------
@@ -126,6 +127,7 @@ Create Snapshot Schedule:
 -o retHrs=x                     This option is not mandatory. x is an integer which indicates number of hours for which snapshot created via
                                 snapshot schedule will be retained.
 -o mountConflictDelay=x 	This option is ignored for this operation. It is present so that it can work with orchestrators like K8S and Openshift.
+-o size=x                       This option is ignored for this operation. It is present so that it can work with orchestrators like K8S and Openshift.
 
 
 ---------------------------------
