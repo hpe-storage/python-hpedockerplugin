@@ -36,8 +36,9 @@ omitted.
 3. For a backend that is NOT replication-enabled, specifying 'replicationGroup' 
 is incorrect and results in error.
 4. For a given RCG, mixed transport protocol is not supported. E.g. volumes v1, v2 and v3
- are part of RCG called TestRCG, then on primary array, these volumes are exported via
- FC protocol and on secondary array via ISCSI (after failover)
+ are part of RCG called TestRCG, then on primary array, if these volumes are exported via
+ FC protocol then on secondary array those CANNOT be exported via ISCSI (after failover)
+ and vice versa.
 5. Cold remote site (e.g. ISCSI IPs on remote array not configured) is not supported.
 For ISCSI based transport protocol, the ISCSI IPs on both primary and secondary arrays
 MUST be defined upfront in hpe.conf.
