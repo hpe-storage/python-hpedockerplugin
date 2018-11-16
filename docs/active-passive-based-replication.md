@@ -167,4 +167,4 @@ volume present in RCG then the RCG is also removed from the backend.
 
 
 **See also:**
-[Peer Persistence Based Replication](peer-persistence-based-replication.md).
+[Peer Persistence Based Replication](peer-persistence-based-replication.md)

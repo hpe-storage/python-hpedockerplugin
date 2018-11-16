@@ -1,7 +1,21 @@
 # Peer Persistence based replication #
-In case of Peer Persistence based replication, VLUNs corresponding to the replicated volumes are created on BOTH
-the arrays but served only by the primary array. When RCG is switched over or primary array goes down, the
-secondary array takes over and starts serving the VLUNs.
+Peer Persistence feature of 3PAR provides a non-disruptive disaster recovery solution wherein in
+case of disaster, the hosts automatically and seamlessly get connected to the secondary
+array and start seeing the VLUNs which were earlier exported by the failed array.
+
+With Peer Persistence, when a Docker user mounts a replicated volume(s), HPE 3PAR Docker
+Plugin creates VLUNs corresponding to the replicated volume(s) on BOTH
+the arrays. However, they are served only by an active array the other array being on
+standby mode. When the corresponding RCG is switched over or primary array goes down, 
+the secondary array takes over and makes the VLUN(s) available. After swithover, the 
+active array goes in standby mode while the other array becomes active.
+
+**Pre-requisites**
+1. Remote copy setup is up and running
+2. Quorum Witness is running with primary and secondary arrays registered with it
+3. Multipath daemon is running so that non-disruptive seamless mounting of VLUN(s)
+on the host is possible.
+
 
 ## Configuring replication enabled backend
 Compared to Active/Passive configuration, in Peer Persistence, the ONLY discriminator
@@ -123,13 +137,17 @@ is removed from the array.
 
 
 ### Switchover a remote copy group ###
-Following command must be executed on the array in order to do switchover from one
-array to the other:
+There is no single Docker command or option to support switchover of a RCG from one 
+array to the other. Instead, following 3PAR command must be executed.
+
 ```sh
 $ setrcopygroup switchover <RCG_Name>
 ```
 where:
 - *RCG_Name* is the name of remote copy group on the array where the above command is executed.
+
+Having done the switchover, multipath daemon takes care of seamless mounting of volume(s) from the
+switched over array.
 
 ### Delete replicated volume ###
 This command allows user to delete a replicated volume. If this is the last volume 
