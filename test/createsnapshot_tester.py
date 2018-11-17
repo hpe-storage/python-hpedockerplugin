@@ -23,11 +23,11 @@ class TestCreateSnapshotDefault(CreateSnapshotUnitTest):
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
+        volume = copy.deepcopy(data.volume)
         mock_etcd.get_vol_byname.side_effect = [
-            data.volume,
+            volume,
             None,
-            data.volume,
-            copy.deepcopy(data.volume),
+            volume,
             None
         ]
         mock_3parclient = self.mock_objects['mock_3parclient']
@@ -50,11 +50,11 @@ class TestCreateSnapshotWithExpiryRetentionTimes(CreateSnapshotUnitTest):
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
+        volume = copy.deepcopy(data.volume)
         mock_etcd.get_vol_byname.side_effect = [
-            data.volume,
+            volume,
             None,
-            data.volume,
-            copy.deepcopy(data.volume)
+            volume
         ]
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.isOnlinePhysicalCopy.return_value = False
@@ -111,7 +111,7 @@ class TestCreateSnapshotForNonExistentVolume(CreateSnapshotUnitTest):
         ]
 
     def check_response(self, resp):
-        expected = 'source volume: %s does not exist' % \
+        expected = 'Volume/Snapshot %s does not exist' % \
                    'i_do_not_exist_volume'
         self._test_case.assertEqual(resp, {u"Err": expected})
 
@@ -126,7 +126,6 @@ class TestCreateSnapshotEtcdSaveFails(CreateSnapshotUnitTest):
         mock_etcd.get_vol_byname.side_effect = [
             data.volume,
             None,
-            data.volume,
             copy.deepcopy(data.volume)
         ]
         mock_etcd.save_vol.side_effect = \
@@ -161,7 +160,6 @@ class TestCreateSnpSchedule(CreateSnapshotUnitTest):
         mock_etcd.get_vol_byname.side_effect = [
             data.volume,
             None,
-            data.volume,
             copy.deepcopy(data.volume)
         ]
         mock_3parclient = self.mock_objects['mock_3parclient']
