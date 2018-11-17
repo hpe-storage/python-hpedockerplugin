@@ -99,7 +99,7 @@ class Orchestrator(object):
 
     def add_cache_entry(self, volname):
         # Using this style of locking
-        # https://docs.python.org/3/library/threading.htmls#using-locks-conditions-and-semaphores-in-the-with-statement
+        # https://docs.python.org/3/library/threading.html
         self.volume_backend_lock.acquire()
         try:
             vol = self.etcd_util.get_vol_byname(volname)
@@ -164,24 +164,23 @@ class Orchestrator(object):
                             fs_mode, fs_owner,
                             mount_conflict_delay, cpg,
                             snap_cpg, current_backend, rcg_name):
-        if current_backend in self._manager:
-            ret_val = self.__execute_request(
-                current_backend,
-                'create_volume',
-                volname,
-                vol_size,
-                vol_prov,
-                vol_flash,
-                compression_val,
-                vol_qos,
-                fs_mode, fs_owner,
-                mount_conflict_delay,
-                cpg,
-                snap_cpg,
-                current_backend,
-                rcg_name)
+        ret_val = self.__execute_request(
+            current_backend,
+            'create_volume',
+            volname,
+            vol_size,
+            vol_prov,
+            vol_flash,
+            compression_val,
+            vol_qos,
+            fs_mode, fs_owner,
+            mount_conflict_delay,
+            cpg,
+            snap_cpg,
+            current_backend,
+            rcg_name)
 
-            return ret_val
+        return ret_val
 
     def clone_volume(self, src_vol_name, clone_name, size, cpg,
                      snap_cpg, clone_options):
