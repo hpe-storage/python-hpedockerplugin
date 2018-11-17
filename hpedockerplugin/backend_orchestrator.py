@@ -88,19 +88,36 @@ class Orchestrator(object):
 
     def get_volume_backend_details(self, volname):
         LOG.info('Getting details for volume : %s ' % (volname))
-        current_backend = DEFAULT_BACKEND_NAME
 
         if volname in self.volume_backends_map:
             current_backend = self.volume_backends_map[volname]
             LOG.debug(' Returning the backend details from cache %s , %s'
                       % (volname, current_backend))
             return current_backend
+        else:
+            return self.add_cache_entry(volname)
 
-        vol = self.etcd_util.get_vol_byname(volname)
-        if vol is not None and 'backend' in vol:
-            current_backend = vol['backend']
-
-        return current_backend
+    def add_cache_entry(self, volname):
+        # Using this style of locking
+        # https://docs.python.org/3/library/threading.htmls#using-locks-conditions-and-semaphores-in-the-with-statement
+        self.volume_backend_lock.acquire()
+        try:
+            vol = self.etcd_util.get_vol_byname(volname)
+            if vol is not None and 'backend' in vol:
+                current_backend = vol['backend']
+                # populate the volume backend map for caching
+                LOG.debug(' Populating cache %s, %s '
+                          % (volname, current_backend))
+                self.volume_backends_map[volname] = current_backend
+                return current_backend
+            else:
+                # throw an exception for the condition
+                # where the backend can't be read from volume
+                # metadata in etcd
+                LOG.info(' vol obj read from etcd : %s' % vol)
+                raise exception.HPEPluginReadBackendFailed(volname=volname)
+        finally:
+            self.volume_backend_lock.release()
 
     def __execute_request(self, backend, request, volname, *args, **kwargs):
         LOG.info(' Operating on backend : %s on volume %s '
@@ -163,11 +180,6 @@ class Orchestrator(object):
                 current_backend,
                 rcg_name)
 
-            with self.volume_backend_lock:
-                LOG.debug(' Populating cache %s, %s '
-                          % (volname, current_backend))
-                self.volume_backends_map[volname] = current_backend
-
             return ret_val
 
     def clone_volume(self, src_vol_name, clone_name, size, cpg,
@@ -214,9 +226,11 @@ class Orchestrator(object):
                                      snapname, qualified_name)
 
     def manage_existing(self, volname, existing_ref, backend, manage_opts):
-        return self.__execute_request(backend, 'manage_existing',
-                                      volname, existing_ref,
-                                      backend, manage_opts)
+        ret_val = self.__execute_request(backend, 'manage_existing',
+                                         volname, existing_ref,
+                                         backend, manage_opts)
+        self.add_cache_entry(volname)
+        return ret_val
 
     def volumedriver_list(self):
         # Use the first volume manager list volumes
