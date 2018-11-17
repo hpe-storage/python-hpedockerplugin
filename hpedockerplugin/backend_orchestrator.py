@@ -115,7 +115,7 @@ class Orchestrator(object):
                 # where the backend can't be read from volume
                 # metadata in etcd
                 LOG.info(' vol obj read from etcd : %s' % vol)
-                raise exception.HPEPluginReadBackendFailed(volname=volname)
+                return 'DEFAULT'
         finally:
             self.volume_backend_lock.release()
 
@@ -147,7 +147,8 @@ class Orchestrator(object):
             LOG.debug('Removing entry for volume %s from cache' %
                       volname)
             # This if condition is to make the test code happy
-            if volname in self.volume_backends_map:
+            if volname in self.volume_backends_map and \
+               ret_val is not None:
                 del self.volume_backends_map[volname]
         return ret_val
 
