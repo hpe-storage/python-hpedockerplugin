@@ -88,21 +88,43 @@ class Orchestrator(object):
 
     def get_volume_backend_details(self, volname):
         LOG.info('Getting details for volume : %s ' % (volname))
-        current_backend = DEFAULT_BACKEND_NAME
 
         if volname in self.volume_backends_map:
             current_backend = self.volume_backends_map[volname]
             LOG.debug(' Returning the backend details from cache %s , %s'
                       % (volname, current_backend))
             return current_backend
+        else:
+            return self.add_cache_entry(volname)
 
-        vol = self.etcd_util.get_vol_byname(volname)
-        if vol is not None and 'backend' in vol:
-            current_backend = vol['backend']
-
-        return current_backend
+    def add_cache_entry(self, volname):
+        # Using this style of locking
+        # https://docs.python.org/3/library/threading.html
+        self.volume_backend_lock.acquire()
+        try:
+            vol = self.etcd_util.get_vol_byname(volname)
+            if vol is not None and 'backend' in vol:
+                current_backend = vol['backend']
+                # populate the volume backend map for caching
+                LOG.debug(' Populating cache %s, %s '
+                          % (volname, current_backend))
+                self.volume_backends_map[volname] = current_backend
+                return current_backend
+            else:
+                # throw an exception for the condition
+                # where the backend can't be read from volume
+                # metadata in etcd
+                LOG.info(' vol obj read from etcd : %s' % vol)
+                return 'DEFAULT'
+        finally:
+            self.volume_backend_lock.release()
 
     def __execute_request(self, backend, request, volname, *args, **kwargs):
+        LOG.info(' Operating on backend : %s on volume %s '
+                 % (backend, volname))
+        LOG.info(' Request %s ' % request)
+        LOG.info(' with  args %s ' % str(args))
+        LOG.info(' with  kwargs is %s ' % str(kwargs))
         volume_mgr = self._manager.get(backend)
         if volume_mgr:
             # populate the volume backend map for caching
@@ -125,7 +147,8 @@ class Orchestrator(object):
             LOG.debug('Removing entry for volume %s from cache' %
                       volname)
             # This if condition is to make the test code happy
-            if volname in self.volume_backends_map:
+            if volname in self.volume_backends_map and \
+               ret_val is not None:
                 del self.volume_backends_map[volname]
         return ret_val
 
@@ -141,37 +164,34 @@ class Orchestrator(object):
                             fs_mode, fs_owner,
                             mount_conflict_delay, cpg,
                             snap_cpg, current_backend, rcg_name):
-        if current_backend in self._manager:
-            ret_val = self.__execute_request(
-                current_backend,
-                'create_volume',
-                volname,
-                vol_size,
-                vol_prov,
-                vol_flash,
-                compression_val,
-                vol_qos,
-                fs_mode, fs_owner,
-                mount_conflict_delay,
-                cpg,
-                snap_cpg,
-                current_backend,
-                rcg_name)
+        ret_val = self.__execute_request(
+            current_backend,
+            'create_volume',
+            volname,
+            vol_size,
+            vol_prov,
+            vol_flash,
+            compression_val,
+            vol_qos,
+            fs_mode, fs_owner,
+            mount_conflict_delay,
+            cpg,
+            snap_cpg,
+            current_backend,
+            rcg_name)
 
-            with self.volume_backend_lock:
-                LOG.debug(' Populating cache %s, %s '
-                          % (volname, current_backend))
-                self.volume_backends_map[volname] = current_backend
+        return ret_val
 
-            return ret_val
-
-    def clone_volume(self, src_vol_name, clone_name, size, cpg, snap_cpg):
+    def clone_volume(self, src_vol_name, clone_name, size, cpg,
+                     snap_cpg, clone_options):
         # Imran: Redundant call to get_volume_backend_details
         # Why is backend being passed to clone_volume when it can be
         # retrieved from src_vol or use DEFAULT if src_vol doesn't have it
         backend = self.get_volume_backend_details(src_vol_name)
+        LOG.info('orchestrator clone_opts : %s' % (clone_options))
         return self._execute_request('clone_volume', src_vol_name, clone_name,
-                                     size, cpg, snap_cpg, backend)
+                                     size, cpg, snap_cpg, backend,
+                                     clone_options)
 
     def create_snapshot(self, src_vol_name, schedName, snapshot_name,
                         snapPrefix, expiration_hrs, exphrs, retention_hrs,
@@ -205,9 +225,12 @@ class Orchestrator(object):
         return self._execute_request('get_volume_snap_details', volname,
                                      snapname, qualified_name)
 
-    def manage_existing(self, volname, existing_ref, backend):
-        return self.__execute_request(backend, 'manage_existing',
-                                      volname, existing_ref)
+    def manage_existing(self, volname, existing_ref, backend, manage_opts):
+        ret_val = self.__execute_request(backend, 'manage_existing',
+                                         volname, existing_ref,
+                                         backend, manage_opts)
+        self.add_cache_entry(volname)
+        return ret_val
 
     def volumedriver_list(self):
         # Use the first volume manager list volumes
