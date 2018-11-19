@@ -608,6 +608,9 @@ class VolumePlugin(object):
                     response = json.dumps({'Err': msg})
                     return response
                 schedName = str(contents['Opts']['scheduleName'])
+                if schedName == "auto":
+                    schedName = self.generate_schedule_with_timestamp()
+
                 snapPrefix = str(contents['Opts']['snapshotPrefix'])
 
                 schedNameLength = len(schedName)
@@ -634,6 +637,14 @@ class VolumePlugin(object):
                                                  mount_conflict_delay,
                                                  has_schedule,
                                                  schedFrequency)
+
+    def generate_schedule_with_timestamp(self):
+        import datetime
+        current_time = datetime.datetime.now()
+        current_time_str = str(current_time)
+        scheduleNameGenerated = current_time_str.replace(' ', '_')
+        LOG.info(' Schedule Name auto generated is %s' % scheduleNameGenerated)
+        return scheduleNameGenerated
 
     @app.route("/VolumeDriver.Mount", methods=["POST"])
     def volumedriver_mount(self, name):
