@@ -642,7 +642,10 @@ class VolumePlugin(object):
         import datetime
         current_time = datetime.datetime.now()
         current_time_str = str(current_time)
-        scheduleNameGenerated = current_time_str.replace(' ', '_')
+        space_replaced = current_time_str.replace(' ', '_')
+        colon_replaced = space_replaced.replace(':', '_')
+        hypen_replaced = colon_replaced.replace('-', '_')
+        scheduleNameGenerated = hypen_replaced
         LOG.info(' Schedule Name auto generated is %s' % scheduleNameGenerated)
         return scheduleNameGenerated
 
