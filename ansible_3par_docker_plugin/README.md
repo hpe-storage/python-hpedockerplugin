@@ -57,7 +57,7 @@ Once the prerequisites are complete, run the following command:
 
 - Installation on standalone docker environment:
 ```
-$ ansible-playbook -i hosts install_standalone_hpe_3par_volume_driver.yml --ask-vault-pass
+$ ansible-playbook -i hosts_standalone_nodes install_standalone_hpe_3par_volume_driver.yml --ask-vault-pass
 ```
 
 - Installation on Openshift/Kubernetes environment:
