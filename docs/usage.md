@@ -3,20 +3,20 @@
 The following guide covers many of the options used for provisioning volumes and volume management within standalone Docker environments as well as Kubernetes/OpenShift environments.
 
 * ### [Using HPE 3PAR Volume Plug-in with Docker](#docker_usage)
-  * [Create a basic HPE 3PAR volume](#basic)
+  * [Creating a basic HPE 3PAR volume](#basic)
   * [Volume optional parameters](#options)
-  * [Create HPE 3PAR Replicated Volume](replication.md)
-  * [Create HPE 3PAR Snapshot Schedule](create_snapshot_schedule.md)
-  * [Create File Permissions enabled HPE 3PAR Volume](file-permission-owner.md)
-  * [Enable Multiple Backends to manage HPE 3PAR Volumes](multi-array-feature.md)
-  * [Deleting a Volume](#delete)
-  * [List Volumes](#list)
-  * [Inspect a Volume](#inspect)
-  * [Mounting a Volume](#mount)
-  * [Unmounting a Volume](#unmount)
-  * [Creating a Volume with QoS rules](#qos)
-  * [Cloning a Volume](#clone)
-  * [Enabling compression on Volume](#compression)
+  * [Creating replicated volume](replication.md)
+  * [Creating HPE 3PAR snapshot schedule](create_snapshot_schedule.md)
+  * [Deleting a volume](#delete)
+  * [Listing volumes](#list)
+  * [Inspecting a volume](#inspect)
+  * [Mounting a volume](#mount)
+  * [Unmounting a volume](#unmount)
+  * [Creating a volume with QoS rules](#qos)
+  * [Cloning a volume](#clone)
+  * [Enabling compression on volume](#compression)
+  * [Enabling file permissions and ownership](file-permission-owner.md)
+  * [Managing volumes using multiple backends](multi-array-feature.md)
   
 
 * ### [Using HPE 3PAR Volume Plug-in with Kubernetes/OpenShift](#k8_usage)
@@ -33,20 +33,20 @@ The following guide covers many of the options used for provisioning volumes and
 ## Within Docker<a name="docker_usage"></a>
 The following section covers the supported actions for the **HPE 3PAR Volume Plug-in** within a **Docker** environment.
 
-* [Create a basic HPE 3PAR volume](#basic)
-* [Volume optional parameters](#options)
-* [Create HPE 3PAR Replicated Volume](replication.md)
-* [Create HPE 3PAR Snapshot Schedule](create_snapshot_schedule.md)
-* [Create File Permissions enabled HPE 3PAR Volume](file-permission-owner.md)
-* [Enable Multiple Backends to manage HPE 3PAR Volumes](multi-array-feature.md)
-* [Deleting a Volume](#delete)
-* [List Volumes](#list)
-* [Inspect a Volume](#inspect)
-* [Mounting a Volume](#mount)
-* [Unmounting a Volume](#unmount)
-* [Creating a Volume with QoS rules](#qos)
-* [Cloning a Volume](#clone)
-* [Enabling compression on Volume](#compression)
+  * [Creating a basic HPE 3PAR volume](#basic)
+  * [Volume optional parameters](#options)
+  * [Creating replicated volume](replication.md)
+  * [Creating HPE 3PAR snapshot schedule](create_snapshot_schedule.md)
+  * [Deleting a volume](#delete)
+  * [Listing volumes](#list)
+  * [Inspecting a volume](#inspect)
+  * [Mounting a volume](#mount)
+  * [Unmounting a volume](#unmount)
+  * [Creating a volume with QoS rules](#qos)
+  * [Cloning a volume](#clone)
+  * [Enabling compression on volume](#compression)
+  * [Enabling file permissions and ownership](file-permission-owner.md)
+  * [Managing volumes using multiple backends](multi-array-feature.md)
 
 If you are using **Kubernetes** or **OpenShift**, please go the [Kubernetes/OpenShift Usage section](#k8_usage).
 
@@ -85,12 +85,12 @@ docker volume create -d hpe --name <vol_name> -o size=50 -o provisioning=full
 docker volume rm <vol_name>
 ```
 
-### List volumes<a name="list"></a>
+### Listing volumes<a name="list"></a>
 ```
 docker volume ls
 ```
 
-### Inspect a volume<a name="inspect"></a>
+### Inspecting a volume<a name="inspect"></a>
 ```
 docker volume inspect <vol_name>
 ```
