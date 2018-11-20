@@ -100,7 +100,7 @@
     when:  passwords['results'][item | int]['stdout_lines'] is defined
     ignore_errors: yes
 
-  - name: Wait 15 seconds
+  - name: Wait 10 seconds
     wait_for: timeout=10
 
   - name: Get the encrypted passwords
