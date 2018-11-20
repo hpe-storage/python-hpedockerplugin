@@ -5,6 +5,10 @@ The following guide covers many of the options used for provisioning volumes and
 * ### [Using HPE 3PAR Volume Plug-in with Docker](#docker_usage)
   * [Create a basic HPE 3PAR volume](#basic)
   * [Volume optional parameters](#options)
+  * [Create HPE 3PAR Replicated Volume](replication.md)
+  * [Create HPE 3PAR Snapshot Schedule](create_snapshot_schedule.md)
+  * [Create File Permissions enabled HPE 3PAR Volume](file-permission-owner.md)
+  * [Enable Multiple Backends to manage HPE 3PAR Volumes](multi-array-feature.md)
   * [Deleting a Volume](#delete)
   * [List Volumes](#list)
   * [Inspect a Volume](#inspect)
@@ -13,7 +17,7 @@ The following guide covers many of the options used for provisioning volumes and
   * [Creating a Volume with QoS rules](#qos)
   * [Cloning a Volume](#clone)
   * [Enabling compression on Volume](#compression)
-  * [Create HPE 3PAR Replicated Volume](replication.md)
+  
 
 * ### [Using HPE 3PAR Volume Plug-in with Kubernetes/OpenShift](#k8_usage)
   * [Kubernetes/OpenShift Terms](#terms)
@@ -31,6 +35,10 @@ The following section covers the supported actions for the **HPE 3PAR Volume Plu
 
 * [Create a basic HPE 3PAR volume](#basic)
 * [Volume optional parameters](#options)
+* [Create HPE 3PAR Replicated Volume](replication.md)
+* [Create HPE 3PAR Snapshot Schedule](create_snapshot_schedule.md)
+* [Create File Permissions enabled HPE 3PAR Volume](file-permission-owner.md)
+* [Enable Multiple Backends to manage HPE 3PAR Volumes](multi-array-feature.md)
 * [Deleting a Volume](#delete)
 * [List Volumes](#list)
 * [Inspect a Volume](#inspect)
@@ -39,7 +47,6 @@ The following section covers the supported actions for the **HPE 3PAR Volume Plu
 * [Creating a Volume with QoS rules](#qos)
 * [Cloning a Volume](#clone)
 * [Enabling compression on Volume](#compression)
-* [Create HPE 3PAR Replicated Volume](replication.md)
 
 If you are using **Kubernetes** or **OpenShift**, please go the [Kubernetes/OpenShift Usage section](#k8_usage).
 
