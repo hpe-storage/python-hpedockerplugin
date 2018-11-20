@@ -246,6 +246,7 @@ EOF
 | expirationHours      | integer | option of virtualCopyOf                    | expirationHours: "10"            |
 | retentionHours       | integer | option of virtualCopyOf                    | retentionHours: "10"             |
 | accessModes          | String  | ReadWriteOnce                              | accessModes: <br> &nbsp;&nbsp;  - ReadWriteOnce    |
+| replicationGroup     | String  | 3PAR RCG name                              | replicationGroup: "Test-RCG"     |
 
 
 ### Persistent Volume Claim Example<a name="pvc"></a>
