@@ -13,6 +13,7 @@ The following guide covers many of the options used for provisioning volumes and
   * [Creating a Volume with QoS rules](#qos)
   * [Cloning a Volume](#clone)
   * [Enabling compression on Volume](#compression)
+  * [Create HPE 3PAR Replicated Volume](#replication)
 
 * ### [Using HPE 3PAR Volume Plug-in with Kubernetes/OpenShift](#k8_usage)
   * [Kubernetes/OpenShift Terms](#terms)
@@ -38,6 +39,7 @@ The following section covers the supported actions for the **HPE 3PAR Volume Plu
 * [Creating a Volume with QoS rules](#qos)
 * [Cloning a Volume](#clone)
 * [Enabling compression on Volume](#compression)
+* [Create HPE 3PAR Replicated Volume](replication.md)
 
 If you are using **Kubernetes** or **OpenShift**, please go the [Kubernetes/OpenShift Usage section](#k8_usage).
 
