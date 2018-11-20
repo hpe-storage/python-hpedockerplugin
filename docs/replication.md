@@ -47,3 +47,6 @@ HPE 3PAR Docker Storage Plugin supports two types of replication the details of
 which can be found at:
 1. [Active/Passive Based Replication](active-passive-based-replication.md) and 
 2. [Peer Persistence Based Replication](peer-persistence-based-replication.md).
+
+
+[<< Back to Usage](usage.md)
