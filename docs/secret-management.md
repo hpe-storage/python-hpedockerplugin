@@ -1,4 +1,4 @@
-## Secrets Management
+# Secrets Management #
 
 This section describes the steps that need to be taken in order to use secrets in encrypted format rather than plain text.
 
