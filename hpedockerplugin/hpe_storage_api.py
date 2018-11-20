@@ -19,6 +19,7 @@ See https://github.com/docker/docker/tree/master/docs/extend for details.
 """
 import json
 import six
+import datetime
 
 from oslo_log import log as logging
 
@@ -639,7 +640,6 @@ class VolumePlugin(object):
                                                  schedFrequency)
 
     def generate_schedule_with_timestamp(self):
-        import datetime
         current_time = datetime.datetime.now()
         current_time_str = str(current_time)
         space_replaced = current_time_str.replace(' ', '_')
