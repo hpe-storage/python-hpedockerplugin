@@ -19,6 +19,7 @@ See https://github.com/docker/docker/tree/master/docs/extend for details.
 """
 import json
 import six
+import datetime
 
 from oslo_log import log as logging
 
@@ -608,6 +609,9 @@ class VolumePlugin(object):
                     response = json.dumps({'Err': msg})
                     return response
                 schedName = str(contents['Opts']['scheduleName'])
+                if schedName == "auto":
+                    schedName = self.generate_schedule_with_timestamp()
+
                 snapPrefix = str(contents['Opts']['snapshotPrefix'])
 
                 schedNameLength = len(schedName)
@@ -634,6 +638,16 @@ class VolumePlugin(object):
                                                  mount_conflict_delay,
                                                  has_schedule,
                                                  schedFrequency)
+
+    def generate_schedule_with_timestamp(self):
+        current_time = datetime.datetime.now()
+        current_time_str = str(current_time)
+        space_replaced = current_time_str.replace(' ', '_')
+        colon_replaced = space_replaced.replace(':', '_')
+        hypen_replaced = colon_replaced.replace('-', '_')
+        scheduleNameGenerated = hypen_replaced
+        LOG.info(' Schedule Name auto generated is %s' % scheduleNameGenerated)
+        return scheduleNameGenerated
 
     @app.route("/VolumeDriver.Mount", methods=["POST"])
     def volumedriver_mount(self, name):
