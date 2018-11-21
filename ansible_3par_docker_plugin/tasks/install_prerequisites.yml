@@ -1,0 +1,95 @@
+---
+  - name: download get-pip.py
+    get_url:
+      url: https://bootstrap.pypa.io/get-pip.py
+      dest: /tmp
+
+  - name: install pip
+    command: "python /tmp/get-pip.py"
+    become: yes
+
+  - name: delete get-pip.py
+    file:
+      state: absent
+      path: /tmp/get-pip.py
+
+  - name: delete requests library
+    shell: rm -rf /usr/lib/python2.7/site-packages/requests*
+    become: yes
+
+  - name: uninstall docker-py if ansible version >= 2.6
+    pip:
+      name: docker-py
+      state: absent
+    become: yes
+    when: (ansible_version.major == 2 and ansible_version.minor >= 6) or ansible_version.major > 2
+
+  - name: install docker if ansible version >= 2.6
+    pip:
+      name: docker
+      state: present
+    become: yes
+    when: (ansible_version.major == 2 and ansible_version.minor >= 6) or ansible_version.major > 2
+
+  - name: uninstall docker-py if ansible version < 2.6
+    pip:
+      name: docker
+      state: absent
+    become: yes
+    when: ansible_version.major == 2 and ansible_version.minor < 6
+
+  - name: install docker if ansible version < 2.6
+    pip:
+      name: docker-py
+      state: present
+    become: yes
+    when: ansible_version.major == 2 and ansible_version.minor < 6
+    
+  - name: Get all the backend array keys from inventory
+    set_fact:
+      array_keys: "{{ INVENTORY.keys() }}"
+      install_encryptor_packages: false
+      
+  - name: Check if the encryptor specific packages must be installed
+    set_fact:
+      install_encryptor_packages: true
+    with_items: "{{ array_keys }}"
+    when: INVENTORY[item]['encryptor_key'] is defined
+
+  - name: install gcc
+    package:
+      name: gcc
+      state: present
+    become: yes
+    when: install_encryptor_packages
+
+  - name: install python-devel
+    package:
+      name: python-devel
+      state: present
+    become: yes
+    when: install_encryptor_packages and (ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat')
+
+  - name: install python-dev
+    package:
+      name: python-dev
+      state: present
+    become: yes
+    when: install_encryptor_packages and ansible_distribution == 'Ubuntu'
+
+  - name: update setuptools
+    pip:
+      name: setuptools
+      state: latest
+      extra_args: --upgrade
+    become: yes
+    when: install_encryptor_packages
+
+  - name: install py-3parencryptor
+    pip:
+      name: py-3parencryptor
+      state: present
+    become: yes
+    when: install_encryptor_packages
+
+
