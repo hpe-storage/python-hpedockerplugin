@@ -5,7 +5,7 @@ This section describes the -o fsMode and -o fsOwner options used with volume cre
 ### fsOwner option
 
 To change the ownership of root directory of the filesystem, user needs to pass userId and groupID 
-with this fsOwner option of docker volume create command.
+with this fsOwner option of Docker volume create command.
 
 #### Usage
 -o fsOwner=X    X is the user id and group id that should own the root directory of the filesystem, in the form of [userId:groupId]
@@ -13,14 +13,14 @@ with this fsOwner option of docker volume create command.
 ```
 Example
 
-# docker volume create -d hpe --name VOLUME -o size=1 -o fsOwner=1001:1001
+$ docker volume create -d hpe --name VOLUME -o size=1 -o fsOwner=1001:1001
 VOLUME
 
-# docker volume ls
+$ docker volume ls
 DRIVER              VOLUME NAME
 hpe:latest          VOLUME
 
-# docker volume inspect VOLUME
+$ docker volume inspect VOLUME
 [
     {
         "Driver": "hpe:latest",
@@ -49,8 +49,7 @@ hpe:latest          VOLUME
 ````
 ### fsMode Option
 
-To change the mode of root directory of the filesystem, user needs to pass file mode in octal format 
-with this fsMode option of docker volume create command.
+To change the mode of root directory of the filesystem, user needs to pass file mode in octal format with this fsMode option of Docker volume create command.
 
 #### Usage
 -o fsMode=X    X is 1 to 4 octal digits that represent the file mode to be applied to the root directory of the filesystem.
@@ -58,14 +57,14 @@ with this fsMode option of docker volume create command.
 ````
 Example
 
-# docker volume create -d hpe --name VOLUME -o size=1 -o fsMode=0755
+$ docker volume create -d hpe --name VOLUME -o size=1 -o fsMode=0755
 VOLUME
 
-# docker volume ls
+$ docker volume ls
 DRIVER              VOLUME NAME
 hpe:latest          VOLUME
 
-# docker volume inspect VOLUME
+$ docker volume inspect VOLUME
 [
     {
         "Driver": "hpe:latest",
@@ -95,17 +94,17 @@ hpe:latest          VOLUME
 ### Mounting a volume having ownership and permission.
 
 In order to properly utilize the fsMode and fsowner options, user needs to mount the volume to a container using --user option.
-By default container run as a root user, --user prvides the ability to run a container as a non-root user. 
+By default container run as a root user, --user provides the ability to run a container as a non-root user. 
 
 #### Example
 - Creating volume with fsMode and fsOwner
 ````
-root@cld13b9:~/Secret_Management# docker volume create -d hpe --name VOLUME -o size=1 -o fsMode=0444 -o fsOwner=1001:1001
+$ docker volume create -d hpe --name VOLUME -o size=1 -o fsMode=0444 -o fsOwner=1001:1001
 VOLUME
 ````
 - Inspecting the volume created to verify the fsMode and fsOwner
 ````
-root@cld13b9:~/Secret_Management# docker volume inspect VOLUME
+$ docker volume inspect VOLUME
 [
     {
         "Driver": "hpe:latest",
@@ -134,7 +133,7 @@ root@cld13b9:~/Secret_Management# docker volume inspect VOLUME
 ````
 - Mounting volume to  a container with uid:gid as 1002:1002 using --user option
 ````
-# docker run -it -v VOLUME:/data1 --rm --user 1002:1002 --volume-driver hpe busybox /bin/sh
+$ docker run -it -v VOLUME:/data1 --rm --user 1002:1002 --volume-driver hpe busybox /bin/sh
 / $ ls -lrth
 total 40
 drwxr-xr-x    2 root     root       12.0K May 22 17:00 bin
@@ -152,11 +151,11 @@ drwxr-xr-x    5 root     root         360 Jul 30 10:00 dev
 uid=1002 gid=1002
 / $
 ````
-Here data1 is mountpoint. Permission of data1 can be seen as what we have provided while creating the volume and uid and gid 
-of the container is 1002:1002 as provided in mount command.
+Here data1 is mountpoint. Permission of data1 can be seen as what we have provided while creating the volume and uid and gid of the container is 1002:1002 as provided in mount command.
 
 
 **NOTE:** Snapshots and clones retain the same permissions as provided to the parent volume.
 
 
 [<< Back to Usage](usage.md)
+
