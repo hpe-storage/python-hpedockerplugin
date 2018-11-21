@@ -1,4 +1,4 @@
-# File Permission and Ownership #
+# Enabling File Permissions and Ownership #
 
 This section describes the -o fsMode and -o fsOwner options used with volume creation in detail
 
