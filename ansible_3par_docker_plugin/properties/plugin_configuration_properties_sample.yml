@@ -9,7 +9,7 @@ INVENTORY:
     hpe3par_cpg: SHASHI-PRIM
 
     # Required only in DEFAULT backend
-    volume_plugin: dockerciuser/legacyvolumeplugin:plugin_v2
+    volume_plugin: hpestorage/legacyvolumeplugin:3.0
 
     # Set of optional parameters
     # If encryptor key is set, the passwords in hpe.conf would be encrypted
