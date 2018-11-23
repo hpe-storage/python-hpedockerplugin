@@ -45,6 +45,9 @@ The following section covers the supported actions for the **HPE 3PAR Volume Plu
   * [Enabling compression on volume](#compression)
   * [Enabling file permissions and ownership](#file-permission-owner)
   * [Managing volumes using multiple backends](#multi-array-feature)
+  * [Creating a snapshot or virtual-copy of a volume](#snapshot)
+  * [Display help on usage](#usage-help)
+  * [Display available backends and their status](#backends-status)
 
 If you are using **Kubernetes** or **OpenShift**, please go the [Kubernetes/OpenShift Usage section](#k8_usage).
 
@@ -77,6 +80,9 @@ The **HPE 3PAR Docker Volume Plug-in** supports several optional parameters that
 - **fsMode** -- mode of the root directory of file system to be specified as octal number.(**introduced in plugin version 3.0**)
 
 - **backend** -- backend to be used for the volume creation.(**introduced in plugin version 3.0**)
+
+- **help** -- display usage help and backend initialization status (**introduced in plugin version 3.0**)
+
 
 >Note: Setting flash-cache to True does not gurantee flash-cache will be used. The backend system
 must have the appropriate SSD setup configured too.
@@ -201,13 +207,21 @@ $ docker volume create -d hpe --name <snapshot_name> -o virtualCopyOf=<source_vo
 >* If **snapcpg** is not configured in `hpe.conf` then the **cpg** defined in `hpe.conf` will be used for snapshot creation.
 >
 >* If both **expirationHours** and **retentionHours** are used while creating a snapshot then **retentionHours** should be *less* than **expirationHours**
-
 ```
 $ docker volume create -d hpe --name <snapshot_name> -o virtualCopyOf=<source_vol_name> -o expirationHours=3
 ```
-
-
 >**Note:** To mount a snapshot, you can use the same commands as [mounting a volume](#mount) as specified above.
+
+### Displaying help on usage (**introduced in plugin version 3.0)<a name="usage-help"></a>
+```
+$ docker volume create -d hpe -o help
+```
+
+### Displaying available backends and their status (**introduced in plugin version 3.0)<a name="backends-status"></a>
+```
+$ docker volume create -d hpe -o help=backends
+```
+
 
 ### Creating HPE 3PAR snapshot schedule(**introduced in plugin version 3.0**)
 ```

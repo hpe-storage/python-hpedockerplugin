@@ -20,6 +20,9 @@ Below are the options which can be passed while creating a snapshot schedule.
                                day-of-week   * or 0-6 (0 is Sunday)
 
 - -o scheduleName=x           This option is mandatory. x is a string which indicates name for the schedule on 3PAR.
+                              If *scheduleName=auto* is passed via docker volume create , then the schedule name is 
+                              generated automatically based on timestamp. This is relevant for using the scheduleName 
+                              in StorageClass in Kubernetes environment.
 - -o retentionHours=x         This option is not mandatory option. x is an integer, indicates number of hours this snapshot will be retained.
 - -o snapshotPrefix=x         This option is mandatory. x is prefix string for the scheduled snapshots which will get created on 3PAR
 - -o expHrs=x                 This option is not mandatory option. x is an integer, indicates number of hours after which snapshot created
