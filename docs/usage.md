@@ -74,13 +74,16 @@ The **HPE 3PAR Docker Volume Plug-in** supports several optional parameters that
 
 - **qos-name** -- name of existing VVset on the HPE 3PAR where QoS rules are applied. (**introduced in plugin version 2.1**)
 
-- **cpg** -- name of user-CPG to be used in the operation instead of the one specified in hpe.conf. (**introduced in plugin version 3.0**)
+- **cpg** -- name of user CPG to be used in the operation instead of the one specified in hpe.conf. (**introduced in plugin version 3.0**)
 
-- **snapcpg** -- name of snap-CPG to be used in the operation instead of the one specified in hpe.conf. (**introduced in plugin version 3.0**)
+- **snapcpg** -- name of snapshot CPG to be used in the operation instead of the one specified in hpe.conf. (**introduced in plugin version 3.0**)
 
   In case, *snapcpg* option is not explicitly specified, then:
-  * *snapcpg* takes the value of *hpe3par_snapcpg* specified in 'hpe.conf'
-  * if *hpe3par_snapcpg* is not specified in hpe.conf, then *snapcpg* takes the value of *cpg*
+  * Snapshot CPG takes the value of *hpe3par_snapcpg* from 'hpe.conf' if specified.
+  * If *hpe3par_snapcpg* is not specified in hpe.conf, then snapshot CPG takes the 
+    value of optional parameter *cpg*.
+  * If both *hpe3par_snapcpg* and *cpg* are not specified, then snapshot CPG takes the value
+    of 'hpe3par_cpg' specified in hpe.conf.
 
 - **replicationGroup** -- name of an existing remote copy group on the HPE 3PAR. (**introduced in plugin version 3.0**)
 
