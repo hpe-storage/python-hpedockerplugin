@@ -46,6 +46,7 @@ The following section covers the supported actions for the **HPE 3PAR Volume Plu
   * [Enabling file permissions and ownership](#file-permission-owner)
   * [Managing volumes using multiple backends](#multi-array-feature)
   * [Creating a snapshot or virtual-copy of a volume](#snapshot)
+  * [Creating HPE 3PAR snapshot schedule](#snapshot_schedule)
   * [Display help on usage](#usage-help)
   * [Display available backends and their status](#backends-status)
 
@@ -59,7 +60,7 @@ $ sudo docker volume create -d hpe --name <vol_name>
 ### HPE 3PAR Docker Volume parameters<a name="options"></a>
 The **HPE 3PAR Docker Volume Plug-in** supports several optional parameters that can be used during volume creation:
 
-- **size** -- specifies the desired size in GB of the volume. If size is not specified during volume creation , it defaults to 100 GB.
+- **size** -- specifies the desired size in GB of the volume. If size is not specified during volume creation, it defaults to 100 GB.
 
 - **provisioning** -- specifies the type of provisioning to use (thin, full, dedup). If provisioning is not specified during volume creation, it defaults to thin provisioning. For dedup provisioning, CPG with SSD device type must be configured.
 
@@ -67,24 +68,32 @@ The **HPE 3PAR Docker Volume Plug-in** supports several optional parameters that
 
 - **compression** -- enables or disabled compression on the volume which is being created. It is only supported for thin/dedup volumes 16 GB in size or larger.
   * Valid values for compression are (true, false) or (True, False).
-  * Compression is only supported on 3par OS version 3.3.1 (**introduced in plugin version 2.1**)
+  * Compression is only supported on 3par OS version 3.3.1. (**introduced in plugin version 2.1**)
 
-- **mountConflictDelay** -- specifies period in seconds to wait for a mounted volume to gracefully unmount from a node before it can be mounted to another. If graceful unmount doesn't happen within the specified time then a forced cleanup of the VLUN is performed so that volume can be remounted to another node.(**introduced in plugin version 2.1**)
+- **mountConflictDelay** -- specifies period in seconds to wait for a mounted volume to gracefully unmount from a node before it can be mounted to another. If graceful unmount doesn't happen within the specified time then a forced cleanup of the VLUN is performed so that volume can be remounted to another node. (**introduced in plugin version 2.1**)
 
-- **qos-name** -- name of existing VVset on the HPE 3PAR where QoS rules are applied.(**introduced in plugin version 2.1**)
+- **qos-name** -- name of existing VVset on the HPE 3PAR where QoS rules are applied. (**introduced in plugin version 2.1**)
 
-- **replicationGroup** -- name of an existing remote copy group on the HPE 3PAR.(**introduced in plugin version 3.0**)
+- **cpg** -- name of user-CPG to be used in the operation instead of the one specified in hpe.conf. (**introduced in plugin version 3.0**)
 
-- **fsOwner** -- user ID and group ID that should own root directory of file system.(**introduced in plugin version 3.0**)
+- **snapcpg** -- name of snap-CPG to be used in the operation instead of the one specified in hpe.conf. (**introduced in plugin version 3.0**)
 
-- **fsMode** -- mode of the root directory of file system to be specified as octal number.(**introduced in plugin version 3.0**)
+  In case, *snapcpg* option is not explicitly specified, then:
+  * *snapcpg* takes the value of *hpe3par_snapcpg* specified in 'hpe.conf'
+  * if *hpe3par_snapcpg* is not specified in hpe.conf, then *snapcpg* takes the value of *cpg*
 
-- **backend** -- backend to be used for the volume creation.(**introduced in plugin version 3.0**)
+- **replicationGroup** -- name of an existing remote copy group on the HPE 3PAR. (**introduced in plugin version 3.0**)
 
-- **help** -- display usage help and backend initialization status (**introduced in plugin version 3.0**)
+- **fsOwner** -- user ID and group ID that should own root directory of file system. (**introduced in plugin version 3.0**)
+
+- **fsMode** -- mode of the root directory of file system to be specified as octal number. (**introduced in plugin version 3.0**)
+
+- **backend** -- backend to be used for the volume creation. (**introduced in plugin version 3.0**)
+
+- **help** -- display usage help and backend initialization status. (**introduced in plugin version 3.0**)
 
 
->Note: Setting flash-cache to True does not gurantee flash-cache will be used. The backend system
+>Note: Setting flash-cache to True does not guarantee flash-cache will be used. The backend system
 must have the appropriate SSD setup configured too.
 
 The following is an example Docker command creating a full provisioned, 50 GB volume:
@@ -223,11 +232,11 @@ $ docker volume create -d hpe -o help=backends
 ```
 
 
-### Creating HPE 3PAR snapshot schedule(**introduced in plugin version 3.0**)
+### Creating HPE 3PAR snapshot schedule(**introduced in plugin version 3.0**)<a name="snapshot_schedule"></a>
 ```
 $ docker volume create -d hpe --name <snapshot-name> -o virtualCopyOf=<source-volume> 
 -o scheduleFrequency=<cron-format-string-within-double-quotes> -o scheduleName=<name> 
--o snaphotPrefix=<snapshot-prefix> -o expHrs=<expiration-hours> -o retHrs=<retention-hours>
+-o snapshotPrefix=<snapshot-prefix> -o expHrs=<expiration-hours> -o retHrs=<retention-hours>
 ```
 For details, please see [Creating HPE 3PAR snapshot schedule](create_snapshot_schedule.md)
 

@@ -23,7 +23,6 @@ Below are the options which can be passed while creating a snapshot schedule.
                               If *scheduleName=auto* is passed via docker volume create , then the schedule name is 
                               generated automatically based on timestamp. This is relevant for using the scheduleName 
                               in StorageClass in Kubernetes environment.
-- -o retentionHours=x         This option is not mandatory option. x is an integer, indicates number of hours this snapshot will be retained.
 - -o snapshotPrefix=x         This option is mandatory. x is prefix string for the scheduled snapshots which will get created on 3PAR
 - -o expHrs=x                 This option is not mandatory option. x is an integer, indicates number of hours after which snapshot created
                               via snapshot schedule will be deleted from 3PAR.
@@ -32,7 +31,7 @@ Below are the options which can be passed while creating a snapshot schedule.
 docker command to create a snapshot schedule:
 ```
 $ docker volume create -d hpe --name <snapshot_name> -o virtualCopyOf=volume1 
--o scheduleFrequency="10 2 * * *" -o scheduleName=dailyOnceSchedule -o retentionHours=58 
+-o scheduleFrequency="10 2 * * *" -o scheduleName=dailyOnceSchedule 
 -o snapshotPrefix=pqr -o expHrs=5 -o retHrs=3
 ```
 
@@ -40,8 +39,7 @@ $ docker volume create -d hpe --name <snapshot_name> -o virtualCopyOf=volume1
 1. Above command creates a docker snapshot with name snapshot_name.
 2. It creates a snapshot schedule on 3PAR with name for schedule as dailyOnceSchedule. 
 3. scheduleFrequency string specifies that task has to be created daily for each month and on each day at 10 minutes passed 2 O'clock.
-4. Docker snapshot has retentionHours of 58
-5. Snapshot created via scheduled snapshots will have prefix 'pqr' to its name and these snapshots will have retention period of 3 hours
+4. Snapshot created via scheduled snapshots will have prefix 'pqr' to its name and these snapshots will have retention period of 3 hours
 and expiration period of 5 hours
 
 ###Inspect on volume and snapshot having a schedule associated with it.
@@ -140,4 +138,4 @@ Removing a snapshot and associated schedule:
 $ docker volume rm snapshot1
 ```
 
-[<< Back to Usage](usage.md)
+[<< Back to Usage](usage.md#snapshot_schedule)
