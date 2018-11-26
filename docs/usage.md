@@ -221,12 +221,12 @@ $ docker volume create -d hpe --name <snapshot_name> -o virtualCopyOf=<source_vo
 ```
 >**Note:** To mount a snapshot, you can use the same commands as [mounting a volume](#mount) as specified above.
 
-### Displaying help on usage (**introduced in plugin version 3.0)<a name="usage-help"></a>
+### Displaying help on usage (**introduced in plugin version 3.0**)<a name="usage-help"></a>
 ```
 $ docker volume create -d hpe -o help
 ```
 
-### Displaying available backends and their status (**introduced in plugin version 3.0)<a name="backends-status"></a>
+### Displaying available backends and their status (**introduced in plugin version 3.0**)<a name="backends-status"></a>
 ```
 $ docker volume create -d hpe -o help=backends
 ```

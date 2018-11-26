@@ -157,5 +157,4 @@ Here data1 is mountpoint. Permission of data1 can be seen as what we have provid
 **NOTE:** Snapshots and clones retain the same permissions as provided to the parent volume.
 
 
-[<< Back to Usage](usage.md)
-
+[<< Back to Usage](usage.md#file-permission-owner)
