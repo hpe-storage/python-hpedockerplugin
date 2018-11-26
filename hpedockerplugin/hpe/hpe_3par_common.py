@@ -311,7 +311,8 @@ class HPE3PARCommon(object):
             msg = _("Failed to get qos from VV set %s - %s.") %\
                    (vvset, ex)
             LOG.error(msg)
-            raise exception.HPEDriverGetQosFromVvSetFailed(ex)
+            raise exception.HPEDriverGetQosFromVvSetFailed(vvset_name=vvset,
+                                                           reason=ex)
 
     def get_vvset_detail(self, vvset):
         return self.client.getVolumeSet(vvset)
