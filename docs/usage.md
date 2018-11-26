@@ -80,10 +80,10 @@ The **HPE 3PAR Docker Volume Plug-in** supports several optional parameters that
 
   In case, *snapcpg* option is not explicitly specified, then:
   * Snapshot CPG takes the value of *hpe3par_snapcpg* from 'hpe.conf' if specified.
-  * If *hpe3par_snapcpg* is not specified in hpe.conf, then snapshot CPG takes the 
+  * If *hpe3par_snapcpg* is not specified in 'hpe.conf', then snapshot CPG takes the 
     value of optional parameter *cpg*.
   * If both *hpe3par_snapcpg* and *cpg* are not specified, then snapshot CPG takes the value
-    of 'hpe3par_cpg' specified in hpe.conf.
+    of *hpe3par_cpg* specified in 'hpe.conf'.
 
 - **replicationGroup** -- name of an existing remote copy group on the HPE 3PAR. (**introduced in plugin version 3.0**)
 
