@@ -90,7 +90,7 @@ The **HPE 3PAR Docker Volume Plug-in** supports several optional parameters that
 
 - **backend** -- backend to be used for the volume creation. (**introduced in plugin version 3.0**)
 
-- **help** -- display usage help and backend initialization status. (**introduced in plugin version 3.0**)
+- **help** -- displays usage help and backend initialization status. (**introduced in plugin version 3.0**)
 
 
 >Note: Setting flash-cache to True does not guarantee flash-cache will be used. The backend system
@@ -151,7 +151,7 @@ $ docker run -it -v <vol_name>:/<mount_point>/ --volume-driver hpe <image_name> 
 
 On Docker 17.06 or later, run below command:
 ```
-$ docker run -it --mount type=volume,src=<VOLUME-NAME>,dst=<CONTAINER-PATH>,volume-driver=<DRIVER>,volume-opt=<KEY0>=<VALUE0>,volume-opt=<KEY1>=<VALUE1> --name mycontainer <IMAGE>
+$ docker run -it --mount type=volume,src=<vol-name>,dst=<container-path>,volume-driver=<driver>,volume-opt=<KEY0>=<VALUE0>,volume-opt=<KEY1>=<VALUE1> --name mycontainer <IMAGE>
 ```
 
 >Note: If the volume does not exist it will be created.
@@ -215,7 +215,7 @@ $ docker volume create -d hpe --name <snapshot_name> -o virtualCopyOf=<source_vo
 >**Note:**
 >* If **snapcpg** is not configured in `hpe.conf` then the **cpg** defined in `hpe.conf` will be used for snapshot creation.
 >
->* If both **expirationHours** and **retentionHours** are used while creating a snapshot then **retentionHours** should be *less* than **expirationHours**
+>* If both **expirationHours** and **retentionHours** are used while creating a snapshot, then **retentionHours** should be *less* than **expirationHours**
 ```
 $ docker volume create -d hpe --name <snapshot_name> -o virtualCopyOf=<source_vol_name> -o expirationHours=3
 ```
@@ -232,7 +232,7 @@ $ docker volume create -d hpe -o help=backends
 ```
 
 
-### Creating HPE 3PAR snapshot schedule(**introduced in plugin version 3.0**)<a name="snapshot_schedule"></a>
+### Creating HPE 3PAR snapshot schedule (**introduced in plugin version 3.0**)<a name="snapshot_schedule"></a>
 ```
 $ docker volume create -d hpe --name <snapshot-name> -o virtualCopyOf=<source-volume> 
 -o scheduleFrequency=<cron-format-string-within-double-quotes> -o scheduleName=<name> 
@@ -256,14 +256,15 @@ To learn more about Persistent Volume Storage and Kubernetes/OpenShift, go to:
 https://kubernetes.io/docs/tasks/configure-pod-container/configure-persistent-volume-storage/
 
 ### Key Kubernetes/OpenShift Terms:<a name="k8_terms"></a>
-* **kubectl** – command line interface for running commands against Kubernetes clusters
-* **oc** – command line interface for running commands against OpenShift platform
+* **kubectl** – command line interface for running commands against Kubernetes clusters.
+* **oc** – command line interface for running commands against OpenShift platform.
 * **PV** – Persistent Volume is a piece of storage in the cluster that has been provisioned by an administrator.
 * **PVC** – Persistent Volume Claim is a request for storage by a user.
 * **SC** – Storage Class provides a way for administrators to describe the “classes” of storage they offer.
 * **hostPath volume** – mounts a file or directory from the host node’s filesystem into your Pod.
 
-To get started, in an OpenShift environment, we need to relax the security of your cluster so pods are allowed to use the **hostPath** volume plugin without granting everyone access to the privileged **SCC**:
+To get started, in an OpenShift environment, we need to relax the security of your cluster, so pods are allowed to 
+use the **hostPath** volume plugin without granting everyone access to the privileged **SCC**:
 
 1. Edit the restricted SCC:
 ```
@@ -346,7 +347,7 @@ At this point, after creating the **SC** and **PVC** definitions, the volume has
 
 ### Pod Example<a name="pod"></a>
 
-So let’s create a **pod "pod1"** using the **nginx** container along with some persistent storage:
+So, let’s create a **pod "pod1"** using the **nginx** container along with some persistent storage:
 
 ```yaml
 $ sudo kubectl create -f - << EOF
