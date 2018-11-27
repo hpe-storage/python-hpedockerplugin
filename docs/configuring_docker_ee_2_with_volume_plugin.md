@@ -1,4 +1,4 @@
-# Configuring HPE 3PAR Docker Volume Plugin for Docker EE 2.0
+## Configuring HPE 3PAR Docker Volume Plugin for Docker EE 2.0
 
 ### Install OS (Ubuntu or CentOs) on all the nodes.
 
@@ -22,18 +22,24 @@ docker container run --rm -it --name ucp \
  
  Example:-
   
-  `docker container run --rm -it --name ucp   -v /var/run/docker.sock:/var/run/docker.sock   docker/ucp:3.0.5 install   --host-address  192.168.68.34   --pod-cidr 192.167.0.0/16 --interactive`
+  `docker container run --rm -it --name ucp   -v /var/run/docker.sock:/var/run/docker.sock   docker/ucp:3.0.5 install   \
+  --host-address  192.168.68.34   --pod-cidr 192.167.0.0/16 --interactive`
 
-Admin Username: < Set the user name >
-Admin Password: < Set the password >
-  Confirm Admin Password: < Set the password >
-  Additional aliases: < Press Enter OR specify additional aliases if required >
+Admin Username:  {Set the user name}
+Admin Password:  {Set the password}
+  Confirm Admin Password: {Set the password}
+  Additional aliases: {Press Enter OR specify additional aliases if required }
   Once the installation is complete ...It will display the login url 
-`mkdir -p /etc/kubernetes`
-`cp /var/lib/docker/volumes/ucp-node-certs/_data/kubelet.conf /etc/kubernetes/admin.conf`
-Modify /etc/kubernetes/admin.conf with correct certificate-authority, server, client-certificate, client-key
-  Follow all the steps to install dory/doryd on master node.
- (OPTIONAL if kubectl client is required).
+  
+- `mkdir -p /etc/kubernetes`
+- `cp /var/lib/docker/volumes/ucp-node-certs/_data/kubelet.conf /etc/kubernetes/admin.conf`
+
+- Modify /etc/kubernetes/admin.conf with correct certificate-authority, server, client-certificate, client-key
+  
+Follow all the steps to install dory/doryd on master node.
+
+### OPTIONAL if kubectl client is required).
+```
    # Set the Kubernetes version as found in the UCP Dashboard or API
    k8sversion=v1.8.11
    # Get the kubectl binary.
@@ -45,6 +51,7 @@ Modify /etc/kubernetes/admin.conf with correct certificate-authority, server, cl
 
 export KUBERNETES_SERVICE_HOST=192.168.68.41
 export KUBERNETES_SERVICE_PORT=443
+```
 
 ### Sample hpe.conf
 
