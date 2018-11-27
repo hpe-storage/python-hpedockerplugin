@@ -1,33 +1,36 @@
-Install OS (Ubuntu or CentOs) on all the nodes.
+# Configuring HPE 3PAR Docker Volume Plugin for Docker EE 2.0
+
+### Install OS (Ubuntu or CentOs) on all the nodes.
 
 Follow the steps to install docker Engine (EE 2.0) on all the nodes.
 
-Install and enable containerized plugin on all the nodes.
+### Install and enable containerized plugin on all the nodes.
     Use the latest hpe.conf file and docker-compose.yml (Sample docker-compose.yml below).
 
-Install UCP on master. (https://docs.docker.com/ee/ucp/admin/install/)
+### Install UCP on master. (https://docs.docker.com/ee/ucp/admin/install/)
     a. Pull the latest version of UCP
        docker image pull docker/ucp:3.0.5
     b. Install UCP
 
+```
 docker container run --rm -it --name ucp \
   -v /var/run/docker.sock:/var/run/docker.sock \
   docker/ucp:3.0.5 install \
   --host-address <node-ip-address> --pod-cidr <    >\
   --interactive
-  
+```  
  
  Example:-
   
-  docker container run --rm -it --name ucp   -v /var/run/docker.sock:/var/run/docker.sock   docker/ucp:3.0.5 install   --host-address  192.168.68.34   --pod-cidr 192.167.0.0/16 --interactive
+  `docker container run --rm -it --name ucp   -v /var/run/docker.sock:/var/run/docker.sock   docker/ucp:3.0.5 install   --host-address  192.168.68.34   --pod-cidr 192.167.0.0/16 --interactive`
 
 Admin Username: < Set the user name >
 Admin Password: < Set the password >
   Confirm Admin Password: < Set the password >
   Additional aliases: < Press Enter OR specify additional aliases if required >
   Once the installation is complete ...It will display the login url 
-mkdir -p /etc/kubernetes
-cp /var/lib/docker/volumes/ucp-node-certs/_data/kubelet.conf /etc/kubernetes/admin.conf
+`mkdir -p /etc/kubernetes`
+`cp /var/lib/docker/volumes/ucp-node-certs/_data/kubelet.conf /etc/kubernetes/admin.conf`
 Modify /etc/kubernetes/admin.conf with correct certificate-authority, server, client-certificate, client-key
   Follow all the steps to install dory/doryd on master node.
  (OPTIONAL if kubectl client is required).
@@ -42,8 +45,10 @@ Modify /etc/kubernetes/admin.conf with correct certificate-authority, server, cl
 
 export KUBERNETES_SERVICE_HOST=192.168.68.41
 export KUBERNETES_SERVICE_PORT=443
-Sample hpe.conf
 
+### Sample hpe.conf
+
+```
 [DEFAULT]
 ssh_hosts_key_file = /root/.ssh/known_hosts
 logging = DEBUG
@@ -66,11 +71,11 @@ hpe3par_iscsi_chap_enabled = True
 #use_multipath = True
 #enforce_multipath = True
 mount_conflict_delay = 30
+```
 
-----------------------------------------------------------------------------------------------------------------------------------
 
-Sample docker-compose.yml
-
+### Sample docker-compose.yml
+```
 hpedockerplugin:
  container_name: legacy_plugin
  image: dockerciuser/legacyvolumeplugin:plugin_v2
@@ -90,3 +95,4 @@ hpedockerplugin:
     - /lib/x86_64-linux-gnu:/lib64
     - /var/run/docker.sock:/var/run/docker.sock
     - /var/lib/kubelet/plugins/hpe.com/3par/mounts/:/var/lib/kubelet/plugins/hpe.com/3par/mounts:rshared
+```
