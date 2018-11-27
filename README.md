@@ -40,6 +40,10 @@ Here is an example of the HPE Docker Volume plugin being used in an OpenShift en
   * snapshot mount
   * mount_conflict_delay
   * concurrent volume access
+  * replication
+  * snapshot schedule
+  * file system permissions and ownership
+  * multiple backends
 
 ## Usage
 
