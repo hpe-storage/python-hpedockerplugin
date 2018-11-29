@@ -274,7 +274,8 @@ class HPEDriverCreateVolumeWithQosFailed(HPEDriverException):
 
 
 class HPEDriverGetQosFromVvSetFailed(HPEDriverException):
-    message = ""
+    message = _("Failed to retrieve QOS from VV-Set %(vvset_name)s:"
+                " %(reason)s")
 
 
 class HPEDriverSetFlashCacheOnVvsFailed(HPEDriverException):
@@ -341,3 +342,8 @@ class DeleteReplicatedVolumeFailed(PluginException):
 
 class RcgStateInTransitionException(PluginException):
     message = _("Remote copy group state is in transition: %(reason)s")
+
+
+class HPEDriverNoQosOrFlashCacheSetForVolume(PluginException):
+    message = _("Volume in VVS without being associated with QOS or "
+                "flash-cache: %(reason)s")
