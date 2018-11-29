@@ -49,6 +49,7 @@ The following section covers the supported actions for the **HPE 3PAR Volume Plu
   * [Creating HPE 3PAR snapshot schedule](#snapshot_schedule)
   * [Display help on usage](#usage-help)
   * [Display available backends and their status](#backends-status)
+  * [Importing legacy volumes as docker volumes](#import-vol)
 
 If you are using **Kubernetes** or **OpenShift**, please go the [Kubernetes/OpenShift Usage section](#k8_usage).
 
@@ -223,6 +224,14 @@ $ docker volume create -d hpe --name <snapshot_name> -o virtualCopyOf=<source_vo
 $ docker volume create -d hpe --name <snapshot_name> -o virtualCopyOf=<source_vol_name> -o expirationHours=3
 ```
 >**Note:** To mount a snapshot, you can use the same commands as [mounting a volume](#mount) as specified above.
+
+
+### Importing non-docker managed volumes (**introduced in plugin version 3.0**)<a name="import-vol"></a>
+```
+$ docker volume create -d hpe --name <docker_volume_name> -o importVol=<3par_volume_name>
+```
+
+>**Note:** To import a snapshot, you have to first import the parent volume of the snapshot as docker volume
 
 ### Displaying help on usage (**introduced in plugin version 3.0**)<a name="usage-help"></a>
 ```
