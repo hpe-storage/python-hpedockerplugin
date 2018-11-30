@@ -52,3 +52,39 @@ See the [usage guide](/docs/usage.md) for details on the supported operations an
 ## Troubleshooting
 
 Troubleshooting issues with the plugin can be performed using these [tips](/docs/troubleshooting.md)
+
+## Limitations
+- List of issues around the containerized version of the plugin/Managed plugin is present in https://github.com/hpe-storage/python-hpedockerplugin/issues 
+
+- ``$ docker volume prune`` is not supported for volume plugin, instead use ``$docker volume rm $(docker volume ls -q -f "dangling=true") `` to clean up orphaned volumes.
+
+- Shared volume support is present for containers running on the same host.
+
+- For upgrading the plugin from older version to the current released version, user needs to unmount all the volumes and follow the standard
+ upgrade procedure described in docker guide. 
+ 
+- Volumes created using older plugins (2.0.2 or below) do not have snap_cpg associated with them, hence when the plugin is upgraded to      2.1 and user wants to perform clone/snapshot operations on these old volumes, he/she must set the snap_cpg for the
+   corresponding volumes using 3par cli or any tool before performing clone/snapshot operations.
+
+- While inspecting a snapshot, its provisioning field is set to that of parent volume's provisioning type. In 3PAR however, it is shown as 'snp'.
+
+- Mounting a QoS enabled volume can take longer than a volume without QoS for both FC and iSCSI protocol.
+
+- For a cloned volume with the same size as source volume, comment field won’t be populated on 3PAR.
+
+- User not allowed to import a 3PAR legacy volume when it is under use(Active VLUN).
+
+- User needs to explicitly manage all the child snapshots, until which managed parent volume cannot be deleted
+
+- User cannot manage already managed volume by other docker host(i.e. volume thats start with 'dcv-')
+
+- It is recommended for a user to avoid importing legacy volume which has schedules associated with it. If this volume needs to be imported please remove existing schedule on 3PAR and import the legacy volume.
+
+- "Snapshot schedule creation can take more time resulting into Docker CLI timeout. However, snapshot schedule may still get created in the background. User can follow below two steps in case of time out issue from docker daemon while creating snapshot schedule."
+
+```Inspect the snapshot to verify if the snapshot schedule got created
+docker volume inspect <snapshot_name>. This should display snapshot details with snapshot schedule information.
+
+Verify if schedule got created on the array using 3PAR CLI command:
+$ showsched
+```
