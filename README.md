@@ -88,3 +88,5 @@ docker volume inspect <snapshot_name>. This should display snapshot details with
 Verify if schedule got created on the array using 3PAR CLI command:
 $ showsched
 ```
+
+- If a mount fails due to dangling LUN use this section of troubleshooting guide [Removing Dangling LUN](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/troubleshooting.md#removing-dangling-lun)
