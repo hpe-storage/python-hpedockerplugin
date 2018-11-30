@@ -90,3 +90,5 @@ $ showsched
 ```
 
 - If a mount fails due to dangling LUN use this section of troubleshooting guide [Removing Dangling LUN](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/troubleshooting.md#removing-dangling-lun)
+
+- If two or more backends are defined with the same name then the last backend is picked up and rest ignored.
