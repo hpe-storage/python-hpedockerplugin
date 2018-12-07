@@ -14,11 +14,12 @@ This quick start guide is designed to allow you to get up and running quickly wi
 
 ## Supported HPE 3PAR storage arrays:
 
-* OS version support for 3PAR 3.2.1 MU2 and later
+* OS version support for 3PAR 3.2.1 MU2, 3.2.2 MU4, MU6, 3.3.1 MU2, MU3
 
 ## Supported Docker versions:
 
-Docker EE 17.03 or later.
+Docker EE 17.03
+Docker EE 17.06
 
 ```
 docker --version
