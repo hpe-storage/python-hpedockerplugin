@@ -15,7 +15,7 @@ plugin:
 # Add etcd service details for secured/unsecured connection
 # Specify the name of the etcd container
 etcd:
-    host: 192.168.68.33
+    host: 192.168.82.1
     #host: localhost
     port: 2379
     client_cert:
