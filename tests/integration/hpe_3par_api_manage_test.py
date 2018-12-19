@@ -460,4 +460,3 @@ class ManageVolumeTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
 
         hpe_3par_cli.deleteVolumeSet(vvset_name)
 
-
