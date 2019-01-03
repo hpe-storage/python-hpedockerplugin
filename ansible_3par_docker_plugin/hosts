@@ -3,6 +3,10 @@
 192.168.1.52
 192.168.1.53
 
+[all:vars]
+http_proxy=http://web-proxy.in.hpecorp.net:8080
+https_proxy=http://web-proxy.in.hpecorp.net:8080
+
 [masters]
 192.168.1.51
 
