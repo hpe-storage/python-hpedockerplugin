@@ -3,6 +3,6 @@
 10.10.10.2
 10.10.10.3
 
-[all:vars]
-http_proxy=http://web-proxy.in.hpecorp.net:8080
-https_proxy=http://web-proxy.in.hpecorp.net:8080
+#[all:vars]
+#http_proxy=http://web-proxy.in.hpecorp.net:8080
+#https_proxy=http://web-proxy.in.hpecorp.net:8080
