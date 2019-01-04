@@ -1,8 +1,8 @@
 - hosts: localhost
   become: root
   environment:
-    http_proxy: "http://web-proxy.in.hpecorp.net:8080"
-    https_proxy: "http://web-proxy.in.hpecorp.net:8080"
+    http_proxy: "{{ http_proxy  | default('')}}"
+    https_proxy: "{{ https_proxy  | default('')}}"
   tasks:
     - name: install sshpass
       package:
@@ -12,8 +12,8 @@
 - hosts: all
 
   environment:
-    http_proxy: "http://web-proxy.in.hpecorp.net:8080"
-    https_proxy: "http://web-proxy.in.hpecorp.net:8080"
+    http_proxy: "{{ http_proxy  | default('')}}"
+    https_proxy: "{{ https_proxy  | default('')}}"
 
   tasks:
   

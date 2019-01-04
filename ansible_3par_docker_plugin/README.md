@@ -50,6 +50,10 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
   - It is recommended that the properties file is [encrypted using Ansible Vault](/ansible_3par_docker_plugin/encrypt_properties.md).
 
   - Modify [hosts](/ansible_3par_docker_plugin/hosts) file to define your Master/Worker nodes as well as where you want to deploy your etcd cluster
+  
+### Working with proxies:
+
+Set http_proxy and http_proxy in the [inventory hosts file](/ansible_3par_docker_plugin/hosts) while installing plugin on Kubernetes/Openshift setup. For setting proxies in the standalone plugin installation, see [inventory hosts file for standalone plugin installation](/ansible_3par_docker_plugin/hosts_standalone_nodes)
 
 ### Usage
 
