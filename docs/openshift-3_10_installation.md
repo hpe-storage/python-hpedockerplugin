@@ -49,7 +49,7 @@ To install OpenShift Container Platform, you will need:
     ```
 * Find the pool ID that provides OpenShift Container Platform subscription and attach it. 
     ```
-    $ subscription-manager list --available 
+    $ subscription-manager attach --pool=<pool_id> 
     ```
 * Replace the string <pool_id> with the pool ID of the pool that provides OpenShift Container Platform. The pool ID is a long alphanumeric string
 
@@ -96,6 +96,8 @@ To install OpenShift Container Platform, you will need:
     
     [Inventory Link](https://docs.openshift.com/container-platform/3.10/install/example_inventories.html#install-config-example-inventories)
     
+    Example host file - [hosts.txt](https://github.com/hpe-storage/python-hpedockerplugin/files/2745186/hosts.txt)
+    
     Edit the example inventory to use your host names, then save it to a file (default location is /etc/ansible/hosts)
 
 * Clone the openshift-ansible repository with release-3.10 branch checked out
@@ -106,11 +108,11 @@ To install OpenShift Container Platform, you will need:
 
 * Run the prerequisites.yml playbook using your inventory file: 
      ```
-    $ ansible-playbook -i <inventory_file> /usr/share/ansible/openshift-ansible/playbooks/prerequisites.yml
+    $ ansible-playbook -i <inventory_file> /openshift-ansible/playbooks/prerequisites.yml
  
     ```
 * Run the deploy_cluster.yml playbook using your inventory file:
     ```
-    $ ansible-playbook -i <inventory_file> /usr/share/ansible/openshift ansible/playbooks/deploy_cluster.yml
+    $ ansible-playbook -i <inventory_file> /openshift ansible/playbooks/deploy_cluster.yml
     ```
 
