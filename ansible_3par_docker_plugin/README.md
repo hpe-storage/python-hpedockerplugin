@@ -26,16 +26,16 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
   
       | Property  | Mandatory | Default Value | Description |
       | ------------- | ------------- | ------------- | ------------- |
-      | ```host_etcd_port_number```  | Yes  | No defualt value | Etcd port number |
-      | ```hpedockerplugin_driver```  | Yes  | No defualt value  | ISCSI/FC driver  (hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver/hpedockerplugin.hpe.hpe_3par_fc.HPE3PARFCDriver) |
-      | ```hpe3par_ip```  | Yes  | No defualt value | IP address of 3PAR array |
-      | ```hpe3par_username```  | Yes  | No defualt value | 3PAR username |
-      | ```hpe3par_password```  | Yes  | No defualt value | 3PAR password |
-      | ```hpe3par_cpg```  | Yes  | No defualt value | Primary user CPG |
-      | ```volume_plugin```  | Yes  | No defualt value | Name of the docker volume image (only required with DEFAULT backend) |
-      | ```encryptor_key```  | No  | No defualt value | Encryption key string for 3PAR password |
+      | ```host_etcd_port_number```  | Yes  | No default value | Etcd port number |
+      | ```hpedockerplugin_driver```  | Yes  | No default value  | ISCSI/FC driver  (hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver/hpedockerplugin.hpe.hpe_3par_fc.HPE3PARFCDriver) |
+      | ```hpe3par_ip```  | Yes  | No default value | IP address of 3PAR array |
+      | ```hpe3par_username```  | Yes  | No default value | 3PAR username |
+      | ```hpe3par_password```  | Yes  | No default value | 3PAR password |
+      | ```hpe3par_cpg```  | Yes  | No default value | Primary user CPG |
+      | ```volume_plugin```  | Yes  | No default value | Name of the docker volume image (only required with DEFAULT backend) |
+      | ```encryptor_key```  | No  | No default value | Encryption key string for 3PAR password |
       | ```logging```  | No  | ```INFO``` | Log level |
-      | ```hpe3par_debug```  | No  | No defualt value | 3PAR log level |
+      | ```hpe3par_debug```  | No  | No default value | 3PAR log level |
       | ```suppress_requests_ssl_warning```  | No  | ```True``` | Suppress request SSL warnings |
       | ```hpe3par_snapcpg```  | No  | ```hpe3par_cpg``` | Snapshot CPG |
       | ```hpe3par_iscsi_chap_enabled```  | No  | ```False``` | ISCSI chap toggle |
