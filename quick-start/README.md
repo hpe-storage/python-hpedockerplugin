@@ -20,6 +20,7 @@ This quick start guide is designed to allow you to get up and running quickly wi
 
 * Docker EE 17.03
 * Docker EE 17.06
+* Docker EE 18.09
 
 ```
 docker --version
