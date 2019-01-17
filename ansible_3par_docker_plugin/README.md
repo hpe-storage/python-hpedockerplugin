@@ -22,7 +22,13 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
   - Login to 3PAR via SSH to create entry in /\<user>\/.ssh/known_hosts file
   > **Note:** Entries for the Master and Worker nodes should already exist within the /\<user>\/.ssh/known_hosts file from the OpenShift installation. If not, you will need to log into each of the Master and Worker nodes as well to prevent connection errors from Ansible.
   
-  - Add [plugin configuration properties - sample](/ansible_3par_docker_plugin/properties/plugin_configuration_properties_sample.yml) at `properties/plugin_configuration_properties_sample.yml` based on your HPE 3PAR Storage array configuration. Some of the properties are mandatory and must be specified in the properties file while others are optional. 
+  - Clone the python-hpedockerplugin repository
+    ```
+    git clone https://github.com/hpe-storage/python-hpedockerplugin
+    cd python-hpedockerplugin/ansible_3par_docker_plugin
+    ```
+  
+  - Add [plugin configuration properties - sample](/ansible_3par_docker_plugin/properties/plugin_configuration_properties_sample.yml) at `properties/plugin_configuration_properties.yml` based on your HPE 3PAR Storage array configuration. Some of the properties are mandatory and must be specified in the properties file while others are optional. 
   
       | Property  | Mandatory | Default Value | Description |
       | ------------- | ------------- | ------------- | ------------- |
@@ -61,11 +67,13 @@ Once the prerequisites are complete, run the following command:
 
 - Installation on standalone docker environment:
 ```
+$ cd python-hpedockerplugin/ansible_3par_docker_plugin
 $ ansible-playbook -i hosts_standalone_nodes install_standalone_hpe_3par_volume_driver.yml --ask-vault-pass
 ```
 
 - Installation on Openshift/Kubernetes environment:
 ```
+$ cd python-hpedockerplugin/ansible_3par_docker_plugin
 $ ansible-playbook -i hosts install_hpe_3par_volume_driver.yml --ask-vault-pass
 ```
 > **Note:** ```--ask-vault-pass``` is required only when the properties file is encrypted
