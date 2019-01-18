@@ -4,6 +4,9 @@
   become: root
 
   tasks:
+    - name: load plugin settings
+      include_vars: '../properties/plugin_configuration_properties.yml'
+
     - name: Remove etcd and 3PAR Volume Plugin containers from Docker
       include: remove_3par_docker_container.yml
 
