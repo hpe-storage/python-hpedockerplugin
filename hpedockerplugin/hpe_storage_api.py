@@ -27,6 +27,9 @@ import hpedockerplugin.exception as exception
 from hpedockerplugin.i18n import _, _LE, _LI
 from klein import Klein
 from hpedockerplugin.hpe import volume
+from ratelimit import limits
+from ratelimit.exception import RateLimitException
+from backoff import on_exception, expo
 
 import hpedockerplugin.backend_orchestrator as orchestrator
 import hpedockerplugin.request_validator as req_validator
@@ -649,6 +652,8 @@ class VolumePlugin(object):
         LOG.info(' Schedule Name auto generated is %s' % scheduleNameGenerated)
         return scheduleNameGenerated
 
+    @on_exception(expo, RateLimitException, max_tries=3)
+    @limits(calls=2, period=30)
     @app.route("/VolumeDriver.Mount", methods=["POST"])
     def volumedriver_mount(self, name):
         """
