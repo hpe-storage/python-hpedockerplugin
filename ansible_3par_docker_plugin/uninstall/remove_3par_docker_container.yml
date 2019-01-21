@@ -11,7 +11,7 @@
   - name: Stop & remove hpedockerplugin container
     docker_container:
       name: plugin_container
-      image: hpestorage/legacyvolumeplugin:2.1
+      image: "{{ INVENTORY['DEFAULT']['volume_plugin'] }}"
       state: stopped
 
   - pause:
@@ -26,5 +26,5 @@
   - name: Remove hpedockerplugin container
     docker_container:
       name: plugin_container
-      image: hpestorage/legacyvolumeplugin:2.1
+      image: "{{ INVENTORY['DEFAULT']['volume_plugin'] }}"
       state: absent
