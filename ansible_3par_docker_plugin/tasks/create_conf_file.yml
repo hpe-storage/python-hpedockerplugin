@@ -115,37 +115,12 @@
       path: /etc/hpedockerplugin/hpe.conf
       section: "{{ passwords['results'][item | int]['item'][0] }}"
       option:  "{{ passwords['results'][item | int]['item'][1]['option'] }}"
-      value: "{{ passwords['results'][item | int]['stdout_lines'][0].split('password: ')[1] }} "
+      value: "{{ passwords['results'][item | int]['stdout'].split('password: ')[1] }} "
       no_extra_spaces: true
     with_items:
       - "{{ lookup('sequence','start=0 end='+((INVENTORY.keys() | count)*2 -1) |string,wantlist=True) }}"
     become: yes
-    when:  passwords['results'][item | int]['stdout_lines'] is defined
-    ignore_errors: yes
-
-  - name: Wait 10 seconds
-    wait_for: timeout=10
-
-  - name: Get the encrypted passwords
-    shell: hpe3parencryptor --backend {{ item[0] }} -a {{INVENTORY[item[0]]['encryptor_key']}} "{{ INVENTORY[item[0]][(item[1].value)] }}"
-    ignore_errors: yes
-    register: passwords
-    with_nested:
-      - "{{ INVENTORY.keys()}}"
-      - [{ option: 'hpe3par_password', value: 'hpe3par_password' }, { option: 'san_password', value: 'hpe3par_password' }]
-    when: INVENTORY[item[0]]['encryptor_key'] is defined
-
-  - name: Populate the encrypted passwords in hpe.conf
-    ini_file:
-      path: /etc/hpedockerplugin/hpe.conf
-      section: "{{ passwords['results'][item | int]['item'][0] }}"
-      option:  "{{ passwords['results'][item | int]['item'][1]['option'] }}"
-      value: "{{ passwords['results'][item | int]['stdout_lines'][0].split('password: ')[1] }} "
-      no_extra_spaces: true
-    with_items:
-      - "{{ lookup('sequence','start=0 end='+((INVENTORY.keys() | count)*2 -1) |string,wantlist=True) }}"
-    become: yes
-    when:  passwords['results'][item | int]['stdout_lines'] is defined
+    when:  passwords['results'][item | int]['stdout'] is defined
 
   - name: get the iscsi ports of replication device
     local_action: shell /usr/bin/sshpass -p {{ INVENTORY[item]['replication_device']['hpe3par_password'] }} ssh -oStrictHostKeyChecking=no {{ INVENTORY[item]['replication_device']['hpe3par_username'] }}@{{ INVENTORY[item]['replication_device']['hpe3par_ip'] }} "showport -iscsi" | grep ready | awk '{print $3}'
