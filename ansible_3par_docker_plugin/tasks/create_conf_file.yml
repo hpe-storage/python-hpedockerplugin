@@ -1,4 +1,15 @@
 ---
+  - name: Stop docker container
+    docker_container:
+      name: plugin_container
+      image: "{{ INVENTORY['DEFAULT']['volume_plugin'] }}"
+      state: stopped
+
+  - name: remove the existing configuration file
+    file:
+      path: /etc/hpedockerplugin/hpe.conf
+      state: absent
+
   - name: Populate the etcd cluster IP in hpe.conf
     ini_file:
       path: /etc/hpedockerplugin/hpe.conf
@@ -22,17 +33,6 @@
       - "{{ INVENTORY.keys()}}"
     become: yes
     when: groups['etcd'] is not defined or (groups['etcd'] is defined and groups['etcd'] | length == 1)
-
-  - name: Stop docker container
-    docker_container:
-      name: plugin_container
-      image: "{{ INVENTORY['DEFAULT']['volume_plugin'] }}"
-      state: stopped
-
-  - name: remove the existing configuration file
-    file:
-      path: /etc/hpedockerplugin/hpe.conf
-      state: absent
 
   - name: get the iscsi ports
     local_action: shell /usr/bin/sshpass -p {{ INVENTORY[item]['hpe3par_password'] }} ssh -oStrictHostKeyChecking=no {{ INVENTORY[item]['hpe3par_username'] }}@{{ INVENTORY[item]['hpe3par_ip'] }} "showport -iscsi" | grep ready | awk '{print $3}'
