@@ -56,30 +56,6 @@
     - name: Create hpe.conf
       include: tasks/create_conf_file.yml
 
-    - name: Populate the etcd cluster IP in hpe.conf
-      ini_file:
-        path: /etc/hpedockerplugin/hpe.conf
-        section: "{{ item }}"
-        option: 'host_etcd_ip_address'
-        value: "{{ (':' + INVENTORY['DEFAULT']['host_etcd_port_number'] | string + ',').join(groups['etcd']) + ':' +  INVENTORY['DEFAULT']['host_etcd_port_number'] | string }}"
-        no_extra_spaces: true
-      with_items:
-        - "{{ INVENTORY.keys()}}"
-      become: yes
-      when: groups['etcd'] | length > 1
-
-    - name: Populate the etcd IP in hpe.conf
-      ini_file:
-        path: /etc/hpedockerplugin/hpe.conf
-        section: "{{ item }}"
-        option: 'host_etcd_ip_address'
-        value: "{{ groups['etcd'][0] }}"
-        no_extra_spaces: true
-      with_items:
-        - "{{ INVENTORY.keys()}}"
-      become: yes
-      when: groups['etcd'] | length == 1
-
     - name: Create 3PAR Docker Volume plugin
       include: tasks/create_3par_docker_volume_plugin.yml
 
