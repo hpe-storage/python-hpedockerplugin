@@ -1,9 +1,15 @@
 ---
+  - name: Check that the doryd.service file exists
+    stat:
+      path: /etc/systemd/system/doryd.service
+    register: stat_result
+
   - name: stop doryd service, also issue daemon-reload to pick up config changes
     service:
       state: stopped
       enabled: no
       name: doryd.service
+    when: stat_result.stat.exists
 
   - pause:
       seconds: 5
