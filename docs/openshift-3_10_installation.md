@@ -113,6 +113,6 @@ To install OpenShift Container Platform, you will need:
     ```
 * Run the deploy_cluster.yml playbook using your inventory file:
     ```
-    $ ansible-playbook -i <inventory_file> /openshift ansible/playbooks/deploy_cluster.yml
+    $ ansible-playbook -i <inventory_file> /openshift-ansible/playbooks/deploy_cluster.yml
     ```
 
