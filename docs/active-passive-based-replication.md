@@ -113,9 +113,9 @@ values are *True* and *False*.
 
 #### Example ####
 
-**Create a replicated volume having size 1GB with a non-existing RCG using backend "ActivePassiceRepBackend"**
+**Create a replicated volume having size 1GB with a non-existing RCG using backend "ActivePassiveRepBackend"**
 ```sh
-$ docker volume create -d hpe --name Test_RCG_Vol -o replicationGroup=Test_RCG -o size=1 -o backend=ActivePassiceRepBackend 
+$ docker volume create -d hpe --name Test_RCG_Vol -o replicationGroup=Test_RCG -o size=1 -o backend=ActivePassiveRepBackend 
 ```
 This will create volume Test_RCG_Vol along with TEST_RCG remote copy group. The volume
 will then be added to the TEST_RCG.
