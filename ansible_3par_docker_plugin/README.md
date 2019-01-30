@@ -13,8 +13,9 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
 * For standalone docker environment,
   * Deploys an etcd cluster
 * For Kubernetes/OpenShift, 
-  * Deploys a 3-node Highly Available etcd cluster
-  * Deploys the HPE FlexVolume Drivers
+  * Deploys a Highly Available etcd cluster used by the HPE 3PAR Docker Volume plugin 
+    * Supports single node (Use only for testing purposes) or multi-node deployment (HA) as defined in the Ansible hosts file
+  * Deploys the HPE FlexVolume Driver
 
 ### Prerequisites:
   - Install Ansible 2.5 or above as per [Installation Guide](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
