@@ -4,10 +4,19 @@ Design decision for implementing File Services for HPE 3PAR Docker Volume plugin
 ### Objectives
 1. Provide a way to present a file share (via NFS/CIFS -- which are currently supported on File Persona of HPE 3PAR) 
 to containerized applications
-2. Provide a way to update the whitelisted IP's as part of ACL definition of File Store/Share.
+  - To support share replication, we have model VFS as a docker volume object 
+  - To support snapshot/quota we have to model FileStore to a docker volume object. We are currently moving to this model, since
+  it will give an ideal balance between granurality on number of the share(s) vs. Capabilities which we need to support.
+
+2. Creation of FPG and VFS to be transparent to the user. FPG (File Provisioning Group) requires CPG as input which will 
+be supplied via the config file `/etc/hpedockerplugin/hpe_file.conf`. Creation of VFS requires virtual IP Address/subnet mask. And each VFS can have multiple IP's associated with it, and this pool of ip addresses will be supplied via the config file.
+
+3. Provide a way to update the whitelisted IP's as part of ACL definition of File Store/Share.
 (implicitly when a mount happens on a docker host) 
-3. A share to be allowed to mount on multiple containers on one or more hosts
-4. Document the Limitations.
+4. A share to be allowed to mount on multiple containers on one or more hosts. This is to support `accessModes: ReadWriteMany` 
+option of kubernetes PVC
+
+5. Document the Limitations.
 
 ### Mapping of a Docker Volume to a file persona object
 - Due to some constraints on setting up of Quota/ACL (Access Control List) only applicable to File Store, and due 
