@@ -310,7 +310,7 @@ class MultiArrayTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
                                         size=THIN_SIZE, provisioning='thin',
                                         backend="backend2")
 
-	self.hpe_inspect_volume(volume, size=int(THIN_SIZE),
+        self.hpe_inspect_volume(volume, size=int(THIN_SIZE),
                                 provisioning='full')
         self.hpe_inspect_volume(volume1, size=int(THIN_SIZE),
                                 provisioning='thin', backend="backend2")
