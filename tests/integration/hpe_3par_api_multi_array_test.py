@@ -359,7 +359,7 @@ class MultiArrayTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
         self.hpe_inspect_volume(volume1, size=int(THIN_SIZE),
                                 backend="backend2")
         self.hpe_verify_volume_created(volume_name1, size=THIN_SIZE, 
-		                               backend="backend2")
+                                               backend="backend2")
 
         self.hpe_delete_volume(volume)
         self.hpe_verify_volume_deleted(volume_name)
@@ -539,10 +539,10 @@ class MultiArrayTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
         self.hpe_inspect_snapshot(snapshot, snapshot_name=snapshot_name,size=1,
                                   virtualCopyOf=volume_name,backend='backend2')
         self.hpe_verify_snapshot_created(volume_name, snapshot_name,
-		                                 backend='backend2')
+                                                 backend='backend2')
         self.hpe_delete_snapshot(volume_name, snapshot_name)
         self.hpe_verify_snapshot_deleted(volume_name, snapshot_name,
-		                                 backend='backend2')
+                                                 backend='backend2')
 
         clone = self.hpe_create_volume(clone_name, driver=HPE3PAR,
                                        cloneOf=volume_name)
@@ -574,7 +574,7 @@ class MultiArrayTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
 
         self.hpe_delete_volume(volume)
         self.hpe_verify_volume_deleted(volume_name,backend='backend2')
-		
+
         hpe_3par_cli2.deleteVolumeSet(vvset_name)
 
 
@@ -606,7 +606,7 @@ class MultiArrayTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
                                      importVol=volume_name, backend='backend2',
                                      vvs_name=vvset_name, qos='true')
         self.hpe_inspect_volume(volume,provisioning='full',size=1,enabled=True,
-		                        importVol=vol_name, backend='backend2',
+                                importVol=vol_name, backend='backend2',
                                 maxIOPS='1000 IOs/sec', minIOPS='300 IOs/sec',
                                 priority='Normal',vvset_name=vvset_name)
 
@@ -647,10 +647,10 @@ class MultiArrayTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
 
         self.hpe_delete_volume(clone)
         self.hpe_verify_volume_deleted(clone_name)
-		
+
         hpe_3par_cli2.deleteVolumeSet(vvset_name)
-		
-	self.hpe_delete_volume(volume)
+
+        self.hpe_delete_volume(volume)
         self.hpe_verify_volume_deleted(volume_name, backend="backend2")
 
 
@@ -773,13 +773,13 @@ class MultiArrayTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
 
         inspect_volume = self.client.inspect_volume(volume['Name'])
         backend_name = inspect_volume['Status']['volume_detail']['3par_vol_name']
-		
+
         snap_name = "python_vol_1_snap"
         try:
             hpe_3par_cli2.createSnapshot(snap_name, backend_name)
         except Exception as e:
-            print("Unable to create volume {}: {}".format(snap_name, e))								
-								
+            print("Unable to create volume {}: {}".format(snap_name, e))
+
         volume1 = self.hpe_create_volume(volume_name1, driver=HPE3PAR,
                                        importVol=snap_name, backend="backend2")
         self.hpe_inspect_snapshot(volume1, snapshot_name=volume_name1,
@@ -844,7 +844,7 @@ class MultiArrayTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
             self.assertEqual(resp, 500)
 
         self.client.remove_container(container_name1)
-			
+
         self.hpe_delete_volume(volume)
         self.hpe_verify_volume_deleted(volume_name)
         self.hpe_delete_volume(volume1)
