@@ -44,7 +44,7 @@ the docker volume object to VFS in later phases of development.
 
 ---
 
-## below are the default use cases and default behaviour with provided options
+## Below are the default use cases and default behaviour with provided options
 
 1. Create file share when only name of share is mentioned	
 ```
@@ -76,7 +76,7 @@ docker volume create -d hpe --name share_name
  ```
  - User want to use existing FPG created via docker
  - Here fpg_size store_name and size(Store Quota) will be created with default values unless mentioned.
- - If the fpg_name provided exist in 3PAR exception will be thrown
+ - If the fpg_name provided exist in 3PAR and same is not available in docker exception will be thrown
  - IF fpg is created via plugin and fpg_size is provided, exception will be thrown
  
 
