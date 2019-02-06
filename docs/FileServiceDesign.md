@@ -76,7 +76,8 @@ docker volume create -d hpe --name share_name
  ```
  - User want to use existing FPG created via docker
  - Here fpg_size store_name and size(Store Quota) will be created with default values unless mentioned.
- - If the fpg_name provided exist in 3PAR and same is not available in docker exception will be thrown
+ - If the fpg_name provided exist in 3PAR and same is not available in docker we will proceed with creation of share under this fpg with 
+ default values unless provided with -o option
  - IF fpg is created via plugin and fpg_size is provided, exception will be thrown
  
 
