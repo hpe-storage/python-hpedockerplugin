@@ -81,7 +81,7 @@ docker volume create -d hpe --name share_name
  - IF fpg is created via plugin and fpg_size is provided, exception will be thrown
  
 
-#Changes required to the configuration file
+## Changes required to the configuration file
 Following configuration parameters are required to support the above requirements:
 1. **hpe3par_default_cpg:** Default CPG name to be used for FPG creation. User has the option to
 override this value using the option **cpg**.
@@ -92,12 +92,12 @@ option **fpg_size**
 *IP1:SubnetMask1,IP2:SubnetMask2,IP3:SubnetMask3...*
 
 
-#Share Metadata
+## Share Metadata
 Efficient information lookup would be required for the following two cases:
 1. Share lookup by name and
 2. Available VFS lookup for hosting a new share
 
-##Share lookup by name
+### Share lookup by name
 This is required for retrieve, update, delete, mount and umount of a share.
 To satisfy this requirement, we can continue to use *“/volumes/{id}”* ETCD key or have 
 a new key as *“/shares/{id}”* under which below share metadata can be kept.
@@ -141,7 +141,7 @@ share_metadata = {
 }
 ```
 
-##Available VFS lookup for hosting a new share
+### Available VFS lookup for hosting a new share
 Available VFS needs to be located when a new share is created with default parameters i.e. FPG
 name is not specified on the Docker CLI.
 
