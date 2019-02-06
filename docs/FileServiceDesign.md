@@ -3,7 +3,8 @@ Design decision for implementing File Services for HPE 3PAR Docker Volume plugin
 
 ### Objectives
 1. Provide a way to present a file share (via NFS/CIFS -- which are currently supported on File Persona of HPE 3PAR) 
-to containerized applications
+to containerized applications.
+Our plugin currently supoorts NFS protocol.
   - To support share replication, we have model VFS as a docker volume object 
   - To support snapshot/quota we have to model FileStore to a docker volume object. We are currently moving to this model, since
   it will give an ideal balance between granurality on number of the share(s) vs. Capabilities which we need to support.
@@ -38,4 +39,44 @@ the docker volume object to VFS in later phases of development.
   the updates done by this utility/tool also will not be automatically replicated on the kubernetes object (like PVC).
   
 
-  
+## Below diagram represents how shares are mapped to CPG.
+![3PAR persona hirarchy diagram](/docs/img/3PAR_FIlePersona_Share_Hierarchy.png)
+
+---
+
+## below are the default use cases and default behaviour with provided options
+
+1. Create file share when only name of share is mentioned	
+```
+docker volume create -d hpe --name share_name
+```
+- User creates share under default CPG
+- Default CPG is mentioned in hpe_file.conf file
+- Default FPG OF 1TiB and Default store of size 64 GiB.
+- To create a share under a specified fpg(FPG created via docker), user can specify -o size=x -o fpg=<fpg_name> where x is in GiB
+  If Size is not specified it will always create a 64GiB store
+- Here CPG, IP and mask will be picked from the conf file
+- If IP and mask are not available then user need to supply it with -o
+- ex. -o ipSubnet="192.168.68.38:255.255.192.0"
+- If user wants to select 3 IPs from a pool to assign it to a vfs, user needs to provide this information
+- with -o numOfInvolvedIps=2
+- If these many ips are not available error will be thrown.
+
+ 2. Create file share on a particular cpg
+ ```
+ docker volume create -d hpe --name share_name -o cpg=CPG_name
+ ```
+ - User creates a share on non default CPG
+ - Provided CPG will be used to create FPG or if FPG exist, available FPG will be used to create store and share
+ - If FPG doesnt exist FPG will be created, with edfault value of FPG (1TiB)
+ 
+ 3. Create file share under particular FPG
+ ```
+ docker volume create -d hpe --name share_name -o fpg_name=FPG1
+ ```
+ - User want to use existing FPG created via docker
+ - Here fpg_size store_name and size(Store Quota) will be created with default values unless mentioned.
+ - If the fpg_name provided exist in 3PAR exception will be thrown
+ - IF fpg is created via plugin and fpg_size is provided, exception will be thrown
+ 
+
