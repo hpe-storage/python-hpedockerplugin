@@ -66,13 +66,13 @@ Set http_proxy and http_proxy in the [inventory hosts file](/ansible_3par_docker
 
 Once the prerequisites are complete, run the following command:
 
-- Installation on standalone docker environment:
+- Fresh installation on standalone docker environment:
 ```
 $ cd python-hpedockerplugin/ansible_3par_docker_plugin
 $ ansible-playbook -i hosts_standalone_nodes install_standalone_hpe_3par_volume_driver.yml --ask-vault-pass
 ```
 
-- Installation on Openshift/Kubernetes environment:
+- Fresh installation on Openshift/Kubernetes environment:
 ```
 $ cd python-hpedockerplugin/ansible_3par_docker_plugin
 $ ansible-playbook -i hosts install_hpe_3par_volume_driver.yml --ask-vault-pass
@@ -81,6 +81,22 @@ $ ansible-playbook -i hosts install_hpe_3par_volume_driver.yml --ask-vault-pass
 
 
 Once complete you will be ready to start using the HPE 3PAR Docker Volume Plug-in.
+
+- Update the array backends in Standalone/Openshift/Kubernetes environment:
+  * Modify the [plugin configuration properties - sample](/ansible_3par_docker_plugin/properties/plugin_configuration_properties_sample.yml) at `properties/plugin_configuration_properties.yml` based on the updated HPE 3PAR Storage array configuration. Additional backends may be added or removed from the existing configuration. Individual attributes of the existing array configuration may also be modified.
+
+    * Update array backend on standalone docker environment:
+    ```
+    $ cd python-hpedockerplugin/ansible_3par_docker_plugin
+    $ ansible-playbook -i hosts_standalone_nodes install_standalone_hpe_3par_volume_driver.yml --ask-vault-pass
+    ```
+
+    * Update array backend on Openshift/Kubernetes environment:
+    ```
+    $ cd python-hpedockerplugin/ansible_3par_docker_plugin
+    $ ansible-playbook -i hosts install_hpe_3par_volume_driver.yml --ask-vault-pass
+    ```
+  > **Note:** It is not recommended to change the Etcd information and array password encryption during the beackend update process
 
 Please refer to [Usage Guide](/docs/usage.md) on how to perform volume related actions on the standalone docker environment.
 
