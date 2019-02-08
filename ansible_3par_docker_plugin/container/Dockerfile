@@ -1,8 +1,6 @@
 FROM alpine:3.8
 
 MAINTAINER Farhan Nomani <nomani@hpe.com>
-ENV http_proxy http://web-proxy.in.hpecorp.net:8080
-ENV https_proxy http://web-proxy.in.hpecorp.net:8080
 
 RUN echo "===> Installing sudo to emulate normal OS behavior..."  && \
     apk --update add sudo                                         && \
@@ -20,7 +18,11 @@ RUN echo "===> Installing sudo to emulate normal OS behavior..."  && \
     pip install ansible         && \
     \
     wget https://github.com/hpe-storage/python-hpedockerplugin/archive/master.zip
+
 RUN unset http_proxy
 RUN unset https_proxy
 RUN unzip master.zip
 
+RUN rm -f master.zip
+RUN mv python-hpedockerplugin-master/ansible_3par_docker_plugin/ .
+RUN rm -rf python-hpedockerplugin-master/
