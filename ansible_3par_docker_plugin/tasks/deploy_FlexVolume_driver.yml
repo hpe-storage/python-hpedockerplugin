@@ -19,7 +19,7 @@
       src: /root/.kube/config
       dest: /tmp/config
       flat: yes
-    when: inventory_hostname in groups['masters'][0]
+    when: groups['masters'] is defined and groups['masters'] | length > 0 and inventory_hostname in groups['masters'][0]
 
 
   - name: Verify /etc/kubernetes/admin.conf exists
@@ -28,6 +28,7 @@
       dest: /etc/kubernetes/admin.conf
       owner: "root"
       mode: 0755
+    when: groups['masters'] is defined and groups['masters'] | length > 0 and inventory_hostname in groups['masters'][0]
 
   - name: Install FlexVolume drivers
     copy:
@@ -37,3 +38,5 @@
       mode: 0755
     with_fileglob:
       - "../files/dory/*"
+    when: groups['masters'] is defined and groups['masters'] | length > 0 and inventory_hostname in groups['masters'][0]
+
