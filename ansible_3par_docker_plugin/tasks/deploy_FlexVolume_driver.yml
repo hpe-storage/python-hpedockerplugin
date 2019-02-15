@@ -2,34 +2,6 @@
   - name: load etcd settings
     include_vars: '../properties/etcd_properties.yml'
 
-  - name: Create FlexVolume driver directory
-    file:
-      path: "{{ item }}"
-      state: directory
-      mode: 0644
-      recurse: yes
-    with_items:
-      - "{{ driver_path }}"
-      - /etc/kubernetes/
-      
-  - local_action: file path=/tmp/config state=absent
-
-  - name: Copy over the kube config file into /tmp
-    fetch:
-      src: /root/.kube/config
-      dest: /tmp/config
-      flat: yes
-    when: groups['masters'] is defined and groups['masters'] | length > 0 and inventory_hostname in groups['masters'][0]
-
-
-  - name: Verify /etc/kubernetes/admin.conf exists
-    copy:
-      src: /tmp/config
-      dest: /etc/kubernetes/admin.conf
-      owner: "root"
-      mode: 0755
-    when: groups['masters'] is defined and groups['masters'] | length > 0 and inventory_hostname in groups['masters'][0]
-
   - name: Install FlexVolume drivers
     copy:
       src: "{{ item }}"
@@ -38,5 +10,4 @@
       mode: 0755
     with_fileglob:
       - "../files/dory/*"
-    when: groups['masters'] is defined and groups['masters'] | length > 0 and inventory_hostname in groups['masters'][0]
 

@@ -78,6 +78,25 @@
     - name: Create the hpe_sock files
       include: tasks/hpe_sock.yml
 
+- name: Copy config file into admin.conf 
+  hosts: master
+  become: root
+
+  vars:
+    driver_path: "/usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/"
+
+  tasks:
+    - name: Copy config file into admin.conf
+      include: tasks/copy_doryd_config.yml
+
+- name: Deploy FlexVolume drivers
+  hosts: all_nodes
+  become: root
+
+  vars:
+    driver_path: "/usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/"
+
+  tasks:
     - name: Deploy FlexVolume drivers
       include: tasks/deploy_FlexVolume_driver.yml
 
