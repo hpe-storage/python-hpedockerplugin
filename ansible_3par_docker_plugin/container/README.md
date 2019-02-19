@@ -5,7 +5,7 @@ This is a Alpine based image with Ansible and its dependency installed along wit
 Usage:
 
 - Run the latest docker image from docker hub, the command below will run the pre built container and open shell
-  - `docker run -it sgkasif/hpe3par_docker_volume_plugin_installer /bin/sh`
+  - `docker run -it hpestorage/legacyvolumeplugininstaller /bin/sh`
 
 - Set the proxy (if required)
   - `export http_proxy=<your-proxy>:<your-port>`
