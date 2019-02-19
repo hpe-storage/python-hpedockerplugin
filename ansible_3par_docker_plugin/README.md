@@ -113,6 +113,8 @@ Once complete you will be ready to start using the HPE 3PAR Docker Volume Plug-i
    > **Note:** 
      - Ensure that all the nodes in the cluster are present in the inventory [hosts](/ansible_3par_docker_plugin/hosts) file
      - The docker volume plugin will be restarted and the user will not be able to create the volume during the process
+     
+   * Successful upgrade will remove the old plugin container and replace it with the new plugin container which is specified in the plugin properties file 
       
 - Install docker volume plugin to additional nodes in the cluster
   * Add the new nodes in the respective sections in the inventory [hosts](/ansible_3par_docker_plugin/hosts) file
@@ -131,6 +133,8 @@ Once complete you will be ready to start using the HPE 3PAR Docker Volume Plug-i
      $ ansible-playbook -i hosts uninstall/uninstall_hpe_3par_volume_driver.yml --ask-vault-pass
      ```
      > **Note:** This process only adds or removes docker volume plugin in nodes in an existing cluster. It does not adds or removes nodes in Kubernetes/Openshift cluster
+   * On success after adding plugin on new nodes, the additional nodes will have a running docker volume plugin container
+   * On success after removing plugin from specified nodes, docker volume plugin container will be removed
      
 Please refer to [Usage Guide](/docs/usage.md) on how to perform volume related actions on the standalone docker environment.
 
