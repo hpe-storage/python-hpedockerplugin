@@ -97,7 +97,48 @@ Once complete you will be ready to start using the HPE 3PAR Docker Volume Plug-i
     $ ansible-playbook -i hosts install_hpe_3par_volume_driver.yml --ask-vault-pass
     ```
   > **Note:** It is not recommended to change the Etcd information and array password encryption during the beackend update process
-
+ 
+- Upgrade the docker volume plugin
+  * Modify the `volume_plugin` in [plugin configuration properties - sample] and point it to the latest image from docker hub
+      * Update plugin on standalone docker environment:
+      ```
+      $ cd python-hpedockerplugin/ansible_3par_docker_plugin
+      $ ansible-playbook -i hosts_standalone_nodes install_standalone_hpe_3par_volume_driver.yml --ask-vault-pass
+      ```
+     * Update plugin on Openshift/Kubernetes environment:
+     ```
+     $ cd python-hpedockerplugin/ansible_3par_docker_plugin
+     $ ansible-playbook -i hosts install_hpe_3par_volume_driver.yml --ask-vault-pass
+     ```
+   > **Note:** Ensure that all the nodes in the cluster are present in the inventory [hosts](/ansible_3par_docker_plugin/hosts) file
+      
+- Install docker volume plugin to additional nodes in the cluster
+  * Add the new nodes in the respective sections in the inventory [hosts](/ansible_3par_docker_plugin/hosts) file
+  * Only new nodes IP or hostnames must be present in the hosts file
+  * Do not change the etcd hosts from the existing setup. Do not add or remove nodes in the etcd section
+     * Install plugin on new nodes on standalone docker environment:
+     ```
+     $ cd python-hpedockerplugin/ansible_3par_docker_plugin
+     $ ansible-playbook -i hosts_standalone_nodes install_standalone_hpe_3par_volume_driver.yml --ask-vault-pass
+     ```
+     
+     * Install plugin on new nodes on Openshift/Kubernetes environment:
+     ```
+     $ cd python-hpedockerplugin/ansible_3par_docker_plugin
+     $ ansible-playbook -i hosts install_hpe_3par_volume_driver.yml --ask-vault-pass
+     ```
+     
+     * Uninstall plugin on nodes on standalone docker environment:
+     ```
+     $ cd python-hpedockerplugin/ansible_3par_docker_plugin
+     $ ansible-playbook -i hosts_standalone_nodes uninstall/uninstall_hpe_3par_volume_driver.yml --ask-vault-pass
+     ```
+     
+     * Uninstall plugin on nodes on Openshift/Kubernetes environment:
+     ```
+     $ cd python-hpedockerplugin/ansible_3par_docker_plugin
+     $ ansible-playbook -i hosts uninstall/uninstall_hpe_3par_volume_driver.yml --ask-vault-pass
+     ```
 Please refer to [Usage Guide](/docs/usage.md) on how to perform volume related actions on the standalone docker environment.
 
 Please refer to the Kubernetes/OpenShift section in the [Usage Guide](/docs/usage.md#k8_usage) on how to create and deploy some sample SCs, PVCs, and Pods with persistent volumes using the HPE 3PAR Docker Volume Plug-in.
