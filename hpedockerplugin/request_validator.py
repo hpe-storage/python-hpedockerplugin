@@ -90,7 +90,7 @@ class RequestValidator(object):
         valid_opts = ['compression', 'size', 'provisioning',
                       'flash-cache', 'qos-name', 'fsOwner',
                       'fsMode', 'mountConflictDelay', 'cpg',
-                      'snapcpg', 'backend']
+                      'snapcpg', 'backend', 'manager']
         self._validate_opts("create volume", contents, valid_opts)
 
     def _validate_clone_opts(self, contents):
