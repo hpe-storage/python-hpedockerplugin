@@ -60,7 +60,7 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
   
 ### Working with proxies:
 
-Set http_proxy and http_proxy in the [inventory hosts file](/ansible_3par_docker_plugin/hosts) while installing plugin on Kubernetes/Openshift setup. For setting proxies in the standalone plugin installation, see [inventory hosts file for standalone plugin installation](/ansible_3par_docker_plugin/hosts_standalone_nodes)
+Set `http_proxy` and `https_proxy` in the [inventory hosts file](/ansible_3par_docker_plugin/hosts) while installing plugin on Kubernetes/Openshift setup. For setting proxies in the standalone plugin installation, see [inventory hosts file for standalone plugin installation](/ansible_3par_docker_plugin/hosts_standalone_nodes)
 
 ### Usage
 
@@ -96,7 +96,7 @@ Once complete you will be ready to start using the HPE 3PAR Docker Volume Plug-i
     $ cd python-hpedockerplugin/ansible_3par_docker_plugin
     $ ansible-playbook -i hosts install_hpe_3par_volume_driver.yml --ask-vault-pass
     ```
-  > **Note:** It is not recommended to change the Etcd information and array password encryption during the beackend update process
+  > **Note:** It is not recommended to change the Etcd information and array encryption password during the backend update process
  
 - Upgrade the docker volume plugin
   * Modify the `volume_plugin` in [plugin configuration properties - sample](/ansible_3par_docker_plugin/properties/plugin_configuration_properties_sample.yml) and point it to the latest image from docker hub
@@ -132,7 +132,7 @@ Once complete you will be ready to start using the HPE 3PAR Docker Volume Plug-i
      $ cd python-hpedockerplugin/ansible_3par_docker_plugin
      $ ansible-playbook -i hosts uninstall/uninstall_hpe_3par_volume_driver.yml --ask-vault-pass
      ```
-     > **Note:** This process only adds or removes docker volume plugin in nodes in an existing cluster. It does not adds or removes nodes in Kubernetes/Openshift cluster
+     > **Note:** This process only adds or removes docker volume plugin in nodes in an existing cluster. It does not add or remove nodes in Kubernetes/Openshift cluster
    * On success after adding plugin on new nodes, the additional nodes will have a running docker volume plugin container
    * On success after removing plugin from specified nodes, docker volume plugin container will be removed
      
