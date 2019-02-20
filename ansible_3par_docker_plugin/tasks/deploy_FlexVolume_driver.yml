@@ -1,4 +1,4 @@
----	
+---
   - name: load etcd settings	
     include_vars: '../properties/etcd_properties.yml'	
 
