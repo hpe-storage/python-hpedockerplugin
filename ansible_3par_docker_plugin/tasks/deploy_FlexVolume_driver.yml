@@ -2,7 +2,7 @@
   - name: load etcd settings	
     include_vars: '../properties/etcd_properties.yml'	
 
-   - name: Install FlexVolume drivers	
+  - name: Install FlexVolume drivers	
     copy:	
       src: "{{ item }}"	
       dest: "{{ driver_path }}"	
