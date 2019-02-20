@@ -79,7 +79,7 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
             self.assertEqual(docker_volume['Driver'], HPE3PAR_OLD)
         # Verify all volume optional parameters in docker managed plugin system
         driver_options = ['size', 'provisioning', 'flash-cache', 'compression', 'cloneOf',
-                          'qos-name', 'mountConflictDelay', 'importVol']
+                          'qos-name', 'mountConflictDelay', 'importVol', 'virtualCopyOf', 'scheduleFrequency', 'scheduleName', 'snapshotPrefix']
 
         for option in driver_options:
             if option in kwargs:
@@ -145,6 +145,9 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
                 self.assertEqual(inspect_volume['Status']['qos_detail'][option], kwargs[option])
             else:
                 pass
+        if (self.assertIn('Snapshots', inspect_volume['Status'])):
+            self.assertEqual(kwargs[snapshot_name], inspect_volume['Status']['Snapshots']['Name'])
+            self.assertEqual(volume['Name'], inspect_volume['Status']['Snapshots']['ParentName'])
 
         return inspect_volume
 
@@ -222,6 +225,15 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
         else:
             self.assertEqual(inspect_snapshot['Status']['snap_detail']['snap_cpg'],
                              SNAP_CPG)
+        if (self.assertIn('snap_schedule', inspect_snapshot['Status']['snap_detail'])):
+            self.assertEqual(snapshot['Options']['scheduleFrequency'], inspect_snapshot['Status']['snap_detail']['snap_schedule']['sched_frequency'])
+            self.assertEqual(snapshot['Options']['snapshotPrefix'], inspect_snapshot['Status']['snap_detail']['snap_schedule']['snap_name_prefix'])
+            self.assertEqual(snapshot['Options']['scheduleName'], inspect_snapshot['Status']['snap_detail']['snap_schedule']['schedule_name'])
+            self.assertEqual(snapshot['Options']['expHrs'], inspect_snapshot['Status']['snap_detail']['snap_schedule']['sched_snap_exp_hrs'])
+            self.assertEqual(snapshot['Options']['retHrs'], inspect_snapshot['Status']['snap_detail']['snap_schedule']['sched_snap_ret_hrs'])
+
+ 
+
 
 
         '''
@@ -409,6 +421,7 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
         # Login to 3Par array and initialize connection for WSAPI calls
         hpe_3par_cli = HPE3ParClient(HPE3PAR_API_URL, True, False, None, True)
         hpe_3par_cli.login('3paradm', '3pardata')
+        hpe_3par_cli.setSSHOptions('192.168.67.5', '3paradm', '3pardata')
         return hpe_3par_cli
 
     def hpe_verify_volume_created(self, volume_name, vvs_name=None, **kwargs):
@@ -439,7 +452,7 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
         if 'size' in kwargs:
             self.assertEqual(hpe3par_volume['sizeMiB'], int(kwargs['size']) * 1024)
         else:
-            self.assertEqual(hpe3par_volume['sizeMiB'], 102400)
+            self.assertEqual(hpe3par_volume['sizeMiB'], 10240)
         if 'provisioning' in kwargs:
             if kwargs['provisioning'] == 'full':
                 self.assertEqual(hpe3par_volume['provisioningType'], 1)
@@ -746,6 +759,22 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
         hpe3par_cli.deleteVolumeSet(vvs_name)
         hpe3par_cli.logout()
 
+    def hpe_verify_snapshot_schedule(self, schedule_name, snapshot):
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        hpe3par_cli = self._hpe_get_3par_client_login()
 
+        hpe3par_schedule = hpe3par_cli.getSchedule(schedule_name)
+        #schedule_details = list(snapshot['Options'].values())
+        schedule_details_cli = hpe3par_schedule[2].split(',' , 11)
+        
+        self.assertEqual(snapshot['Options']['scheduleName'], schedule_details_cli[0])
+        self.assertEqual(snapshot['Options']['scheduleFrequency'], ' '.join(map(str,schedule_details_cli[2:7])))
+        schedule_command = schedule_details_cli[1].split(' ', 8) 
+        self.assertEqual(schedule_command[3], (snapshot['Options']['expHrs'])+"h")
+        self.assertEqual(schedule_command[5], (snapshot['Options']['retHrs'])+"h")
+        #self.assertEqual(schedule_command[3], exp_hrs)
+        #self.assertEqual(schedule_command[5], ret_hrs)
+           
+        hpe3par_cli.logout()
 
 
