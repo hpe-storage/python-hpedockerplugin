@@ -21,6 +21,9 @@
     include_vars: 'properties/plugin_configuration_properties.yml'
 
   - name: Install prerequistes
+    include: tasks/install_prerequisites_on_all.yml
+
+  - name: Install prerequistes
     include: tasks/install_prerequisites.yml
 
   - name: Install packages on Ubuntu

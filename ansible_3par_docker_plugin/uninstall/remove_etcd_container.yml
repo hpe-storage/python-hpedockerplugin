@@ -1,0 +1,19 @@
+---
+  - name: load etcd settings
+    include_vars: '../properties/etcd_cluster_properties.yml'
+
+  - name: Stop & remove etcd container
+    docker_container:
+      name: etcd_hpe
+      image: "{{ etcd_image }}"
+      state: stopped
+
+  - pause:
+      seconds: 15
+
+  - name: Remove etcd container
+    docker_container:
+      name: etcd_hpe
+      image: "{{ etcd_image }}"
+      state: absent
+
