@@ -1,6 +1,6 @@
 # Docker Volume Plugin Installer - Docker Image
 
-This is a Alpine based image with Ansible and its dependency installed along with the latest HPE 3PAR docker volume plugin ansible installer playbooks.
+This is an Alpine based image with Ansible and its dependency installed along with the latest HPE 3PAR docker volume plugin ansible installer tasks and playbooks.
 
 Usage:
 
