@@ -135,7 +135,7 @@ class ScheduleTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
 				       virtualCopyOf=volume['Name'], scheduleFrequency="10 2 * * *", scheduleName="dailyOnceSchedule", snapshotPrefix="pqr",expHrs="5", retHrs="3")
 
         self.hpe_verify_volume_created(volume_name, driver=HPE3PAR, size=THIN_SIZE, provisioning='thin')
-        self.hpe_verify_volume_created(volume_name, snapshot_name)
+        self.hpe_verify_snapshot_created(volume_name, snapshot_name)
 
 
         self.hpe_inspect_volume(volume, size=int(THIN_SIZE),

@@ -452,7 +452,7 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
         if 'size' in kwargs:
             self.assertEqual(hpe3par_volume['sizeMiB'], int(kwargs['size']) * 1024)
         else:
-            self.assertEqual(hpe3par_volume['sizeMiB'], 10240)
+            self.assertEqual(hpe3par_volume['sizeMiB'], 102400)
         if 'provisioning' in kwargs:
             if kwargs['provisioning'] == 'full':
                 self.assertEqual(hpe3par_volume['provisioningType'], 1)
