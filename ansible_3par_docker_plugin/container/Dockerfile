@@ -10,6 +10,7 @@ RUN echo "===> Installing sudo to emulate normal OS behavior..."  && \
     apk --no-cache add ca-certificates && \
     apk --update add python py-pip openssl unzip && \
     apk --update add --virtual build-dependencies wget \
+                openssh-keygen openssh-server openssh-client \
                 python-dev libffi-dev openssl-dev build-base  && \
     pip install --upgrade pip pycrypto cffi                   && \
     \
