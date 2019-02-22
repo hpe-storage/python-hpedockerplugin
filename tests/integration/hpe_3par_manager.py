@@ -764,16 +764,13 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
         hpe3par_cli = self._hpe_get_3par_client_login()
 
         hpe3par_schedule = hpe3par_cli.getSchedule(schedule_name)
-        #schedule_details = list(snapshot['Options'].values())
-        schedule_details_cli = hpe3par_schedule[2].split(',' , 11)
+        schedule_details_cli = hpe3par_schedule[2].split(',')
         
         self.assertEqual(snapshot['Options']['scheduleName'], schedule_details_cli[0])
-        self.assertEqual(snapshot['Options']['scheduleFrequency'], ' '.join(map(str,schedule_details_cli[2:7])))
-        schedule_command = schedule_details_cli[1].split(' ', 8) 
+        self.assertEqual(snapshot['Options']['scheduleFrequency'], ' '.join(schedule_details_cli[2:7]))
+        schedule_command = re.split('\s+', schedule_details_cli[1])
         self.assertEqual(schedule_command[3], (snapshot['Options']['expHrs'])+"h")
         self.assertEqual(schedule_command[5], (snapshot['Options']['retHrs'])+"h")
-        #self.assertEqual(schedule_command[3], exp_hrs)
-        #self.assertEqual(schedule_command[5], ret_hrs)
            
         hpe3par_cli.logout()
 
