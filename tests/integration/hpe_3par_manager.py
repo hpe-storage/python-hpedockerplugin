@@ -111,6 +111,7 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
 
         volume_details = ['size', 'provisioning', 'flash_cache', 'compression', 'mountConflictDelay', 'importVol', 'cpg', 'snapcpg']
         qos_detail = ['enabled', 'maxIOPS', 'minIOPS', 'priority', 'vvset_name']
+        snapshots = inspect_volume['Status']['Snapshots'][0]
 
         for option in volume_details:
             if option == 'importVol':
@@ -145,9 +146,10 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
                 self.assertEqual(inspect_volume['Status']['qos_detail'][option], kwargs[option])
             else:
                 pass
-        if (self.assertIn('Snapshots', inspect_volume['Status'])):
-            self.assertEqual(kwargs[snapshot_name], inspect_volume['Status']['Snapshots']['Name'])
-            self.assertEqual(volume['Name'], inspect_volume['Status']['Snapshots']['ParentName'])
+        
+        # Validating if the snapshot 'virtualCopyOf' value is same as the 'Parent volume' of the snapshot
+        if 'snap_schedule' in snapshots:
+            self.assertEqual(kwargs['snapshot_name'], snapshots['ParentName'])
 
         return inspect_volume
 
@@ -225,12 +227,12 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
         else:
             self.assertEqual(inspect_snapshot['Status']['snap_detail']['snap_cpg'],
                              SNAP_CPG)
-        if (self.assertIn('snap_schedule', inspect_snapshot['Status']['snap_detail'])):
+        if 'snap_schedule' in  inspect_snapshot['Status']['snap_detail']:
             self.assertEqual(snapshot['Options']['scheduleFrequency'], inspect_snapshot['Status']['snap_detail']['snap_schedule']['sched_frequency'])
             self.assertEqual(snapshot['Options']['snapshotPrefix'], inspect_snapshot['Status']['snap_detail']['snap_schedule']['snap_name_prefix'])
             self.assertEqual(snapshot['Options']['scheduleName'], inspect_snapshot['Status']['snap_detail']['snap_schedule']['schedule_name'])
-            self.assertEqual(snapshot['Options']['expHrs'], inspect_snapshot['Status']['snap_detail']['snap_schedule']['sched_snap_exp_hrs'])
-            self.assertEqual(snapshot['Options']['retHrs'], inspect_snapshot['Status']['snap_detail']['snap_schedule']['sched_snap_ret_hrs'])
+            self.assertEqual(snapshot['Options']['expHrs'], str(inspect_snapshot['Status']['snap_detail']['snap_schedule']['sched_snap_exp_hrs']))
+            self.assertEqual(snapshot['Options']['retHrs'], str(inspect_snapshot['Status']['snap_detail']['snap_schedule']['sched_snap_ret_hrs']))
 
  
 
