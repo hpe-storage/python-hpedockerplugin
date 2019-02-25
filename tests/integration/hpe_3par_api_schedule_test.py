@@ -144,8 +144,6 @@ class ScheduleTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
         self.hpe_inspect_snapshot(snapshot, snapshot_name=snapshot_name,
                                   virtualCopyOf=volume['Name'], size=THIN_SIZE)
 
-       	import pdb
-        pdb.set_trace()
 
         self.hpe_verify_snapshot_schedule(schedule_name, snapshot) 
 
