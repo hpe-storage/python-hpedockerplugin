@@ -1,14 +1,27 @@
 ---
+  - name: Get all doryd files
+    find:
+      paths: /usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe
+    register: doryd_files_to_delete
+
   - name: remove doryd files
     file:
       state: absent
-      path: '/usr/libexec/kubernetes/kubelet-plugins/volume/exec/{{ item }}'
+      path: "{{ doryd_files_to_delete.files[(item | int)-1].path }}"
     with_items:
-      - hpe.com~hpe/*
+      - "{{ lookup('sequence','start=0 end='+((doryd_files_to_delete.matched | int ) |string),wantlist=True) }}"
+    when: doryd_files_to_delete.matched | int > 0
+
+  - name: Get all sock files
+    find:
+      paths: /run/docker/plugins/hpe
+      file_type: link
+    register: sock_files_to_delete
 
   - name: Delete any existing sock files
     file:
       state: absent
-      path: /run/docker/plugins/{{ item }}
+      path: "{{ sock_files_to_delete.files[(item | int)-1].path }}"
     with_items:
-      - hpe/*
+      - "{{ lookup('sequence','start=0 end='+((sock_files_to_delete.matched | int ) |string),wantlist=True) }}"
+    when: sock_files_to_delete.matched | int > 0
