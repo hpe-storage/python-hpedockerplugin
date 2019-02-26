@@ -422,9 +422,9 @@ class VolumePlugin(object):
             raise exception.InvalidInput(reason=msg)
 
         if replication_device and not rcg_name:
-            LOG.info("'%s' is a replication enabled backend. " \
-                  "'replicationGroup' is not specified in the create volume " \
-                  "command. Proceeding to create a regular volume without " \
+            LOG.info("'%s' is a replication enabled backend. "
+                  "'replicationGroup' is not specified in the create volume "
+                  "command. Proceeding to create a regular volume without "
                   "remote copy capabilities." % (backend_name))
 
         if rcg_name and replication_device:
