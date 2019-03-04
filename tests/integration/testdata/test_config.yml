@@ -37,20 +37,33 @@ backend:
     3Par_IP: 192.168.67.2
     multi_cpg: Docker_CI_Multi
 
+backend2:
+    3Par_api_url : https://192.168.67.7:8080/api/v1
+    user_cpg: docker_cpg
+    3par_IP: 192.168.67.7
+    multi_cpg: test_cpg
+
 # Multipath configuration details
 # Mention the number of iSCSI ports present in hpe.conf
 # Mention the number of FC zones configured in Fabric
 multipath:
     ports_zones: 1
 
+multipath2:
+    ports_zones: 2
+
 # Mention the snapshot cpg here
 snapshot:
     snap_cpg: Docker_CI
+
+snapshot2:
+    snap_cpg: docker_cpg
 
 # Mention the details required to create and verify VVset with QoS in 3par array
 # Set Priority : '1' for Low, '2' for Normal and '3' for High
 qos:
     domain: TEST_DOMAIN
+    domain2: test_domain
     min_io: 10000
     max_io: 2000000
     min_bw: 30
