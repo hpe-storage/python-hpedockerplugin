@@ -1397,19 +1397,9 @@ class VolumeManager(object):
 
         pri_connection_info = None
         sec_connection_info = None
-        # Check if replication is configured
-        if self.tgt_bkend_config:
+        # Check if replication is configured and volume is populated by with the RCG
+        if self.tgt_bkend_config and 'rcg_info' in vol and vol['rcg_info'] is not None:
             LOG.info("This is a replication setup")
-            # TODO: This is where existing volume can be added to RCG
-            # after enabling replication configuration in hpe.conf
-            if 'rcg_info' not in vol or not vol['rcg_info']:
-                msg = "Volume %s is not a replicated volume. It seems" \
-                      "the backend configuration was modified to be a" \
-                      "replication configuration after volume creation."\
-                      % volname
-                LOG.error(msg)
-                raise exception.HPEPluginMountException(reason=msg)
-
             # Check if this is Active/Passive based replication
             if self.tgt_bkend_config.quorum_witness_ip:
                 LOG.info("Peer Persistence has been configured")
