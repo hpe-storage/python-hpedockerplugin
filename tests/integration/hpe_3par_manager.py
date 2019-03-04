@@ -111,7 +111,6 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
 
         volume_details = ['size', 'provisioning', 'flash_cache', 'compression', 'mountConflictDelay', 'importVol', 'cpg', 'snapcpg']
         qos_detail = ['enabled', 'maxIOPS', 'minIOPS', 'priority', 'vvset_name']
-        snapshots = inspect_volume['Status']['Snapshots'][0]
 
         for option in volume_details:
             if option == 'importVol':
@@ -148,8 +147,10 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
                 pass
         
         # Validating if the snapshot 'virtualCopyOf' value is same as the 'Parent volume' of the snapshot
-        if 'snap_schedule' in snapshots:
-            self.assertEqual(kwargs['snapshot_name'], snapshots['ParentName'])
+        if 'snapshot_name' in kwargs:
+            snapshots = inspect_volume['Status']['Snapshots'][0] 
+            if 'snap_schedule' in snapshots:
+                self.assertEqual(kwargs['snapshot_name'], snapshots['ParentName'])
 
         return inspect_volume
 
