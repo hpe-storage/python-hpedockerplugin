@@ -1397,8 +1397,10 @@ class VolumeManager(object):
 
         pri_connection_info = None
         sec_connection_info = None
-        # Check if replication is configured and volume is populated by with the RCG
-        if self.tgt_bkend_config and 'rcg_info' in vol and vol['rcg_info'] is not None:
+        # Check if replication is configured and volume is
+        # populated with the RCG
+        if (self.tgt_bkend_config and 'rcg_info' in vol and
+                vol['rcg_info'] is not None):
             LOG.info("This is a replication setup")
             # Check if this is Active/Passive based replication
             if self.tgt_bkend_config.quorum_witness_ip:
