@@ -27,7 +27,7 @@ class RequestValidator(object):
             self._validate_snapshot_opts
         operations_map['cloneOf'] = \
             self._validate_clone_opts
-        operations_map['importVol'] = \	
+        operations_map['importVol'] = \
             self._validate_import_vol_opts
         operations_map['replicationGroup'] = \
             self._validate_rcg_opts
