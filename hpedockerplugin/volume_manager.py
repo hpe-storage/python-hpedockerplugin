@@ -372,6 +372,12 @@ class VolumeManager(object):
             LOG.exception(msg)
             return json.dumps({u"Err": six.text_type(msg)})
 
+        if ('rcopyStatus' in existing_ref_details and
+                existing_ref_details['rcopyStatus'] != 1):
+            msg = 'ERROR: Volume associated with a replication group '\
+                  'cannot be imported'
+            raise exception.InvalidInput(reason=msg)
+
         vvset_detail = self._hpeplugin_driver.get_vvset_from_volume(
             existing_ref_details['name'])
         if vvset_detail is not None:
