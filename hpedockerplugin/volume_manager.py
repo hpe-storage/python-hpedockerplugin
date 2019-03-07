@@ -1256,7 +1256,10 @@ class VolumeManager(object):
 
     def _force_remove_vlun(self, vol, is_snap):
         bkend_vol_name = utils.get_3par_name(vol['id'], is_snap)
-        if self.tgt_bkend_config:
+        # Check if replication is configured and volume is
+        # populated with the RCG
+        if (self.tgt_bkend_config and 'rcg_info' in vol and
+                vol['rcg_info'] is not None):
             if self.tgt_bkend_config.quorum_witness_ip:
                 LOG.info("Peer Persistence setup: Removing VLUNs "
                          "forcefully from remote backend...")
