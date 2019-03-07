@@ -27,6 +27,8 @@ class RequestValidator(object):
             self._validate_snapshot_opts
         operations_map['cloneOf'] = \
             self._validate_clone_opts
+        operations_map['importVol'] = \	
+            self._validate_import_vol_opts
         operations_map['replicationGroup'] = \
             self._validate_rcg_opts
         operations_map['help'] = self._validate_help_opt
@@ -109,6 +111,26 @@ class RequestValidator(object):
                           'scheduleFrequency']
         self._validate_opts("create snapshot schedule", contents,
                             valid_opts, mandatory_opts)
+
+    def _validate_import_vol_opts(self, contents):
+        valid_opts = ['importVol', 'backend', 'mountConflictDelay']
+        self._validate_opts("import volume", contents, valid_opts)
+
+        # Replication enabled backend cannot be used for volume import
+        if 'Opts' in contents and contents['Opts']:
+            backend_name = contents['Opts'].get('backend', None)
+            if not backend_name:
+                backend_name = 'DEFAULT'
+            try:
+                self._backend_configs[backend_name]
+            except KeyError:
+                backend_names = list(self._backend_configs.keys())
+                backend_names.sort()
+                msg = "ERROR: Backend '%s' doesn't exist. Available " \
+                      "backends are %s. Please use " \
+                      "a valid backend name and retry." % \
+                      (backend_name, backend_names)
+                raise exception.InvalidInput(reason=msg)
 
     def _validate_rcg_opts(self, contents):
         valid_opts = ['replicationGroup', 'size', 'provisioning',
