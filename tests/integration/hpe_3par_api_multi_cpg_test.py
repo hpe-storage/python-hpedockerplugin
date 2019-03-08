@@ -76,6 +76,7 @@ class MultiCpgTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
                 assert pl_data['Enabled'] is False
                 while pl_data['Enabled'] is False:
                     c.enable_plugin(HPE3PAR)
+                    sleep(60)
                 pl_data = c.inspect_plugin(HPE3PAR)
                 assert pl_data['Enabled'] is True
             except docker.errors.APIError:
