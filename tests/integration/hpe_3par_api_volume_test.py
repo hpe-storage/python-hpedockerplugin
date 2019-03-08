@@ -2,6 +2,7 @@ import pytest
 import docker
 import yaml
 import os
+from time import sleep
 from .base import TEST_API_VERSION, BUSYBOX
 from . import helpers
 from .helpers import requires_api_version
