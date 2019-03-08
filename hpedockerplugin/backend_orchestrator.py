@@ -30,6 +30,7 @@ from oslo_log import log as logging
 import hpedockerplugin.etcdutil as util
 import hpedockerplugin.volume_manager as mgr
 import threading
+import hpedockerplugin.backend_async_initializer as async_initializer
 
 import hpedockerplugin.exception as exception
 
@@ -63,26 +64,33 @@ class Orchestrator(object):
 
         for backend_name, config in backend_configs.items():
             try:
-                LOG.info('INITIALIZING backend: %s' % backend_name)
-                manager_objs[backend_name] = mgr.VolumeManager(
-                    host_config,
-                    config,
-                    self.etcd_util,
-                    backend_name)
-                LOG.info("Backend '%s' INITIALIZED!" % backend_name)
+                LOG.info('INITIALIZING backend: %s asynchronously' % backend_name)
+                #manager_objs[backend_name] = mgr.VolumeManager(
+                #    host_config,
+                #    config,
+                #    self.etcd_util,
+                #    backend_name)
+                #LOG.info("Backend '%s' INITIALIZED!" % backend_name)
+                thread = async_initializer.BackendInitializerThread(manager_objs,
+                                                       host_config,
+                                                       config,
+                                                       self.etcd_util,
+                                                       backend_name)
+                thread.start()
+
             except Exception as ex:
                 # lets log the error message and proceed with other backend
                 LOG.error('INITIALIZING backend: %s FAILED Error: %s'
                           % (backend_name, ex))
 
-        if not manager_objs:
-            msg = "ERROR: None of the backends could be initialized " \
-                  "successfully. Please rectify the configuration entries " \
-                  "in hpe.conf and retry enable."
-            LOG.error(msg)
-            raise exception.HPEPluginNotInitializedException(reason=msg)
-        else:
-            LOG.info("Backends INITIALIZED => %s" % manager_objs.keys())
+        #if not manager_objs:
+        #    msg = "ERROR: None of the backends could be initialized " \
+        #          "successfully. Please rectify the configuration entries " \
+        #          "in hpe.conf and retry enable."
+        #    LOG.error(msg)
+        #    raise exception.HPEPluginNotInitializedException(reason=msg)
+        #else:
+        LOG.info("Backends INITIALIZED => %s" % manager_objs.keys())
 
         return manager_objs
 
