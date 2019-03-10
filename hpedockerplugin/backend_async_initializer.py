@@ -1,9 +1,9 @@
 import threading
 import hpedockerplugin.volume_manager as mgr
-import time
 from oslo_log import log as logging
 
 LOG = logging.getLogger(__name__)
+
 
 class BackendInitializerThread(threading.Thread):
     def __init__(self, manager_objs,
@@ -19,7 +19,7 @@ class BackendInitializerThread(threading.Thread):
         self.etcd_util = etcd_util
 
     def run(self):
-        print ("Starting initializing backend " + self.backend_name)
+        LOG.info("Starting initializing backend " + self.backend_name)
         self.manager_objs[self.backend_name] = mgr.VolumeManager(
             self.host_config,
             self.config,

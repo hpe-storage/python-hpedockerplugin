@@ -94,6 +94,8 @@ class HpeDockerUnitTestExecutor(object):
         req_body = self._get_request_body(self.get_request_params())
 
         _api = api.VolumePlugin(reactor, self._host_config, self._all_configs)
+        import time
+        time.sleep(1)
         try:
             resp = getattr(_api, plugin_api)(req_body)
             resp = json.loads(resp)
