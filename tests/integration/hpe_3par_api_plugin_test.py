@@ -3,6 +3,7 @@ import pytest
 import yaml
 import unittest
 
+from time import sleep
 from .base import BaseAPIIntegrationTest, TEST_API_VERSION, BUSYBOX
 from . import helpers
 from .helpers import requires_api_version
