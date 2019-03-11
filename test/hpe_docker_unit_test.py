@@ -94,8 +94,17 @@ class HpeDockerUnitTestExecutor(object):
         req_body = self._get_request_body(self.get_request_params())
 
         _api = api.VolumePlugin(reactor, self._host_config, self._all_configs)
+        req_params = self.get_request_params()
+        backend = req_params.get('backend', 'DEFAULT')
+
         import time
-        time.sleep(1)
+
+        while(True):
+            backend_state = _api.is_backend_initialized(backend)
+            if backend_state == 'OK' or backend_state == 'FAILED':
+                break
+            time.sleep(1)
+
         try:
             resp = getattr(_api, plugin_api)(req_body)
             resp = json.loads(resp)

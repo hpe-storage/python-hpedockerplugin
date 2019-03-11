@@ -120,7 +120,7 @@ class Orchestrator(object):
         LOG.info(' Request %s ' % request)
         LOG.info(' with  args %s ' % str(args))
         LOG.info(' with  kwargs is %s ' % str(kwargs))
-        volume_mgr = self._manager.get(backend)
+        volume_mgr = self._manager.get(backend)['mgr']
         if volume_mgr:
             # populate the volume backend map for caching
             return getattr(volume_mgr, request)(volname, *args, **kwargs)
@@ -229,5 +229,5 @@ class Orchestrator(object):
 
     def volumedriver_list(self):
         # Use the first volume manager list volumes
-        volume_mgr = next(iter(self._manager.values()))
+        volume_mgr = next(iter(self._manager.values()))['mgr']
         return volume_mgr.list_volumes()
