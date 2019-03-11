@@ -422,17 +422,11 @@ class VolumePlugin(object):
             raise exception.InvalidInput(reason=msg)
 
         if replication_device and not rcg_name:
-            backend_names = list(self._backend_configs.keys())
-            backend_names.sort()
-
-            msg = "'%s' is a replication enabled backend. " \
-                  "Request to create replicated volume cannot be fulfilled " \
-                  "without specifying 'replicationGroup' option in the " \
-                  "request. Please either specify 'replicationGroup' or use " \
-                  "a normal backend and execute the request again. List of " \
-                  "backends defined in hpe.conf: %s" % (backend_name,
-                                                        backend_names)
-            raise exception.InvalidInput(reason=msg)
+            LOG.info("'%s' is a replication enabled backend. "
+                     "'replicationGroup' is not specified in the create "
+                     "volume command. Proceeding to create a regular "
+                     "volume without remote copy "
+                     "capabilities." % (backend_name))
 
         if rcg_name and replication_device:
 
