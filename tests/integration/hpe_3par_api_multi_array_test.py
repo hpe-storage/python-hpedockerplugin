@@ -844,7 +844,7 @@ class MultiArrayTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
             resp = ex.status_code
             self.assertEqual(resp, 500)
 
-        self.client.remove_container(container_name1)
+        self.client.remove_container(container_name1, force=True)
 
         self.hpe_delete_volume(volume)
         self.hpe_verify_volume_deleted(volume_name)
