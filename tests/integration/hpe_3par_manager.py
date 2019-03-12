@@ -835,6 +835,22 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
         hpe3par_cli.deleteVolumeSet(vvs_name)
         hpe3par_cli.logout()
 
+    def hpe_backend_initialize(self, driver=None, **kwargs):
 
+        client = docker.APIClient(
+            version=TEST_API_VERSION, timeout=600,
+            **docker.utils.kwargs_from_env()
+        )
+        while True:
+            try:
+                result = client.create_volume(driver=driver,
+                                 driver_opts=kwargs)
+            except docker.errors.APIError as e:
+                if 'INITIALIZING' in str(e):
+                    pass
+                elif 'FAILED' in str(e):
+                    raise e
+                else:
+                    return
 
 

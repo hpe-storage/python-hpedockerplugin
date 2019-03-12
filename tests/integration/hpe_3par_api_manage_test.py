@@ -76,7 +76,7 @@ class ManageVolumeTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
                 assert pl_data['Enabled'] is False
                 while pl_data['Enabled'] is False:
                     c.enable_plugin(HPE3PAR)
-                    sleep(60)
+                    HPE3ParBackendVerification.hpe_backend_initialize(cls, driver=HPE3PAR, help='backends')
                 pl_data = c.inspect_plugin(HPE3PAR)
                 assert pl_data['Enabled'] is True
             except docker.errors.APIError:

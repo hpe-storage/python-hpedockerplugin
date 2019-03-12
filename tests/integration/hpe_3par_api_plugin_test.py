@@ -223,7 +223,7 @@ class PluginTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
             })
         assert pl_data['Enabled'] is False
         assert client.enable_plugin(HPE3PAR_OLD)
-        sleep(60)
+        self.hpe_backend_initialize(driver=HPE3PAR, help='backends')
         pl_data = client.inspect_plugin(HPE3PAR_OLD)
         assert pl_data['Enabled'] is True
 
@@ -270,7 +270,7 @@ class PluginTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
             })
         assert client.inspect_plugin(HPE3PAR_OLD)
         assert client.enable_plugin(HPE3PAR_OLD)
-        sleep(60)
+        self.hpe_backend_initialize(driver=HPE3PAR, help='backends')
         cl = docker.from_env(version=TEST_API_VERSION)
         volume_name = helpers.random_name()
         self.tmp_volumes.append(volume_name)
