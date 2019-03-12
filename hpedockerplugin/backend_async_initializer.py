@@ -41,12 +41,8 @@ class BackendInitializerThread(threading.Thread):
 
     def run(self):
         LOG.info("Starting initializing backend " + self.backend_name)
-        # First initialize the manager_objs key with state as
-        # INITIALIZING
+
         volume_mgr = {}
-
-        self.manager_objs[self.backend_name] = volume_mgr
-
         try:
             volume_mgr_obj = mgr.VolumeManager(
                 self.host_config,
