@@ -44,8 +44,6 @@ class BackendInitializerThread(threading.Thread):
         # First initialize the manager_objs key with state as
         # INITIALIZING
         volume_mgr = {}
-        volume_mgr['backend_state'] = 'INITIALIZING'
-        volume_mgr['mgr'] = None
 
         self.manager_objs[self.backend_name] = volume_mgr
 

@@ -63,6 +63,14 @@ class Orchestrator(object):
             try:
                 LOG.info('INITIALIZING backend: %s asynchronously'
                          % backend_name)
+
+                # First initialize the manager_objs key with state as
+                # INITIALIZING
+                volume_mgr = {}
+                volume_mgr['backend_state'] = 'INITIALIZING'
+                volume_mgr['mgr'] = None
+                manager_objs[backend_name] = volume_mgr
+
                 thread = \
                     async_initializer. \
                     BackendInitializerThread(
