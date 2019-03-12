@@ -845,6 +845,7 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
             try:
                 result = client.create_volume(driver=driver,
                                  driver_opts=kwargs)
+                sleep(5)
             except docker.errors.APIError as e:
                 if 'INITIALIZING' in str(e):
                     pass
