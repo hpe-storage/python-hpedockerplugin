@@ -1,9 +1,11 @@
 import abc
 import json
 import six
+import time
 
 from io import StringIO
 from twisted.internet import reactor
+
 
 from config import setupcfg
 from hpedockerplugin import exception
@@ -96,8 +98,6 @@ class HpeDockerUnitTestExecutor(object):
         _api = api.VolumePlugin(reactor, self._host_config, self._all_configs)
         req_params = self.get_request_params()
         backend = req_params.get('backend', 'DEFAULT')
-
-        import time
 
         while(True):
             backend_state = _api.is_backend_initialized(backend)
