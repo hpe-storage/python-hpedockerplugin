@@ -52,6 +52,7 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
       | ```ssh_hosts_key_file```  | No  | ```~/.ssh/id_rsa.pub``` | Path to hosts key file |
       | ```quorum_witness_ip```  | No  | No default value | Quorum witness IP |
       | ```mount_prefix```  | No  | No default value | Alternate mount path prefix |
+      | ```vlan_tag```  | No  | False | Populates the iscsi_ips which are vlan tagged |
       | ```replication_device```  | No  | No default value | Replication backend properties |
     
   - It is recommended that the properties file is [encrypted using Ansible Vault](/ansible_3par_docker_plugin/encrypt_properties.md).
