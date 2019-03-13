@@ -3,8 +3,6 @@ import string
 import os
 import six
 import time
-import threading
-import uuid
 from sh import chmod
 from Crypto.Cipher import AES
 import base64
@@ -30,8 +28,6 @@ from hpedockerplugin.i18n import _, _LE, _LI, _LW
 import hpedockerplugin.synchronization as synchronization
 
 
-node_id_lock = threading.Lock()
-
 LOG = logging.getLogger(__name__)
 PRIMARY = 1
 PRIMARY_REV = 1
@@ -42,6 +38,7 @@ CONF = cfg.CONF
 
 class VolumeManager(object):
     def __init__(self, host_config, hpepluginconfig, etcd_util,
+                 node_id,
                  backend_name='DEFAULT'):
         self._host_config = host_config
         self._hpepluginconfig = hpepluginconfig
@@ -96,7 +93,7 @@ class VolumeManager(object):
         self._connector = self._get_connector(hpepluginconfig)
 
         # Volume fencing requirement
-        self._node_id = self._get_node_id()
+        self._node_id = node_id
 
     def _initialize_configuration(self):
         self.src_bkend_config = self._get_src_bkend_config()
@@ -194,26 +191,6 @@ class VolumeManager(object):
         return connector.InitiatorConnector.factory(
             protocol, root_helper, use_multipath=self._use_multipath,
             device_scan_attempts=5, transport='default')
-
-    @staticmethod
-    def _get_node_id():
-        # Save node-id if it doesn't exist
-        node_id = ''
-        node_id_lock.acquire()
-        try:
-            node_id_file_path = '/etc/hpedockerplugin/.node_id'
-            if not os.path.isfile(node_id_file_path):
-                node_id = str(uuid.uuid4())
-                with open(node_id_file_path, 'w') as node_id_file:
-                    node_id_file.write(node_id)
-            else:
-                with open(node_id_file_path, 'r') as node_id_file:
-                    node_id = node_id_file.readline()
-        except Exception:
-            pass
-        finally:
-            node_id_lock.release()
-        return node_id
 
     @synchronization.synchronized_volume('{volname}')
     def create_volume(self, volname, vol_size, vol_prov,

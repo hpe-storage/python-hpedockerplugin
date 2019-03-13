@@ -31,6 +31,7 @@ class BackendInitializerThread(threading.Thread):
                  host_config,
                  config,
                  etcd_util,
+                 node_id,
                  backend_name):
         threading.Thread.__init__(self)
         self.manager_objs = manager_objs
@@ -38,6 +39,7 @@ class BackendInitializerThread(threading.Thread):
         self.host_config = host_config
         self.config = config
         self.etcd_util = etcd_util
+        self.node_id = node_id
 
     def run(self):
         LOG.info("Starting initializing backend " + self.backend_name)
@@ -48,6 +50,7 @@ class BackendInitializerThread(threading.Thread):
                 self.host_config,
                 self.config,
                 self.etcd_util,
+                self.node_id,
                 self.backend_name)
             volume_mgr['mgr'] = volume_mgr_obj
             volume_mgr['backend_state'] = 'OK'

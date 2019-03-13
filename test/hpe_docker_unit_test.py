@@ -101,7 +101,8 @@ class HpeDockerUnitTestExecutor(object):
 
         while(True):
             backend_state = _api.is_backend_initialized(backend)
-            print(" Backend %s, backend_state %s " % (backend, backend_state))
+            print(" ||| Backend %s, backend_state %s " % (backend,
+                                                          backend_state))
             if backend_state == 'OK' or backend_state == 'FAILED':
                 break
             time.sleep(1)

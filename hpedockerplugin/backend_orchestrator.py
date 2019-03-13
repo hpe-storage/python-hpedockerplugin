@@ -27,6 +27,8 @@ Eg.
 """
 import json
 from oslo_log import log as logging
+import os
+import uuid
 import hpedockerplugin.etcdutil as util
 import threading
 import hpedockerplugin.backend_async_initializer as async_initializer
@@ -56,8 +58,23 @@ class Orchestrator(object):
             host_config.host_etcd_client_cert,
             host_config.host_etcd_client_key)
 
+    @staticmethod
+    def _get_node_id():
+        # Save node-id if it doesn't exist
+        node_id_file_path = '/etc/hpedockerplugin/.node_id'
+        if not os.path.isfile(node_id_file_path):
+            node_id = str(uuid.uuid4())
+            with open(node_id_file_path, 'w') as node_id_file:
+                node_id_file.write(node_id)
+        else:
+            with open(node_id_file_path, 'r') as node_id_file:
+                node_id = node_id_file.readline()
+
+        return node_id
+
     def initialize_manager_objects(self, host_config, backend_configs):
         manager_objs = {}
+        node_id = self._get_node_id()
 
         for backend_name, config in backend_configs.items():
             try:
@@ -78,6 +95,7 @@ class Orchestrator(object):
                         host_config,
                         config,
                         self.etcd_util,
+                        node_id,
                         backend_name)
                 thread.start()
 
