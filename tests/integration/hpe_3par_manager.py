@@ -27,6 +27,7 @@ ETCD_PORT = cfg['etcd']['port']
 CLIENT_CERT = cfg['etcd']['client_cert']
 CLIENT_KEY = cfg['etcd']['client_key']
 HPE3PAR_API_URL = cfg['backend']['3Par_api_url']
+HPEREMOTE3PAR_API_URL = cfg['replication_device']['hpe3par_api_url']
 PORTS_ZONES = cfg['multipath']['ports_zones']
 SNAP_CPG = cfg['snapshot']['snap_cpg']
 DOMAIN = cfg['qos']['domain']
@@ -145,6 +146,9 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
                 self.assertEqual(inspect_volume['Status']['qos_detail'][option], kwargs[option])
             else:
                 pass
+        if 'replicationGroup' in kwargs:
+            self.assertEqual(inspect_volume['Status']['rcg_detail']['role'], 'Primary')
+            self.assertEqual(inspect_volume['Status']['rcg_detail']['rcg_name'], kwargs['replicationGroup'])
 
         return inspect_volume
 
@@ -410,6 +414,13 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
         hpe_3par_cli = HPE3ParClient(HPE3PAR_API_URL, True, False, None, True)
         hpe_3par_cli.login('3paradm', '3pardata')
         return hpe_3par_cli
+
+    def _hpe_get_remote_3par_client_login(self):
+        # Login to 3Par array and initialize connection for WSAPI calls
+        hpe_3par_cli = HPE3ParClient(HPEREMOTE3PAR_API_URL, True, False, None, True)
+        hpe_3par_cli.login('3paradm', '3pardata')
+        return hpe_3par_cli
+
 
     def hpe_verify_volume_created(self, volume_name, vvs_name=None, **kwargs):
 
@@ -747,5 +758,27 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
         hpe3par_cli.logout()
 
 
+    def hpe_recover_remote_copy_group(self, rcg_name, action):
 
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        hpe3par_cli = self._hpe_get_3par_client_login()
+        rcopyInfo = hpe3par_cli.getRemoteCopyGroup(rcg_name)
+        rcopygrpname = rcopyInfo.get("remoteGroupName")
 
+        hpe3par_cli.stopRemoteCopy(rcg_name)
+        
+        rcopyStatus = hpe3par_cli.remoteCopyGroupStatusStoppedCheck(rcg_name)
+        hpe3par_cli.logout()
+
+        hpe3par_cli = self._hpe_get_remote_3par_client_login()
+        hpe3par_cli.recoverRemoteCopyGroupFromDisaster(rcopygrpname, int(action), optional=None)
+        hpe3par_cli.recoverRemoteCopyGroupFromDisaster(rcopygrpname, 9)
+        hpe3par_cli.logout()
+        return rcopygrpname
+
+    def hpe_restore_remote_copy_group(self, rcg_name, action):
+
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        hpe3par_cli = self._hpe_get_remote_3par_client_login()
+        hpe3par_cli.recoverRemoteCopyGroupFromDisaster(rcg_name, int(action), optional=None)
+        hpe3par_cli.logout()
