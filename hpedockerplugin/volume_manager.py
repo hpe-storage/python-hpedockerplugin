@@ -3,6 +3,7 @@ import string
 import os
 import six
 import time
+import threading
 import uuid
 from sh import chmod
 from Crypto.Cipher import AES
@@ -27,6 +28,9 @@ from hpedockerplugin.hpe import volume
 from hpedockerplugin.hpe import utils
 from hpedockerplugin.i18n import _, _LE, _LI, _LW
 import hpedockerplugin.synchronization as synchronization
+
+
+node_id_lock = threading.Lock()
 
 LOG = logging.getLogger(__name__)
 PRIMARY = 1
@@ -194,14 +198,21 @@ class VolumeManager(object):
     @staticmethod
     def _get_node_id():
         # Save node-id if it doesn't exist
-        node_id_file_path = '/etc/hpedockerplugin/.node_id'
-        if not os.path.isfile(node_id_file_path):
-            node_id = str(uuid.uuid4())
-            with open(node_id_file_path, 'w') as node_id_file:
-                node_id_file.write(node_id)
-        else:
-            with open(node_id_file_path, 'r') as node_id_file:
-                node_id = node_id_file.readline()
+        node_id = ''
+        node_id_lock.acquire()
+        try:
+            node_id_file_path = '/etc/hpedockerplugin/.node_id'
+            if not os.path.isfile(node_id_file_path):
+                node_id = str(uuid.uuid4())
+                with open(node_id_file_path, 'w') as node_id_file:
+                    node_id_file.write(node_id)
+            else:
+                with open(node_id_file_path, 'r') as node_id_file:
+                    node_id = node_id_file.readline()
+        except Exception:
+            pass
+        finally:
+            node_id_lock.release()
         return node_id
 
     @synchronization.synchronized_volume('{volname}')
