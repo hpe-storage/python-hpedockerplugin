@@ -55,7 +55,7 @@ def mock_decorator(func):
                 as mock_get_connector, \
                 mock.patch('hpedockerplugin.volume_manager.connector') \
                 as mock_osbricks_connector, \
-                mock.patch.object(mgr.VolumeManager, '_get_node_id') \
+                mock.patch.object(orch.Orchestrator, '_get_node_id') \
                 as mock_get_node_id, \
                 mock.patch.object(mgr.VolumeManager, '_decrypt_password') \
                 as mock_decrypt_password:
