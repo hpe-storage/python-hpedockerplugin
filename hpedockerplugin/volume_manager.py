@@ -372,6 +372,12 @@ class VolumeManager(object):
             LOG.exception(msg)
             return json.dumps({u"Err": six.text_type(msg)})
 
+        if ('rcopyStatus' in existing_ref_details and
+                existing_ref_details['rcopyStatus'] != 1):
+            msg = 'ERROR: Volume associated with a replication group '\
+                  'cannot be imported'
+            raise exception.InvalidInput(reason=msg)
+
         vvset_detail = self._hpeplugin_driver.get_vvset_from_volume(
             existing_ref_details['name'])
         if vvset_detail is not None:
@@ -1256,7 +1262,10 @@ class VolumeManager(object):
 
     def _force_remove_vlun(self, vol, is_snap):
         bkend_vol_name = utils.get_3par_name(vol['id'], is_snap)
-        if self.tgt_bkend_config:
+        # Check if replication is configured and volume is
+        # populated with the RCG
+        if (self.tgt_bkend_config and 'rcg_info' in vol and
+                vol['rcg_info'] is not None):
             if self.tgt_bkend_config.quorum_witness_ip:
                 LOG.info("Peer Persistence setup: Removing VLUNs "
                          "forcefully from remote backend...")
@@ -1397,19 +1406,11 @@ class VolumeManager(object):
 
         pri_connection_info = None
         sec_connection_info = None
-        # Check if replication is configured
-        if self.tgt_bkend_config:
+        # Check if replication is configured and volume is
+        # populated with the RCG
+        if (self.tgt_bkend_config and 'rcg_info' in vol and
+                vol['rcg_info'] is not None):
             LOG.info("This is a replication setup")
-            # TODO: This is where existing volume can be added to RCG
-            # after enabling replication configuration in hpe.conf
-            if 'rcg_info' not in vol or not vol['rcg_info']:
-                msg = "Volume %s is not a replicated volume. It seems" \
-                      "the backend configuration was modified to be a" \
-                      "replication configuration after volume creation."\
-                      % volname
-                LOG.error(msg)
-                raise exception.HPEPluginMountException(reason=msg)
-
             # Check if this is Active/Passive based replication
             if self.tgt_bkend_config.quorum_witness_ip:
                 LOG.info("Peer Persistence has been configured")

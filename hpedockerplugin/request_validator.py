@@ -122,7 +122,7 @@ class RequestValidator(object):
             if not backend_name:
                 backend_name = 'DEFAULT'
             try:
-                config = self._backend_configs[backend_name]
+                self._backend_configs[backend_name]
             except KeyError:
                 backend_names = list(self._backend_configs.keys())
                 backend_names.sort()
@@ -130,11 +130,6 @@ class RequestValidator(object):
                       "backends are %s. Please use " \
                       "a valid backend name and retry." % \
                       (backend_name, backend_names)
-                raise exception.InvalidInput(reason=msg)
-
-            if config.replication_device:
-                msg = "ERROR: Import volume not allowed with replication " \
-                      "enabled backend '%s'" % backend_name
                 raise exception.InvalidInput(reason=msg)
 
     def _validate_rcg_opts(self, contents):
