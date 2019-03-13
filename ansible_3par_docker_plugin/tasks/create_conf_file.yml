@@ -54,7 +54,7 @@
     no_log: True
 
   - name: get the iscsi ports (vlan tagged)
-    local_action: shell /usr/bin/sshpass -p {{ INVENTORY[item]['hpe3par_password'] }} ssh -oStrictHostKeyChecking=no {{ INVENTORY[item]['hpe3par_username'] }}@{{ INVENTORY[item]['hpe3par_ip'] }} "showport -iscsivlans" | awk '{print $3}' | sed -n '1!p'
+    local_action: shell /usr/bin/sshpass -p {{ INVENTORY[item]['hpe3par_password'] }} ssh -oStrictHostKeyChecking=no {{ INVENTORY[item]['hpe3par_username'] }}@{{ INVENTORY[item]['hpe3par_ip'] }} "showport -iscsivlans" | grep -v '-' | awk '{print $3}' | sed -n '1!p'
     with_items: "{{ INVENTORY.keys() }}"
     register: primary_iscsi_ports_vlan
     when: INVENTORY[item]['hpedockerplugin_driver'] == 'hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver' and INVENTORY[item]['vlan_tag'] is defined and INVENTORY[item]['vlan_tag']
@@ -164,7 +164,7 @@
     no_log: True
 
   - name: get the iscsi ports of replication device (vlan tagged)
-    local_action: shell /usr/bin/sshpass -p {{ INVENTORY[item]['replication_device']['hpe3par_password'] }} ssh -oStrictHostKeyChecking=no {{ INVENTORY[item]['replication_device']['hpe3par_username'] }}@{{ INVENTORY[item]['replication_device']['hpe3par_ip'] }} "showport -iscsivlans" | awk '{print $3}' | sed -n '1!p'
+    local_action: shell /usr/bin/sshpass -p {{ INVENTORY[item]['replication_device']['hpe3par_password'] }} ssh -oStrictHostKeyChecking=no {{ INVENTORY[item]['replication_device']['hpe3par_username'] }}@{{ INVENTORY[item]['replication_device']['hpe3par_ip'] }} "showport -iscsivlans" | grep -v '-' | awk '{print $3}' | sed -n '1!p'
     with_items: "{{ INVENTORY.keys() }}"
     register: secondary_iscsi_ports_vlan
     when: INVENTORY[item]['hpedockerplugin_driver'] == 'hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver' and INVENTORY[item]['replication_device'] is defined and INVENTORY[item]['vlan_tag'] is defined and INVENTORY[item]['vlan_tag']
