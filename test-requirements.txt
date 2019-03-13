@@ -1,3 +1,5 @@
 flake8==3.5.0
 testtools
 mock==2.0.0
+ratelimit==2.2.1
+backoff==1.8.0
