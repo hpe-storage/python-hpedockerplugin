@@ -2,7 +2,6 @@ import pytest
 import docker
 import yaml
 import os
-from time import sleep
 from .base import TEST_API_VERSION, BUSYBOX
 from . import helpers
 from .helpers import requires_api_version
@@ -61,7 +60,7 @@ class VolumesTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
                 assert pl_data['Enabled'] is False
                 while pl_data['Enabled'] is False:
                     c.enable_plugin(HPE3PAR)
-                    HPE3ParBackendVerification.hpe_backend_initialize(cls, driver=HPE3PAR, help='backends')
+                    HPE3ParBackendVerification.hpe_backends_initialize(cls, driver=HPE3PAR, help='backends')
                 pl_data = c.inspect_plugin(HPE3PAR)
                 assert pl_data['Enabled'] is True
             except docker.errors.APIError:
