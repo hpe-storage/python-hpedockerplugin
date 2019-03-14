@@ -835,6 +835,24 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
         hpe3par_cli.deleteVolumeSet(vvs_name)
         hpe3par_cli.logout()
 
-
+    def hpe_wait_for_all_backends_to_initialize(self, driver=None, **kwargs):
+        # This is in order to handle Asynchronous backend initialization implemented
+        # as part of plugin 3.1
+        client = docker.APIClient(
+            version=TEST_API_VERSION, timeout=600,
+            **docker.utils.kwargs_from_env()
+        )
+        while True:
+            try:
+                result = client.create_volume(driver=driver,
+                                 driver_opts=kwargs)
+                sleep(5)
+            except docker.errors.APIError as e:
+                if 'INITIALIZING' in str(e):
+                    pass
+                elif 'FAILED' in str(e):
+                    raise e
+                else:
+                    return
 
 
