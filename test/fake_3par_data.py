@@ -92,6 +92,48 @@ FAKE_ISCSI_PORTS = [{
     'iSCSIName': TARGET_IQN,
 }]
 
+share = {
+    'backend': 'DEFAULT',
+    'id': 'FAKE_UUID',
+    # 'fpg': [{'imran_fpg': ['10.50.9.90']}],
+    'fpg': 'DockerFpg_0',
+    'vfs': 'DockerVfs_0',
+    'vfsIP': '10.50.9.90',
+    'fstore': 'imran_fstore',
+    'name': 'DemoShare-99',
+    'display_name': 'DemoShare-99',
+    'shareDir': 'DemoShareDir99',
+    'protocol': 'nfs',
+    'readonly': False,
+    'softQuota': None,
+    'hardQuota': None,
+    'clientIPs': [],
+    'protocolOpts': None,
+    'snapshots': [],
+    'comment': 'Demo Share 99',
+}
+
+share_to_remove = {
+    'backend': 'DEFAULT',
+    'id': 'FAKE_UUID',
+    # 'fpg': [{'imran_fpg': ['10.50.9.90']}],
+    'fpg': 'imran_fpg',
+    'vfs': 'imran_vfs',
+    'vfsIP': '10.50.9.90',
+    'fstore': 'ia_fstore',
+    'name': 'ia_fstore',
+    'display_name': 'ia_fstore',
+    'shareDir': None,
+    'protocol': 'nfs',
+    'readonly': False,
+    'softQuota': None,
+    'hardQuota': None,
+    'clientIPs': [],
+    'protocolOpts': None,
+    'snapshots': [],
+    'comment': 'Test Share 06',
+}
+
 volume = {
     'name': VOLUME_NAME,
     'id': VOLUME_ID,

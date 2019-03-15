@@ -25,10 +25,12 @@ Eg.
 
 
 """
+import abc
 import json
 from oslo_log import log as logging
 import os
 import uuid
+import hpedockerplugin.volume_manager as mgr
 import hpedockerplugin.etcdutil as util
 import threading
 import hpedockerplugin.backend_async_initializer as async_initializer
@@ -41,7 +43,7 @@ DEFAULT_BACKEND_NAME = "DEFAULT"
 class Orchestrator(object):
     def __init__(self, host_config, backend_configs):
         LOG.info('calling initialize manager objs')
-        self.etcd_util = self._get_etcd_util(host_config)
+        self._etcd_client = self._get_etcd_client(host_config)
         self._manager = self.initialize_manager_objects(host_config,
                                                         backend_configs)
 
@@ -50,13 +52,9 @@ class Orchestrator(object):
         self.volume_backends_map = {}
         self.volume_backend_lock = threading.Lock()
 
-    @staticmethod
-    def _get_etcd_util(host_config):
-        return util.EtcdUtil(
-            host_config.host_etcd_ip_address,
-            host_config.host_etcd_port_number,
-            host_config.host_etcd_client_cert,
-            host_config.host_etcd_client_key)
+    @abc.abstractmethod
+    def _get_etcd_client(self, host_config):
+        pass
 
     @staticmethod
     def _get_node_id():
@@ -91,10 +89,11 @@ class Orchestrator(object):
                 thread = \
                     async_initializer. \
                     BackendInitializerThread(
+	                    self,
                         manager_objs,
                         host_config,
                         config,
-                        self.etcd_util,
+                        self._etcd_client,
                         node_id,
                         backend_name)
                 thread.start()
@@ -123,7 +122,7 @@ class Orchestrator(object):
         # https://docs.python.org/3/library/threading.html
         self.volume_backend_lock.acquire()
         try:
-            vol = self.etcd_util.get_vol_byname(volname)
+            vol = self.get_meta_data_by_name(volname)
             if vol is not None and 'backend' in vol:
                 current_backend = vol['backend']
                 # populate the volume backend map for caching
@@ -140,7 +139,7 @@ class Orchestrator(object):
         finally:
             self.volume_backend_lock.release()
 
-    def __execute_request(self, backend, request, volname, *args, **kwargs):
+    def _execute_request_for_backend(self, backend, request, volname, *args, **kwargs):
         LOG.info(' Operating on backend : %s on volume %s '
                  % (backend, volname))
         LOG.info(' Request %s ' % request)
@@ -159,8 +158,38 @@ class Orchestrator(object):
 
     def _execute_request(self, request, volname, *args, **kwargs):
         backend = self.get_volume_backend_details(volname)
-        return self.__execute_request(
+        return self._execute_request_for_backend(
             backend, request, volname, *args, **kwargs)
+
+    @abc.abstractmethod
+    def get_manager(self, host_config, config, etcd_util, backend_name):
+        pass
+
+    @abc.abstractmethod
+    def get_meta_data_by_name(self, name):
+        pass
+
+
+class VolumeBackendOrchestrator(Orchestrator):
+    def _get_etcd_client(self, host_config):
+        return util.HpeVolumeEtcdClient(
+            host_config.host_etcd_ip_address,
+            host_config.host_etcd_port_number,
+            host_config.host_etcd_client_cert,
+            host_config.host_etcd_client_key)
+
+    def get_manager(self, host_config, config, etcd_client, backend_name):
+        return mgr.VolumeManager(host_config, config, etcd_client,
+                                 backend_name)
+
+    def get_meta_data_by_name(self, name):
+        vol = self._etcd_client.get_vol_byname(name)
+        if vol and 'display_name' in vol:
+            return vol
+        return None
+
+    def get_path(self, volname):
+        return self._execute_request('get_path', volname)
 
     def volumedriver_remove(self, volname):
         ret_val = self._execute_request('remove_volume', volname)
@@ -185,7 +214,7 @@ class Orchestrator(object):
                             fs_mode, fs_owner,
                             mount_conflict_delay, cpg,
                             snap_cpg, current_backend, rcg_name):
-        ret_val = self.__execute_request(
+        ret_val = self._execute_request_for_backend(
             current_backend,
             'create_volume',
             volname,
@@ -239,17 +268,14 @@ class Orchestrator(object):
         return self._execute_request('mount_volume', volname,
                                      vol_mount, mount_id)
 
-    def get_path(self, volname):
-        return self._execute_request('get_path', volname)
-
     def get_volume_snap_details(self, volname, snapname, qualified_name):
         return self._execute_request('get_volume_snap_details', volname,
                                      snapname, qualified_name)
 
     def manage_existing(self, volname, existing_ref, backend, manage_opts):
-        ret_val = self.__execute_request(backend, 'manage_existing',
-                                         volname, existing_ref,
-                                         backend, manage_opts)
+        ret_val = self._execute_request_for_backend(
+            backend, 'manage_existing', volname, existing_ref,
+            backend, manage_opts)
         self.add_cache_entry(volname)
         return ret_val
 

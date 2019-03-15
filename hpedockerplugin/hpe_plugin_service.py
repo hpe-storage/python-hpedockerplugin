@@ -129,6 +129,31 @@ class HPEDockerPluginService(object):
             LOG.error(msg)
             raise exception.HPEPluginStartPluginException(reason=msg)
 
+        file_driver = 'hpedockerplugin.hpe.hpe_3par_file.HPE3PARFileDriver'
+        fc_driver = 'hpedockerplugin.hpe.hpe_3par_fc.HPE3PARFCDriver'
+        iscsi_driver = 'hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver'
+        # backend_configs -> {'backend1': config1, 'backend2': config2, ...}
+        # all_configs -> {'block': backend_configs1, 'file': backend_configs2}
+        file_configs = {}
+        block_configs = {}
+        all_configs = {}
+        for backend_name, config in backend_configs.items():
+            configured_driver = config.hpedockerplugin_driver.strip()
+            if configured_driver == file_driver:
+                file_configs[backend_name] = config
+            elif configured_driver == fc_driver or \
+                    configured_driver == iscsi_driver:
+                block_configs[backend_name] = config
+            else:
+                msg = "Bad driver name specified in hpe.conf: %s" %\
+                      configured_driver
+                raise exception.HPEPluginStartPluginException(reason=msg)
+
+        if file_configs:
+            all_configs['file'] = file_configs
+        if block_configs:
+            all_configs['block'] = block_configs
+
         # Set Logging level
         logging_level = backend_configs['DEFAULT'].logging
         setupcfg.setup_logging('hpe_storage_api', logging_level)
@@ -138,7 +163,7 @@ class HPEDockerPluginService(object):
                                     format(PLUGIN_PATH.path))
         servicename = StreamServerEndpointService(endpoint, Site(
             VolumePlugin(self._reactor, host_config,
-                         backend_configs).app.resource()))
+                         all_configs).app.resource()))
         return servicename
 
 
