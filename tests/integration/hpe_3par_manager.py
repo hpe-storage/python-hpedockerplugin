@@ -250,6 +250,10 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
             if (inspect_snapshot['Status']['snap_detail']['backend'] == 'DEFAULT'):
                self.assertEqual(inspect_snapshot['Status']['snap_detail']['snap_cpg'],
                              SNAP_CPG)
+            else:
+               self.assertEqual(inspect_snapshot['Status']['snap_detail']['snap_cpg'],
+                             SNAP_CPG2)
+
         if 'snap_schedule' in  inspect_snapshot['Status']['snap_detail']:
             self.assertEqual(snapshot['Options']['scheduleFrequency'], inspect_snapshot['Status']['snap_detail']['snap_schedule']['sched_frequency'])
             self.assertEqual(snapshot['Options']['snapshotPrefix'], inspect_snapshot['Status']['snap_detail']['snap_schedule']['snap_name_prefix'])
