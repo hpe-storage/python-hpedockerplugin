@@ -3,7 +3,6 @@ import string
 import os
 import six
 import time
-import uuid
 from sh import chmod
 from Crypto.Cipher import AES
 import base64
@@ -28,6 +27,7 @@ from hpedockerplugin.hpe import utils
 from hpedockerplugin.i18n import _, _LE, _LI, _LW
 import hpedockerplugin.synchronization as synchronization
 
+
 LOG = logging.getLogger(__name__)
 PRIMARY = 1
 PRIMARY_REV = 1
@@ -38,6 +38,7 @@ CONF = cfg.CONF
 
 class VolumeManager(object):
     def __init__(self, host_config, hpepluginconfig, etcd_util,
+                 node_id,
                  backend_name='DEFAULT'):
         self._host_config = host_config
         self._hpepluginconfig = hpepluginconfig
@@ -92,7 +93,7 @@ class VolumeManager(object):
         self._connector = self._get_connector(hpepluginconfig)
 
         # Volume fencing requirement
-        self._node_id = self._get_node_id()
+        self._node_id = node_id
 
     def _initialize_configuration(self):
         self.src_bkend_config = self._get_src_bkend_config()
@@ -190,19 +191,6 @@ class VolumeManager(object):
         return connector.InitiatorConnector.factory(
             protocol, root_helper, use_multipath=self._use_multipath,
             device_scan_attempts=5, transport='default')
-
-    @staticmethod
-    def _get_node_id():
-        # Save node-id if it doesn't exist
-        node_id_file_path = '/etc/hpedockerplugin/.node_id'
-        if not os.path.isfile(node_id_file_path):
-            node_id = str(uuid.uuid4())
-            with open(node_id_file_path, 'w') as node_id_file:
-                node_id_file.write(node_id)
-        else:
-            with open(node_id_file_path, 'r') as node_id_file:
-                node_id = node_id_file.readline()
-        return node_id
 
     @synchronization.synchronized_volume('{volname}')
     def create_volume(self, volname, vol_size, vol_prov,
@@ -412,7 +400,39 @@ class VolumeManager(object):
             LOG.exception(msg)
             return json.dumps({u"Err": six.text_type(msg)})
 
-        self._set_qos_and_flash_cache_info(existing_ref_details['name'], vol)
+        if ('rcopyStatus' in existing_ref_details and
+                existing_ref_details['rcopyStatus'] != 1):
+            msg = 'ERROR: Volume associated with a replication group '\
+                  'cannot be imported'
+            raise exception.InvalidInput(reason=msg)
+
+        vvset_detail = self._hpeplugin_driver.get_vvset_from_volume(
+            existing_ref_details['name'])
+        if vvset_detail is not None:
+            vvset_name = vvset_detail.get('name')
+            LOG.info('vvset_name: %(vvset)s' % {'vvset': vvset_name})
+
+            # check and set the flash-cache if exists
+            if(vvset_detail.get('flashCachePolicy') is not None and
+               vvset_detail.get('flashCachePolicy') == 1):
+                vol['flash_cache'] = True
+
+            try:
+                self._hpeplugin_driver.get_qos_detail(vvset_name)
+                LOG.info('Volume:%(existing_ref)s is in vvset_name:'
+                         '%(vvset_name)s associated with QOS'
+                         % {'existing_ref': existing_ref,
+                            'vvset_name': vvset_name})
+                vol["qos_name"] = vvset_name
+            except Exception as ex:
+                msg = (_(
+                    'volume is in vvset:%(vvset_name)s and not associated with'
+                    ' QOS error:%(ex)s') % {
+                        'vvset_name': vvset_name,
+                        'ex': six.text_type(ex)})
+                LOG.error(msg)
+                if not vol['flash_cache']:
+                    return json.dumps({u"Err": six.text_type(msg)})
 
         # since we have only 'importVol' option for importing,
         # both volume and snapshot
@@ -1273,7 +1293,10 @@ class VolumeManager(object):
 
     def _force_remove_vlun(self, vol, is_snap):
         bkend_vol_name = utils.get_3par_name(vol['id'], is_snap)
-        if self.tgt_bkend_config:
+        # Check if replication is configured and volume is
+        # populated with the RCG
+        if (self.tgt_bkend_config and 'rcg_info' in vol and
+                vol['rcg_info'] is not None):
             if self.tgt_bkend_config.quorum_witness_ip:
                 LOG.info("Peer Persistence setup: Removing VLUNs "
                          "forcefully from remote backend...")
@@ -1414,19 +1437,11 @@ class VolumeManager(object):
 
         pri_connection_info = None
         sec_connection_info = None
-        # Check if replication is configured
-        if self.tgt_bkend_config:
+        # Check if replication is configured and volume is
+        # populated with the RCG
+        if (self.tgt_bkend_config and 'rcg_info' in vol and
+                vol['rcg_info'] is not None):
             LOG.info("This is a replication setup")
-            # TODO: This is where existing volume can be added to RCG
-            # after enabling replication configuration in hpe.conf
-            if 'rcg_info' not in vol or not vol['rcg_info']:
-                msg = "Volume %s is not a replicated volume. It seems" \
-                      "the backend configuration was modified to be a" \
-                      "replication configuration after volume creation."\
-                      % volname
-                LOG.error(msg)
-                raise exception.HPEPluginMountException(reason=msg)
-
             # Check if this is Active/Passive based replication
             if self.tgt_bkend_config.quorum_witness_ip:
                 LOG.info("Peer Persistence has been configured")

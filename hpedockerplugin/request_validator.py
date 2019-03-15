@@ -90,30 +90,31 @@ class RequestValidator(object):
         valid_opts = ['compression', 'size', 'provisioning',
                       'flash-cache', 'qos-name', 'fsOwner',
                       'fsMode', 'mountConflictDelay', 'cpg',
-                      'snapcpg', 'backend']
+                      'snapcpg', 'backend', 'manager']
         self._validate_opts("create volume", contents, valid_opts)
 
     def _validate_clone_opts(self, contents):
         valid_opts = ['cloneOf', 'size', 'cpg', 'snapcpg',
-                      'mountConflictDelay']
+                      'mountConflictDelay', 'manager']
         self._validate_opts("clone volume", contents, valid_opts)
 
     def _validate_snapshot_opts(self, contents):
         valid_opts = ['virtualCopyOf', 'retentionHours', 'expirationHours',
-                      'mountConflictDelay', 'size']
+                      'mountConflictDelay', 'size', 'manager']
         self._validate_opts("create snapshot", contents, valid_opts)
 
     def _validate_snapshot_schedule_opts(self, contents):
         valid_opts = ['virtualCopyOf', 'scheduleFrequency', 'scheduleName',
                       'snapshotPrefix', 'expHrs', 'retHrs',
-                      'mountConflictDelay', 'size']
+                      'mountConflictDelay', 'size', 'manager']
         mandatory_opts = ['scheduleName', 'snapshotPrefix',
                           'scheduleFrequency']
         self._validate_opts("create snapshot schedule", contents,
                             valid_opts, mandatory_opts)
 
     def _validate_import_vol_opts(self, contents):
-        valid_opts = ['importVol', 'backend', 'mountConflictDelay']
+        valid_opts = ['importVol', 'backend', 'mountConflictDelay',
+                      'manager']
         self._validate_opts("import volume", contents, valid_opts)
 
         # Replication enabled backend cannot be used for volume import
@@ -122,7 +123,7 @@ class RequestValidator(object):
             if not backend_name:
                 backend_name = 'DEFAULT'
             try:
-                config = self._backend_configs[backend_name]
+                self._backend_configs[backend_name]
             except KeyError:
                 backend_names = list(self._backend_configs.keys())
                 backend_names.sort()
@@ -132,14 +133,10 @@ class RequestValidator(object):
                       (backend_name, backend_names)
                 raise exception.InvalidInput(reason=msg)
 
-            if config.replication_device:
-                msg = "ERROR: Import volume not allowed with replication " \
-                      "enabled backend '%s'" % backend_name
-                raise exception.InvalidInput(reason=msg)
-
     def _validate_rcg_opts(self, contents):
         valid_opts = ['replicationGroup', 'size', 'provisioning',
-                      'backend', 'mountConflictDelay', 'compression']
+                      'backend', 'mountConflictDelay', 'compression',
+                      'manager']
         self._validate_opts('create replicated volume', contents, valid_opts)
 
     def _validate_help_opt(self, contents):

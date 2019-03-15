@@ -27,6 +27,9 @@ import hpedockerplugin.exception as exception
 from hpedockerplugin.i18n import _, _LE, _LI
 from klein import Klein
 from hpedockerplugin.hpe import volume
+from ratelimit import limits
+from ratelimit.exception import RateLimitException
+from backoff import on_exception, expo
 
 import hpedockerplugin.backend_orchestrator as orchestrator
 import hpedockerplugin.request_validator as req_validator
@@ -60,6 +63,13 @@ class VolumePlugin(object):
         self.orchestrator = orchestrator.Orchestrator(host_config,
                                                       backend_configs)
 
+    def is_backend_initialized(self, backend_name):
+        if backend_name in self.orchestrator._manager:
+            mgr_obj = self.orchestrator._manager[backend_name]
+            return mgr_obj.get('backend_state')
+        else:
+            return 'FAILED'
+
     def disconnect_volume_callback(self, connector_info):
         LOG.info(_LI('In disconnect_volume_callback: connector info is %s'),
                  json.dumps(connector_info))
@@ -76,6 +86,8 @@ class VolumePlugin(object):
         LOG.info(_LI('In Plugin Activate'))
         return json.dumps({u"Implements": [u"VolumeDriver"]})
 
+    @on_exception(expo, RateLimitException, max_tries=8)
+    @limits(calls=25, period=30)
     @app.route("/VolumeDriver.Remove", methods=["POST"])
     def volumedriver_remove(self, name):
         """
@@ -90,6 +102,8 @@ class VolumePlugin(object):
 
         return self.orchestrator.volumedriver_remove(volname)
 
+    @on_exception(expo, RateLimitException, max_tries=8)
+    @limits(calls=25, period=30)
     @app.route("/VolumeDriver.Unmount", methods=["POST"])
     def volumedriver_unmount(self, name):
         """
@@ -160,7 +174,7 @@ class VolumePlugin(object):
                 'mountConflictDelay', 'help', 'importVol', 'cpg',
                 'snapcpg', 'scheduleName', 'scheduleFrequency',
                 'snapshotPrefix', 'expHrs', 'retHrs', 'backend',
-                'replicationGroup'
+                'replicationGroup', 'manager'
             ]
             valid_snap_schedule_opts = ['scheduleName', 'scheduleFrequency',
                                         'snapshotPrefix', 'expHrs', 'retHrs']
@@ -381,22 +395,16 @@ class VolumePlugin(object):
     def _process_help(self, help):
         LOG.info("Working on help content generation...")
         if help == 'backends':
-            all_backend_names = self._backend_configs.keys()
-            initialized_backend_names = self.orchestrator._manager.keys()
+
             line = "=" * 54
             spaces = ' ' * 42
             resp = "\n%s\nNAME%sSTATUS\n%s\n" % (line, spaces, line)
-            failed_backends = \
-                set(all_backend_names) - set(initialized_backend_names)
-            printable_len = 45
-            for backend in initialized_backend_names:
-                padding = (printable_len - len(backend)) * ' '
-                resp += "%s%s  OK\n" % (backend, padding)
 
-            for backend in failed_backends:
-                padding = (printable_len - len(backend)) * ' '
-                resp += "%s%s  FAILED\n" % (backend, padding)
-            resp += "%s\n" % line
+            printable_len = 45
+            for k, v in self.orchestrator._manager.items():
+                backend_state = v['backend_state']
+                padding = (printable_len - len(k)) * ' '
+                resp += "%s%s  %s\n" % (k, padding, backend_state)
             return json.dumps({u'Err': resp})
         else:
             create_help_path = "./config/create_help.txt"
@@ -422,17 +430,11 @@ class VolumePlugin(object):
             raise exception.InvalidInput(reason=msg)
 
         if replication_device and not rcg_name:
-            backend_names = list(self._backend_configs.keys())
-            backend_names.sort()
-
-            msg = "'%s' is a replication enabled backend. " \
-                  "Request to create replicated volume cannot be fulfilled " \
-                  "without specifying 'replicationGroup' option in the " \
-                  "request. Please either specify 'replicationGroup' or use " \
-                  "a normal backend and execute the request again. List of " \
-                  "backends defined in hpe.conf: %s" % (backend_name,
-                                                        backend_names)
-            raise exception.InvalidInput(reason=msg)
+            LOG.info("'%s' is a replication enabled backend. "
+                     "'replicationGroup' is not specified in the create "
+                     "volume command. Proceeding to create a regular "
+                     "volume without remote copy "
+                     "capabilities." % (backend_name))
 
         if rcg_name and replication_device:
 
@@ -649,6 +651,8 @@ class VolumePlugin(object):
         LOG.info(' Schedule Name auto generated is %s' % scheduleNameGenerated)
         return scheduleNameGenerated
 
+    @on_exception(expo, RateLimitException, max_tries=8)
+    @limits(calls=25, period=30)
     @app.route("/VolumeDriver.Mount", methods=["POST"])
     def volumedriver_mount(self, name):
         """

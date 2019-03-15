@@ -27,11 +27,11 @@ Eg.
 """
 import json
 from oslo_log import log as logging
+import os
+import uuid
 import hpedockerplugin.etcdutil as util
-import hpedockerplugin.volume_manager as mgr
 import threading
-
-import hpedockerplugin.exception as exception
+import hpedockerplugin.backend_async_initializer as async_initializer
 
 LOG = logging.getLogger(__name__)
 
@@ -58,31 +58,52 @@ class Orchestrator(object):
             host_config.host_etcd_client_cert,
             host_config.host_etcd_client_key)
 
+    @staticmethod
+    def _get_node_id():
+        # Save node-id if it doesn't exist
+        node_id_file_path = '/etc/hpedockerplugin/.node_id'
+        if not os.path.isfile(node_id_file_path):
+            node_id = str(uuid.uuid4())
+            with open(node_id_file_path, 'w') as node_id_file:
+                node_id_file.write(node_id)
+        else:
+            with open(node_id_file_path, 'r') as node_id_file:
+                node_id = node_id_file.readline()
+
+        return node_id
+
     def initialize_manager_objects(self, host_config, backend_configs):
         manager_objs = {}
+        node_id = self._get_node_id()
 
         for backend_name, config in backend_configs.items():
             try:
-                LOG.info('INITIALIZING backend: %s' % backend_name)
-                manager_objs[backend_name] = mgr.VolumeManager(
-                    host_config,
-                    config,
-                    self.etcd_util,
-                    backend_name)
-                LOG.info("Backend '%s' INITIALIZED!" % backend_name)
+                LOG.info('INITIALIZING backend: %s asynchronously'
+                         % backend_name)
+
+                # First initialize the manager_objs key with state as
+                # INITIALIZING
+                volume_mgr = {}
+                volume_mgr['backend_state'] = 'INITIALIZING'
+                volume_mgr['mgr'] = None
+                manager_objs[backend_name] = volume_mgr
+
+                thread = \
+                    async_initializer. \
+                    BackendInitializerThread(
+                        manager_objs,
+                        host_config,
+                        config,
+                        self.etcd_util,
+                        node_id,
+                        backend_name)
+                thread.start()
+
             except Exception as ex:
-                # lets log the error message and proceed with other backend
                 LOG.error('INITIALIZING backend: %s FAILED Error: %s'
                           % (backend_name, ex))
 
-        if not manager_objs:
-            msg = "ERROR: None of the backends could be initialized " \
-                  "successfully. Please rectify the configuration entries " \
-                  "in hpe.conf and retry enable."
-            LOG.error(msg)
-            raise exception.HPEPluginNotInitializedException(reason=msg)
-        else:
-            LOG.info("Backends INITIALIZED => %s" % manager_objs.keys())
+        LOG.info("Backends INITIALIZED => %s" % manager_objs.keys())
 
         return manager_objs
 
@@ -125,7 +146,7 @@ class Orchestrator(object):
         LOG.info(' Request %s ' % request)
         LOG.info(' with  args %s ' % str(args))
         LOG.info(' with  kwargs is %s ' % str(kwargs))
-        volume_mgr = self._manager.get(backend)
+        volume_mgr = self._manager.get(backend)['mgr']
         if volume_mgr:
             # populate the volume backend map for caching
             return getattr(volume_mgr, request)(volname, *args, **kwargs)
@@ -234,5 +255,5 @@ class Orchestrator(object):
 
     def volumedriver_list(self):
         # Use the first volume manager list volumes
-        volume_mgr = next(iter(self._manager.values()))
+        volume_mgr = next(iter(self._manager.values()))['mgr']
         return volume_mgr.list_volumes()
