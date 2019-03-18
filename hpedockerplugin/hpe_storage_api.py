@@ -61,7 +61,7 @@ class VolumePlugin(object):
             block_configs = all_configs['block']
             self._host_config = block_configs[0]
             self._backend_configs = block_configs[1]
-            self.orchestrator = orchestrator.Orchestrator(
+            self.orchestrator = orchestrator.VolumeBackendOrchestrator(
                 self._host_config, self._backend_configs)
             self._req_validator = req_validator.RequestValidator(
                 self._backend_configs)

@@ -127,4 +127,6 @@ class RequestRouter(object):
         orch = self._orchestrators['file']
         if orch:
             return orch.list_objects()
-
+        raise exception.EtcdMetadataNotFound(
+            "File not configured"
+        )

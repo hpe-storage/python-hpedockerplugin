@@ -134,11 +134,9 @@ class HpeDockerUnitTestExecutor(object):
 
     # Individual TCs can override this value to execute real flow
     def use_real_flow(self):
-        return True
+        return False
 
     def _get_configuration(self):
-        import pdb
-        pdb.set_trace()
         if self.use_real_flow():
             cfg_file_name = '/etc/hpedockerplugin/hpe.conf'
         else:

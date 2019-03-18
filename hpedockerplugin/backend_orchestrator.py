@@ -172,8 +172,13 @@ class Orchestrator(object):
 
 
 class VolumeBackendOrchestrator(Orchestrator):
+    def __init__(self, host_config, backend_configs):
+        super(VolumeBackendOrchestrator, self).__init__(
+            host_config, backend_configs)
+
     def _get_etcd_client(self, host_config):
-        return util.HpeVolumeEtcdClient(
+        # return util.HpeVolumeEtcdClient(
+        return util.EtcdUtil(
             host_config.host_etcd_ip_address,
             host_config.host_etcd_port_number,
             host_config.host_etcd_client_cert,

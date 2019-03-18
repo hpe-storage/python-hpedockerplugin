@@ -358,8 +358,8 @@ class TestCloneWithFlashCacheAndQOSEtcdSaveFails(CloneVolumeUnitTest):
 # CHAP enabled makes Offline copy flow to execute
 class TestCloneWithCHAP(CloneVolumeUnitTest):
     def override_configuration(self, all_configs):
-        all_configs['DEFAULT'].hpe3par_iscsi_chap_enabled = True
-        all_configs['DEFAULT'].use_multipath = False
+        all_configs['block'][1]['DEFAULT'].hpe3par_iscsi_chap_enabled = True
+        all_configs['block'][1]['DEFAULT'].use_multipath = False
 
     def check_response(self, resp):
         self._test_case.assertEqual(resp, {u"Err": ''})
