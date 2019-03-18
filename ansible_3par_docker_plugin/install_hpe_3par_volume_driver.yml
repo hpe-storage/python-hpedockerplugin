@@ -21,6 +21,11 @@
     - name: load plugin settings
       include_vars: 'properties/plugin_configuration_properties.yml'
 
+    - name: Force fail if DEFAULT backend is not present
+      fail:
+        msg: "The plugin properties file does not have the [DEFAULT] back end"
+      when: INVENTORY['DEFAULT'] is not defined
+
     - name: Install prerequisites
       include: tasks/install_prerequisites_on_all.yml
       
