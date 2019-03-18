@@ -410,7 +410,7 @@ class FileManager(object):
                 LOG.info('Share unmounted. Updating ETCD: %s' % share)
                 self._etcd.save_share(share)
 
-                self._hpeplugin_driver.removed_client_ip_for_share(
+                self._hpeplugin_driver.remove_client_ip_for_share(
                     share['id'], self._get_host_ip())
             else:
                 LOG.info('Updated ETCD mount-id list: %s' % mount_ids)
