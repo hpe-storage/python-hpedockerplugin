@@ -16,14 +16,10 @@ class FileBackendOrchestrator(Orchestrator):
         super(FileBackendOrchestrator, self).__init__(
             host_config, backend_configs)
 
-        # self._fp_etcd_client = util.HpeFilePersonaEtcdClient(
-        #     host_config.host_etcd_ip_address,
-        #     host_config.host_etcd_port_number,
-        #     host_config.host_etcd_client_cert,
-        #     host_config.host_etcd_client_key)
-
-    def _get_manager(self, host_config, config, etcd_client,
-                     backend_name):
+    # Implementation of abstract function from base class
+    def get_manager(self, host_config, config, etcd_client,
+                     node_id, backend_name):
+        LOG.info("Getting file manager...")
         if not FileBackendOrchestrator.fp_etcd_client:
             FileBackendOrchestrator.fp_etcd_client = \
                 util.HpeFilePersonaEtcdClient(
@@ -34,8 +30,9 @@ class FileBackendOrchestrator(Orchestrator):
 
         return fmgr.FileManager(host_config, config, etcd_client,
                                 FileBackendOrchestrator.fp_etcd_client,
-                                backend_name)
+                                node_id, backend_name)
 
+    # Implementation of abstract function from base class
     def _get_etcd_client(self, host_config):
         # Reusing volume code for ETCD client
         return util.HpeShareEtcdClient(
@@ -108,4 +105,3 @@ class FileBackendOrchestrator(Orchestrator):
         mount_dir = '/opt/hpe/data/hpedocker-%s' % share_name
         response = json.dumps({u"Err": '', u"Mountpoint": mount_dir})
         return response
-

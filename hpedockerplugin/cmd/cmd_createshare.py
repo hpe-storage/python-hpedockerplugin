@@ -16,6 +16,7 @@ LOG = logging.getLogger(__name__)
 class CreateShareCmd(cmd.Cmd):
     def __init__(self, file_mgr, share_args):
         self._file_mgr = file_mgr
+        self._etcd = file_mgr.get_etcd()
         self._fp_etcd = file_mgr.get_file_etcd()
         self._mediator = file_mgr.get_mediator()
         self._config = file_mgr.get_config()
@@ -24,9 +25,15 @@ class CreateShareCmd(cmd.Cmd):
         # self._size = share_args['size']
         self._cmds = []
 
+        # Initialize share state
+        self._etcd.save_share({
+            'name': share_args['name'],
+            'backend': self._backend,
+            'status': 'CREATING'
+        })
+
     def unexecute(self):
-        share_etcd = self._file_mgr.get_etcd()
-        share_etcd.delete_share(self._share_args)
+        self._etcd.delete_share(self._share_args)
         for cmd in reversed(self._cmds):
             cmd.unexecute()
 
@@ -145,17 +152,20 @@ class CreateShareOnDefaultFpgCmd(CreateShareCmd):
             # the user and as a result leaving an empty slot. Check
             # all the FPGs that were created as default and see if
             # any of those have share count less than MAX_SHARE_PER_FPG
-            all_fpgs_for_cpg = self._fp_etcd.get_all_fpg_metadata(
-                self._backend, self._share_args['cpg']
-            )
-            for fpg in all_fpgs_for_cpg:
-                if fpg['fpg'].startswith("Docker"):
-                    with self._fp_etcd.get_fpg_lock(self._backend,
-                                                    fpg['fpg']) as lock:
-                        if fpg['share_cnt'] < share.MAX_SHARES_PER_FPG:
-                            self._share_args['fpg'] = fpg['fpg']
-                            self._share_args['vfs'] = fpg['vfs']
-                            return self._create_share()
+            try:
+                all_fpgs_for_cpg = self._fp_etcd.get_all_fpg_metadata(
+                    self._backend, self._share_args['cpg']
+                )
+                for fpg in all_fpgs_for_cpg:
+                    if fpg['fpg'].startswith("Docker"):
+                        with self._fp_etcd.get_fpg_lock(self._backend,
+                                                        fpg['fpg']) as lock:
+                            if fpg['share_cnt'] < share.MAX_SHARES_PER_FPG:
+                                self._share_args['fpg'] = fpg['fpg']
+                                self._share_args['vfs'] = fpg['vfs']
+                                return self._create_share()
+            except Exception:
+                pass
             raise ex
 
     # If default FPG is full, it raises exception

@@ -30,13 +30,14 @@ LOG = logging.getLogger(__name__)
 
 class FileManager(object):
     def __init__(self, host_config, hpepluginconfig, etcd_util,
-                 fp_etcd_client, backend_name='DEFAULT'):
+                 fp_etcd_client, node_id, backend_name='DEFAULT'):
         self._host_config = host_config
         self._hpepluginconfig = hpepluginconfig
         self._my_ip = netutils.get_my_ipv4()
 
         self._etcd = etcd_util
         self._fp_etcd_client = fp_etcd_client
+        self._node_id = node_id
         self._backend = backend_name
 
         self._initialize_configuration()
@@ -79,7 +80,6 @@ class FileManager(object):
                 LOG.info(msg)
                 raise exception.HPEPluginStartPluginException(reason=msg)
 
-        self._node_id = self._get_node_id()
         # self._initialize_default_metadata()
 
     def get_backend(self):
@@ -110,19 +110,6 @@ class FileManager(object):
                 }
             }
             self._fp_etcd_client.save_backend_metadata(metadata)
-
-    @staticmethod
-    def _get_node_id():
-        # Save node-id if it doesn't exist
-        node_id_file_path = '/etc/hpedockerplugin/.node_id'
-        if not os.path.isfile(node_id_file_path):
-            node_id = str(uuid.uuid4())
-            with open(node_id_file_path, 'w') as node_id_file:
-                node_id_file.write(node_id)
-        else:
-            with open(node_id_file_path, 'r') as node_id_file:
-                node_id = node_id_file.readline()
-        return node_id
 
     def _initialize_configuration(self):
         self.src_bkend_config = self._get_src_bkend_config()
@@ -219,28 +206,32 @@ class FileManager(object):
         except exception.EtcdMetadataNotFound:
             pass
 
-        self._etcd.save_share({
-            'name': share_name,
-            'backend': self._backend,
-            'status': 'CREATING'
-        })
         # Make copy of args as we are going to modify it
         fpg_name = share_args.get('fpg')
         cpg_name = share_args.get('cpg')
-        if fpg_name:
-            self._create_share_on_fpg(fpg_name, share_args)
-        else:
-            self._create_share_on_default_fpg(cpg_name, share_args)
 
-        cmd = cmd_setquota.SetQuotaCmd(self, share_args['cpg'],
-                                       share_args['fpg'],
-                                       share_args['vfs'],
-                                       share_args['name'],
-                                       share_args['size'])
         try:
-            cmd.execute()
-        except Exception:
-            # TODO: Undo logic here
+            if fpg_name:
+                self._create_share_on_fpg(fpg_name, share_args)
+            else:
+                self._create_share_on_default_fpg(cpg_name, share_args)
+
+            cmd = cmd_setquota.SetQuotaCmd(self, share_args['cpg'],
+                                           share_args['fpg'],
+                                           share_args['vfs'],
+                                           share_args['name'],
+                                           share_args['size'])
+            try:
+                cmd.execute()
+            except Exception:
+                self._etcd.delete_share({
+                    'name': share_name
+                })
+                raise
+        except Exception as ex:
+            self._etcd.delete_share({
+                'name': share_name
+            })
             raise
 
     def remove_share(self, share_name, share):
@@ -339,15 +330,13 @@ class FileManager(object):
         if 'status' in share:
             if share['status'] == 'FAILED':
                 LOG.error("Share not present")
-        client_ip = '+' + self._get_host_ip()
-        share_name = share['name']
+
+        client_ip = self._get_host_ip()
+        self._hpeplugin_driver.add_client_ip_for_share(share['id'],
+                                                       client_ip)
         fpg = share['fpg']
         vfs = share['vfs']
         file_store = share['name']
-        self._hpeplugin_driver.setfshare('nfs', vfs,
-                                         share_name, fpg=fpg,
-                                         fstore=file_store,
-                                         clientip=client_ip)
         vfs_ip, netmask = share['vfsIPs'][0]
         # If shareDir is not specified, share is mounted at file-store
         # level.
@@ -420,6 +409,9 @@ class FileManager(object):
                 del share['share_path_info']
                 LOG.info('Share unmounted. Updating ETCD: %s' % share)
                 self._etcd.save_share(share)
+
+                self._hpeplugin_driver.removed_client_ip_for_share(
+                    share['id'], self._get_host_ip())
             else:
                 LOG.info('Updated ETCD mount-id list: %s' % mount_ids)
                 self._etcd.save_share(share)

@@ -27,7 +27,6 @@ from oslo_utils import units
 from hpedockerplugin import exception
 from hpedockerplugin.i18n import _
 from hpedockerplugin import fileutil
-from hpedockerplugin.rollback import Rollback
 
 hpe3parclient = importutils.try_import("hpe3parclient")
 if hpe3parclient:
@@ -502,6 +501,7 @@ class HPE3ParMediator(object):
             'shareDirectory': None,
             'fstore': None,
             'nfsOptions': self._get_nfs_options(proto_opts, readonly),
+            'nfsClientlist': ['127.0.0.1'],
             'comment': 'Docker created share'
         }
 
@@ -617,23 +617,6 @@ class HPE3ParMediator(object):
             # cmd = ('mount', '-t', 'nfs', export_location, mount_dir)
             # fileutil.execute(*cmd)
 
-    def _mount_super_share(self, protocol, mount_dir, fpg, vfs, fstore,
-                           share_ip, rb):
-        try:
-            mount_location = self._generate_mount_path(
-                fpg, vfs, fstore, share_ip)
-            self._mount_share(protocol, mount_location, mount_dir)
-            undo_info = {'undo_func': self._unmount_share,
-                         'params': {'mount_location': mount_location},
-                         'msg': "Unmouting super share %s" % SUPER_SHARE}
-            rb.add_undo_info(undo_info)
-        except Exception as err:
-            message = ("There was an error mounting the super share: "
-                       "%s. The nested file tree will not be deleted.",
-                       six.text_type(err))
-            LOG.warning(message)
-            raise exception.HPEDriverException(msg=message)
-
     def _unmount_share(self, mount_location):
         try:
             sh.umount(mount_location)
@@ -664,53 +647,6 @@ class HPE3ParMediator(object):
                  'vfs': vfs,
                  'fstore': fstore})
         return path
-
-    def get_vfs_old(self, fpg, vfs=None):
-        """Get the VFS or raise an exception."""
-
-        try:
-            result = self._client.getvfs(fpg=fpg, vfs=vfs)
-        except Exception as e:
-            msg = (_('Exception during getvfs %(vfs)s: %(e)s') %
-                   {'vfs': vfs, 'e': six.text_type(e)})
-            LOG.exception(msg)
-            raise exception.ShareBackendException(msg=msg)
-
-        if result['total'] != 1:
-            error_msg = result.get('message')
-            if error_msg:
-                message = (_('Error while validating FPG/VFS '
-                             '(%(fpg)s/%(vfs)s): %(msg)s') %
-                           {'fpg': fpg, 'vfs': vfs, 'msg': error_msg})
-                LOG.error(message)
-                raise exception.ShareBackendException(msg=message)
-            else:
-                message = (_('Error while validating FPG/VFS '
-                             '(%(fpg)s/%(vfs)s): Expected 1, '
-                             'got %(total)s.') %
-                           {'fpg': fpg, 'vfs': vfs,
-                            'total': result['total']})
-
-                LOG.error(message)
-                raise exception.ShareBackendException(msg=message)
-
-        value = result['members'][0]
-        if isinstance(value['vfsip'], dict):
-            # This is for 3parclient returning only one VFS entry
-            LOG.debug("3parclient version up to 4.2.1 is in use. Client "
-                      "upgrade may be needed if using a VFS with multiple "
-                      "IP addresses.")
-            value['vfsip']['address'] = [value['vfsip']['address']]
-        else:
-            # This is for 3parclient returning list of VFS entries
-            # Format get_vfs ret value to combine all IP addresses
-            discovered_vfs_ips = []
-            for vfs_entry in value['vfsip']:
-                if vfs_entry['address']:
-                    discovered_vfs_ips.append(vfs_entry['address'])
-            value['vfsip'] = value['vfsip'][0]
-            value['vfsip']['address'] = discovered_vfs_ips
-        return value
 
     @staticmethod
     def _is_share_from_snapshot(fshare):
@@ -892,164 +828,6 @@ class HPE3ParMediator(object):
                     return None
         return result
 
-    def _change_access(self, plus_or_minus, project_id, share_id, share_proto,
-                       access_type, access_to, access_level,
-                       fpg, vfs, extra_specs=None):
-        """Allow or deny access to a share.
-        Plus_or_minus character indicates add to allow list (+) or remove from
-        allow list (-).
-        """
-
-        readonly = access_level == 'ro'
-        protocol = self.ensure_supported_protocol(share_proto)
-
-        try:
-            self._validate_access_type(protocol, access_type)
-        except Exception:
-            if plus_or_minus == DENY:
-                # Catch invalid rules for deny. Allow them to be deleted.
-                return
-            else:
-                raise
-
-        fshare = self._find_fshare(project_id,
-                                   share_id,
-                                   protocol,
-                                   fpg,
-                                   vfs,
-                                   readonly=readonly)
-        if not fshare:
-            # Change access might apply to the share with the name that
-            # does not match the access_level prefix.
-            other_fshare = self._find_fshare(project_id,
-                                             share_id,
-                                             protocol,
-                                             fpg,
-                                             vfs,
-                                             readonly=not readonly)
-            if other_fshare:
-
-                if plus_or_minus == DENY:
-                    # Try to deny rule from 'other' share for SMB or legacy.
-                    fshare = other_fshare
-
-                elif self._is_share_from_snapshot(other_fshare):
-                    # Found a share-from-snapshot from before
-                    # "-ro" was added to the name. Use it.
-                    fshare = other_fshare
-
-                elif protocol == 'nfs':
-                    # We don't have the RO|RW share we need, but the
-                    # opposite one already exists. It is OK to create
-                    # the one we need for ALLOW with NFS (not from snapshot).
-                    fstore = other_fshare.get('fstoreName')
-                    sharedir = other_fshare.get('shareDir')
-                    comment = other_fshare.get('comment')
-
-                    fshare = self._create_share(project_id,
-                                                share_id,
-                                                protocol,
-                                                extra_specs,
-                                                fpg,
-                                                vfs,
-                                                fstore=fstore,
-                                                sharedir=sharedir,
-                                                readonly=readonly,
-                                                size=None,
-                                                comment=comment)
-                else:
-                    # SMB only has one share for RO and RW. Try to use it.
-                    fshare = other_fshare
-
-            if not fshare:
-                msg = _('Failed to change (%(change)s) access '
-                        'to FPG/share %(fpg)s/%(share)s '
-                        'for %(type)s %(to)s %(level)s): '
-                        'Share does not exist on 3PAR.')
-                msg_data = {
-                    'change': plus_or_minus,
-                    'fpg': fpg,
-                    'share': share_id,
-                    'type': access_type,
-                    'to': access_to,
-                    'level': access_level,
-                }
-
-                if plus_or_minus == DENY:
-                    LOG.warning(msg, msg_data)
-                    return
-                else:
-                    raise exception.HPE3ParInvalid(err=msg % msg_data)
-
-        try:
-            self._validate_access_level(
-                protocol, access_type, access_level, fshare)
-        except exception.InvalidShareAccess as e:
-            if plus_or_minus == DENY:
-                # Allow invalid access rules to be deleted.
-                msg = _('Ignoring deny invalid access rule '
-                        'for FPG/share %(fpg)s/%(share)s '
-                        'for %(type)s %(to)s %(level)s): %(e)s')
-                msg_data = {
-                    'change': plus_or_minus,
-                    'fpg': fpg,
-                    'share': share_id,
-                    'type': access_type,
-                    'to': access_to,
-                    'level': access_level,
-                    'e': six.text_type(e),
-                }
-                LOG.info(msg, msg_data)
-                return
-            else:
-                raise
-
-        share_name = fshare.get('name')
-        setfshare_kwargs = {
-            'fpg': fpg,
-            'fstore': fshare.get('fstoreName'),
-            'comment': fshare.get('comment'),
-        }
-
-        if protocol == 'nfs':
-            access_change = '%s%s' % (plus_or_minus, access_to)
-            setfshare_kwargs['clientip'] = access_change
-
-        elif protocol == 'smb':
-
-            if access_type == 'ip':
-                access_change = '%s%s' % (plus_or_minus, access_to)
-                setfshare_kwargs['allowip'] = access_change
-
-            else:
-                access_str = 'read' if readonly else 'fullcontrol'
-                perm = '%s%s:%s' % (plus_or_minus, access_to, access_str)
-                setfshare_kwargs['allowperm'] = perm
-
-        try:
-            result = self._client.setfshare(
-                protocol, vfs, share_name, **setfshare_kwargs)
-
-            result = self.ignore_benign_access_results(
-                plus_or_minus, access_type, access_to, result)
-
-        except Exception as e:
-            result = six.text_type(e)
-
-        LOG.debug("setfshare result=%s", result)
-        if result:
-            msg = (_('Failed to change (%(change)s) access to FPG/share '
-                     '%(fpg)s/%(share)s for %(type)s %(to)s %(level)s: '
-                     '%(error)s') %
-                   {'change': plus_or_minus,
-                    'fpg': fpg,
-                    'share': share_id,
-                    'type': access_type,
-                    'to': access_to,
-                    'level': access_level,
-                    'error': result})
-            raise exception.ShareBackendException(msg=msg)
-
     def _find_fstore(self, project_id, share_id, share_proto, fpg, vfs,
                      allow_cross_protocol=False):
 
@@ -1131,220 +909,6 @@ class HPE3ParMediator(object):
         except Exception as e:
             msg = (_('Unexpected exception while getting snapshots: %s') %
                    six.text_type(e))
-            raise exception.ShareBackendException(msg=msg)
-
-    def update_access(self, project_id, share_id, share_proto, extra_specs,
-                      access_rules, add_rules, delete_rules, fpg, vfs):
-        """Update access to a share."""
-        protocol = self.ensure_supported_protocol(share_proto)
-
-        if not (delete_rules or add_rules):
-            # We need to re add all the rules. Check with 3PAR on it's current
-            # list and only add the deltas.
-            share = self._find_fshare(project_id,
-                                      share_id,
-                                      share_proto,
-                                      fpg,
-                                      vfs)
-
-            ref_users = []
-            ro_ref_rules = []
-            if protocol == 'nfs':
-                ref_rules = share['clients']
-
-                # Check for RO rules.
-                ro_share = self._find_fshare(project_id,
-                                             share_id,
-                                             share_proto,
-                                             fpg,
-                                             vfs,
-                                             readonly=True)
-                if ro_share:
-                    ro_ref_rules = ro_share['clients']
-            else:
-                ref_rules = [x[0] for x in share['allowPerm']]
-                ref_users = ref_rules[:]
-                # Get IP access as well
-                ips = share['allowIP']
-                if not isinstance(ips, list):
-                    # If there is only one IP, the API returns a string
-                    # rather than a list. We need to account for that.
-                    ips = [ips]
-                ref_rules += ips
-
-            # Retrieve base rules.
-            base_rules = []
-            for rule in access_rules:
-                base_rules.append(rule['access_to'])
-
-            # Check if we need to remove any rules from 3PAR.
-            for rule in ref_rules:
-                if rule in ref_users:
-                    rule_type = 'user'
-                else:
-                    rule_type = 'ip'
-
-                if rule not in base_rules + [LOCAL_IP, LOCAL_IP_RO]:
-                    self._change_access(DENY,
-                                        project_id,
-                                        share_id,
-                                        share_proto,
-                                        rule_type,
-                                        rule,
-                                        None,
-                                        fpg,
-                                        vfs)
-
-            # Check to see if there are any RO rules to remove.
-            for rule in ro_ref_rules:
-                if rule not in base_rules + [LOCAL_IP, LOCAL_IP_RO]:
-                    self._change_access(DENY,
-                                        project_id,
-                                        share_id,
-                                        share_proto,
-                                        rule_type,
-                                        rule,
-                                        'ro',
-                                        fpg,
-                                        vfs)
-
-            # Check the rules we need to add.
-            for rule in access_rules:
-                if rule['access_to'] not in ref_rules and (
-                   rule['access_to'] not in ro_ref_rules):
-                    # Rule does not exist, we need to add it
-                    self._change_access(ALLOW,
-                                        project_id,
-                                        share_id,
-                                        share_proto,
-                                        rule['access_type'],
-                                        rule['access_to'],
-                                        rule['access_level'],
-                                        fpg,
-                                        vfs,
-                                        extra_specs=extra_specs)
-        else:
-            # We have deltas of the rules that need to be added and deleted.
-            for rule in delete_rules:
-                self._change_access(DENY,
-                                    project_id,
-                                    share_id,
-                                    share_proto,
-                                    rule['access_type'],
-                                    rule['access_to'],
-                                    rule['access_level'],
-                                    fpg,
-                                    vfs)
-            for rule in add_rules:
-                self._change_access(ALLOW,
-                                    project_id,
-                                    share_id,
-                                    share_proto,
-                                    rule['access_type'],
-                                    rule['access_to'],
-                                    rule['access_level'],
-                                    fpg,
-                                    vfs,
-                                    extra_specs=extra_specs)
-
-    def resize_share(self, project_id, share_id, share_proto,
-                     new_size, old_size, fpg, vfs):
-        """Extends or shrinks size of existing share."""
-
-        share_name = self.ensure_prefix(share_id)
-        fstore = self._find_fstore(project_id,
-                                   share_name,
-                                   share_proto,
-                                   fpg,
-                                   vfs,
-                                   allow_cross_protocol=False)
-
-        if not fstore:
-            msg = (_('Cannot resize share because it was not found.'))
-            raise exception.InvalidShare(reason=msg)
-
-        self._update_capacity_quotas(fstore, new_size, old_size, fpg, vfs)
-
-    def fsip_exists(self, fsip):
-        """Try to get FSIP. Return True if it exists."""
-
-        vfs = fsip['vfs']
-        fpg = fsip['fspool']
-
-        try:
-            result = self._client.getfsip(vfs, fpg=fpg)
-            LOG.debug("getfsip result: %s", result)
-        except Exception:
-            msg = (_('Failed to get FSIPs for FPG/VFS %(fspool)s/%(vfs)s.') %
-                   fsip)
-            LOG.exception(msg)
-            raise exception.ShareBackendException(msg=msg)
-
-        for member in result['members']:
-            if all(item in member.items() for item in fsip.items()):
-                return True
-
-        return False
-
-    def create_fsip(self, ip, subnet, vlantag, fpg, vfs):
-
-        vlantag_str = six.text_type(vlantag) if vlantag else '0'
-
-        # Try to create it. It's OK if it already exists.
-        try:
-            result = self._client.createfsip(ip,
-                                             subnet,
-                                             vfs,
-                                             fpg=fpg,
-                                             vlantag=vlantag_str)
-            LOG.debug("createfsip result: %s", result)
-
-        except Exception:
-            msg = (_('Failed to create FSIP for %s') % ip)
-            LOG.exception(msg)
-            raise exception.ShareBackendException(msg=msg)
-
-        # Verify that it really exists.
-        fsip = {
-            'fspool': fpg,
-            'vfs': vfs,
-            'address': ip,
-            'prefixLen': subnet,
-            'vlanTag': vlantag_str,
-        }
-        if not self.fsip_exists(fsip):
-            msg = (_('Failed to get FSIP after creating it for '
-                     'FPG/VFS/IP/subnet/VLAN '
-                     '%(fspool)s/%(vfs)s/'
-                     '%(address)s/%(prefixLen)s/%(vlanTag)s.') % fsip)
-            LOG.error(msg)
-            raise exception.ShareBackendException(msg=msg)
-
-    def remove_fsip(self, ip, fpg, vfs):
-
-        if not (vfs and ip):
-            # If there is no VFS and/or IP, then there is no FSIP to remove.
-            return
-
-        try:
-            result = self._client.removefsip(vfs, ip, fpg=fpg)
-            LOG.debug("removefsip result: %s", result)
-
-        except Exception:
-            msg = (_('Failed to remove FSIP %s') % ip)
-            LOG.exception(msg)
-            raise exception.ShareBackendException(msg=msg)
-
-        # Verify that it really no longer exists.
-        fsip = {
-            'fspool': fpg,
-            'vfs': vfs,
-            'address': ip,
-        }
-        if self.fsip_exists(fsip):
-            msg = (_('Failed to remove FSIP for FPG/VFS/IP '
-                     '%(fspool)s/%(vfs)s/%(address)s.') % fsip)
-            LOG.error(msg)
             raise exception.ShareBackendException(msg=msg)
 
     def _wait_for_task_completion(self, task_id, interval=1):
@@ -1505,5 +1069,29 @@ class HPE3ParMediator(object):
                                                    fpg, size))
             LOG.exception(msg)
             raise exception.ShareBackendException(msg=msg)
+        finally:
+            self._wsapi_logout()
+
+    def add_client_ip_for_share(self, share_id, client_ip):
+        uri = '/fileshares/%s' % share_id
+        body = {
+            'nfsClientlistOperation': 1,
+            'nfsClientlist': [client_ip]
+        }
+        self._wsapi_login()
+        try:
+            self._client.http.put(uri, body=body)
+        finally:
+            self._wsapi_logout()
+
+    def remove_client_ip_for_share(self, share_id, client_ip):
+        uri = '/fileshares/%s' % share_id
+        body = {
+            'nfsClientlistOperation': 2,
+            'nfsClientlist': [client_ip]
+        }
+        self._wsapi_login()
+        try:
+            self._client.http.put(uri, body=body)
         finally:
             self._wsapi_logout()

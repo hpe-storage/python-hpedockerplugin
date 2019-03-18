@@ -150,9 +150,9 @@ class HPEDockerPluginService(object):
                 raise exception.HPEPluginStartPluginException(reason=msg)
 
         if file_configs:
-            all_configs['file'] = file_configs
+            all_configs['file'] = (host_config, file_configs)
         if block_configs:
-            all_configs['block'] = block_configs
+            all_configs['block'] = (host_config, block_configs)
 
         # Set Logging level
         logging_level = backend_configs['DEFAULT'].logging
@@ -162,8 +162,7 @@ class HPEDockerPluginService(object):
         endpoint = serverFromString(self._reactor, "unix:{}:mode=600".
                                     format(PLUGIN_PATH.path))
         servicename = StreamServerEndpointService(endpoint, Site(
-            VolumePlugin(self._reactor, host_config,
-                         all_configs).app.resource()))
+            VolumePlugin(self._reactor, all_configs).app.resource()))
         return servicename
 
 

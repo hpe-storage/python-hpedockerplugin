@@ -45,7 +45,8 @@ class GenerateFpgVfsNamesCmd(cmd.Cmd):
                     'default_fpgs': {self._cpg_name: new_fpg_name}
                 }
                 LOG.info("Backend metadata entry for backend %s not found."
-                         "Creating %s..." % (self._backend, backend_metadata))
+                         "Creating %s..." %
+                         (self._backend, six.text_type(backend_metadata)))
                 self._fp_etcd.save_backend_metadata(self._backend,
                                                     backend_metadata)
                 return new_fpg_name, new_vfs_name
@@ -53,4 +54,3 @@ class GenerateFpgVfsNamesCmd(cmd.Cmd):
     def unexecute(self):
         # May not require implementation
         pass
-

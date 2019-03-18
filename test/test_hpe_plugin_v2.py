@@ -796,7 +796,7 @@ class HpeDockerFCUnitTests(HpeDockerUnitTestsBase, testtools.TestCase):
 
 class HpeDockerShareUnitTests(testtools.TestCase):
     def _get_real_config_file(self):
-        return '/etc/hpedockerplugin/hpe_file.conf'
+        return '/etc/hpedockerplugin/hpe.conf'
 
     def _get_test_config_file(self):
         cfg_file_name = './test/config/hpe_%s.conf' % \

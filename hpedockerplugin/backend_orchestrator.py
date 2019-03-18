@@ -89,7 +89,7 @@ class Orchestrator(object):
                 thread = \
                     async_initializer. \
                     BackendInitializerThread(
-	                    self,
+                        self,
                         manager_objs,
                         host_config,
                         config,
@@ -162,7 +162,8 @@ class Orchestrator(object):
             backend, request, volname, *args, **kwargs)
 
     @abc.abstractmethod
-    def get_manager(self, host_config, config, etcd_util, backend_name):
+    def get_manager(self, host_config, config, etcd_util,
+                    node_id, backend_name):
         pass
 
     @abc.abstractmethod
@@ -178,9 +179,10 @@ class VolumeBackendOrchestrator(Orchestrator):
             host_config.host_etcd_client_cert,
             host_config.host_etcd_client_key)
 
-    def get_manager(self, host_config, config, etcd_client, backend_name):
+    def get_manager(self, host_config, config, etcd_client,
+                    node_id, backend_name):
         return mgr.VolumeManager(host_config, config, etcd_client,
-                                 backend_name)
+                                 node_id, backend_name)
 
     def get_meta_data_by_name(self, name):
         vol = self._etcd_client.get_vol_byname(name)
