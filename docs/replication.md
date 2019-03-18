@@ -26,20 +26,16 @@ permutations and combinations can be configured.
 
 **Note:**
 
-1. For a replication-enabled backend, it is mandatory to specify 
-'replicationGroup' option while creating replicated volume.
-2. User cannot create non-replicated/standard volume(s) using 
-replication-enabled backend. In order to do so, user would need to 
-define another backend in hpe.conf with similar details as that of 
-replication-enabled backend except that "replication_device" field is
-omitted.
-3. For a backend that is NOT replication-enabled, specifying 'replicationGroup' 
+1. User can create non-replicated/standard volume(s) using
+replication-enabled backend. In order to do so, 'replicationGroup' must
+not be specified in the create volume command.
+2. For a backend that is NOT replication-enabled, specifying 'replicationGroup'
 is incorrect and results in error.
-4. For a given RCG, mixed transport protocol is not supported. E.g. volumes v1, v2 and v3
+3. For a given RCG, mixed transport protocol is not supported. E.g. volumes v1, v2 and v3
  are part of RCG called TestRCG, then on primary array, if these volumes are exported via
  FC protocol then on secondary array those CANNOT be exported via ISCSI (after failover)
  and vice versa.
-5. Cold remote site (e.g. ISCSI IPs on remote array not configured) is not supported.
+4. Cold remote site (e.g. ISCSI IPs on remote array not configured) is not supported.
 For ISCSI based transport protocol, the ISCSI IPs on both primary and secondary arrays
 MUST be defined upfront in hpe.conf.
 
