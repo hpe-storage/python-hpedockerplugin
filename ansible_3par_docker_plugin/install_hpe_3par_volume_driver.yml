@@ -12,7 +12,7 @@
         state: present
 
 - name: Install prerequisites
-  hosts: all_nodes
+  hosts: masters,workers,etcd
   become: root
   environment:
     http_proxy: "{{ http_proxy | default('') }}"
@@ -41,7 +41,7 @@
       include: tasks/install_prerequisites_on_all.yml
 
 - name: Set MountFlags in docker service
-  hosts: all_nodes
+  hosts: masters,workers,etcd 
   become: root
   tasks:
     - name: Configure docker service
@@ -56,7 +56,7 @@
       include: tasks/create_etcd_container.yml
 
 - name: Install HPE 3PAR Volume Driver for Kubernetes/OpenShift
-  hosts: all_nodes
+  hosts: masters,workers,etcd 
   become: root
 
   vars:
@@ -90,7 +90,7 @@
       include: tasks/copy_doryd_config.yml
 
 - name: Deploy FlexVolume drivers
-  hosts: all_nodes
+  hosts: masters,workers,etcd 
   become: root
 
   vars:
