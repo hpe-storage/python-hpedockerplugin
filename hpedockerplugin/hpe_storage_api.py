@@ -72,7 +72,7 @@ class VolumePlugin(object):
             self._f_host_config = file_configs[0]
             self._f_backend_configs = file_configs[1]
             self._file_orchestrator = f_orchestrator.FileBackendOrchestrator(
-                    self._f_host_config, self._f_backend_configs)
+                self._f_host_config, self._f_backend_configs)
 
         self._req_router = req_router.RequestRouter(
             vol_orchestrator=self.orchestrator,
@@ -141,7 +141,6 @@ class VolumePlugin(object):
                 return json.dumps({"Err": msg})
 
         return json.dumps({"Err": ""})
-
 
     @on_exception(expo, RateLimitException, max_tries=8)
     @limits(calls=25, period=30)
@@ -754,14 +753,15 @@ class VolumePlugin(object):
 
         if self.orchestrator:
             try:
-                return self.orchestrator.mount_volume(volname, vol_mount, mount_id)
+                return self.orchestrator.mount_volume(volname,
+                                                      vol_mount,
+                                                      mount_id)
             except Exception as ex:
                 return json.dumps({'Err': six.text_type(ex)})
 
         return json.dumps({"Err": "ERROR: Cannot mount volume '%s'. "
                                   "Volume driver is not configured" %
                                   volname})
-
 
     @app.route("/VolumeDriver.Path", methods=["POST"])
     def volumedriver_path(self, name):
@@ -848,4 +848,3 @@ class VolumePlugin(object):
             return self.orchestrator.volumedriver_list()
 
         return json.dumps({u"Err": '', u"Volumes": []})
-

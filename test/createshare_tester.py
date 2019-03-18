@@ -1,4 +1,3 @@
-import test.fake_3par_data as data
 import test.hpe_docker_unit_test as hpedockerunittest
 
 
@@ -32,8 +31,8 @@ class TestCreateShareDefault(CreateShareUnitTest):
                 u"Opts": {u"persona": u'',
                           u"backend": u"DEFAULT",
                           # u"fpg": u"imran_fpg",
+                          # u"nfsOpts": u"hard,proto=tcp,nfsvers=4,intr",
                           u"readonly": u"False"}}
-                          # u"nfsOpts": u"hard,proto=tcp,nfsvers=4,intr"}}
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']

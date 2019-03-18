@@ -26,7 +26,7 @@ class ClaimAvailableIPCmd(cmd.Cmd):
         pass
 
     def _get_available_ip(self):
-        with self._fp_etcd.get_file_backend_lock(self._backend) as lock:
+        with self._fp_etcd.get_file_backend_lock(self._backend):
             backend_metadata = self._fp_etcd.get_backend_metadata(
                 self._backend)
             ips_in_use = backend_metadata['ips_in_use']
@@ -48,7 +48,7 @@ class ClaimAvailableIPCmd(cmd.Cmd):
             raise exception.IPAddressPoolExhausted()
 
     def mark_ip_in_use(self):
-        with self._fp_etcd.get_file_backend_lock(self._backend) as lock:
+        with self._fp_etcd.get_file_backend_lock(self._backend):
             if self._locked_ip:
                 try:
                     backend_metadata = self._fp_etcd.get_backend_metadata(
@@ -67,5 +67,3 @@ class ClaimAvailableIPCmd(cmd.Cmd):
                                                            six.text_type(ex))
                     LOG.error(msg)
                     raise exception.VfsCreationFailed(reason=msg)
-
-

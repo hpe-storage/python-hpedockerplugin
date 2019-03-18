@@ -20,8 +20,7 @@ class DeleteShareCmd(cmd.Cmd):
         self._fpg_name = share_info['fpg']
 
     def execute(self):
-        with self._fp_etcd.get_fpg_lock(self._backend,
-                                        self._fpg_name) as lock:
+        with self._fp_etcd.get_fpg_lock(self._backend, self._fpg_name):
             self._delete_share()
             self._update_share_cnt()
         return json.dumps({u"Err": ''})

@@ -20,7 +20,6 @@ initialization via the manager_objs backed to the caller.
 """
 
 import threading
-import hpedockerplugin.volume_manager as mgr
 from oslo_log import log as logging
 
 LOG = logging.getLogger(__name__)

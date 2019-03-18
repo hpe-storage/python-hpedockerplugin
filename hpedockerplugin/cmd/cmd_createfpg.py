@@ -20,8 +20,7 @@ class CreateFpgCmd(cmd.Cmd):
         self._set_default_fpg = set_default_fpg
 
     def execute(self):
-        with self._fp_etcd.get_fpg_lock(self._backend,
-                                        self._fpg_name) as lock:
+        with self._fp_etcd.get_fpg_lock(self._backend, self._fpg_name):
             self._mediator.create_fpg(self._cpg_name, self._fpg_name)
             try:
                 if self._set_default_fpg:
@@ -47,7 +46,7 @@ class CreateFpgCmd(cmd.Cmd):
             self._unset_as_default_fpg()
 
     def _set_as_default_fpg(self):
-        with self._fp_etcd.get_file_backend_lock(self._backend) as lock:
+        with self._fp_etcd.get_file_backend_lock(self._backend):
             try:
                 backend_metadata = self._fp_etcd.get_backend_metadata(
                     self._backend)

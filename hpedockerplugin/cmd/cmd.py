@@ -24,4 +24,3 @@ class Cmd(object):
 
     def _unexecute(self, args):
         pass
-

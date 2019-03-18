@@ -56,7 +56,7 @@ class HpeEtcdClient(object):
                 host_tuple = tuple(host_tuple)
 
         LOG.info('HpeEtcdClient host_tuple is %s, host is %s ' %
-                 (host_tuple,self.host))
+                 (host_tuple, self.host))
 
         if client_cert is not None and client_key is not None:
             if len(host_tuple) > 0:

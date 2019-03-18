@@ -31,8 +31,6 @@ from hpedockerplugin import fileutil
 hpe3parclient = importutils.try_import("hpe3parclient")
 if hpe3parclient:
     from hpe3parclient import file_client
-    from hpe3parclient import exceptions as hpeexceptions
-
 
 LOG = log.getLogger(__name__)
 MIN_CLIENT_VERSION = (4, 0, 0)
@@ -548,19 +546,7 @@ class HPE3ParMediator(object):
         finally:
             self._wsapi_logout()
 
-    def _delete_share_old(self, share_name, protocol, fpg, vfs, fstore):
-        try:
-            self._client.removefshare(
-                protocol, vfs, share_name, fpg=fpg, fstore=fstore)
-
-        except Exception as e:
-            msg = (_('Failed to remove share %(share_name)s: %(e)s') %
-                   {'share_name': share_name, 'e': six.text_type(e)})
-            LOG.exception(msg)
-            raise exception.ShareBackendException(msg=msg)
-
     def _delete_share(self, share_name, protocol, fpg, vfs, fstore):
-        uri = '/fileshares/%s'
         try:
             self._client.removefshare(
                 protocol, vfs, share_name, fpg=fpg, fstore=fstore)
@@ -954,22 +940,6 @@ class HPE3ParMediator(object):
             raise exception.ShareBackendException(msg)
         return task_id
 
-    def create_fpg_old(self, cpg, fpg_name, size='64T'):
-        try:
-            task_id = self._client.createfpg(cpg, fpg_name, size)
-            task_id = self._check_task_id(task_id)
-            self._wait_for_task_completion(task_id, interval=5)
-        except exception.ShareBackendException as ex:
-            msg = 'Create FPG task failed: cpg=%s,fpg=%s, ex=%s'\
-                  % (cpg, fpg_name, six.text_type(ex))
-            LOG.error(msg)
-            raise exception.ShareBackendException(msg=msg)
-        except Exception:
-            msg = (_('Failed to create FPG %s of size %s using CPG %s') %
-                   (fpg_name, size, cpg))
-            LOG.exception(msg)
-            raise exception.ShareBackendException(msg=msg)
-
     def create_fpg(self, cpg, fpg_name, size=64):
         try:
             self._wsapi_login()
@@ -995,41 +965,6 @@ class HPE3ParMediator(object):
             raise exception.ShareBackendException(msg=msg)
         finally:
             self._wsapi_logout()
-
-    def create_vfs_old(self, vfs_name, ip, subnet, cpg=None, fpg=None,
-                   size='64T'):
-        try:
-            if fpg:
-                LOG.info("Creating VFS %s under specified FPG %s..." %
-                         (vfs_name, fpg))
-                task_id = self._client.createvfs(ip, subnet, vfs_name,
-                                                 fpg=fpg)
-                task_id = self._check_task_id(task_id)
-                self._wait_for_task_completion(task_id, interval=3)
-            elif cpg:
-                LOG.info("FPG name not specified. Creating VFS %s and FPG %s "
-                         "of size %sTB using CPG %s..." % (vfs_name, vfs_name,
-                                                           size, cpg))
-                task_id = self._client.createvfs(ip, subnet, vfs_name,
-                                                 cpg=cpg, size=size)
-
-                self._check_task_id(task_id)
-                self._wait_for_task_completion(task_id)
-                LOG.info("Created successfully VFS %s and FPG %s of size "
-                         "%sTiB using CPG %s..." % (vfs_name, vfs_name,
-                                                   size, cpg))
-        except exception.ShareBackendException as ex:
-            msg = 'Create VFS task failed: vfs=%s, cpg=%s,fpg=%s, ex=%s'\
-                  % (vfs_name, cpg, fpg, six.text_type(ex))
-            LOG.exception(msg)
-            raise exception.ShareBackendException(msg=msg)
-
-        except Exception:
-            msg = (_('ERROR: VFS creation failed: [vfs: %s, ip:%s, subnet:%s,'
-                     'cpg:%s, fpg:%s, size=%s') % (vfs_name, ip, subnet, cpg,
-                                                   fpg, size))
-            LOG.exception(msg)
-            raise exception.ShareBackendException(msg=msg)
 
     def create_vfs(self, vfs_name, ip, subnet, cpg=None, fpg=None,
                    size=64):

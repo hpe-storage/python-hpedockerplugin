@@ -34,8 +34,8 @@ class CreateShareCmd(cmd.Cmd):
 
     def unexecute(self):
         self._etcd.delete_share(self._share_args)
-        for cmd in reversed(self._cmds):
-            cmd.unexecute()
+        for command in reversed(self._cmds):
+            command.unexecute()
 
     def _create_share(self):
         share_etcd = self._file_mgr.get_etcd()
@@ -46,7 +46,7 @@ class CreateShareCmd(cmd.Cmd):
             msg = "Share creation failed [share_name: %s, error: %s" %\
                   (self._share_args['name'], six.text_type(ex))
             LOG.error(msg)
-            cmd.unexecute()
+            self.unexecute()
             raise exception.ShareCreationFailed(msg)
 
         try:
@@ -100,8 +100,9 @@ class CreateShareOnNewFpgCmd(CreateShareCmd):
             raise exception.ShareCreationFailed(reason=msg)
 
         config = self._file_mgr.get_config()
-        claim_free_ip_cmd = ClaimAvailableIPCmd(self._backend, config,
-                                            self._fp_etcd)
+        claim_free_ip_cmd = ClaimAvailableIPCmd(self._backend,
+                                                config,
+                                                self._fp_etcd)
         try:
             ip, netmask = claim_free_ip_cmd.execute()
             self._cmds.append(claim_free_ip_cmd)
@@ -114,7 +115,7 @@ class CreateShareOnNewFpgCmd(CreateShareCmd):
             # Now that VFS has been created successfully, move the IP from
             # locked-ip-list to ips-in-use list
             claim_free_ip_cmd.mark_ip_in_use()
-            self._share_args['vfsIPs'] =[(ip, netmask)]
+            self._share_args['vfsIPs'] = [(ip, netmask)]
 
         except exception.IPAddressPoolExhausted as ex:
             msg = "Create VFS failed. Msg: %s" % six.text_type(ex)
@@ -142,8 +143,7 @@ class CreateShareOnDefaultFpgCmd(CreateShareCmd):
         try:
             fpg_info = self._get_default_available_fpg()
             fpg_name = fpg_info['fpg']
-            with self._fp_etcd.get_fpg_lock(self._backend,
-                                            fpg_name) as lock:
+            with self._fp_etcd.get_fpg_lock(self._backend, fpg_name):
                 self._share_args['fpg'] = fpg_name
                 self._share_args['vfs'] = fpg_info['vfs']
                 return self._create_share()
@@ -157,11 +157,12 @@ class CreateShareOnDefaultFpgCmd(CreateShareCmd):
                     self._backend, self._share_args['cpg']
                 )
                 for fpg in all_fpgs_for_cpg:
-                    if fpg['fpg'].startswith("Docker"):
+                    fpg_name = fpg['fpg']
+                    if fpg_name.startswith("Docker"):
                         with self._fp_etcd.get_fpg_lock(self._backend,
-                                                        fpg['fpg']) as lock:
+                                                        fpg_name):
                             if fpg['share_cnt'] < share.MAX_SHARES_PER_FPG:
-                                self._share_args['fpg'] = fpg['fpg']
+                                self._share_args['fpg'] = fpg_name
                                 self._share_args['vfs'] = fpg['vfs']
                                 return self._create_share()
             except Exception:
@@ -197,8 +198,8 @@ class CreateShareOnExistingFpgCmd(CreateShareCmd):
 
     def execute(self):
         fpg_name = self._share_args['fpg']
-        with self._fp_etcd.get_fpg_lock(self._backend,
-                                        fpg_name) as lock:
+        self._share_args['cpg']
+        with self._fp_etcd.get_fpg_lock(self._backend, fpg_name):
             try:
                 # Specified FPG may or may not exist. In case it
                 # doesn't, EtcdFpgMetadataNotFound exception is raised
@@ -218,12 +219,23 @@ class CreateShareOnExistingFpgCmd(CreateShareCmd):
                 vfs_info = self._get_backend_vfs_for_fpg()
                 vfs_name = vfs_info['name']
                 ip_info = vfs_info['IPInfo'][0]
+
                 fpg_metadata = {
                     'fpg': fpg_name,
-                    'fpg_size': 64,
+                    'fpg_size': fpg_info['capacityGiB'],
                     'vfs': vfs_name,
                     'ips': {ip_info['netmask']: [ip_info['IPAddr']]}
                 }
+                LOG.info("Creating FPG entry in ETCD for legacy FPG: "
+                         "%s" % six.text_type(fpg_metadata))
+
+                # TODO: Consider NOT maintaing FPG information in
+                # ETCD. This will always make it invoke above legacy flow
+                # Create FPG entry in ETCD
+                self._fp_etcd.save_fpg_metadata(self._backend,
+                                                fpg_info['cpg'],
+                                                fpg_name,
+                                                fpg_metadata)
                 self._share_args['vfs'] = vfs_name
                 self._create_share()
 

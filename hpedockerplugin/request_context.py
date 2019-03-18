@@ -110,8 +110,9 @@ class RequestContextCreator(object):
             if opt != '':
                 opt = str(opt)
                 if valid_values and opt.lower() not in valid_values:
-                    msg = "ERROR: Invalid value '%s' specified for '%s' option. " \
-                          "Valid values are: %s" % (opt, option_name, valid_values)
+                    msg = "ERROR: Invalid value '%s' specified for '%s'" \
+                          "option. Valid values are: %s" %\
+                          (opt, option_name, valid_values)
                     LOG.error(msg)
                     raise exception.InvalidInput(msg)
 
@@ -193,19 +194,12 @@ class FileRequestContextCreator(RequestContextCreator):
         #     self._create_share_req_ctxt
         # create_req_ctxt_map['persona,cpg,size,fpg_name'] = \
         #     self._create_share_req_ctxt
-        # create_req_ctxt_map['persona,cpg,size,fpg_name,fpg_size'] = \
-        #     self._create_share_req_ctxt
-        # create_req_ctxt_map['persona,cpg,size,fpg_name,fpg_size,ipSubnet'] = \
-        #     self._create_share_req_ctxt
-        # create_req_ctxt_map['persona,cpg,size,fpg_name,fpg_size','ipSubnet'] = \
-        #     self._create_share_req_ctxt
         create_req_ctxt_map['virtualCopyOf,shareName'] = \
             self._create_snap_req_ctxt
         create_req_ctxt_map['updateShare'] = \
             self._create_update_req_ctxt
         create_req_ctxt_map['help'] = self._create_help_req_ctxt
         return create_req_ctxt_map
-
 
     def _create_share_req_params(self, name, options):
         LOG.info("_create_share_req_params: Entering...")
@@ -217,7 +211,7 @@ class FileRequestContextCreator(RequestContextCreator):
         fpg = self._get_str_option(options, 'fpg', None)
 
         # Default share size or quota is 2*1024MB
-        size = self._get_int_option(options, 'size', 2*1024)
+        size = self._get_int_option(options, 'size', 2 * 1024)
 
         # TODO: This check would be required when VFS needs to be created.
         # NOT HERE
@@ -299,7 +293,7 @@ class VolumeRequestContextCreator(RequestContextCreator):
         return create_req_ctxt_map
 
     def _default_req_ctxt_creator(self, contents):
-        return  self._create_vol_create_req_ctxt(contents)
+        return self._create_vol_create_req_ctxt(contents)
 
     @staticmethod
     def _validate_mutually_exclusive_ops(contents):
@@ -430,20 +424,13 @@ class VolumeRequestContextCreator(RequestContextCreator):
                 'args': create_vol_args}
 
     def _get_fs_owner(self, options):
-        fs_owner = self._get_str_option(options, 'fsOwner', None)
-        if fs_owner:
-            try:
-                mode = fs_owner.split(':')
-            except ValueError as ex:
-                return json.dumps({'Err': "Invalid value '%s' specified "
-                                          "for fsOwner. Please "
-                                          "specify a correct value." %
-                                          fs_owner})
-            except IndexError as ex:
-                return json.dumps({'Err': "Invalid value '%s' specified "
-                                          "for fsOwner. Please "
-                                          "specify both uid and gid." %
-                                          fs_owner})
+        val = self._get_str_option(options, 'fsOwner', None)
+        if val:
+            fs_owner = val.split(':')
+            if len(fs_owner) != 2:
+                msg = "Invalid value '%s' specified for fsOwner. Please " \
+                      "specify a correct value." % val
+                raise exception.InvalidInput(msg)
             return fs_owner
         return None
 
@@ -453,21 +440,20 @@ class VolumeRequestContextCreator(RequestContextCreator):
             try:
                 int(fs_mode_str)
             except ValueError as ex:
-                return json.dumps({'Err': "Invalid value '%s' specified "
-                                          "for fsMode. Please "
-                                          "specify an integer value." %
-                                          fs_mode_str})
+                msg = "Invalid value '%s' specified for fsMode. Please " \
+                      "specify an integer value." % fs_mode_str
+                raise exception.InvalidInput(msg)
+
             if fs_mode_str[0] != '0':
-                return json.dumps({'Err': "Invalid value '%s' specified "
-                                          "for fsMode. Please "
-                                          "specify an octal value." %
-                                          fs_mode_str})
+                msg = "Invalid value '%s' specified for fsMode. Please " \
+                      "specify an octal value." % fs_mode_str
+                raise exception.InvalidInput(msg)
+
             for mode in fs_mode_str:
                 if int(mode) > 7:
-                    return json.dumps({'Err': "Invalid value '%s' "
-                                              "specified for fsMode. Please "
-                                              "specify an octal value." %
-                                              fs_mode_str})
+                    msg = "Invalid value '%s' specified for fsMode. Please " \
+                          "specify an octal value." % fs_mode_str
+                    raise exception.InvalidInput(msg)
         return fs_mode_str
 
     def _get_create_volume_args(self, options):
@@ -579,4 +565,3 @@ class VolumeRequestContextCreator(RequestContextCreator):
         if not is_valid_name:
             msg = 'Invalid volume name: %s is passed.' % vol_name
             raise exception.InvalidInput(reason=msg)
-

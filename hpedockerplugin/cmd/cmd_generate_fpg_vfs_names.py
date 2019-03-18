@@ -17,7 +17,7 @@ class GenerateFpgVfsNamesCmd(cmd.Cmd):
         return self._generate_default_fpg_vfs_names()
 
     def _generate_default_fpg_vfs_names(self):
-        with self._fp_etcd.get_file_backend_lock(self._backend) as lock:
+        with self._fp_etcd.get_file_backend_lock(self._backend):
             try:
                 backend_metadata = self._fp_etcd.get_backend_metadata(
                     self._backend)

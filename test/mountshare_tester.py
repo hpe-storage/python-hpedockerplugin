@@ -2,7 +2,6 @@ import copy
 
 import test.fake_3par_data as data
 import test.hpe_docker_unit_test as hpedockerunittest
-from hpe3parclient import exceptions
 
 
 class MountShareUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):
@@ -42,8 +41,6 @@ class MountShareUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):
         #     mock_fileutil.has_filesystem.return_value = False
         #     # Allow child class to make changes
         #     self.setup_mock_fileutil()
-
-
         _setup_mock_3parclient()
         _setup_mock_etcd()
         # _setup_mock_fileutil()

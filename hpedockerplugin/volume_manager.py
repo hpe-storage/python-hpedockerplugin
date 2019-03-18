@@ -335,7 +335,7 @@ class VolumeManager(object):
 
             # check and set the flash-cache if exists
             if (vvset_detail.get('flashCachePolicy') is not None and
-                        vvset_detail.get('flashCachePolicy') == 1):
+                    vvset_detail.get('flashCachePolicy') == 1):
                 vol['flash_cache'] = True
 
     def _set_qos_info(self, vol, vvset_name):
@@ -1118,7 +1118,9 @@ class VolumeManager(object):
                 volume['Status'].update({'Snapshots': ss_list_to_show})
 
             backend_vol_name = utils.get_3par_vol_name(volinfo['id'])
-            self._set_qos_and_flash_cache_info(backend_vol_name, volinfo)
+
+            # TODO: Fix for issue #428. To be included later after testing
+            # self._set_qos_and_flash_cache_info(backend_vol_name, volinfo)
 
             qos_name = volinfo.get('qos_name')
             if qos_name is not None:

@@ -86,16 +86,15 @@ class Orchestrator(object):
                 volume_mgr['mgr'] = None
                 manager_objs[backend_name] = volume_mgr
 
-                thread = \
-                    async_initializer. \
-                    BackendInitializerThread(
-                        self,
-                        manager_objs,
-                        host_config,
-                        config,
-                        self._etcd_client,
-                        node_id,
-                        backend_name)
+                thread = async_initializer.BackendInitializerThread(
+                    self,
+                    manager_objs,
+                    host_config,
+                    config,
+                    self._etcd_client,
+                    node_id,
+                    backend_name
+                )
                 thread.start()
 
             except Exception as ex:
@@ -139,7 +138,8 @@ class Orchestrator(object):
         finally:
             self.volume_backend_lock.release()
 
-    def _execute_request_for_backend(self, backend, request, volname, *args, **kwargs):
+    def _execute_request_for_backend(self, backend, request, volname,
+                                     *args, **kwargs):
         LOG.info(' Operating on backend : %s on volume %s '
                  % (backend, volname))
         LOG.info(' Request %s ' % request)

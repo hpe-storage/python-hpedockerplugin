@@ -52,8 +52,7 @@ class CreateVfsCmd(cmd.Cmd):
         pass
 
     def _update_fpg_metadata(self, ip, netmask):
-        with self._fp_etcd.get_fpg_lock(self._backend,
-                                        self._fpg_name) as lock:
+        with self._fp_etcd.get_fpg_lock(self._backend, self._fpg_name):
             fpg_info = self._fp_etcd.get_fpg_metadata(self._backend,
                                                       self._cpg_name,
                                                       self._fpg_name)

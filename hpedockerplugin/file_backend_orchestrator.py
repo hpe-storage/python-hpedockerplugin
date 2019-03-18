@@ -18,7 +18,7 @@ class FileBackendOrchestrator(Orchestrator):
 
     # Implementation of abstract function from base class
     def get_manager(self, host_config, config, etcd_client,
-                     node_id, backend_name):
+                    node_id, backend_name):
         LOG.info("Getting file manager...")
         if not FileBackendOrchestrator.fp_etcd_client:
             FileBackendOrchestrator.fp_etcd_client = \

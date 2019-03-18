@@ -3,10 +3,8 @@ import copy
 import json
 import socket
 import string
-import os
 import sh
 import six
-import uuid
 from Crypto.Cipher import AES
 from threading import Thread
 
@@ -21,7 +19,7 @@ from hpedockerplugin.cmd import cmd_deleteshare
 import hpedockerplugin.exception as exception
 import hpedockerplugin.fileutil as fileutil
 import hpedockerplugin.hpe.array_connection_params as acp
-from hpedockerplugin.i18n import _, _LE, _LI, _LW
+from hpedockerplugin.i18n import _
 from hpedockerplugin.hpe import hpe_3par_mediator
 from hpedockerplugin import synchronization
 
@@ -345,7 +343,11 @@ class FileManager(object):
                                        vfs,
                                        file_store)
 
-        # {'path_info': {'/opt/hpe/data/hpedocker-<share_name>':['mnt_id1, 'mnt_id2'...]}}
+        # {'path_info': {
+        #   '/opt/hpe/data/hpedocker-<share_name>':
+        #       ['mnt_id1, 'mnt_id2'...]
+        #   }
+        # }
         if 'share_path_info' in share:
             path_info = share['share_path_info']
             mount_dir, mount_ids = next(iter(path_info.items()))
