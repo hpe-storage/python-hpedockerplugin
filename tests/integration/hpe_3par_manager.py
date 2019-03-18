@@ -28,6 +28,7 @@ CLIENT_CERT = cfg['etcd']['client_cert']
 CLIENT_KEY = cfg['etcd']['client_key']
 HPE3PAR_API_URL = cfg['backend']['3Par_api_url']
 HPE3PAR2_API_URL = cfg['backend2']['3Par_api_url']
+HPE3PAR3_API_URL = cfg['ActivePassiveRepBackend']['3Par_api_url']
 PORTS_ZONES = cfg['multipath']['ports_zones']
 PORTS_ZONES2 = cfg['multipath2']['ports_zones']
 SNAP_CPG = cfg['snapshot']['snap_cpg']
@@ -446,6 +447,13 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
         hpe_3par_cli.login('3paradm', '3pardata')
         return hpe_3par_cli
 
+    def _hpe_get_3par_client_login_replication(self):
+        # Login to 3Par array and initialize connection for WSAPI calls
+        hpe_3par_cli = HPE3ParClient(HPE3PAR3_API_URL, True, False, None, True)
+        hpe_3par_cli.login('3paradm', '3pardata')
+        return hpe_3par_cli    
+
+
     def _hpe_get_3par_client_login_multi_array(self):
         # Login to 3Par array and initialize connection for WSAPI calls
         hpe_3par_cli = HPE3ParClient(HPE3PAR2_API_URL, True, False, None, True)
@@ -842,7 +850,7 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
     def hpe_recover_remote_copy_group(self, rcg_name, action):
 
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-        hpe3par_cli = self._hpe_get_3par_client_login()
+        hpe3par_cli = self._hpe_get_3par_client_login_replication()
         rcopyInfo = hpe3par_cli.getRemoteCopyGroup(rcg_name)
         rcopygrpname = rcopyInfo.get("remoteGroupName")
 

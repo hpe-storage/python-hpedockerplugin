@@ -32,16 +32,20 @@ volumes:
 
 # 3Par backend details (mentioned in hpe.conf) to initialize WSAPI session
 backend:
-    3Par_api_url: https://192.168.67.5:8080/api/v1
-    user_cpg: FC_r1
-    3Par_IP: 192.168.67.5
-    multi_cpg: FC_r1
+    3Par_api_url: https://192.168.67.2:8080/api/v1
+    user_cpg: Docker_CI
+    3Par_IP: 192.168.67.2
+    multi_cpg: Docker_CI_Multi
 
 backend2:
     3Par_api_url : https://192.168.67.7:8080/api/v1
     user_cpg: docker_cpg
     3par_IP: 192.168.67.7
     multi_cpg: test_cpg
+
+ActivePassiveRepBackend:
+    3Par_api_url : https://192.168.67.5:8080/api/v1
+
 
 # Multipath configuration details
 # Mention the number of iSCSI ports present in hpe.conf
@@ -54,7 +58,7 @@ multipath2:
 
 # Mention the snapshot cpg here
 snapshot:
-    snap_cpg: FC_r5
+    snap_cpg: Docker_CI 
 
 snapshot2:
     snap_cpg: docker_cpg

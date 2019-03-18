@@ -61,7 +61,7 @@ class RemoteCopyTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
                 assert pl_data['Enabled'] is False
                 while pl_data['Enabled'] is False:
                     c.enable_plugin(HPE3PAR)
-                    time.sleep(60)
+                    HPE3ParBackendVerification.hpe_wait_for_all_backends_to_initialize(cls, driver=HPE3PAR, help='backends')
                 pl_data = c.inspect_plugin(HPE3PAR)
                 assert pl_data['Enabled'] is True
             except docker.errors.APIError:
@@ -129,12 +129,10 @@ class RemoteCopyTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
         self.tmp_volumes.append(volume_name)
 
         # Create volume with -o replicationGroup option.
-        volume = self.hpe_create_volume(volume_name, driver=HPE3PAR, replicationGroup='testRCG1')
-        import pdb; pdb.set_trace();
-
+        volume = self.hpe_create_volume(volume_name, driver=HPE3PAR, replicationGroup='testRCG1', backend='ActivePassiveRepBackend')
         
         #Inspect replication group and volume details
-        self.hpe_inspect_volume(volume, replicationGroup='testRCG1')
+        #self.hpe_inspect_volume(volume, replicationGroup='testRCG1')
 
 
         #Create contianer, mount volume and write data to file 
@@ -161,6 +159,7 @@ class RemoteCopyTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
         container.exec_run("sh -c 'echo \"beautiful\" >> /data/test'")
         ExecResult = container.exec_run("cat /data/test")
         self.assertEqual(ExecResult.exit_code, 0)
+        self.assertEqual(ExecResult.output, b"hello\nbeautiful\n")
         container.stop()
 
 
@@ -170,6 +169,7 @@ class RemoteCopyTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
         container.exec_run("sh -c 'echo \"world\" >> /data/test'")
         ExecResult = container.exec_run("cat /data/test")
         self.assertEqual(ExecResult.exit_code, 0)
+        self.assertEqual(ExecResult.output, b"hello\nbeautiful\nworld\n")
         container.stop()
 
         #Cleanup
