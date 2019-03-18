@@ -1,4 +1,4 @@
-ENable and populate the proxies here
+Enable and populate the proxies here
 #[all:vars]
 #http_proxy=
 #https_proxy=
