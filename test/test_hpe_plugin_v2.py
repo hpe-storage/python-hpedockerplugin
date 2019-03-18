@@ -4,16 +4,16 @@ import testtools
 from config import setupcfg
 from hpedockerplugin.hpe import hpe3par_opts as plugin_opts
 
-import test.createshare_tester as createshare_tester
+# import test.createshare_tester as createshare_tester
 import test.createvolume_tester as createvolume_tester
 import test.createreplicatedvolume_tester as createrepvolume_tester
 import test.clonevolume_tester as clonevolume_tester
 import test.createsnapshot_tester as createsnapshot_tester
-import test.deleteshare_tester as deleteshare_tester
+# import test.deleteshare_tester as deleteshare_tester
 import test.fake_3par_data as data
 import test.getvolume_tester as getvolume_tester
 import test.listvolume_tester as listvolume_tester
-import test.mountshare_tester as mountshare_tester
+# import test.mountshare_tester as mountshare_tester
 import test.mountvolume_tester as mountvolume_tester
 import test.removesnapshot_tester as removesnapshot_tester
 import test.removevolume_tester as removevolume_tester

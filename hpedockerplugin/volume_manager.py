@@ -1117,9 +1117,8 @@ class VolumeManager(object):
                     ss_list_to_show.append(snapshot)
                 volume['Status'].update({'Snapshots': ss_list_to_show})
 
-            backend_vol_name = utils.get_3par_vol_name(volinfo['id'])
-
             # TODO: Fix for issue #428. To be included later after testing
+            # backend_vol_name = utils.get_3par_vol_name(volinfo['id'])
             # self._set_qos_and_flash_cache_info(backend_vol_name, volinfo)
 
             qos_name = volinfo.get('qos_name')
