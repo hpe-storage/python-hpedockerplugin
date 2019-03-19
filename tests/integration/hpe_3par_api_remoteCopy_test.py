@@ -110,7 +110,7 @@ class RemoteCopyTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
                 pass
 
 
-    def test_create_remote_copy_group(self):
+    def test_active_passive_replication(self):
         '''
            This test creates an active-passive replication group and tests the failover, recover and restore functionality.
 
@@ -132,7 +132,7 @@ class RemoteCopyTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
         volume = self.hpe_create_volume(volume_name, driver=HPE3PAR, replicationGroup='testRCG1', backend='ActivePassiveRepBackend')
         
         #Inspect replication group and volume details
-        #self.hpe_inspect_volume(volume, replicationGroup='testRCG1')
+        self.hpe_inspect_volume(volume, replicationGroup='testRCG1')
 
 
         #Create contianer, mount volume and write data to file 

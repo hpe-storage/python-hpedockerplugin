@@ -63,6 +63,9 @@ snapshot:
 snapshot2:
     snap_cpg: docker_cpg
 
+snapshot3:
+    snap_cpg: FC_r5
+
 # Mention the details required to create and verify VVset with QoS in 3par array
 # Set Priority : '1' for Low, '2' for Normal and '3' for High
 qos:

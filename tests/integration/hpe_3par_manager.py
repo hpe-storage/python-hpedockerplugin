@@ -33,6 +33,7 @@ PORTS_ZONES = cfg['multipath']['ports_zones']
 PORTS_ZONES2 = cfg['multipath2']['ports_zones']
 SNAP_CPG = cfg['snapshot']['snap_cpg']
 SNAP_CPG2 = cfg['snapshot2']['snap_cpg']
+SNAP_CPG3 = cfg['snapshot3']['snap_cpg']
 DOMAIN = cfg['qos']['domain']
 MIN_IO = cfg['qos']['min_io']
 MAX_IO = cfg['qos']['max_io']
@@ -132,6 +133,9 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
                 else:
                     if (inspect_volume['Status']['volume_detail']['backend'] == 'DEFAULT'):
                         self.assertEqual(inspect_volume['Status']['volume_detail']['snap_cpg'],SNAP_CPG)
+                    elif (inspect_volume['Status']['volume_detail']['backend'] == 'ActivePassiveRepBackend'):
+                        self.assertEqual(inspect_volume['Status']['volume_detail']['snap_cpg'], SNAP_CPG3)
+
                     else:
                         self.assertEqual(inspect_volume['Status']['volume_detail']['snap_cpg'],SNAP_CPG2)
 
