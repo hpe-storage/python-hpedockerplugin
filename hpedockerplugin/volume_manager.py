@@ -39,7 +39,7 @@ CONF = cfg.CONF
 class VolumeManager(object):
     def __init__(self, host_config, hpepluginconfig, etcd_util,
                  node_id,
-                 backend_name='DEFAULT'):
+                 backend_name):
         self._host_config = host_config
         self._hpepluginconfig = hpepluginconfig
         self._my_ip = netutils.get_my_ipv4()
@@ -1189,10 +1189,6 @@ class VolumeManager(object):
     def list_volumes(self):
         volumes = self._etcd.get_all_vols()
 
-        if not volumes:
-            response = json.dumps({u"Err": ''})
-            return response
-
         volumelist = []
         for volinfo in volumes:
             path_info = self._etcd.get_path_info_from_vol(volinfo)
@@ -1209,8 +1205,7 @@ class VolumeManager(object):
                       'Status': {}}
             volumelist.append(volume)
 
-        response = json.dumps({u"Err": '', u"Volumes": volumelist})
-        return response
+        return volumelist
 
     def get_path(self, volname):
         volinfo = self._etcd.get_vol_byname(volname)

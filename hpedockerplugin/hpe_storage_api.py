@@ -38,8 +38,6 @@ import hpedockerplugin.request_router as req_router
 
 LOG = logging.getLogger(__name__)
 
-DEFAULT_BACKEND_NAME = "DEFAULT"
-
 
 class VolumePlugin(object):
     """
@@ -61,8 +59,21 @@ class VolumePlugin(object):
             block_configs = all_configs['block']
             self._host_config = block_configs[0]
             self._backend_configs = block_configs[1]
+            if 'DEFAULT' in self._backend_configs:
+                self._def_backend_name = 'DEFAULT'
+            elif 'DEFAULT_BLOCK' in self._backend_configs:
+                self._def_backend_name = 'DEFAULT_BLOCK'
+            else:
+                msg = "DEFAULT backend is not present for the BLOCK driver" \
+                      "configuration. If DEFAULT backend has been " \
+                      "configured for FILE driver, then DEFAULT_BLOCK " \
+                      "backend MUST be configured for BLOCK driver in " \
+                      "hpe.conf file."
+                raise exception.InvalidInput(reason=msg)
+
             self.orchestrator = orchestrator.VolumeBackendOrchestrator(
-                self._host_config, self._backend_configs)
+                self._host_config, self._backend_configs,
+                self._def_backend_name)
             self._req_validator = req_validator.RequestValidator(
                 self._backend_configs)
 
@@ -71,8 +82,22 @@ class VolumePlugin(object):
             file_configs = all_configs['file']
             self._f_host_config = file_configs[0]
             self._f_backend_configs = file_configs[1]
+
+            if 'DEFAULT' in self._f_backend_configs:
+                self._f_def_backend_name = 'DEFAULT'
+            elif 'DEFAULT_FILE' in self._f_backend_configs:
+                self._f_def_backend_name = 'DEFAULT_FILE'
+            else:
+                msg = "DEFAULT backend is not present for the FILE driver" \
+                      "configuration. If DEFAULT backend has been " \
+                      "configured for BLOCK driver, then DEFAULT_FILE " \
+                      "backend MUST be configured for FILE driver in " \
+                      "hpe.conf file."
+                raise exception.InvalidInput(reason=msg)
+
             self._file_orchestrator = f_orchestrator.FileBackendOrchestrator(
-                self._f_host_config, self._f_backend_configs)
+                self._f_host_config, self._f_backend_configs,
+                self._f_def_backend_name)
 
         self._req_router = req_router.RequestRouter(
             vol_orchestrator=self.orchestrator,
@@ -175,11 +200,11 @@ class VolumePlugin(object):
                                   % volname})
 
     @app.route("/VolumeDriver.Create", methods=["POST"])
-    def volumedriver_create(self, name, opts=None):
+    def volumedriver_create(self, request, opts=None):
         """
         Create a volume with the given name.
 
-        :param unicode name: The name of the volume.
+        :param unicode request: Request data
         :param dict opts: Options passed from Docker for the volume
             at creation. ``None`` if not supplied in the request body.
             Currently ignored. ``Opts`` is a parameter introduced in the
@@ -188,19 +213,23 @@ class VolumePlugin(object):
 
         :return: Result indicating success.
         """
-        contents = json.loads(name.content.getvalue())
+        contents = json.loads(request.content.getvalue())
         if 'Name' not in contents:
             msg = (_('create volume failed, error is: Name is required.'))
             LOG.error(msg)
             raise exception.HPEPluginCreateException(reason=msg)
 
-        volname = contents['Name']
+        name = contents['Name']
+
+        if self.orchestrator.volume_exists(name) or \
+           self._file_orchestrator.share_exists(name):
+            return json.dumps({'Err': ''})
 
         # Try to handle this as file persona operation
         if 'Opts' in contents and contents['Opts']:
             if 'persona' in contents['Opts']:
                 try:
-                    return self._req_router.route_create_request(volname,
+                    return self._req_router.route_create_request(name,
                                                                  contents)
                 except exception.PluginException as ex:
                     LOG.error(six.text_type(ex))
@@ -212,7 +241,7 @@ class VolumePlugin(object):
         if not self.orchestrator:
             return json.dumps({"Err": "ERROR: Cannot create volume '%s'. "
                                       "Volume driver is not configured" %
-                                      volname})
+                                      name})
 
         # Continue with volume creation operations
         try:
@@ -233,7 +262,7 @@ class VolumePlugin(object):
         snap_cpg = None
         rcg_name = None
 
-        current_backend = DEFAULT_BACKEND_NAME
+        current_backend = self._def_backend_name
         if 'Opts' in contents and contents['Opts']:
             # Verify valid Opts arguments.
             valid_volume_create_opts = [
@@ -289,7 +318,7 @@ class VolumePlugin(object):
 
             if 'importVol' in input_list:
                 existing_ref = str(contents['Opts']['importVol'])
-                return self.orchestrator.manage_existing(volname,
+                return self.orchestrator.manage_existing(name,
                                                          existing_ref,
                                                          current_backend,
                                                          contents['Opts'])
@@ -450,7 +479,7 @@ class VolumePlugin(object):
         except exception.InvalidInput as ex:
             return json.dumps({u"Err": ex.msg})
 
-        return self.orchestrator.volumedriver_create(volname, vol_size,
+        return self.orchestrator.volumedriver_create(name, vol_size,
                                                      vol_prov,
                                                      vol_flash,
                                                      compression_val,
@@ -839,12 +868,11 @@ class VolumePlugin(object):
 
         :return: Result indicating success.
         """
-        try:
-            return self._req_router.list_objects()
-        except exception.EtcdMetadataNotFound:
-            pass
+        share_list = self._req_router.list_objects()
 
+        volume_list = []
         if self.orchestrator:
-            return self.orchestrator.volumedriver_list()
+            volume_list = self.orchestrator.volumedriver_list()
 
-        return json.dumps({u"Err": '', u"Volumes": []})
+        final_list = share_list + volume_list
+        return json.dumps({u"Err": '', u"Volumes": final_list})

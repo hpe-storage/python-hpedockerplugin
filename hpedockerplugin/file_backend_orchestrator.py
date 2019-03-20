@@ -12,9 +12,9 @@ class FileBackendOrchestrator(Orchestrator):
 
     fp_etcd_client = None
 
-    def __init__(self, host_config, backend_configs):
+    def __init__(self, host_config, backend_configs, def_backend_name):
         super(FileBackendOrchestrator, self).__init__(
-            host_config, backend_configs)
+            host_config, backend_configs, def_backend_name)
 
     # Implementation of abstract function from base class
     def get_manager(self, host_config, config, etcd_client,
@@ -50,6 +50,14 @@ class FileBackendOrchestrator(Orchestrator):
         LOG.info("Share details not found in ETCD: %s" % name)
         return None
 
+    def share_exists(self, name):
+        try:
+            self._etcd_client.get_share(name)
+        except Exception:
+            return False
+        else:
+            return True
+
     def create_share(self, **kwargs):
         name = kwargs['name']
         # Removing backend from share dictionary
@@ -83,10 +91,6 @@ class FileBackendOrchestrator(Orchestrator):
     def list_objects(self):
         db_shares = self._etcd_client.get_all_shares()
 
-        if not db_shares:
-            response = json.dumps({u"Err": ''})
-            return response
-
         share_list = []
         for share_info in db_shares:
             path_info = share_info.get('share_path_info')
@@ -97,8 +101,7 @@ class FileBackendOrchestrator(Orchestrator):
             share = {'Name': share_info['name'],
                      'Mountpoint': mountdir}
             share_list.append(share)
-        response = json.dumps({u"Err": '', u"Volumes": share_list})
-        return response
+        return share_list
 
     def get_path(self, obj):
         share_name = obj['name']

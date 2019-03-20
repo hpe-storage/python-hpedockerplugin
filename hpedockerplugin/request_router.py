@@ -19,14 +19,14 @@ class RequestRouter(object):
             self._etcd = self._orchestrators['file']._etcd_client
 
         all_configs = kwargs.get('all_configs')
-        self._ctxt_creator_factory = \
-            req_ctxt.RequestContextCreatorFactory(all_configs)
+        self._ctxt_builder_factory = \
+            req_ctxt.RequestContextBuilderFactory(all_configs)
 
     def route_create_request(self, name, contents):
         LOG.info("route_create_request: Entering...")
-        req_ctxt_creator = \
-            self._ctxt_creator_factory.get_request_context_creator()
-        req_ctxt = req_ctxt_creator.create_request_context(contents)
+        req_ctxt_builder = \
+            self._ctxt_builder_factory.get_request_context_builder()
+        req_ctxt = req_ctxt_builder.build_request_context(contents)
         orchestrator_name = req_ctxt['orchestrator']
         orchestrator = self._orchestrators[orchestrator_name]
         if orchestrator:
@@ -127,6 +127,4 @@ class RequestRouter(object):
         orch = self._orchestrators['file']
         if orch:
             return orch.list_objects()
-        raise exception.EtcdMetadataNotFound(
-            "File not configured"
-        )
+        return []

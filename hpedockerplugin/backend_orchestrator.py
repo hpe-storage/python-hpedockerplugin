@@ -41,8 +41,9 @@ DEFAULT_BACKEND_NAME = "DEFAULT"
 
 
 class Orchestrator(object):
-    def __init__(self, host_config, backend_configs):
+    def __init__(self, host_config, backend_configs, def_backend_name):
         LOG.info('calling initialize manager objs')
+        self._def_backend_name = def_backend_name
         self._etcd_client = self._get_etcd_client(host_config)
         self._manager = self.initialize_manager_objects(host_config,
                                                         backend_configs)
@@ -134,7 +135,7 @@ class Orchestrator(object):
                 # where the backend can't be read from volume
                 # metadata in etcd
                 LOG.info(' vol obj read from etcd : %s' % vol)
-                return 'DEFAULT'
+                return self._def_backend_name
         finally:
             self.volume_backend_lock.release()
 
@@ -172,9 +173,9 @@ class Orchestrator(object):
 
 
 class VolumeBackendOrchestrator(Orchestrator):
-    def __init__(self, host_config, backend_configs):
+    def __init__(self, host_config, backend_configs, def_backend_name):
         super(VolumeBackendOrchestrator, self).__init__(
-            host_config, backend_configs)
+            host_config, backend_configs, def_backend_name)
 
     def _get_etcd_client(self, host_config):
         # return util.HpeVolumeEtcdClient(
@@ -194,6 +195,10 @@ class VolumeBackendOrchestrator(Orchestrator):
         if vol and 'display_name' in vol:
             return vol
         return None
+
+    def volume_exists(self, name):
+        vol = self._etcd_client.get_vol_byname(name)
+        return vol is not None
 
     def get_path(self, volname):
         return self._execute_request('get_path', volname)

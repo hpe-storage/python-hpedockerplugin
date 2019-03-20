@@ -13,51 +13,51 @@ from hpedockerplugin.hpe import share
 LOG = logging.getLogger(__name__)
 
 
-class RequestContextCreatorFactory(object):
+class RequestContextBuilderFactory(object):
     def __init__(self, all_configs):
         self._all_configs = all_configs
 
         # if 'block' in all_configs:
         #     block_configs = all_configs['block']
         #     backend_configs = block_configs[1]
-        #     self._vol_req_ctxt_creator = VolumeRequestContextCreator(
+        #     self._vol_req_ctxt_creator = VolumeRequestContextBuilder(
         #         backend_configs)
         # else:
-        #     self._vol_req_ctxt_creator = NullRequestContextCreator(
+        #     self._vol_req_ctxt_creator = NullRequestContextBuilder(
         #         "ERROR: Volume driver not enabled. Please provide hpe.conf "
         #         "file to enable it")
 
         if 'file' in all_configs:
             file_configs = all_configs['file']
             f_backend_configs = file_configs[1]
-            self._file_req_ctxt_creator = FileRequestContextCreator(
+            self._file_req_ctxt_builder = FileRequestContextBuilder(
                 f_backend_configs)
         else:
-            self._file_req_ctxt_creator = NullRequestContextCreator(
+            self._file_req_ctxt_builder = NullRequestContextBuilder(
                 "ERROR: File driver not enabled. Please provide hpe_file.conf "
                 "file to enable it")
 
-    def get_request_context_creator(self):
-        return self._file_req_ctxt_creator
+    def get_request_context_builder(self):
+        return self._file_req_ctxt_builder
 
 
-class NullRequestContextCreator(object):
+class NullRequestContextBuilder(object):
     def __init__(self, msg):
         self._msg = msg
 
-    def create_request_context(self, contents):
+    def build_request_context(self, contents):
         raise exception.InvalidInput(self._msg)
 
 
-class RequestContextCreator(object):
+class RequestContextBuilder(object):
     def __init__(self, backend_configs):
         self._backend_configs = backend_configs
 
-    def create_request_context(self, contents):
-        LOG.info("create_request_context: Entering...")
+    def build_request_context(self, contents):
+        LOG.info("build_request_context: Entering...")
         self._validate_name(contents['Name'])
 
-        req_ctxt_map = self._get_create_req_ctxt_map()
+        req_ctxt_map = self._get_build_req_ctxt_map()
 
         if 'Opts' in contents and contents['Opts']:
             # self._validate_mutually_exclusive_ops(contents)
@@ -132,7 +132,7 @@ class RequestContextCreator(object):
 
     # To be implemented by derived class
     @abc.abstractmethod
-    def _get_create_req_ctxt_map(self):
+    def _get_build_req_ctxt_map(self):
         pass
 
     def _default_req_ctxt_creator(self, contents):
@@ -179,27 +179,27 @@ class RequestContextCreator(object):
                 raise exception.InvalidInput(reason=msg)
 
 
-class FileRequestContextCreator(RequestContextCreator):
+class FileRequestContextBuilder(RequestContextBuilder):
     def __init__(self, backend_configs):
-        super(FileRequestContextCreator, self).__init__(backend_configs)
+        super(FileRequestContextBuilder, self).__init__(backend_configs)
 
-    def _get_create_req_ctxt_map(self):
-        create_req_ctxt_map = OrderedDict()
+    def _get_build_req_ctxt_map(self):
+        build_req_ctxt_map = OrderedDict()
         # If share-dir is specified, file-store MUST be specified
-        create_req_ctxt_map['persona'] = \
+        build_req_ctxt_map['persona'] = \
             self._create_share_req_ctxt
-        # create_req_ctxt_map['persona,cpg'] = \
+        # build_req_ctxt_map['persona,cpg'] = \
         #     self._create_share_req_ctxt
-        # create_req_ctxt_map['persona,cpg,size'] = \
+        # build_req_ctxt_map['persona,cpg,size'] = \
         #     self._create_share_req_ctxt
-        # create_req_ctxt_map['persona,cpg,size,fpg_name'] = \
+        # build_req_ctxt_map['persona,cpg,size,fpg_name'] = \
         #     self._create_share_req_ctxt
-        create_req_ctxt_map['virtualCopyOf,shareName'] = \
+        build_req_ctxt_map['virtualCopyOf,shareName'] = \
             self._create_snap_req_ctxt
-        create_req_ctxt_map['updateShare'] = \
+        build_req_ctxt_map['updateShare'] = \
             self._create_update_req_ctxt
-        create_req_ctxt_map['help'] = self._create_help_req_ctxt
-        return create_req_ctxt_map
+        build_req_ctxt_map['help'] = self._create_help_req_ctxt
+        return build_req_ctxt_map
 
     def _create_share_req_params(self, name, options):
         LOG.info("_create_share_req_params: Entering...")
@@ -269,28 +269,28 @@ class FileRequestContextCreator(RequestContextCreator):
 
 
 # TODO: This is work in progress - can be taken up later if agreed upon
-class VolumeRequestContextCreator(RequestContextCreator):
+class VolumeRequestContextBuilder(RequestContextBuilder):
     def __init__(self, backend_configs):
-        super(VolumeRequestContextCreator, self).__init__(backend_configs)
+        super(VolumeRequestContextBuilder, self).__init__(backend_configs)
 
-    def _get_create_req_ctxt_map(self):
-        create_req_ctxt_map = OrderedDict()
-        create_req_ctxt_map['virtualCopyOf,scheduleName'] = \
+    def _get_build_req_ctxt_map(self):
+        build_req_ctxt_map = OrderedDict()
+        build_req_ctxt_map['virtualCopyOf,scheduleName'] = \
             self._create_snap_schedule_req_ctxt,
-        create_req_ctxt_map['virtualCopyOf,scheduleFrequency'] = \
+        build_req_ctxt_map['virtualCopyOf,scheduleFrequency'] = \
             self._create_snap_schedule_req_ctxt
-        create_req_ctxt_map['virtualCopyOf,snaphotPrefix'] = \
+        build_req_ctxt_map['virtualCopyOf,snaphotPrefix'] = \
             self._create_snap_schedule_req_ctxt
-        create_req_ctxt_map['virtualCopyOf'] = \
+        build_req_ctxt_map['virtualCopyOf'] = \
             self._create_snap_req_ctxt
-        create_req_ctxt_map['cloneOf'] = \
+        build_req_ctxt_map['cloneOf'] = \
             self._create_clone_req_ctxt
-        create_req_ctxt_map['importVol'] = \
+        build_req_ctxt_map['importVol'] = \
             self._create_import_vol_req_ctxt
-        create_req_ctxt_map['replicationGroup'] = \
+        build_req_ctxt_map['replicationGroup'] = \
             self._create_rcg_req_ctxt
-        create_req_ctxt_map['help'] = self._create_help_req_ctxt
-        return create_req_ctxt_map
+        build_req_ctxt_map['help'] = self._create_help_req_ctxt
+        return build_req_ctxt_map
 
     def _default_req_ctxt_creator(self, contents):
         return self._create_vol_create_req_ctxt(contents)
