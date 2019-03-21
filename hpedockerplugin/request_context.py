@@ -207,7 +207,7 @@ class FileRequestContextBuilder(RequestContextBuilder):
         # pdb.set_trace()
         backend = self._get_str_option(options, 'backend', 'DEFAULT')
         config = self._backend_configs[backend]
-        cpg = self._get_str_option(options, 'cpg', config.hpe3par_cpg)
+        cpg = self._get_str_option(options, 'cpg', config.hpe3par_cpg[0])
         fpg = self._get_str_option(options, 'fpg', None)
 
         # Default share size or quota is 2*1024MB
