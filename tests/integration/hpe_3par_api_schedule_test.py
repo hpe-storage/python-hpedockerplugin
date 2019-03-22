@@ -18,6 +18,8 @@ THIN_SIZE = cfg['volumes']['thin_size']
 FULL_SIZE = cfg['volumes']['full_size']
 DEDUP_SIZE = cfg['volumes']['dedup_size']
 COMPRESS_SIZE = cfg['volumes']['compress_size']
+HPE3PAR_API_URL = cfg['backend']['3Par_api_url']
+HPE3PAR_IP = cfg['backend']['3Par_IP']
 
 if PLUGIN_TYPE == 'managed':
     HPE3PAR = cfg['plugin']['managed_plugin_latest']
@@ -84,6 +86,8 @@ class ScheduleTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
 
     @classmethod
     def tearDownClass(cls):
+        hpe_3par_cli.setSSHOptions(HPE3PAR_IP, '3paradm', '3pardata')
+        hpe_3par_cli.deleteSchedule("dailyOnceSchedule")
         if PLUGIN_TYPE == 'managed':
             c = docker.APIClient(
                 version=TEST_API_VERSION, timeout=600,
