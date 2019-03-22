@@ -2,7 +2,7 @@
   - name: Check if pip exists
     command: which pip
     register: pip_result
-    ignore_errors: yes
+    failed_when: pip_result.rc != 0 and pip_result.rc != 1
 
   - name: download get-pip.py
     get_url:
