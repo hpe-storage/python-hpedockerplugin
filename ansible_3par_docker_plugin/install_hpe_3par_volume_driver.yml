@@ -79,7 +79,7 @@
       include: tasks/hpe_sock.yml
 
 - name: Copy config file into admin.conf 
-  hosts: master
+  hosts: masters
   become: root
 
   vars:
