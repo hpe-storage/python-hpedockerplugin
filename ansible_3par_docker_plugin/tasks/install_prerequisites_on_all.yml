@@ -21,10 +21,6 @@
       path: /tmp/get-pip.py
     when: pip_result.rc != 0
 
-  - name: delete requests library
-    shell: rm -rf /usr/lib/python2.7/site-packages/requests*
-    become: yes
-
   - name: uninstall docker-py if ansible version >= 2.6
     pip:
       name: docker-py
