@@ -39,6 +39,7 @@ MIN_BW = cfg['qos']['min_bw']
 MAX_BW = cfg['qos']['max_bw']
 LATENCY = cfg['qos']['latency']
 PRIORITY = cfg['qos']['priority']
+HPE3PAR_IP = cfg['backend']['3Par_IP']
 
 if PLUGIN_TYPE == 'managed':
     HPE3PAR = cfg['plugin']['managed_plugin_latest']
@@ -457,7 +458,7 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
         # Login to 3Par array and initialize connection for WSAPI calls
         hpe_3par_cli = HPE3ParClient(HPE3PAR_API_URL, True, False, None, True)
         hpe_3par_cli.login('3paradm', '3pardata')
-        hpe_3par_cli.setSSHOptions('192.168.67.5', '3paradm', '3pardata')
+        hpe_3par_cli.setSSHOptions(HPE3PAR_IP, '3paradm', '3pardata')
         return hpe_3par_cli
 
     def _hpe_get_3par_client_login_multi_array(self):
