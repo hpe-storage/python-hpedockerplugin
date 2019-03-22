@@ -39,14 +39,14 @@
     become: yes
     when: (ansible_version.major == 2 and ansible_version.minor >= 6) or ansible_version.major > 2
 
-  - name: uninstall docker-py if ansible version < 2.6
+  - name: uninstall docker if ansible version < 2.6
     pip:
       name: docker
       state: absent
     become: yes
     when: ansible_version.major == 2 and ansible_version.minor < 6
 
-  - name: install docker if ansible version < 2.6
+  - name: install docker-py if ansible version < 2.6
     pip:
       name: docker-py
       state: present
