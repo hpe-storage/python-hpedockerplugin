@@ -1,17 +1,25 @@
 ---
+  - name: Check if pip exists
+    command: which pip
+    register: pip_result
+    ignore_errors: yes
+
   - name: download get-pip.py
     get_url:
       url: https://bootstrap.pypa.io/get-pip.py
       dest: /tmp
+    when: pip_result.rc != 0
 
   - name: install pip
     command: "python /tmp/get-pip.py"
     become: yes
+    when: pip_result.rc != 0
 
   - name: delete get-pip.py
     file:
       state: absent
       path: /tmp/get-pip.py
+    when: pip_result.rc != 0
 
   - name: delete requests library
     shell: rm -rf /usr/lib/python2.7/site-packages/requests*
