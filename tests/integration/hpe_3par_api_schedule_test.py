@@ -5,6 +5,7 @@ from .base import TEST_API_VERSION, BUSYBOX
 from . import helpers
 from .helpers import requires_api_version
 from .hpe_3par_manager import HPE3ParBackendVerification, HPE3ParVolumePluginTest
+from hpe3parclient.client import HPE3ParClient
 
 
 # Importing test data from YAML config file
@@ -34,6 +35,7 @@ else:
     else:
         PLUGIN_VOLUMES = cfg['rhel_volumes']
 
+hpe_3par_cli = HPE3ParClient(HPE3PAR_API_URL, True, False, None, True)
 
 @requires_api_version('1.21')
 class ScheduleTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
