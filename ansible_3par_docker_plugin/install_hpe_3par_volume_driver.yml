@@ -1,15 +1,15 @@
 ---
-#- name: Install sshpass locally
-#  hosts: localhost
-#  become: root
-#  environment:
-#    http_proxy: "{{ http_proxy  | default('')}}"
-#    https_proxy: "{{ https_proxy  | default('') }}"
-#  tasks:
-#    - name: install sshpass
-#      package:
-#        name: sshpass
-#        state: present
+- name: Install sshpass locally
+  hosts: localhost
+  become: root
+  environment:
+    http_proxy: "{{ http_proxy  | default('')}}"
+    https_proxy: "{{ https_proxy  | default('') }}"
+  tasks:
+    - name: install sshpass
+      package:
+        name: sshpass
+        state: present
 
 - name: Install prerequisites
   hosts: all_nodes
