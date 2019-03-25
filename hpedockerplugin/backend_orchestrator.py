@@ -293,5 +293,16 @@ class VolumeBackendOrchestrator(Orchestrator):
 
     def volumedriver_list(self):
         # Use the first volume manager list volumes
-        volume_mgr = next(iter(self._manager.values()))['mgr']
-        return volume_mgr.list_volumes()
+        volume_mgr = None
+        volume_mgr_info = self._manager.get('DEFAULT')
+        if volume_mgr_info:
+            volume_mgr = volume_mgr_info['mgr']
+        else:
+            volume_mgr_info = self._manager.get('DEFAULT_BLOCK')
+            if volume_mgr_info:
+                volume_mgr = volume_mgr_info['mgr']
+
+        if volume_mgr:
+            return volume_mgr.list_volumes()
+        else:
+            return []
