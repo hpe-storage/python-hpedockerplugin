@@ -221,8 +221,10 @@ class VolumePlugin(object):
 
         name = contents['Name']
 
-        if self.orchestrator.volume_exists(name) or \
-           self._file_orchestrator.share_exists(name):
+        if ((self.orchestrator and
+             self.orchestrator.volume_exists(name)) or
+            (self._file_orchestrator and
+             self._file_orchestrator.share_exists(name))):
             return json.dumps({'Err': ''})
 
         # Try to handle this as file persona operation
@@ -446,13 +448,13 @@ class VolumePlugin(object):
                             response = json.dumps({u"Err": msg})
                             return response
                         break
-                return self.volumedriver_create_snapshot(name,
+                return self.volumedriver_create_snapshot(request,
                                                          mount_conflict_delay,
                                                          opts)
             elif 'cloneOf' in contents['Opts']:
                 LOG.info('hpe_storage_api: clone options : %s' %
                          contents['Opts'])
-                return self.volumedriver_clone_volume(name,
+                return self.volumedriver_clone_volume(request,
                                                       contents['Opts'])
             for i in input_list:
                 if i in valid_snap_schedule_opts:
@@ -875,4 +877,7 @@ class VolumePlugin(object):
             volume_list = self.orchestrator.volumedriver_list()
 
         final_list = share_list + volume_list
+        if not final_list:
+            return json.dumps({u"Err": ''})
+
         return json.dumps({u"Err": '', u"Volumes": final_list})
