@@ -88,8 +88,11 @@ class ScheduleTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
 
     @classmethod
     def tearDownClass(cls):
-        hpe_3par_cli.setSSHOptions(HPE3PAR_IP, '3paradm', '3pardata')
-        hpe_3par_cli.deleteSchedule("dailyOnceSchedule")
+        try:
+            hpe_3par_cli.setSSHOptions(HPE3PAR_IP, '3paradm', '3pardata')
+            hpe_3par_cli.deleteSchedule("dailyOnceSchedule")
+        except:
+            pass
         if PLUGIN_TYPE == 'managed':
             c = docker.APIClient(
                 version=TEST_API_VERSION, timeout=600,
