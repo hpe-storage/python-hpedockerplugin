@@ -69,7 +69,7 @@
     - name: load plugin settings
       include_vars: 'properties/plugin_configuration_properties.yml'
 
-    - name: load plugin settings
+    - name: load etcd settings
       include_vars: 'properties/etcd_cluster_properties.yml'
 
     - name: Create hpe.conf
