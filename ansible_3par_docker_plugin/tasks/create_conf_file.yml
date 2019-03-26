@@ -98,10 +98,9 @@
       option: ssh_hosts_key_file
       value: "{{ INVENTORY[item]['ssh_hosts_key_file'] | default('~/.ssh/known_hosts')}}"
       no_extra_spaces: true
-    with_nested:
+    with_items:
       - "{{ INVENTORY.keys()}}"
     become: yes
-
 
   - name: Populate optional parameters in hpe.conf
     ini_file:
