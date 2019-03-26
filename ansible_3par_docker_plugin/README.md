@@ -55,7 +55,7 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
       | ```vlan_tag```  | No  | False | Populates the iscsi_ips which are vlan tagged, only applicable if ```hpe3par_iscsi_ips``` is not specified |
       | ```replication_device```  | No  | No default value | Replication backend properties |
       
-  - The Etcd ports can be modified as follows:
+  - The Etcd ports can be modified in [etcd cluster properties](/ansible_3par_docker_plugin/properties/etcd_cluster_properties.yml) as follows:
   
       | Property  | Mandatory | Default Value |
       | ------------- | ------------- | ------------- |
