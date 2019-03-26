@@ -14,7 +14,7 @@ INVENTORY:
     # Set of optional parameters
     # If encryptor key is set, the passwords in hpe.conf would be encrypted
     encryptor_key: first_key
-    ssh_hosts_key_file: '/root/.ssh/known_hosts'
+    #ssh_hosts_key_file: '/root/.ssh/known_hosts'
     logging: DEBUG
     #hpe3par_debug: True
     #suppress_requests_ssl_warning: True
@@ -43,7 +43,7 @@ INVENTORY:
     # Set of optional parameters
     # If encryptor key is set, the passwords in hpe.conf would be encrypted
     encryptor_key: second_key
-    ssh_hosts_key_file: '/root/.ssh/known_hosts'
+    #ssh_hosts_key_file: '/root/.ssh/known_hosts'
     logging: DEBUG
     #hpe3par_debug: True
     #suppress_requests_ssl_warning: True
