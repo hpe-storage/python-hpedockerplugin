@@ -5,6 +5,7 @@ from .base import TEST_API_VERSION, BUSYBOX
 from . import helpers
 from .helpers import requires_api_version
 from .hpe_3par_manager import HPE3ParBackendVerification, HPE3ParVolumePluginTest
+from hpe3parclient.client import HPE3ParClient
 
 
 # Importing test data from YAML config file
@@ -18,6 +19,8 @@ THIN_SIZE = cfg['volumes']['thin_size']
 FULL_SIZE = cfg['volumes']['full_size']
 DEDUP_SIZE = cfg['volumes']['dedup_size']
 COMPRESS_SIZE = cfg['volumes']['compress_size']
+HPE3PAR_API_URL = cfg['backend']['3Par_api_url']
+HPE3PAR_IP = cfg['backend']['3Par_IP']
 
 if PLUGIN_TYPE == 'managed':
     HPE3PAR = cfg['plugin']['managed_plugin_latest']
@@ -32,6 +35,7 @@ else:
     else:
         PLUGIN_VOLUMES = cfg['rhel_volumes']
 
+hpe_3par_cli = HPE3ParClient(HPE3PAR_API_URL, True, False, None, True)
 
 @requires_api_version('1.21')
 class ScheduleTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
@@ -85,6 +89,11 @@ class ScheduleTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
 
     @classmethod
     def tearDownClass(cls):
+        try:
+            hpe_3par_cli.setSSHOptions(HPE3PAR_IP, '3paradm', '3pardata')
+            hpe_3par_cli.deleteSchedule("dailyOnceSchedule")
+        except:
+            pass
         if PLUGIN_TYPE == 'managed':
             c = docker.APIClient(
                 version=TEST_API_VERSION, timeout=600,
