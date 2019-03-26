@@ -1,6 +1,6 @@
 ---
 - name: Uninstall HPE 3PAR Volume Driver for Kubernetes/OpenShift
-  hosts: all_nodes
+  hosts: masters,workers,etcd
   become: root
 
   tasks:
@@ -27,7 +27,7 @@
       include: remove_doryd_service.yml
 
 - name: Uninstall HPE 3PAR Volume Driver for Kubernetes/OpenShift
-  hosts: all_nodes
+  hosts: masters,workers,etcd
   become: root
 
   tasks:
