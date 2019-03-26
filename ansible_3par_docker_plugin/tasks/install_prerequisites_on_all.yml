@@ -1,4 +1,9 @@
 ---
+  - name: Force fail if DEFAULT backend is not present
+    fail:
+      msg: "The plugin properties file does not have the [DEFAULT] back end"
+    when: INVENTORY['DEFAULT'] is not defined
+
   - name: Check if pip exists
     command: which pip
     register: pip_result
