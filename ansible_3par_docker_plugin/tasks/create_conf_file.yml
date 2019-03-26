@@ -15,7 +15,7 @@
       path: /etc/hpedockerplugin/hpe.conf
       section: "{{ item }}"
       option: 'host_etcd_ip_address'
-      value: "{{ (':' + INVENTORY['DEFAULT']['host_etcd_port_number'] | string + ',').join(groups['etcd']) + ':' +  INVENTORY['DEFAULT']['host_etcd_port_number'] | string }}"
+      value: "{{ (':' + etcd_client_port_1 | string + ',').join(groups['etcd']) + ':' +  etcd_client_port_1 | string }}"
       no_extra_spaces: true
     with_items:
       - "{{ INVENTORY.keys()}}"
@@ -77,7 +77,18 @@
       no_extra_spaces: true
     with_nested:
       - "{{ INVENTORY.keys()}}"
-      - [{ option: 'host_etcd_port_number', value: 'host_etcd_port_number' }, { option: 'hpe3par_username', value: 'hpe3par_username' }, { option: 'hpe3par_password', value: 'hpe3par_password' }, { option: 'hpe3par_cpg', value: 'hpe3par_cpg' }, { option: 'hpedockerplugin_driver', value: 'hpedockerplugin_driver' }]
+      - [{ option: 'hpe3par_username', value: 'hpe3par_username' }, { option: 'hpe3par_password', value: 'hpe3par_password' }, { option: 'hpe3par_cpg', value: 'hpe3par_cpg' }, { option: 'hpedockerplugin_driver', value: 'hpedockerplugin_driver' }]
+    become: yes
+
+  - name: Populate etcd port parameter in hpe.conf
+    ini_file:
+      path: /etc/hpedockerplugin/hpe.conf
+      section: "{{ item }}"
+      option: host_etcd_port_number
+      value: "{{ etcd_client_port_1 }}"
+      no_extra_spaces: true
+    with_items:
+      - "{{ INVENTORY.keys()}}"
     become: yes
 
   - name: Populate optional parameters in hpe.conf
