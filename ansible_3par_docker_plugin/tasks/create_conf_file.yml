@@ -80,7 +80,7 @@
       - [{ option: 'hpe3par_username', value: 'hpe3par_username' }, { option: 'hpe3par_password', value: 'hpe3par_password' }, { option: 'hpe3par_cpg', value: 'hpe3par_cpg' }, { option: 'hpedockerplugin_driver', value: 'hpedockerplugin_driver' }]
     become: yes
 
-  - name: Populate mandatory parameters in hpe.conf
+  - name: Populate etcd port parameter in hpe.conf
     ini_file:
       path: /etc/hpedockerplugin/hpe.conf
       section: "{{ item }}"
