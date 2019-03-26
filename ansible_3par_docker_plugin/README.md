@@ -33,7 +33,6 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
   
       | Property  | Mandatory | Default Value | Description |
       | ------------- | ------------- | ------------- | ------------- |
-      | ```host_etcd_port_number```  | Yes  | No default value | Etcd port number |
       | ```hpedockerplugin_driver```  | Yes  | No default value  | ISCSI/FC driver  (hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver/hpedockerplugin.hpe.hpe_3par_fc.HPE3PARFCDriver) |
       | ```hpe3par_ip```  | Yes  | No default value | IP address of 3PAR array |
       | ```hpe3par_username```  | Yes  | No default value | 3PAR username |
@@ -52,7 +51,17 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
       | ```ssh_hosts_key_file```  | No  | ```~/.ssh/id_rsa.pub``` | Path to hosts key file |
       | ```quorum_witness_ip```  | No  | No default value | Quorum witness IP |
       | ```mount_prefix```  | No  | No default value | Alternate mount path prefix |
+      | ```hpe3par_iscsi_ips```  | No  | No default value | Comma separated iscsi IPs. If not provided, all iscsi IPs will be read from the array and populated in hpe.conf |
+      | ```vlan_tag```  | No  | False | Populates the iscsi_ips which are vlan tagged, only applicable if ```hpe3par_iscsi_ips``` is not specified |
       | ```replication_device```  | No  | No default value | Replication backend properties |
+      
+  - The Etcd ports can be modified in [etcd cluster properties](/ansible_3par_docker_plugin/properties/etcd_cluster_properties.yml) as follows:
+  
+      | Property  | Mandatory | Default Value |
+      | ------------- | ------------- | ------------- |
+      | ```etcd_peer_port```  | Yes  | 23800  |
+      | ```etcd_client_port_1```  | Yes  | 23790 |
+      | ```etcd_client_port_2```  | Yes  | 40010 |
     
   - It is recommended that the properties file is [encrypted using Ansible Vault](/ansible_3par_docker_plugin/encrypt_properties.md).
 
