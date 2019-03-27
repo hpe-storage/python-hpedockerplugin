@@ -96,7 +96,7 @@
       path: /etc/hpedockerplugin/hpe.conf
       section: "{{ item }}"
       option: ssh_hosts_key_file
-      value: "{{ INVENTORY[item]['ssh_hosts_key_file'] | default('~/.ssh/known_hosts')}}"
+      value: "{{ INVENTORY[item]['ssh_hosts_key_file'] | default('/root/.ssh/known_hosts')}}"
       no_extra_spaces: true
     with_items:
       - "{{ INVENTORY.keys()}}"
