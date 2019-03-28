@@ -111,7 +111,7 @@
       no_extra_spaces: true
     with_nested:
       - "{{ INVENTORY.keys()}}"
-      - [{ option: 'logging', value: 'logging' }, { option: 'hpe3par_debug', value: 'hpe3par_debug' }, { option: 'suppress_requests_ssl_warning', value: 'suppress_requests_ssl_warning' }, { option: 'hpe3par_snapcpg', value: 'hpe3par_snapcpg' }, { option: 'hpe3par_iscsi_chap_enabled', value: 'hpe3par_iscsi_chap_enabled' }, { option: 'use_multipath', value: 'use_multipath' }, { option: 'enforce_multipath', value: 'enforce_multipath' }, { option: 'san_ip', value: 'hpe3par_ip' }, { option: 'san_login', value: 'hpe3par_username' }, { option: 'san_password', value: 'hpe3par_password' }, { option: 'backend_id', value: 'backend_id' }]
+      - [{ option: 'logging', value: 'logging' }, { option: 'hpe3par_debug', value: 'hpe3par_debug' }, { option: 'suppress_requests_ssl_warning', value: 'suppress_requests_ssl_warning' }, { option: 'hpe3par_snapcpg', value: 'hpe3par_snapcpg' }, { option: 'hpe3par_iscsi_chap_enabled', value: 'hpe3par_iscsi_chap_enabled' }, { option: 'use_multipath', value: 'use_multipath' }, { option: 'enforce_multipath', value: 'enforce_multipath' }, { option: 'san_ip', value: 'hpe3par_ip' }, { option: 'san_login', value: 'hpe3par_username' }, { option: 'san_password', value: 'hpe3par_password' }, { option: 'backend_id', value: 'backend_id' }, { option: 'mount_prefix', value: 'mount_prefix' }]
     become: yes
     when:  item.1.value in INVENTORY[item.0].keys()
 
