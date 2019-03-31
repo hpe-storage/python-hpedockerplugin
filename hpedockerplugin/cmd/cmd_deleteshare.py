@@ -22,7 +22,9 @@ class DeleteShareCmd(cmd.Cmd):
     def execute(self):
         with self._fp_etcd.get_fpg_lock(self._backend, self._fpg_name):
             self._delete_share()
-            self._update_share_cnt()
+            remaining_cnt = self._update_share_cnt()
+            if remaining_cnt == 0:
+                self._delete_fpg()
         return json.dumps({u"Err": ''})
 
     def _unexecute(self):
@@ -61,3 +63,42 @@ class DeleteShareCmd(cmd.Cmd):
                                         self._cpg_name,
                                         self._fpg_name,
                                         fpg)
+        return fpg['share_cnt']
+
+    def _delete_fpg(self):
+        self._mediator.delete_fpg(self._fpg_name)
+        self._fp_etcd.delete_fpg_metadata(
+            self._backend, self._cpg_name, self._fpg_name
+        )
+        with self._fp_etcd.get_file_backend_lock(self._backend):
+            try:
+                backend_metadata = self._fp_etcd.get_backend_metadata(
+                    self._backend
+                )
+            except Exception as ex:
+                msg = "WARNING: Metadata for backend %s is not present" %\
+                      self._backend
+                LOG.warning(msg)
+            else:
+                # Release IP to server IP pool
+                ips_in_use = backend_metadata['ips_in_use']
+                # ‘vfsIPs': [(IP1, Subnet1), (IP2, Subnet2)...],
+                vfs_ip = self._share_info.get('vfsIPs')[0]
+                ip_to_release = vfs_ip[0]
+                ips_in_use.remove(ip_to_release)
+
+                # Remove FPG from default FPG list
+                default_fpgs = backend_metadata.get('default_fpgs')
+                if default_fpgs:
+                    default_fpg = default_fpgs.get(self._cpg_name)
+                    if self._fpg_name == default_fpg:
+                        LOG.info("Removing default FPG entry [cpg:%s,"
+                                 "fpg:%s..."
+                                 % (self._cpg_name, self._fpg_name))
+                        del default_fpgs[self._cpg_name]
+                        if not default_fpgs:
+                            backend_metadata.pop('default_fpgs')
+
+                # Update backend metadata
+                self._fp_etcd.save_backend_metadata(self._backend,
+                                                    backend_metadata)

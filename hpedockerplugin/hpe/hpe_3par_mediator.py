@@ -405,7 +405,7 @@ class HPE3ParMediator(object):
         def _sync_update_capacity_quotas(fstore, new_size, fpg, vfs):
             """Update 3PAR quotas and return setfsquota output."""
 
-            hcapacity = six.text_type(new_size * units.Ki)
+            hcapacity = six.text_type(new_size)
             scapacity = hcapacity
             return self._client.setfsquota(vfs,
                                            fpg=fpg,
@@ -436,12 +436,49 @@ class HPE3ParMediator(object):
             LOG.error(msg)
             raise exception.ShareBackendException(msg=msg)
 
+    # def delete_file_store(self, fpg_name, fstore_name):
+    #     try:
+    #         self._wsapi_login()
+    #         query = '/filestores?query="name EQ %s AND fpg EQ %s"' %\
+    #                 (fstore_name, fpg_name)
+    #         body, fstore = self._client.http.get(query)
+    #         if body['status'] == '200' and fstore['total'] == 1:
+    #             fstore_id = fstore['members'][0]['id']
+    #             del_uri = '/filestores/%s' % fstore_id
+    #             self._client.http.delete(del_uri)
+    #     except Exception:
+    #         msg = (_('ERROR: File store deletion failed: [fstore: %s,'
+    #                  'fpg:%s') % (fstore_name, fpg_name))
+    #         LOG.error(msg)
+    #         raise exception.ShareBackendException(msg=msg)
+    #     finally:
+    #         self._wsapi_logout()
+
+    def delete_fpg(self, fpg_name):
+        try:
+            self._wsapi_login()
+            query = '/fpgs?query="name EQ %s"' % fpg_name
+            resp, body = self._client.http.get(query)
+            if resp['status'] == '200' and body['total'] == 1:
+                fpg_id = body['members'][0]['id']
+                del_uri = '/fpgs/%s' % fpg_id
+                resp, body = self._client.http.delete(del_uri)
+                if resp['status'] == '202':
+                    task_id = body['taskId']
+                    self._wait_for_task_completion(task_id, 10)
+        except Exception:
+            msg = (_('ERROR: FPG deletion failed: [fpg: %s,') % fpg_name)
+            LOG.error(msg)
+            raise exception.ShareBackendException(msg=msg)
+        finally:
+            self._wsapi_logout()
+
     def update_capacity_quotas(self, fstore, size, fpg, vfs):
 
         def _sync_update_capacity_quotas(fstore, new_size, fpg, vfs):
             """Update 3PAR quotas and return setfsquota output."""
 
-            hcapacity = new_size * units.Ki
+            hcapacity = new_size
             scapacity = hcapacity
             uri = '/filepersonaquotas/'
             req_body = {

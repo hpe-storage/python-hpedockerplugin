@@ -14,7 +14,7 @@ class FileBackendOrchestrator(Orchestrator):
 
     def __init__(self, host_config, backend_configs, def_backend_name):
         super(FileBackendOrchestrator, self).__init__(
-            host_config, backend_configs, def_backend_name)
+            host_config, backend_configs, )
 
     # Implementation of abstract function from base class
     def get_manager(self, host_config, config, etcd_client,

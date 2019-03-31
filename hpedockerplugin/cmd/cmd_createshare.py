@@ -146,6 +146,11 @@ class CreateShareOnDefaultFpgCmd(CreateShareCmd):
             with self._fp_etcd.get_fpg_lock(self._backend, fpg_name):
                 self._share_args['fpg'] = fpg_name
                 self._share_args['vfs'] = fpg_info['vfs']
+                # Only one IP per FPG is supported at the moment
+                # Given that, list can be dropped
+                subnet_ips_map = fpg_info['ips']
+                subnet, ips = next(iter(subnet_ips_map.items()))
+                self._share_args['vfsIPs'] = [(ips[0], subnet)]
                 return self._create_share()
         except Exception as ex:
             # It may be that a share on some full FPG was deleted by
@@ -164,6 +169,13 @@ class CreateShareOnDefaultFpgCmd(CreateShareCmd):
                             if fpg['share_cnt'] < share.MAX_SHARES_PER_FPG:
                                 self._share_args['fpg'] = fpg_name
                                 self._share_args['vfs'] = fpg['vfs']
+                                # Only one IP per FPG is supported
+                                # Given that, list can be dropped
+                                subnet_ips_map = fpg['ips']
+                                items = subnet_ips_map.items()
+                                subnet, ips = next(iter(items))
+                                self._share_args['vfsIPs'] = [(ips[0],
+                                                               subnet)]
                                 return self._create_share()
             except Exception:
                 pass
@@ -198,7 +210,6 @@ class CreateShareOnExistingFpgCmd(CreateShareCmd):
 
     def execute(self):
         fpg_name = self._share_args['fpg']
-        self._share_args['cpg']
         with self._fp_etcd.get_fpg_lock(self._backend, fpg_name):
             try:
                 # Specified FPG may or may not exist. In case it
@@ -206,6 +217,11 @@ class CreateShareOnExistingFpgCmd(CreateShareCmd):
                 fpg_info = self._fp_etcd.get_fpg_metadata(
                     self._backend, self._share_args['cpg'], fpg_name)
                 self._share_args['vfs'] = fpg_info['vfs']
+                # Only one IP per FPG is supported at the moment
+                # Given that, list can be dropped
+                subnet_ips_map = fpg_info['ips']
+                subnet, ips = next(iter(subnet_ips_map.items()))
+                self._share_args['vfsIPs'] = [(ips[0], subnet)]
                 self._create_share()
             except exception.EtcdMetadataNotFound as ex:
                 # Assume it's a legacy FPG, try to get details
@@ -224,7 +240,8 @@ class CreateShareOnExistingFpgCmd(CreateShareCmd):
                     'fpg': fpg_name,
                     'fpg_size': fpg_info['capacityGiB'],
                     'vfs': vfs_name,
-                    'ips': {ip_info['netmask']: [ip_info['IPAddr']]}
+                    'ips': {ip_info['netmask']: [ip_info['IPAddr']]},
+                    'reached_full_capacity': False
                 }
                 LOG.info("Creating FPG entry in ETCD for legacy FPG: "
                          "%s" % six.text_type(fpg_metadata))
@@ -237,6 +254,11 @@ class CreateShareOnExistingFpgCmd(CreateShareCmd):
                                                 fpg_name,
                                                 fpg_metadata)
                 self._share_args['vfs'] = vfs_name
+                # Only one IP per FPG is supported at the moment
+                # Given that, list can be dropped
+                subnet_ips_map = fpg_metadata['ips']
+                subnet, ips = next(iter(subnet_ips_map.items()))
+                self._share_args['vfsIPs'] = [(ips[0], subnet)]
                 self._create_share()
 
     def _get_legacy_fpg(self):

@@ -28,7 +28,7 @@ class TestCreateShareDefault(CreateShareUnitTest):
 
     def get_request_params(self):
         return {u"Name": u"MyDefShare_01",
-                u"Opts": {u"persona": u'',
+                u"Opts": {u"filePersona": u'',
                           u"backend": u"DEFAULT",
                           # u"fpg": u"imran_fpg",
                           # u"nfsOpts": u"hard,proto=tcp,nfsvers=4,intr",

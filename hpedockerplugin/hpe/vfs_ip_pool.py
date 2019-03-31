@@ -23,6 +23,26 @@ class VfsIpPool(types.String, types.IPAddress):
         types.String.__init__(self, type_name=type_name)
         types.IPAddress.__init__(self, type_name=type_name)
 
+    def _get_ips_for_range(self, begin_ip, end_ip):
+        ips = []
+        ip_tokens = begin_ip.split('.')
+        range_lower = int(ip_tokens[-1])
+        ip_tokens = end_ip.split('.')
+        range_upper = int(ip_tokens[-1])
+        if range_lower > range_upper:
+            msg = "ERROR: Invalid IP range specified %s-%s!" %\
+                  (begin_ip, end_ip)
+            raise exception.InvalidInput(reason=msg)
+        elif range_lower == range_upper:
+            return [begin_ip]
+
+        # Remove the last token
+        ip_tokens.pop(-1)
+        for host_num in range(range_lower, range_upper + 1):
+            ip = '.'.join(ip_tokens + [str(host_num)])
+            ips.append(ip)
+        return ips
+
     def _validate_ip(self, ip):
         ip = types.String.__call__(self, ip.strip())
         # Validate if the IP address is good
@@ -49,7 +69,12 @@ class VfsIpPool(types.String, types.IPAddress):
         ip_subnet_dict = {}
         for value in values:
             if '-' in value:
-                ips, subnet = self._get_ips_for_range(value)
+                ip_range, subnet = value.split(':')
+                begin_ip, end_ip = ip_range.split('-')
+                self._validate_ip(begin_ip)
+                self._validate_ip(end_ip)
+                self._validate_ip(subnet)
+                ips = self._get_ips_for_range(begin_ip, end_ip)
             else:
                 ip, subnet = value.split(':')
                 self._validate_ip(ip)

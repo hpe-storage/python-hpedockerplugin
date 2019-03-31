@@ -229,7 +229,7 @@ class VolumePlugin(object):
 
         # Try to handle this as file persona operation
         if 'Opts' in contents and contents['Opts']:
-            if 'persona' in contents['Opts']:
+            if 'filePersona' in contents['Opts']:
                 try:
                     return self._req_router.route_create_request(name,
                                                                  contents)

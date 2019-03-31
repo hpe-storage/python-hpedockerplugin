@@ -262,8 +262,8 @@ class HpeShareEtcdClient(object):
     def get_all_shares(self):
         return self._client.get_objects(SHAREROOT)
 
-    def get_lock(self, lock_type):
-        return EtcdLock(SHARE_LOCKROOT + '/', self._client.client)
+    def get_lock(self, lock_type, name=None):
+        return EtcdLock(SHARE_LOCKROOT + '/', self._client.client, name=name)
 
     def get_backend_key(self, backend):
         passphrase = self.backendroot + backend

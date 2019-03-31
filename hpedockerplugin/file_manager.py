@@ -31,7 +31,6 @@ class FileManager(object):
                  fp_etcd_client, node_id, backend_name='DEFAULT'):
         self._host_config = host_config
         self._hpepluginconfig = hpepluginconfig
-        self._my_ip = netutils.get_my_ipv4()
 
         self._etcd = etcd_util
         self._fp_etcd_client = fp_etcd_client
@@ -77,8 +76,6 @@ class FileManager(object):
                          six.text_type(ex))
                 LOG.info(msg)
                 raise exception.HPEPluginStartPluginException(reason=msg)
-
-        # self._initialize_default_metadata()
 
     def get_backend(self):
         return self._backend
@@ -319,19 +316,28 @@ class FileManager(object):
         LOG.info("Updated etcd with modified node_mount_info: %s!"
                  % node_mount_info)
 
-    def _get_host_ip(self):
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        return s.getsockname()[0]
+    @staticmethod
+    def _get_mount_dir(share_name):
+        return "%s%s" % (fileutil.prefix, share_name)
+
+    def _create_mount_dir(self, mount_dir):
+        # TODO: Check instead if mount entry is there and based on that
+        # decide
+        # if os.path.exists(mount_dir):
+        #     msg = "Mount path %s already in use" % mount_dir
+        #     raise exception.HPEPluginMountException(reason=msg)
+
+        LOG.info('Creating Directory %(mount_dir)s...',
+                 {'mount_dir': mount_dir})
+        sh.mkdir('-p', mount_dir)
+        LOG.info('Directory: %(mount_dir)s successfully created!',
+                 {'mount_dir': mount_dir})
 
     def mount_share(self, share_name, share, mount_id):
         if 'status' in share:
             if share['status'] == 'FAILED':
                 LOG.error("Share not present")
 
-        client_ip = self._get_host_ip()
-        self._hpeplugin_driver.add_client_ip_for_share(share['id'],
-                                                       client_ip)
         fpg = share['fpg']
         vfs = share['vfs']
         file_store = share['name']
@@ -342,52 +348,56 @@ class FileManager(object):
                                        fpg,
                                        vfs,
                                        file_store)
-
-        # {'path_info': {
-        #   '/opt/hpe/data/hpedocker-<share_name>':
-        #       ['mnt_id1, 'mnt_id2'...]
+        # {
+        #   'path_info': {
+        #     node_id1: {<mount_dir>: ['mnt_id1, 'mnt_id2'...]},
+        #     node_id2: {<mount_dir>: ['mnt_id1, 'mnt_id2'...]}
         #   }
         # }
-        if 'share_path_info' in share:
-            path_info = share['share_path_info']
-            mount_dir, mount_ids = next(iter(path_info.items()))
-            mount_ids.append(mount_id)
-            self._etcd.save_share(share)
+        path_info = share.get('path_info')
+        if path_info:
+            node_mnt_info = path_info.get(self._node_id)
+            if node_mnt_info:
+                mount_dir, mount_ids = next(iter(node_mnt_info.items()))
+                mount_ids.append(mount_id)
+                # self._etcd.save_share(share)
+                # response = json.dumps({u"Err": '', u"Name": share_name,
+                #                        u"Mountpoint": mount_dir,
+                #                        u"Devicename": share_path})
+                # return response
+            else:
+                my_ip = netutils.get_my_ipv4()
+                self._hpeplugin_driver.add_client_ip_for_share(share['id'],
+                                                               my_ip)
+                # TODO: Client IPs should come from array. We cannot depend on ETCD
+                # for this info as user may use different ETCDs for different hosts
+                client_ips = share['clientIPs']
+                client_ips.append(my_ip)
+                # path_info not present
+                mount_dir = self._get_mount_dir(mount_id)
+                node_mnt_info = {
+                    self._node_id: {
+                        mount_dir: [mount_id]
+                    }
+                }
+                path_info.update(node_mnt_info)
         else:
-            LOG.info("Inside mount share... getting share by name: %s" %
-                     share_name)
+            # path_info not present
+            mount_dir = self._get_mount_dir(mount_id)
+            node_mnt_info = {
+                self._node_id: {
+                    mount_dir: [mount_id]
+                }
+            }
+            share['path_info'] = node_mnt_info
 
-            mount_dir = "%s%s" % (fileutil.prefix, share_name)
+        self._create_mount_dir(mount_dir)
+        LOG.info("Mounting share path %s to %s" % (share_path, mount_dir))
+        sh.mount('-t', 'nfs', share_path, mount_dir)
+        LOG.debug('Device: %(path)s successfully mounted on %(mount)s',
+                  {'path': share_path, 'mount': mount_dir})
 
-            # TODO: Check instead if mount entry is there and based on that
-            # decide
-            # if os.path.exists(mount_dir):
-            #     msg = "Mount path %s already in use" % mount_dir
-            #     raise exception.HPEPluginMountException(reason=msg)
-
-            LOG.info('Creating Directory %(mount_dir)s...',
-                     {'mount_dir': mount_dir})
-            sh.mkdir('-p', mount_dir)
-            LOG.info('Directory: %(mount_dir)s successfully created!',
-                     {'mount_dir': mount_dir})
-
-            LOG.info("Mounting share path %s to %s" % (share_path, mount_dir))
-            sh.mount('-t', 'nfs', share_path, mount_dir)
-            LOG.debug('Device: %(path)s successfully mounted on %(mount)s',
-                      {'path': share_path, 'mount': mount_dir})
-
-            # if 'fsOwner' in share and share['fsOwner']:
-            #     fs_owner = share['fsOwner'].split(":")
-            #     uid = int(fs_owner[0])
-            #     gid = int(fs_owner[1])
-            #     os.chown(mount_dir, uid, gid)
-            #
-            # if 'fsMode' in share and share['fsMode']:
-            #     mode = str(share['fsMode'])
-            #     chmod(mode, mount_dir)
-
-            share['path_info'] = {mount_dir: [mount_id]}
-            self._etcd.save_share(share)
+        self._etcd.save_share(share)
         response = json.dumps({u"Err": '', u"Name": share_name,
                                u"Mountpoint": mount_dir,
                                u"Devicename": share_path})
@@ -396,30 +406,55 @@ class FileManager(object):
     def unmount_share(self, share_name, share, mount_id):
         # Start of volume fencing
         LOG.info('Unmounting share: %s' % share)
-        path_info = share.get('share_path_info')
+        # share = {
+        #   'path_info': {
+        #     node_id1: {<mount_dir>: ['mnt_id1, 'mnt_id2'...]},
+        #     node_id2: {<mount_dir>: ['mnt_id1, 'mnt_id2'...]}
+        #   }
+        # }
+        path_info = share.get('path_info')
         if path_info:
-            mount_path, mount_ids = next(iter(path_info.items()))
-            if mount_id in mount_ids:
-                LOG.info("Removing mount-id '%s' from meta-data" % mount_id)
-                mount_ids.remove(mount_id)
+            node_mnt_info = path_info.get(self._node_id)
+            if node_mnt_info:
+                mount_dir = self._get_mount_dir(mount_id)
+                mount_ids = node_mnt_info[mount_dir]
+                if mount_id in mount_ids:
+                    LOG.info("Removing mount-id '%s' from meta-data" % mount_id)
+                    mount_ids.remove(mount_id)
 
-            if not mount_ids:
-                LOG.info('Unmounting share: %s...' % mount_path)
-                sh.umount(mount_path)
-                LOG.info('Removing dir: %s...' % mount_path)
-                sh.rm('-rf', mount_path)
-                del share['share_path_info']
+                LOG.info('Unmounting share: %s...' % mount_dir)
+                sh.umount(mount_dir)
+                LOG.info('Removing dir: %s...' % mount_dir)
+                sh.rm('-rf', mount_dir)
+
+                if not mount_ids:
+                    del node_mnt_info[mount_dir]
+                    # If this was the last mount of share share_name on
+                    # this node, remove my_ip from client-ip list
+                    if not path_info[self._node_id]:
+                        del path_info[self._node_id]
+                        my_ip = netutils.get_my_ipv4()
+                        LOG.info("Remove %s from client IP list" % my_ip)
+                        client_ips = share['clientIPs']
+                        client_ips.remove(my_ip)
+                        self._hpeplugin_driver.remove_client_ip_for_share(
+                            share['id'], my_ip)
+                    # If this is the last node from where share is being
+                    # unmounted, remove the path_info from share metadata
+                    if not path_info:
+                        del share['path_info']
                 LOG.info('Share unmounted. Updating ETCD: %s' % share)
                 self._etcd.save_share(share)
+                LOG.info('Unmount DONE for share: %s, %s' % (share_name, mount_id))
 
-                self._hpeplugin_driver.remove_client_ip_for_share(
-                    share['id'], self._get_host_ip())
+                # else:
+                #     LOG.info('Updated ETCD mount-id list: %s' % mount_ids)
+                #     self._etcd.save_share(share)
             else:
-                LOG.info('Updated ETCD mount-id list: %s' % mount_ids)
-                self._etcd.save_share(share)
-
+                LOG.error("ERROR: Node mount information not found in ETCD")
+        else:
+            LOG.error("ERROR: Path info missing from ETCD")
         response = json.dumps({u"Err": ''})
-        LOG.info('Unmount DONE for share: %s, %s' % (share_name, mount_id))
         return response
 
     def import_share(self, volname, existing_ref, backend='DEFAULT',

@@ -50,7 +50,7 @@ hpe3par_opts = [
                      "target_device_id:<required>,"
                      "key1:value1,key2:value2..."),
     cfg.StrOpt('hpe3par_default_fpg_size',
-               default='32T',
+               default='64T',
                help='FPG size in TiB'),
     cfg.MultiOpt('hpe3par_server_ip_pool',
                  item_type=ip_pool.VfsIpPool(),
