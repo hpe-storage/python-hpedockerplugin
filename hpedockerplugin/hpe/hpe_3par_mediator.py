@@ -123,18 +123,18 @@ class HPE3ParMediator(object):
 
         try:
             ssh_kwargs = {}
-            if self._config.hpe3par_san_ssh_port:
-                ssh_kwargs['port'] = self._config.hpe3par_san_ssh_port
+            if self._config.san_ssh_port:
+                ssh_kwargs['port'] = self._config.san_ssh_port
             if self._config.ssh_conn_timeout:
                 ssh_kwargs['conn_timeout'] = self._config.ssh_conn_timeout
-            if self._config.hpe3par_san_private_key:
+            if self._config.san_private_key:
                 ssh_kwargs['privatekey'] = \
-                    self._config.hpe3par_san_private_key
+                    self._config.san_private_key
 
             self._client.setSSHOptions(
-                self._config.hpe3par_san_ip,
-                self._config.hpe3par_san_login,
-                self._config.hpe3par_san_password,
+                self._config.san_ip,
+                self._config.san_login,
+                self._config.san_password,
                 **ssh_kwargs
             )
 
