@@ -198,7 +198,12 @@ class CreateShareOnDefaultFpgCmd(CreateShareCmd):
         try:
             backend_metadata = self._fp_etcd.get_backend_metadata(
                 self._backend)
-            return backend_metadata['default_fpgs'].get(cpg_name)
+            default_fpgs = backend_metadata.get('default_fpgs')
+            if default_fpgs:
+                default_fpg = default_fpgs.get(cpg_name)
+                if default_fpg:
+                    return default_fpg
+            raise exception.EtcdDefaultFpgNotPresent(cpg=cpg_name)
         except exception.EtcdMetadataNotFound:
             raise exception.EtcdDefaultFpgNotPresent(cpg=cpg_name)
 

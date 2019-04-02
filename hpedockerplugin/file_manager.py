@@ -40,7 +40,6 @@ class FileManager(object):
         self._initialize_configuration()
 
         self._decrypt_password(self.src_bkend_config,
-                               self.tgt_bkend_config,
                                backend_name)
 
         # TODO: When multiple backends come into picture, consider
@@ -48,7 +47,7 @@ class FileManager(object):
         try:
             LOG.info("Initializing 3PAR driver...")
             self._primary_driver = self._initialize_driver(
-                host_config, self.src_bkend_config, self.tgt_bkend_config)
+                host_config, self.src_bkend_config)
 
             self._hpeplugin_driver = self._primary_driver
             LOG.info("Initialized 3PAR driver!")
@@ -60,22 +59,6 @@ class FileManager(object):
             LOG.info(msg)
             raise exception.HPEPluginStartPluginException(
                 reason=msg)
-
-        # If replication enabled, then initialize secondary driver
-        if self.tgt_bkend_config:
-            LOG.info("Replication enabled!")
-            try:
-                LOG.info("Initializing 3PAR driver for remote array...")
-                self._remote_driver = self._initialize_driver(
-                    host_config, self.tgt_bkend_config,
-                    self.src_bkend_config)
-            except Exception as ex:
-                msg = "Failed to initialize 3PAR driver for remote array %s!" \
-                      "Exception: %s"\
-                      % (self.tgt_bkend_config.hpe3par_api_url,
-                         six.text_type(ex))
-                LOG.info(msg)
-                raise exception.HPEPluginStartPluginException(reason=msg)
 
     def get_backend(self):
         return self._backend
@@ -108,7 +91,6 @@ class FileManager(object):
 
     def _initialize_configuration(self):
         self.src_bkend_config = self._get_src_bkend_config()
-        self.tgt_bkend_config = None
 
     def _get_src_bkend_config(self):
         LOG.info("Getting source backend configuration...")
@@ -121,7 +103,7 @@ class FileManager(object):
         LOG.info("Got source backend configuration!")
         return config
 
-    def _initialize_driver(self, host_config, src_config, tgt_config):
+    def _initialize_driver(self, host_config, src_config):
 
         mediator = self._create_mediator(host_config, src_config)
         try:
@@ -350,43 +332,45 @@ class FileManager(object):
                                        file_store)
         # {
         #   'path_info': {
-        #     node_id1: {<mount_dir>: ['mnt_id1, 'mnt_id2'...]},
-        #     node_id2: {<mount_dir>: ['mnt_id1, 'mnt_id2'...]}
+        #     node_id1: {'mnt_id1': 'mnt_dir1', 'mnt_id2': 'mnt_dir2',...},
+        #     node_id2: {'mnt_id2': 'mnt_dir2', 'mnt_id3': 'mnt_dir3',...},
         #   }
         # }
+        mount_dir = self._get_mount_dir(mount_id)
         path_info = share.get('path_info')
         if path_info:
             node_mnt_info = path_info.get(self._node_id)
             if node_mnt_info:
-                mount_dir, mount_ids = next(iter(node_mnt_info.items()))
-                mount_ids.append(mount_id)
-                # self._etcd.save_share(share)
-                # response = json.dumps({u"Err": '', u"Name": share_name,
-                #                        u"Mountpoint": mount_dir,
-                #                        u"Devicename": share_path})
-                # return response
+                node_mnt_info[mount_id] = mount_dir
             else:
                 my_ip = netutils.get_my_ipv4()
                 self._hpeplugin_driver.add_client_ip_for_share(share['id'],
                                                                my_ip)
-                # TODO: Client IPs should come from array. We cannot depend on ETCD
-                # for this info as user may use different ETCDs for different hosts
+                # TODO: Client IPs should come from array. We cannot depend on
+                # ETCD for this info as user may use different ETCDs for
+                # different hosts
                 client_ips = share['clientIPs']
                 client_ips.append(my_ip)
-                # path_info not present
-                mount_dir = self._get_mount_dir(mount_id)
+                # node_mnt_info not present
                 node_mnt_info = {
                     self._node_id: {
-                        mount_dir: [mount_id]
+                        mount_id: mount_dir
                     }
                 }
                 path_info.update(node_mnt_info)
         else:
-            # path_info not present
-            mount_dir = self._get_mount_dir(mount_id)
+            my_ip = netutils.get_my_ipv4()
+            self._hpeplugin_driver.add_client_ip_for_share(share['id'],
+                                                           my_ip)
+            # TODO: Client IPs should come from array. We cannot depend on ETCD
+            # for this info as user may use different ETCDs for different hosts
+            client_ips = share['clientIPs']
+            client_ips.append(my_ip)
+
+            # node_mnt_info not present
             node_mnt_info = {
                 self._node_id: {
-                    mount_dir: [mount_id]
+                    mount_id: mount_dir
                 }
             }
             share['path_info'] = node_mnt_info
@@ -408,37 +392,34 @@ class FileManager(object):
         LOG.info('Unmounting share: %s' % share)
         # share = {
         #   'path_info': {
-        #     node_id1: {<mount_dir>: ['mnt_id1, 'mnt_id2'...]},
-        #     node_id2: {<mount_dir>: ['mnt_id1, 'mnt_id2'...]}
+        #     node_id1: {'mnt_id1': 'mnt_dir1', 'mnt_id2': 'mnt_dir2',...},
+        #     node_id2: {'mnt_id2': 'mnt_dir2', 'mnt_id3': 'mnt_dir3',...},
         #   }
         # }
         path_info = share.get('path_info')
         if path_info:
             node_mnt_info = path_info.get(self._node_id)
             if node_mnt_info:
-                mount_dir = self._get_mount_dir(mount_id)
-                mount_ids = node_mnt_info[mount_dir]
-                if mount_id in mount_ids:
-                    LOG.info("Removing mount-id '%s' from meta-data" % mount_id)
-                    mount_ids.remove(mount_id)
+                mount_dir = node_mnt_info.get(mount_id)
+                if mount_dir:
+                    LOG.info('Unmounting share: %s...' % mount_dir)
+                    sh.umount(mount_dir)
+                    LOG.info('Removing dir: %s...' % mount_dir)
+                    sh.rm('-rf', mount_dir)
+                    LOG.info("Removing mount-id '%s' from meta-data" %
+                             mount_id)
+                    del node_mnt_info[mount_id]
 
-                LOG.info('Unmounting share: %s...' % mount_dir)
-                sh.umount(mount_dir)
-                LOG.info('Removing dir: %s...' % mount_dir)
-                sh.rm('-rf', mount_dir)
-
-                if not mount_ids:
-                    del node_mnt_info[mount_dir]
-                    # If this was the last mount of share share_name on
-                    # this node, remove my_ip from client-ip list
-                    if not path_info[self._node_id]:
-                        del path_info[self._node_id]
-                        my_ip = netutils.get_my_ipv4()
-                        LOG.info("Remove %s from client IP list" % my_ip)
-                        client_ips = share['clientIPs']
-                        client_ips.remove(my_ip)
-                        self._hpeplugin_driver.remove_client_ip_for_share(
-                            share['id'], my_ip)
+                # If this was the last mount of share share_name on
+                # this node, remove my_ip from client-ip list
+                if not node_mnt_info:
+                    del path_info[self._node_id]
+                    my_ip = netutils.get_my_ipv4()
+                    LOG.info("Remove %s from client IP list" % my_ip)
+                    client_ips = share['clientIPs']
+                    client_ips.remove(my_ip)
+                    self._hpeplugin_driver.remove_client_ip_for_share(
+                        share['id'], my_ip)
                     # If this is the last node from where share is being
                     # unmounted, remove the path_info from share metadata
                     if not path_info:
@@ -477,7 +458,7 @@ class FileManager(object):
         decrypt_pass = aes.decrypt(base64.b64decode(encrypted))
         return decrypt_pass.decode('utf-8')
 
-    def _decrypt_password(self, src_bknd, trgt_bknd, backend_name):
+    def _decrypt_password(self, src_bknd, backend_name):
         try:
             passphrase = self._etcd.get_pass_phrase(backend_name)
         except Exception as ex:
@@ -489,11 +470,6 @@ class FileManager(object):
                 self._decrypt(src_bknd.hpe3par_password, passphrase)
             src_bknd.san_password =  \
                 self._decrypt(src_bknd.san_password, passphrase)
-            if trgt_bknd:
-                trgt_bknd.hpe3par_password = \
-                    self._decrypt(trgt_bknd.hpe3par_password, passphrase)
-                trgt_bknd.san_password = \
-                    self._decrypt(trgt_bknd.san_password, passphrase)
 
     def key_check(self, key):
         KEY_LEN = len(key)
