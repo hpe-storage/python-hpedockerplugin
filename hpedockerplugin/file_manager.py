@@ -1,7 +1,6 @@
 import base64
 import copy
 import json
-import socket
 import string
 import sh
 import six
@@ -426,11 +425,8 @@ class FileManager(object):
                         del share['path_info']
                 LOG.info('Share unmounted. Updating ETCD: %s' % share)
                 self._etcd.save_share(share)
-                LOG.info('Unmount DONE for share: %s, %s' % (share_name, mount_id))
-
-                # else:
-                #     LOG.info('Updated ETCD mount-id list: %s' % mount_ids)
-                #     self._etcd.save_share(share)
+                LOG.info('Unmount DONE for share: %s, %s' %
+                         (share_name, mount_id))
             else:
                 LOG.error("ERROR: Node mount information not found in ETCD")
         else:
