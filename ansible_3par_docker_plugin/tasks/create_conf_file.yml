@@ -133,7 +133,8 @@
          { option: 'san_ip', value: 'hpe3par_ip' },
          { option: 'san_login', value: 'hpe3par_username' },
          { option: 'san_password', value: 'hpe3par_password' },
-         { option: 'backend_id', value: 'backend_id' }
+         { option: 'backend_id', value: 'backend_id' },
+         { option: 'mount_prefix', value: 'mount_prefix' }
         ]
     become: yes
     when:  item.1.value in INVENTORY[item.0].keys()
