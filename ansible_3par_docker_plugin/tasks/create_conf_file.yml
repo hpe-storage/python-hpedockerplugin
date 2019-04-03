@@ -221,82 +221,31 @@
       - "{{ INVENTORY.keys()}}"
     when: INVENTORY[item]['encryptor_key'] is defined and INVENTORY[item]['replication_device'] is defined
 
-  - name: Set the mandatory replication device values - Encryption
+  - name: Set the mandatory replication device values
     set_fact: "{{ replication_device['results'][item | int]['ansible_facts']['backend_id'] }},{{ replication_device['results'][item | int]['ansible_facts']['replication_mode'] }},{{ replication_device['results'][item | int]['ansible_facts']['cpg_map'] }},{{ replication_device['results'][item | int]['ansible_facts']['snap_cpg_map'] }},{{ replication_device['results'][item | int]['ansible_facts']['hpe3par_username'] }}, hpe3par_password: {{  replication_device_passwords['results'][item | int]['stdout'].split('password: ')[1] if INVENTORY[replication_device['results'][item | int]['item']]['encryptor_key'] is defined else INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['hpe3par_password'] }},{{ replication_device['results'][item | int]['ansible_facts']['hpe3par_api_url'] }},{{ replication_device['results'][item | int]['ansible_facts']['san_ip'] }},{{ replication_device['results'][item | int]['ansible_facts']['san_login'] }}, san_password: {{  replication_device_passwords['results'][item | int]['stdout'].split('password: ')[1] if INVENTORY[replication_device['results'][item | int]['item']]['encryptor_key'] is defined else INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['hpe3par_password'] }}"
     with_items: "{{ lookup('sequence', 'start=0 end='+((replication_device['results'] | length)-1) |string, wantlist=True) }}"
     register: mandatory_replication_device_values
     when: INVENTORY[replication_device['results'][item | int]['item']]['replication_device'] is defined
-    
-  - name: Print mandatory_replication_device_values
-    debug:
-      msg: "{{ mandatory_replication_device_values  }}"
-    
-  #- name: Set the mandatory replication device values - No Encryption
-  #  set_fact: "{{ replication_device['results'][item | int]['ansible_facts']['backend_id'] }},{{ replication_device['results'][item | int]['ansible_facts']['replication_mode'] }},{{ replication_device['results'][item | int]['ansible_facts']['cpg_map'] }},{{ replication_device['results'][item | int]['ansible_facts']['snap_cpg_map'] }},{{ replication_device['results'][item | int]['ansible_facts']['hpe3par_username'] }}, hpe3par_password: {{ replication_device['results'][item | int]['ansible_facts']['hpe3par_password'] }},{{ replication_device['results'][item | int]['ansible_facts']['hpe3par_api_url'] }},{{ replication_device['results'][item | int]['ansible_facts']['san_ip'] }},{{ replication_device['results'][item | int]['ansible_facts']['san_login'] }}, san_password: {{ replication_device['results'][item | int]['ansible_facts']['hpe3par_password'] }}"
-  #  with_items: "{{ lookup('sequence', 'start=0 end='+((replication_device['results'] | length)-1) |string, wantlist=True) }}"
-  #  register: mandatory_replication_device_values
-  #  when: INVENTORY[replication_device['results'][item | int]['item']]['replication_device'] is defined and INVENTORY[replication_device['results'][item | int]['item']]['encryptor_key'] is not defined
-  
 
-  - name: Populate the replication device information (ISCSI Driver, No quorum witness, User provided ISCSI IPs)
+  - name: Populate the replication device information (ISCSI Driver, No quorum witness)
     ini_file:
       path: /etc/hpedockerplugin/hpe.conf
       section: "{{ replication_device['results'][item | int]['item'] }}"
       option: replication_device
-      value: "{{ mandatory_replication_device_values['results'][item | int]['ansible_facts']['_raw_params'] }}, hpe3par_iscsi_ips: {{ ';'.join(INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['hpe3par_iscsi_ips'].split(',')) }}"
+      value: "{{ mandatory_replication_device_values['results'][item | int]['ansible_facts']['_raw_params'] }}, hpe3par_iscsi_ips: {{ ';'.join(INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['hpe3par_iscsi_ips'].split(',')) if INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['hpe3par_iscsi_ips'] is defined else (';'.join(secondary_iscsi_ports_vlan['results'][item | int]['stdout_lines']) if INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['vlan_tag'] is defined and INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['vlan_tag'] else ';'.join(secondary_iscsi_ports['results'][item | int]['stdout_lines']))}}"
       no_extra_spaces: true
     with_items: "{{ lookup('sequence', 'start=0 end='+((replication_device['results'] | length)-1) |string, wantlist=True) }}"
-    when: INVENTORY[replication_device['results'][item | int]['item']]['replication_device'] is defined  and INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['quorum_witness_ip'] is not defined and INVENTORY[replication_device['results'][item | int]['item']]['hpedockerplugin_driver'] == 'hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver' and INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['hpe3par_iscsi_ips'] is defined
+    when: INVENTORY[replication_device['results'][item | int]['item']]['replication_device'] is defined  and INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['quorum_witness_ip'] is not defined and INVENTORY[replication_device['results'][item | int]['item']]['hpedockerplugin_driver'] == 'hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver'
     
-  - name: Populate the replication device information (ISCSI Driver, Quorum witness, User provided ISCSI IPs)
+  - name: Populate the replication device information (ISCSI Driver, Quorum witness)
     ini_file:
       path: /etc/hpedockerplugin/hpe.conf
       section: "{{ replication_device['results'][item | int]['item'] }}"
       option: replication_device
-      value: "{{ mandatory_replication_device_values['results'][item | int]['ansible_facts']['_raw_params'] }}, hpe3par_iscsi_ips: {{ ';'.join(INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['hpe3par_iscsi_ips'].split(','))}}, quorum_witness_ip: {{ INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['quorum_witness_ip']}}"
+      value: "{{ mandatory_replication_device_values['results'][item | int]['ansible_facts']['_raw_params'] }}, hpe3par_iscsi_ips: {{ ';'.join(INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['hpe3par_iscsi_ips'].split(',')) if INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['hpe3par_iscsi_ips'] is defined else (';'.join(secondary_iscsi_ports_vlan['results'][item | int]['stdout_lines']) if INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['vlan_tag'] is defined and INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['vlan_tag'] else ';'.join(secondary_iscsi_ports['results'][item | int]['stdout_lines']))}}, quorum_witness_ip: {{ INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['quorum_witness_ip']}}"
       no_extra_spaces: true
     with_items: "{{ lookup('sequence', 'start=0 end='+((replication_device['results'] | length)-1) |string, wantlist=True) }}"
-    when: INVENTORY[replication_device['results'][item | int]['item']]['replication_device'] is defined  and INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['quorum_witness_ip'] is defined and INVENTORY[replication_device['results'][item | int]['item']]['hpedockerplugin_driver'] == 'hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver'  and INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['hpe3par_iscsi_ips'] is defined
-
-  - name: Populate the replication device information (ISCSI Driver, No quorum witness, Not VLAN tagged)
-    ini_file:
-      path: /etc/hpedockerplugin/hpe.conf
-      section: "{{ replication_device['results'][item | int]['item'] }}"
-      option: replication_device
-      value: "{{ mandatory_replication_device_values['results'][item | int]['ansible_facts']['_raw_params'] }}, hpe3par_iscsi_ips: {{ ';'.join(secondary_iscsi_ports['results'][item | int]['stdout_lines']) }}"
-      no_extra_spaces: true
-    with_items: "{{ lookup('sequence', 'start=0 end='+((replication_device['results'] | length)-1) |string, wantlist=True) }}"
-    when: INVENTORY[replication_device['results'][item | int]['item']]['replication_device'] is defined  and INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['quorum_witness_ip'] is not defined and INVENTORY[replication_device['results'][item | int]['item']]['hpedockerplugin_driver'] == 'hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver' and INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['hpe3par_iscsi_ips'] is not defined and not (INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['vlan_tag'] is defined and INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['vlan_tag'])
-    
-  - name: Populate the replication device information (ISCSI Driver, No quorum witness, VLAN tagged)
-    ini_file:
-      path: /etc/hpedockerplugin/hpe.conf
-      section: "{{ replication_device['results'][item | int]['item'] }}"
-      option: replication_device
-      value: "{{ mandatory_replication_device_values['results'][item | int]['ansible_facts']['_raw_params'] }}, hpe3par_iscsi_ips: {{ ';'.join(secondary_iscsi_ports_vlan['results'][item | int]['stdout_lines'])}}"
-      no_extra_spaces: true
-    with_items: "{{ lookup('sequence', 'start=0 end='+((replication_device['results'] | length)-1) |string, wantlist=True) }}"
-    when: INVENTORY[replication_device['results'][item | int]['item']]['replication_device'] is defined  and INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['quorum_witness_ip'] is not defined and INVENTORY[replication_device['results'][item | int]['item']]['hpedockerplugin_driver'] == 'hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver' and  INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['hpe3par_iscsi_ips'] is not defined and INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['vlan_tag'] is defined and INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['vlan_tag']
-    
-  - name: Populate the replication device information (ISCSI Driver, Quorum witness, Not vlan tagged)
-    ini_file:
-      path: /etc/hpedockerplugin/hpe.conf
-      section: "{{ replication_device['results'][item | int]['item'] }}"
-      option: replication_device
-      value: "{{ mandatory_replication_device_values['results'][item | int]['ansible_facts']['_raw_params'] }}, hpe3par_iscsi_ips: {{ ';'.join(secondary_iscsi_ports['results'][item | int]['stdout_lines']) }}, quorum_witness_ip: {{ INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['quorum_witness_ip']}}"
-      no_extra_spaces: true
-    with_items: "{{ lookup('sequence', 'start=0 end='+((replication_device['results'] | length)-1) |string, wantlist=True) }}"
-    when: INVENTORY[replication_device['results'][item | int]['item']]['replication_device'] is defined and INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['quorum_witness_ip'] is defined and INVENTORY[replication_device['results'][item | int]['item']]['hpedockerplugin_driver'] == 'hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver' and  INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['hpe3par_iscsi_ips'] is not defined and not (INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['vlan_tag'] is defined and INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['vlan_tag'])
-    
-  - name: Populate the replication device information (ISCSI Driver, Quorum witness, vlan tagged)
-    ini_file:
-      path: /etc/hpedockerplugin/hpe.conf
-      section: "{{ replication_device['results'][item | int]['item'] }}"
-      option: replication_device
-      value: "{{ mandatory_replication_device_values['results'][item | int]['ansible_facts']['_raw_params'] }}, hpe3par_iscsi_ips: {{ ';'.join(secondary_iscsi_ports_vlan['results'][item | int]['stdout_lines']) }}, quorum_witness_ip: {{ INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['quorum_witness_ip']}}"
-      no_extra_spaces: true
-    with_items: "{{ lookup('sequence', 'start=0 end='+((replication_device['results'] | length)-1) |string, wantlist=True) }}"
-    when: INVENTORY[replication_device['results'][item | int]['item']]['replication_device'] is defined and INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['quorum_witness_ip'] is defined and INVENTORY[replication_device['results'][item | int]['item']]['hpedockerplugin_driver'] == 'hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver' and  INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['hpe3par_iscsi_ips'] is not defined and INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['vlan_tag'] is defined and INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['vlan_tag']
+    when: INVENTORY[replication_device['results'][item | int]['item']]['replication_device'] is defined  and INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['quorum_witness_ip'] is defined and INVENTORY[replication_device['results'][item | int]['item']]['hpedockerplugin_driver'] == 'hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver'
 
   - name: Populate the replication device information (FC Driver, Quorum witness)
     ini_file:
@@ -307,7 +256,7 @@
       no_extra_spaces: true
     with_items: "{{ lookup('sequence', 'start=0 end='+((replication_device['results'] | length)-1) |string, wantlist=True) }}"
     when: INVENTORY[replication_device['results'][item | int]['item']]['replication_device'] is defined and INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['quorum_witness_ip'] is defined and  INVENTORY[replication_device['results'][item | int]['item']]['hpedockerplugin_driver'] == 'hpedockerplugin.hpe.hpe_3par_fc.HPE3PARFCDriver'
-    
+
   - name: Populate the replication device information (FC Driver, No quorum witness)
     ini_file:
       path: /etc/hpedockerplugin/hpe.conf
@@ -317,4 +266,5 @@
       no_extra_spaces: true
     with_items: "{{ lookup('sequence', 'start=0 end='+((replication_device['results'] | length)-1) |string, wantlist=True) }}"
     when: INVENTORY[replication_device['results'][item | int]['item']]['replication_device'] is defined  and INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['quorum_witness_ip'] is not defined and INVENTORY[replication_device['results'][item | int]['item']]['hpedockerplugin_driver'] == 'hpedockerplugin.hpe.hpe_3par_fc.HPE3PARFCDriver'
+
 
