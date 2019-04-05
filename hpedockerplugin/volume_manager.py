@@ -2000,6 +2000,9 @@ class VolumeManager(object):
         elif KEY_LEN > 32:
             KEY = key[:32]
 
+        else:
+            KEY = key
+
         return KEY
 
     def _decrypt(self, encrypted, passphrase):
