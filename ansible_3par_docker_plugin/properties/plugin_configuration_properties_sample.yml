@@ -52,9 +52,6 @@ INVENTORY:
     hpe3par_password: 3pardata
     hpe3par_cpg: FC_r6
 
-    # Plugin version - Required only in DEFAULT backend
-    volume_plugin: hpestorage/legacyvolumeplugin:3.0
-
 #Optional Parameters------------------------------------------------------------------------------------
 
     # Uncomment to encrypt passwords in hpe.conf using defined passphrase
