@@ -1,6 +1,6 @@
 ---
   - name: load etcd settings
-    include_vars: '../properties/etcd_properties.yml'
+    include_vars: '../properties/etcd_cluster_properties.yml'
 
   - name: Create FlexVolume driver directory
     file:
