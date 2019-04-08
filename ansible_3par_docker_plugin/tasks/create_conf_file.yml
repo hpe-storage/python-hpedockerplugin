@@ -197,7 +197,6 @@
   - name: Get the encrypted passwords
     shell: >-
       hpe3parencryptor --backend {{ item[0] }} -a {{INVENTORY[item[0]]['encryptor_key']}} "{{ INVENTORY[item[0]][(item[1].value)] }}"
-    ignore_errors: yes
     register: passwords
     with_nested:
       - "{{ INVENTORY.keys()}}"
@@ -262,7 +261,6 @@
   - name: Get the encrypted passwords for replication device
     shell: >-
       hpe3parencryptor --backend {{ item }} -a {{INVENTORY[item]['encryptor_key']}} "{{ INVENTORY[item]['replication_device']['hpe3par_password'] }}"
-    ignore_errors: yes
     register: replication_device_passwords
     with_items:
       - "{{ INVENTORY.keys()}}"
