@@ -146,8 +146,9 @@ class Orchestrator(object):
         LOG.info(' Request %s ' % request)
         LOG.info(' with  args %s ' % str(args))
         LOG.info(' with  kwargs is %s ' % str(kwargs))
-        volume_mgr = self._manager.get(backend)['mgr']
-        if volume_mgr:
+        volume_mgr_info = self._manager.get(backend)
+        if volume_mgr_info:
+            volume_mgr = volume_mgr_info['mgr']
             # populate the volume backend map for caching
             return getattr(volume_mgr, request)(volname, *args, **kwargs)
 
