@@ -149,9 +149,9 @@ class Orchestrator(object):
         volume_mgr_info = self._manager.get(backend)
         if volume_mgr_info:
             volume_mgr = volume_mgr_info['mgr']
-            # populate the volume backend map for caching
-            return getattr(volume_mgr, request)(volname, *args, **kwargs)
-
+            if volume_mgr is not None:
+                # populate the volume backend map for caching
+                return getattr(volume_mgr, request)(volname, *args, **kwargs)
         msg = "ERROR: Backend '%s' was NOT initialized successfully." \
               " Please check hpe.conf for incorrect entries and rectify " \
               "it." % backend
