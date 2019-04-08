@@ -11,6 +11,7 @@ This quick start guide is designed to allow you to get up and running quickly wi
 * Ubuntu 16.04
 * RHEL 7.3, 7.4, 7.5
 * CentOS 7.3, 7.4, 7.5
+* SLES 12 SP3
 
 ## Supported HPE 3PAR storage arrays:
 
