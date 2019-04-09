@@ -6,6 +6,7 @@ Versions starting at v1.0 have been tested and are supported on the following Li
 * Ubuntu 16.04
 * RHEL 7.x
 * CentOS 7.x
+* SLES 12 SP3
 
 >**NOTE:** Although the plugin software is supported on the listed Linux distributions, you should consult the Hewlett Packard Enterprise Single Point of Connectivity Knowledge (SPOCK) for HPE Storage Products for specific details about which operating systems are supported by HPE 3PAR StoreServ and StoreVirtual Storage products (https://www.hpe.com/storage/spock).
 >
