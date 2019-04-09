@@ -2,8 +2,7 @@
 
 * [Introduction](#introduction)
 * [Before you begin](#before)
-* [Support Matrix for Kubernetes and Openshift 3.7](#support)
-* [Deploying the HPE 3PAR Volume Plug-in in Kubernetes/OpenShift](#deploying)
+* [Deploying the HPE 3PAR Volume Plug-in in Kubernetes](#deploying)
   * [Configuring etcd](#etcd)
   * [Installing the HPE 3PAR Volume Plug-in](#installing)
 * [Usage](#usage)
