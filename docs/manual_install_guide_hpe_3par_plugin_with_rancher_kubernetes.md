@@ -11,9 +11,6 @@
 ### Introduction <a name="introduction"></a>
 This document details the installation steps in order to get up and running quickly with the HPE 3PAR Volume Plug-in for Docker within a Rancher Kubernetes environment on SLES.
 
-**We highly recommend to use the Ansible playbooks that simplify and automate the install process before using the manual install process.**
-[/ansible_3par_docker_plugin/README.md](/ansible_3par_docker_plugin/README.md)
-
 ## Before you begin <a name="before"></a>
 * You need to have a basic knowledge of containers
 
