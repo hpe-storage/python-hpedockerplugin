@@ -99,6 +99,27 @@ $ systemctl daemon-reload
 $ systemctl restart docker.service
 ```
 
+#### SLES12 SP3 or later:
+
+1. Rebuild the initrd, otherwise the system may not boot anymore
+
+```
+$ dracut --force --add multipath
+```
+
+2. Configure `/etc/multipath.conf`
+
+```
+$ multipath -t > /etc/multipath.conf
+```
+
+3. Enable the iscsid and multipathd services
+
+```
+$ systemctl enable multipathd
+$ systemctl start multipathd
+```
+
 Now the systems are ready to setup the HPE 3PAR Volume Plug-in for Docker.
 
 
