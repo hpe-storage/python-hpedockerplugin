@@ -40,7 +40,6 @@ For more information on etcd and how to setup an **etcd** cluster for High Avail
 [/docs/advanced/etcd_cluster_setup.md](/docs/advanced/etcd_cluster_setup.md)
 
 1. Export the Kubernetes/OpenShift `Master` node IP address
-
 ```
 $ export HostIP="<Master node IP>"
 ```
@@ -104,6 +103,11 @@ $ vi hpe.conf
 >
 >[/docs/config_examples/hpe.conf.sample.3parFC](/docs/config_examples/hpe.conf.sample.3parFC)
 
+> Note: Also add mount_prefix in hpe.conf to /var/lib/rancher/
+```
+mount_prefix = /var/lib/rancher/
+```
+
 5. Use Docker Compose to deploy the HPE 3PAR Volume Plug-In for Docker (Containerized Plug-in) from the pre-built image available on Docker Hub:
 
 ```
@@ -143,7 +147,7 @@ hpedockerplugin:
 >
 >Use the Docker command: `docker ps -a | grep -i etcd_hpe`
 
-8. Start the HPE 3PAR Volume Plug-in for Docker (Containerized Plug-in)
+6. Start the HPE 3PAR Volume Plug-in for Docker (Containerized Plug-in)
 
 >Make sure you are in the location of the `docker-compose.yml` filed
 
@@ -165,28 +169,33 @@ $ sudo chmod +x /usr/local/bin/docker-compose
 $ docker-compose --version
 docker-compose version 1.21.0, build 1719ceb
 ```
-> Re-run step 8
+> Re-run step 6
 
-9. Success, you should now be able to test docker volume operations like:
+7. Success, you should now be able to test docker volume operations like:
+
 ```
 $ docker volume create -d hpe --name sample_vol -o size=
 ```
 
-10. Start Rancher Server
+8. Start Rancher Server
+
 ```
 $ docker run -d --restart=unless-stopped  -p 8080:80 -p 8443:443  rancher/rancher:v2.1.6
 ```
 > Launch browser and open https://<HostIP>:8443/ and set the password
 	
-11. Create a cluster with option "From my own existing nodes"
+9. Create a cluster with option "From my own existing nodes"
+
 > Wait for the cluster to become active
 
-12. Create a file ~/.kube/config. Navigate to **Cluster -> Kubeconfig file** and copy file content to add into ~/.kube/config
+10. Create a file ~/.kube/config. Navigate to **Cluster -> Kubeconfig file** and copy file content to add into ~/.kube/config
+
 ```
 $ vi ~/.kube/config
 ```
 
-13. Add kubectl binary on the host to run kubectl commands
+11. Add kubectl binary on the host to run kubectl commands
+
 ```
 $ docker ps | grep rancher-agent 
 $ docker cp <racher-agent cont id>:/usr/bin/kubectl /tmp
@@ -199,14 +208,16 @@ $ kubectl version
 ```
 > This must show correct output with client and server versions. Same can be verified from **Cluster -> Launch kubectl* -> kubectl version*
 
-10. Install the HPE 3PAR FlexVolume driver:
+12. Install the HPE 3PAR FlexVolume driver
+
 ```
 $ wget https://github.com/hpe-storage/python-hpedockerplugin/raw/master/dory_installer
 $ chmod u+x ./dory_installer
 $ sudo ./dory_installer
 ```
 
-11. Confirm HPE 3PAR FlexVolume driver installed correctly:
+13. Confirm HPE 3PAR FlexVolume driver installed correctly
+
 ```
 $ ls -l /usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/
 -rwxr-xr-x. 1 docker docker 47046107 Apr 20 06:11 doryd
@@ -214,7 +225,8 @@ $ ls -l /usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/
 -rw-r--r--. 1 docker docker      237 Apr 20 06:11 hpe.json
 ```
 
-12. Copy the HPE 3PAR FlexVolume dynamic provisioner to volume plugin directory being used by kubelet container in Rancher:
+14. Copy the HPE 3PAR FlexVolume dynamic provisioner to volume plugin directory being used by kubelet container in Rancher
+
 ```
 $ cp -R /usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/ /var/lib/kubelet/volumeplugins/
 ```
@@ -223,9 +235,9 @@ $ cp -R /usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/ /var/li
 >
 >https://github.com/hpe-storage/dory/
 
-13. Repeat steps 1-9 on all worker nodes. **Steps 10-12 only needs to be ran on the Master node.**
+15. Repeat steps 1-14 on all worker nodes. **Steps 8, 9 and 11 only needs to be ran on the Master node.**
 
->**Upon successful completion of the above steps, you should have a working installation of Openshift 3.7 integrated with HPE 3PAR Volume Plug-in for Docker**
+>**Upon successful completion of the above steps, you should have a working installation of Rancher-Kubernetes integrated with HPE 3PAR Volume Plug-in for Docker on SLES**
 
 ## Usage <a name="usage"></a>
 
