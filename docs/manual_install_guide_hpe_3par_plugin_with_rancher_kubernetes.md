@@ -1,4 +1,4 @@
-## Manual Install Guide for Integration of HPE 3PAR Containerized Plugin with RedHat OpenShift / Kubernetes (ADVANCED)
+## Manual Install Guide for Integration of HPE 3PAR Containerized Plugin with Rancher Kubernetes (ADVANCED)
 
 * [Introduction](#introduction)
 * [Before you begin](#before)
@@ -10,7 +10,7 @@
 ---
 
 ### Introduction <a name="introduction"></a>
-This document details the installation steps in order to get up and running quickly with the HPE 3PAR Volume Plug-in for Docker within a Kubernetes 1.7/Openshift 3.7 environment.
+This document details the installation steps in order to get up and running quickly with the HPE 3PAR Volume Plug-in for Docker within a Rancher Kubernetes environment on SLES.
 
 **We highly recommend to use the Ansible playbooks that simplify and automate the install process before using the manual install process.**
 [/ansible_3par_docker_plugin/README.md](/ansible_3par_docker_plugin/README.md)
@@ -18,30 +18,12 @@ This document details the installation steps in order to get up and running quic
 ## Before you begin <a name="before"></a>
 * You need to have a basic knowledge of containers
 
-* You should have Kubernetes or OpenShift deployed within your environment. If you want to learn how to deploy Kubernetes or OpenShift, please refer to the documents below for more details.
-
-  * Kubernetes https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/
-
-  * OpenShift https://docs.openshift.org/3.7/install_config/install/planning.html
-
-## Support Matrix for Kubernetes and Openshift 3.7 <a name="support"></a>
-
-| Platforms                                               | Support for Containerized Plugin | Docker Engine Version | HPE 3PAR OS version              |
-|---------------------------------------------------------|----------------------------------|-----------------------|----------------------------------|
-| Kubernetes 1.6.13                                       | Yes                              | 1.12.6                | 3.2.2 MU6+ P107 & 3.3.1 MU1, MU2 |
-| Kubernetes 1.7.6                                        | Yes                              | 1.12.6                | 3.2.2 MU6+ P107 & 3.3.1 MU1, MU2 |
-| Kubernetes 1.8.9                                        | Yes                              | 17.06                 | 3.2.2 MU6+ P107 & 3.3.1 MU1, MU2 |
-| Kubernetes 1.10.3                                       | Yes                              | 17.03                 | 3.2.2 MU6+ P107 & 3.3.1 MU1, MU2 |
-| OpenShift 3.7 RPM based installation (Kubernetes 1.7.6) | Yes                              | 1.12.6                | 3.2.2 MU6+ P107 & 3.3.1 MU1, MU2   |
-
 **NOTE**
-  * Managed Plugin is not supported for Kubernetes or Openshift 3.7
+  * Managed Plugin is not supported for Kubernetes
 
-  * The install of OpenShift for this paper was done on RHEL 7.4. Other versions of Linux may not be supported.
+## Deploying the HPE 3PAR Volume Plug-in in Kubernetes <a name="deploying"></a>
 
-## Deploying the HPE 3PAR Volume Plug-in in Kubernetes/OpenShift <a name="deploying"></a>
-
-Below is the order and steps that will be followed to deploy the **HPE 3PAR Volume Plug-in for Docker (Containerized Plug-in) within a Kubernetes 1.7/OpenShift 3.7** environment.
+Below is the order and steps that will be followed to deploy the **HPE 3PAR Volume Plug-in for Docker (Containerized Plug-in) within a Kubernetes** environment.
 
 Let's get started.
 
@@ -85,74 +67,26 @@ sudo docker run -d -v /usr/share/ca-certificates/:/etc/ssl/certs -p 40010:40010 
 
 ### Installing the HPE 3PAR Volume Plug-in <a name="installing"></a>
 
-> **NOTE:** This section assumes that you already have **Kubernetes** or **OpenShift** deployed in your environment, in order to run the following commands.
-
-1. Install the iSCSI and Multipath packages
+1. Rebuild the initrd, otherwise the system may not boot anymore
 
 ```
-$ yum install -y iscsi-initiator-utils device-mapper-multipath
+$ dracut --force --add multipath
 ```
 
 2. Configure /etc/multipath.conf
 
 ```
-$ vi /etc/multipath.conf
+$ multipath -t > /etc/multipath.conf
 ```
 
->Copy the following into /etc/multipath.conf
+3. Enable the multipathd services
 
 ```
-defaults
-{
-    polling_interval 10
-    max_fds 8192
-}
-
-devices
-{
-    device
-	{
-        vendor                  "3PARdata"
-        product                 "VV"
-        no_path_retry           18
-        features                "0"
-        hardware_handler        "0"
-        path_grouping_policy    multibus
-        #getuid_callout         "/lib/udev/scsi_id --whitelisted --device=/dev/%n"
-        path_selector           "round-robin 0"
-        rr_weight               uniform
-        rr_min_io_rq            1
-        path_checker            tur
-        failback                immediate
-    }
-}
+$ systemctl enable multipathd
+$ systemctl start multipathd
 ```
 
-3. Enable the iscsid and multipathd services
-
-```
-$ systemctl enable iscsid multipathd
-$ systemctl start iscsid multipathd
-```
-
-4. Configure `MountFlags` in the Docker service to allow shared access to Docker volumes
-
-```
-$ vi /usr/lib/systemd/system/docker.service
-```
-
->Change **MountFlags=slave** to **MountFlags=shared** (default is slave)
->
->Save and exit
-
-5. Restart the Docker daemon
-
-```
-$ systemctl daemon-reload
-$ systemctl restart docker.service
-```
-
-6. Setup the Docker plugin configuration file
+4. Setup the Docker plugin configuration file
 
 ```
 $ mkdir –p /etc/hpedockerplugin/
@@ -171,7 +105,7 @@ $ vi hpe.conf
 >
 >[/docs/config_examples/hpe.conf.sample.3parFC](/docs/config_examples/hpe.conf.sample.3parFC)
 
-7. Use Docker Compose to deploy the HPE 3PAR Volume Plug-In for Docker (Containerized Plug-in) from the pre-built image available on Docker Hub:
+5. Use Docker Compose to deploy the HPE 3PAR Volume Plug-In for Docker (Containerized Plug-in) from the pre-built image available on Docker Hub:
 
 ```
 $ cd ~
@@ -182,9 +116,10 @@ $ vi docker-compose.yml
 
 ```
 hpedockerplugin:
-  image: hpestorage/legacyvolumeplugin:2.1
+  image: hpestorage/legacyvolumeplugin:3.1
   container_name: plugin_container
   net: host
+  restart: always
   privileged: true
   volumes:
      - /dev:/dev
@@ -199,7 +134,8 @@ hpedockerplugin:
      - /lib/modules:/lib/modules
      - /lib64:/lib64
      - /var/run/docker.sock:/var/run/docker.sock
-     - /opt/hpe/data:/opt/hpe/data:rshared
+     - /var/lib/rancher:/var/lib/rancher:rshared
+     - /usr/lib64:/usr/lib64
 ```
 
 >Save and exit
@@ -237,6 +173,33 @@ docker-compose version 1.21.0, build 1719ceb
 $ docker volume create -d hpe --name sample_vol -o size=
 ```
 
+10. Start Rancher Server
+```
+$ docker run -d --restart=unless-stopped  -p 8080:80 -p 8443:443  rancher/rancher:v2.1.6
+```
+> Launch browser and open https://<HostIP>:8443/ and set the password
+	
+11. Create a cluster with option "From my own existing nodes"
+> Wait for the cluster to become active
+
+12. Create a file ~/.kube/config. Navigate to **Cluster -> Kubeconfig file** and copy file content to add into ~/.kube/config
+```
+$ vi ~/.kube/config
+```
+
+13. Add kubectl binary on the host to run kubectl commands
+```
+$ docker ps | grep rancher-agent 
+$ docker cp <racher-agent cont id>:/usr/bin/kubectl /tmp
+$ cp /tmp/kubectl /usr/bin/ 
+$ chmod +x /usr/bin/kubectl
+```
+> SLES doesn't have a kubectl binary be default to install/execute. To verify whether kubectl is installed correctly, run command
+```
+$ kubectl version
+```
+> This must show correct output with client and server versions. Same can be verified from **Cluster -> Launch kubectl* -> kubectl version*
+
 10. Install the HPE 3PAR FlexVolume driver:
 ```
 $ wget https://github.com/hpe-storage/python-hpedockerplugin/raw/master/dory_installer
@@ -252,25 +215,10 @@ $ ls -l /usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/
 -rw-r--r--. 1 docker docker      237 Apr 20 06:11 hpe.json
 ```
 
-12. Run the following command to start the HPE 3PAR FlexVolume dynamic provisioner:
-
+12. Copy the HPE 3PAR FlexVolume dynamic provisioner to volume plugin directory being used by kubelet container in Rancher:
 ```
-$ sudo /usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/doryd /etc/kubernetes/admin.conf hpe.
-
+$ cp -R /usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/ /var/lib/kubelet/volumeplugins/
 ```
->**NOTE:** If you see the following error:
-
-```
-Error getting config from file /etc/kubernetes/admin.conf - stat /etc/kubernetes/admin.conf: no such file or directory
-Error getting config cluster - unable to load in-cluster configuration, KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT must be defined
-```
->Run the following commands:
-```
-$ mkdir –p /etc/kubernetes
-$ cp /root/.kube/config /etc/kubernetes/admin.conf
-```
-
->Re-run the command to start the HPE 3PAR FlexVolume dynamic provisioner
 
 >For more information on the HPE FlexVolume driver, please visit this link:
 >
