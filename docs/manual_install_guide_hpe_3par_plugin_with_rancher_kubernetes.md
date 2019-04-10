@@ -249,8 +249,9 @@ sudo docker run -d --privileged --restart=unless-stopped --net=host -v /etc/kube
 ## Containerized build
 Building Doryd in a container
 ```
-docker build -t hpe3par_doryd_sles:<version> https://github.com/hpe-storage/python-hpedockerplugin/raw/master/examples/Dockerfile_SLES
+docker build -t hpe3par_doryd_sles:latest https://github.com/hpe-storage/python-hpedockerplugin/raw/master/examples/Dockerfile_SLES
 ```
+> Note: The doryd container is already available on docker hub. One can use the image as is and start running doryd as daemonset.
 
 # Running
 Doryd is available on Docker Hub and an [example DaemonSet specification](../examples/ds-doryd-sles.yml) is available.
