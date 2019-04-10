@@ -240,7 +240,10 @@ $ cp -R /usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/ /var/li
 
 ## Node addition to cluster
 To add nodes to cluster, one must edit cluster on Rancher Server and select the roles that the node will have(node can have control-plane, etcd or worker role). This will create a docker run command on the Rancher server. Copy the command and run it on the desired node.
-Command looks like: sudo docker run -d --privileged --restart=unless-stopped --net=host -v /etc/kubernetes:/etc/kubernetes -v /var/run:/var/run rancher/rancher-agent:v2.1.6 --server https://192.168.68.32:8443 --token j2vmt5b72cdz8zk4h88dd5s6px5h8jjq76j9675mfh4rvbmhmwmkd4 --ca-checksum dde5d7384baa0cf1dcfa3de1e99b5bff3c5317c7bda358807e308880cb60a999 --worker
+Command looks like: 
+```
+sudo docker run -d --privileged --restart=unless-stopped --net=host -v /etc/kubernetes:/etc/kubernetes -v /var/run:/var/run rancher/rancher-agent:v2.1.6 --server https://192.168.68.32:8443 --token j2vmt5b72cdz8zk4h88dd5s6px5h8jjq76j9675mfh4rvbmhmwmkd4 --ca-checksum dde5d7384baa0cf1dcfa3de1e99b5bff3c5317c7bda358807e308880cb60a999 --worker
+```
 > Note: Here, --worker means it has only worker role assigned. Similarly, more roles can be assigned to a node. Refer https://rancher.com/docs/rancher/v2.x/en/cluster-provisioning/production/ for more details.
 
 ## Containerized build
