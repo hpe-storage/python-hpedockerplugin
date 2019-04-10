@@ -236,6 +236,10 @@ class HPEPluginLockFailed(HPEPluginEtcdException):
     message = _("ETCD lock failed: %(obj)s")
 
 
+class HPEPluginReadBackendFailed(HPEPluginEtcdException):
+    message = _("ETCD read for backend failed for vol: %(volname)s")
+
+
 class HPEPluginActiveDriverEntryNotFound(HPEPluginEtcdException):
     message = _("ETCD active driver info not found: %(key)s")
 

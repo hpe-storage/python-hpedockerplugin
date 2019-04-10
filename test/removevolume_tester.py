@@ -1,5 +1,7 @@
 import test.fake_3par_data as data
 import test.hpe_docker_unit_test as hpedockerunittest
+import copy
+
 from oslo_config import cfg
 CONF = cfg.CONF
 
@@ -36,7 +38,7 @@ class TestRemoveVolume(RemoveVolumeUnitTest):
 
         def setup_mock_objects(self, mock_objects):
             mock_etcd = mock_objects['mock_etcd']
-            mock_etcd.get_vol_byname.return_value = data.volume
+            mock_etcd.get_vol_byname.return_value = copy.deepcopy(data.volume)
 
         def check_response(self, resp, mock_objects, test_case):
             # Check if these functions were actually invoked
