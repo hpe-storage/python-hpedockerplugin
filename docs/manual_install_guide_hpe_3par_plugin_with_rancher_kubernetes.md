@@ -80,6 +80,7 @@ $ multipath -t > /etc/multipath.conf
 $ systemctl enable multipathd
 $ systemctl start multipathd
 ```
+>Note: To read more about multipathd service config on SLES12 refer https://www.suse.com/documentation/sles-12/stor_admin/data/sec_multipath_config.html#sec_multipath_configuration_start and https://www.suse.com/documentation/sles-12/stor_admin/data/sec_multipath_conf_file.html
 
 4. Setup the Docker plugin configuration file
 
@@ -171,7 +172,7 @@ docker-compose version 1.21.0, build 1719ceb
 7. Success, you should now be able to test docker volume operations like:
 
 ```
-$ docker volume create -d hpe --name sample_vol -o size=
+$ docker volume create -d hpe --name sample_vol -o size=1
 ```
 
 8. Start Rancher Server
@@ -180,6 +181,7 @@ $ docker volume create -d hpe --name sample_vol -o size=
 $ docker run -d --restart=unless-stopped  -p 8080:80 -p 8443:443  rancher/rancher:v2.1.6
 ```
 > Launch browser and open https://<HostIP>:8443/ and set the password
+> Note: Rancher server can be started on any host, make sure it has connectivity to the machines which would be part of the cluster.
 	
 9. Create a cluster with option "From my own existing nodes"
 
@@ -208,9 +210,9 @@ $ kubectl version
 12. Install the HPE 3PAR FlexVolume driver
 
 ```
-$ wget https://github.com/hpe-storage/python-hpedockerplugin/raw/master/dory_installer
-$ chmod u+x ./dory_installer
-$ sudo ./dory_installer
+$ wget https://github.com/hpe-storage/python-hpedockerplugin/raw/master/dory_installer_v31
+$ chmod u+x ./dory_installer_v31
+$ sudo ./dory_installer_v31
 ```
 
 13. Confirm HPE 3PAR FlexVolume driver installed correctly
@@ -235,6 +237,39 @@ $ cp -R /usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/ /var/li
 15. Repeat steps 1-14 on all worker nodes. **Steps 8, 9 and 11 only needs to be ran on the Master node.**
 
 >**Upon successful completion of the above steps, you should have a working installation of Rancher-Kubernetes integrated with HPE 3PAR Volume Plug-in for Docker on SLES**
+
+## Node addition to cluster
+To add nodes to cluster, one must edit cluster on Rancher Server and select the roles that the node will have(node can have control-plane, etcd or worker role). This will create a docker run command on the Rancher server. Copy the command and run it on the desired node.
+Command looks like: sudo docker run -d --privileged --restart=unless-stopped --net=host -v /etc/kubernetes:/etc/kubernetes -v /var/run:/var/run rancher/rancher-agent:v2.1.6 --server https://192.168.68.32:8443 --token j2vmt5b72cdz8zk4h88dd5s6px5h8jjq76j9675mfh4rvbmhmwmkd4 --ca-checksum dde5d7384baa0cf1dcfa3de1e99b5bff3c5317c7bda358807e308880cb60a999 --worker
+> Note: Here, --worker means it has only worker role assigned. Similarly, more roles can be assigned to a node. Refer https://rancher.com/docs/rancher/v2.x/en/cluster-provisioning/production/ for more details.
+
+## Containerized build
+Building Doryd in a container
+```
+docker build -t hpe3par_doryd_sles:<version> https://github.com/hpe-storage/python-hpedockerplugin/raw/master/examples/Dockerfile_SLES
+```
+
+# Running
+Doryd is available on Docker Hub and an [example DaemonSet specification](../examples/ds-doryd-sles.yml) is available.
+
+## Prerequisities
+The `doryd` binary needs access to the cluster via a kubeconfig file. The location may vary between distributions. The DaemonSet spec will consider `/root/.kube/config` in SLES12. This file needs to exist on all nodes prior to deploying the DaemonSet.
+
+The default provisioner name is prefixed with `hpe.com` and will listen for Persistent Volume Claims that asks for Storage Classes with `provisioner: hpe.com/hpe`. Hence it's important that the FlexVolume driver name matches up with what you name your provisioner.
+
+A custom `doryd` command line could look like this:
+```
+doryd /root/.kube/config hpe.com
+```
+
+There should then be a Dory FlexVolume driver named `hpe.com/hpe` and Storage Classes should use `provisioner: hpe.com/hpe`.
+
+## kubectl
+Deploying the default DaemonSet out-of-the-box can be accomplished with:
+```
+kubectl apply -f https://raw.githubusercontent.com/hpe-storage/python-hpedockerplugin/master/examples/ds-doryd-sles.yml
+```
+> Note: This will run doryd as a DaemonSet which will run as pod.
 
 ## Usage <a name="usage"></a>
 
