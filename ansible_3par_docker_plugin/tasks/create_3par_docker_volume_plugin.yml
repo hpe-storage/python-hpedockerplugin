@@ -1,4 +1,8 @@
 ---
+  - name: Set the mount prefix
+    set_fact:
+      mount_prefix: "{{ INVENTORY['DEFAULT']['mount_prefix'] + ':' + INVENTORY['DEFAULT']['mount_prefix'] + ':rshared' if INVENTORY['DEFAULT']['mount_prefix'] is defined else '/opt/hpe/data:/opt/hpe/data:rshared' }}"
+
   - name: create hpedockerplugin container
     docker_container:
       name: plugin_container
@@ -20,6 +24,6 @@
         - /lib/modules:/lib/modules
         - /lib64:/lib64
         - /var/run/docker.sock:/var/run/docker.sock
-        - /opt/hpe/data:/opt/hpe/data:rshared
+        - "{{ mount_prefix }}" 
       restart_policy: on-failure
 
