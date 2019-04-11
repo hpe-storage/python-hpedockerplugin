@@ -141,7 +141,14 @@ Once complete you will be ready to start using the HPE 3PAR Docker Volume Plug-i
      $ cd python-hpedockerplugin/ansible_3par_docker_plugin
      $ ansible-playbook -i hosts uninstall/uninstall_hpe_3par_volume_driver.yml --ask-vault-pass
      ```
-     > **Note:** This process only adds or removes docker volume plugin in nodes in an existing cluster. It does not add or remove nodes in Kubernetes/Openshift cluster
+     
+     * Uninstall plugin along with etcd on nodes on Openshift/Kubernetes environment:
+     ```
+     $ cd python-hpedockerplugin/ansible_3par_docker_plugin
+     $ ansible-playbook -i hosts uninstall/uninstall_hpe_3par_volume_driver_etcd.yml --ask-vault-pass
+     ```
+
+     > **Note:** This process only adds or removes docker volume plugin and/or etcd in nodes in an existing cluster. It does not add or remove nodes in Kubernetes/Openshift cluster
    * On success after adding plugin on new nodes, the additional nodes will have a running docker volume plugin container
    * On success after removing plugin from specified nodes, docker volume plugin container will be removed
      
