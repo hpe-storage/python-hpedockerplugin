@@ -28,10 +28,12 @@ CLIENT_CERT = cfg['etcd']['client_cert']
 CLIENT_KEY = cfg['etcd']['client_key']
 HPE3PAR_API_URL = cfg['backend']['3Par_api_url']
 HPE3PAR2_API_URL = cfg['backend2']['3Par_api_url']
+HPE3PAR3_API_URL = cfg['ActivePassiveRepBackend']['3Par_api_url']
 PORTS_ZONES = cfg['multipath']['ports_zones']
 PORTS_ZONES2 = cfg['multipath2']['ports_zones']
 SNAP_CPG = cfg['snapshot']['snap_cpg']
 SNAP_CPG2 = cfg['snapshot2']['snap_cpg']
+SNAP_CPG3 = cfg['snapshot3']['snap_cpg']
 DOMAIN = cfg['qos']['domain']
 MIN_IO = cfg['qos']['min_io']
 MAX_IO = cfg['qos']['max_io']
@@ -132,6 +134,9 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
                 else:
                     if (inspect_volume['Status']['volume_detail']['backend'] == 'DEFAULT'):
                         self.assertEqual(inspect_volume['Status']['volume_detail']['snap_cpg'],SNAP_CPG)
+                    elif (inspect_volume['Status']['volume_detail']['backend'] == 'ActivePassiveRepBackend'):
+                        self.assertEqual(inspect_volume['Status']['volume_detail']['snap_cpg'], SNAP_CPG3)
+
                     else:
                         self.assertEqual(inspect_volume['Status']['volume_detail']['snap_cpg'],SNAP_CPG2)
 
@@ -163,6 +168,9 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
                 self.assertEqual(inspect_volume['Status']['qos_detail'][option], kwargs[option])
             else:
                 pass
+        if 'replicationGroup' in kwargs:
+            self.assertEqual(inspect_volume['Status']['rcg_detail']['role'], 'Primary')
+            self.assertEqual(inspect_volume['Status']['rcg_detail']['rcg_name'], kwargs['replicationGroup'])
         
         # Validating if the snapshot 'virtualCopyOf' value is same as the 'Parent volume' of the snapshot
         if 'snapshot_name' in kwargs:
@@ -460,6 +468,13 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
         hpe_3par_cli.login('3paradm', '3pardata')
         hpe_3par_cli.setSSHOptions(HPE3PAR_IP, '3paradm', '3pardata')
         return hpe_3par_cli
+
+    def _hpe_get_3par_client_login_replication(self):
+        # Login to 3Par array and initialize connection for WSAPI calls
+        hpe_3par_cli = HPE3ParClient(HPE3PAR3_API_URL, True, False, None, True)
+        hpe_3par_cli.login('3paradm', '3pardata')
+        return hpe_3par_cli    
+
 
     def _hpe_get_3par_client_login_multi_array(self):
         # Login to 3Par array and initialize connection for WSAPI calls
@@ -853,6 +868,26 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
         hpe3par_cli.deleteVolumeSet(vvs_name)
         hpe3par_cli.logout()
 
+
+    def hpe_recover_remote_copy_group(self, rcg_name, action):
+
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        hpe3par_cli = self._hpe_get_3par_client_login_replication()
+        rcopyInfo = hpe3par_cli.getRemoteCopyGroup(rcg_name)
+        rcopygrpname = rcopyInfo.get("remoteGroupName")
+
+        hpe3par_cli.stopRemoteCopy(rcg_name)
+        
+        rcopyStatus = hpe3par_cli.remoteCopyGroupStatusStoppedCheck(rcg_name)
+        hpe3par_cli.logout()
+
+        hpe3par_cli = self._hpe_get_3par_client_login_multi_array()
+        hpe3par_cli.recoverRemoteCopyGroupFromDisaster(rcopygrpname, int(action), optional=None)
+        hpe3par_cli.recoverRemoteCopyGroupFromDisaster(rcopygrpname, 9)
+        hpe3par_cli.logout()
+        return rcopygrpname
+
+    
     def hpe_verify_snapshot_schedule(self, schedule_name, snapshot):
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         hpe3par_cli = self._hpe_get_3par_client_login()
@@ -867,6 +902,7 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
         self.assertEqual(schedule_command[5], (snapshot['Options']['retHrs'])+"h")
            
         hpe3par_cli.logout()
+
 
     def hpe_wait_for_all_backends_to_initialize(self, driver=None, **kwargs):
         # This is in order to handle Asynchronous backend initialization implemented
@@ -889,3 +925,9 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
                     return
 
 
+    def hpe_restore_remote_copy_group(self, rcg_name, action):
+
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        hpe3par_cli = self._hpe_get_3par_client_login_multi_array()
+        hpe3par_cli.recoverRemoteCopyGroupFromDisaster(rcg_name, int(action), optional=None)
+        hpe3par_cli.logout()
