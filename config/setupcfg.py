@@ -15,7 +15,7 @@
 from hpedockerplugin import configuration as conf
 from hpedockerplugin.hpe import hpe3par_opts as plugin_opts
 from oslo_log import log as logging
-import logging as log1
+import logging as log
 from oslo_config import cfg
 from logging.handlers import RotatingFileHandler
 
@@ -77,14 +77,12 @@ def setup_logging(name, level):
     # Add option to do Log Rotation
     handler = RotatingFileHandler('/etc/hpedockerplugin/3pardcv.log',
                                   maxBytes=10000000, backupCount=100)
-    formatter = log1.Formatter('%(asctime)-12s [%(levelname)s] '
+    formatter = log.Formatter('%(asctime)-12s [%(levelname)s] '
                                '%(name)s [%(thread)d] '
                                '%(threadName)s %(message)s')
 
-
     handler.setFormatter(formatter)
     LOG.logger.addHandler(handler)
-
 
     if level == 'INFO':
         LOG.logger.setLevel(logging.INFO)
