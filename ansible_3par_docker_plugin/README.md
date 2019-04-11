@@ -62,6 +62,8 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
       | ```etcd_peer_port```  | Yes  | 23800  |
       | ```etcd_client_port_1```  | Yes  | 23790 |
       | ```etcd_client_port_2```  | Yes  | 40010 |
+      
+    > **Note:** Please ensure that the ports specified above are unoccupied before installation. If the ports are not available on a particular node, etcd installation will fail.
     
   - It is recommended that the properties file is [encrypted using Ansible Vault](/ansible_3par_docker_plugin/encrypt_properties.md).
 
