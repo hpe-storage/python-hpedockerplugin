@@ -77,6 +77,7 @@ class VolumesTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
                                  volumes=PLUGIN_VOLUMES, mounts=[mount],
                                  labels={'type': 'plugin'}
                 )
+                HPE3ParBackendVerification.hpe_wait_for_all_backends_to_initialize(cls, driver=HPE3PAR, help='backends')
             except docker.errors.APIError:
                 pass
 
