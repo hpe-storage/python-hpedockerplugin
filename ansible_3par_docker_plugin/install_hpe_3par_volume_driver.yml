@@ -98,8 +98,6 @@
   environment:
     http_proxy: "{{ http_proxy | default('') }}"
     https_proxy: "{{ https_proxy | default('') }}"
-  vars:
-    driver_path: "/usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/"
 
   tasks:
     - name: Deploy FlexVolume drivers
