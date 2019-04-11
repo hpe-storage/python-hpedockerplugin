@@ -133,11 +133,19 @@
          { option: 'san_ip', value: 'hpe3par_ip' },
          { option: 'san_login', value: 'hpe3par_username' },
          { option: 'san_password', value: 'hpe3par_password' },
-         { option: 'backend_id', value: 'backend_id' },
-         { option: 'mount_prefix', value: 'mount_prefix' }
+         { option: 'backend_id', value: 'backend_id' }
         ]
     become: yes
     when:  item.1.value in INVENTORY[item.0].keys()
+
+  - name: Populate optional parameters in hpe.conf
+    ini_file:
+      path: /etc/hpedockerplugin/hpe.conf
+      section: DEFAULT
+      option: mount_prefix
+      value: "{{ INVENTORY['DEFAULT']['mount_prefix'] }}"
+      no_extra_spaces: true
+    when: INVENTORY['DEFAULT']['mount_prefix'] is defined
 
   - name: Populate WSAPI URL in hpe.conf
     ini_file:
