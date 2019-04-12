@@ -313,8 +313,7 @@
         else
         ';'.join(secondary_iscsi_ports['results'][item | int]['stdout_lines'])
         )
-        }}
-        {{ ', quorum_witness_ip: ' + INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['quorum_witness_ip'] if INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['quorum_witness_ip'] is defined else ''}}
+        }}{{', quorum_witness_ip: ' + INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['quorum_witness_ip'] if INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['quorum_witness_ip'] is defined else ''}}
       no_extra_spaces: true
     with_items: "{{ lookup('sequence', 'start=0 end='+((replication_device['results'] | length)-1) |string, wantlist=True) }}"
     when: >-
@@ -327,8 +326,7 @@
       section: "{{ replication_device['results'][item | int]['item'] }}"
       option: replication_device
       value: >-
-        {{ mandatory_replication_device_values['results'][item | int]['ansible_facts']['_raw_params'] }},
-        {{ ', quorum_witness_ip: ' + INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['quorum_witness_ip'] if INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['quorum_witness_ip'] is defined else ''}}
+        {{ mandatory_replication_device_values['results'][item | int]['ansible_facts']['_raw_params'] }}{{', quorum_witness_ip: ' + INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['quorum_witness_ip'] if INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['quorum_witness_ip'] is defined else ''}}
       no_extra_spaces: true
     with_items: "{{ lookup('sequence', 'start=0 end='+((replication_device['results'] | length)-1) |string, wantlist=True) }}"
     when: >-
