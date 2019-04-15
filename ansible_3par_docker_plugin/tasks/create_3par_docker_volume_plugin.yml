@@ -7,6 +7,7 @@
       network_mode: host
       state: started
       detach: true
+      pull: yes
       volumes:
         - /dev:/dev
         - /run/lock:/run/lock
