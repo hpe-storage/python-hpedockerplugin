@@ -1,13 +1,16 @@
 ---
-  - name: load etcd settings
-    include_vars: '../properties/etcd_properties.yml'
-
-  - name: Install FlexVolume drivers
-    copy:
-      src: "{{ item }}"
-      dest: "{{ driver_path }}"
-      owner: "root"
+  - name: Download dory installer
+    get_url:
+      url: https://github.com/hpe-storage/python-hpedockerplugin/raw/master/dory_installer_v31
+      dest: /tmp 
       mode: 0755
-    with_fileglob:
-      - "../files/dory/*"
+
+  - name: Install dory, doryd
+    shell: >-
+      yes yes | /tmp/dory_installer_v31
+
+  - name: Remove the dory installer
+    file:
+      path: /tmp/dory_installer_v31
+      state: absent
 

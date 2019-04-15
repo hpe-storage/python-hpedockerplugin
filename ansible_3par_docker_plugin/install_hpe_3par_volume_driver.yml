@@ -12,7 +12,7 @@
         state: present
 
 - name: Install prerequisites
-  hosts: all_nodes
+  hosts: masters,workers,etcd
   become: root
   environment:
     http_proxy: "{{ http_proxy | default('') }}"
@@ -41,7 +41,7 @@
       include: tasks/install_prerequisites_on_all.yml
 
 - name: Set MountFlags in docker service
-  hosts: all_nodes
+  hosts: masters,workers,etcd 
   become: root
   tasks:
     - name: Configure docker service
@@ -56,7 +56,7 @@
       include: tasks/create_etcd_container.yml
 
 - name: Install HPE 3PAR Volume Driver for Kubernetes/OpenShift
-  hosts: all_nodes
+  hosts: masters,workers,etcd 
   become: root
 
   vars:
@@ -69,6 +69,9 @@
     - name: load plugin settings
       include_vars: 'properties/plugin_configuration_properties.yml'
 
+    - name: load etcd settings
+      include_vars: 'properties/etcd_cluster_properties.yml'
+
     - name: Create hpe.conf
       include: tasks/create_conf_file.yml
 
@@ -79,7 +82,7 @@
       include: tasks/hpe_sock.yml
 
 - name: Copy config file into admin.conf 
-  hosts: master
+  hosts: masters
   become: root
 
   vars:
@@ -90,11 +93,11 @@
       include: tasks/copy_doryd_config.yml
 
 - name: Deploy FlexVolume drivers
-  hosts: all_nodes
+  hosts: masters,workers,etcd 
   become: root
-
-  vars:
-    driver_path: "/usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/"
+  environment:
+    http_proxy: "{{ http_proxy | default('') }}"
+    https_proxy: "{{ https_proxy | default('') }}"
 
   tasks:
     - name: Deploy FlexVolume drivers

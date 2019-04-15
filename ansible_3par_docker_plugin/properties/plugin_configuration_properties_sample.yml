@@ -1,54 +1,66 @@
 INVENTORY:
   DEFAULT:
-    # Set of mandatory properties
+#Mandatory Parameters-----------------------------------------------------------------------------------
+
+    # Specify the port to be used by HPE 3PAR plugin etcd cluster
     host_etcd_port_number: 23790
+    # Plugin Driver - iSCSI
     hpedockerplugin_driver: hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver
-    hpe3par_ip: 192.168.67.7
+    hpe3par_ip: 192.168.1.50
     hpe3par_username: 3paradm
     hpe3par_password: 3pardata
-    hpe3par_cpg: SHASHI-PRIM
+    hpe3par_cpg: FC_r6
 
-    # Required only in DEFAULT backend
+    # Plugin version - Required only in DEFAULT backend
     volume_plugin: hpestorage/legacyvolumeplugin:3.0
 
-    # Set of optional parameters
-    # If encryptor key is set, the passwords in hpe.conf would be encrypted
-    encryptor_key: first_key
+#Optional Parameters------------------------------------------------------------------------------------
+
+    # Uncomment to encrypt passwords in hpe.conf using defined passphrase
+    #encryptor_key: < encrypt_key1 >
+    
     #ssh_hosts_key_file: '/root/.ssh/known_hosts'
     logging: DEBUG
     #hpe3par_debug: True
     #suppress_requests_ssl_warning: True
-    #hpe3par_snapcpg: FC_r1
+    #hpe3par_snapcpg: FC_r6
     #hpe3par_iscsi_chap_enabled: True
     #use_multipath: False
     #enforce_multipath: False
-    replication_device:
-      backend_id: CSSOS-SSA05
-      replication_mode: synchronous
-      cpg_map: "SHASHI-PRIM:SHASHI-SEC"
-      snap_cpg_map: "SHASHI-PRIM-SNAP:SHASHI-SEC-SNAP"
-      hpe3par_ip: 192.168.67.5
-      hpe3par_username: 3paradm
-      hpe3par_password: 3pardata
 
+#Optional Replication Parameters------------------------------------------------------------------------
+    #replication_device:
+    #  backend_id: remote_3PAR
+    #  replication_mode: synchronous
+    #  cpg_map: "local_CPG:remote_CPG"
+    #  snap_cpg_map: "local_copy_CPG:remote_copy_CPG"
+    #  hpe3par_ip: 192.168.2.50
+    #  hpe3par_username: 3paradm
+    #  hpe3par_password: 3pardata
+
+#Additional Backend (Optional)--------------------------------------------------------------------------
+  
   3PAR1:
-    # Set of mandatory properties
+#Mandatory Parameters-----------------------------------------------------------------------------------
+
+    # Specify the port to be used by HPE 3PAR plugin etcd cluster
     host_etcd_port_number: 23790
+    # Plugin Driver - Fibre Channel
     hpedockerplugin_driver: hpedockerplugin.hpe.hpe_3par_fc.HPE3PARFCDriver
-    hpe3par_ip: 192.168.67.5
+    hpe3par_ip: 192.168.2.50
     hpe3par_username: 3paradm
     hpe3par_password: 3pardata
-    hpe3par_cpg: SHASHI-SEC
+    hpe3par_cpg: FC_r6
 
-    # Set of optional parameters
-    # If encryptor key is set, the passwords in hpe.conf would be encrypted
-    encryptor_key: second_key
+#Optional Parameters------------------------------------------------------------------------------------
+
+    # Uncomment to encrypt passwords in hpe.conf using defined passphrase
+    #encryptor_key: < encrypt_key2 >
+    
     #ssh_hosts_key_file: '/root/.ssh/known_hosts'
     logging: DEBUG
     #hpe3par_debug: True
     #suppress_requests_ssl_warning: True
-    #hpe3par_snapcpg: FC_r1
-    #hpe3par_iscsi_chap_enabled: True
+    hpe3par_snapcpg: FC_r6
     #use_multipath: False
     #enforce_multipath: False
-

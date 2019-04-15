@@ -33,7 +33,6 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
   
       | Property  | Mandatory | Default Value | Description |
       | ------------- | ------------- | ------------- | ------------- |
-      | ```host_etcd_port_number```  | Yes  | No default value | Etcd port number |
       | ```hpedockerplugin_driver```  | Yes  | No default value  | ISCSI/FC driver  (hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver/hpedockerplugin.hpe.hpe_3par_fc.HPE3PARFCDriver) |
       | ```hpe3par_ip```  | Yes  | No default value | IP address of 3PAR array |
       | ```hpe3par_username```  | Yes  | No default value | 3PAR username |
@@ -49,12 +48,22 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
       | ```hpe3par_iscsi_ips```  | No  |No default value | Comma separated iscsi port IPs (only required if driver is ISCSI based) |
       | ```use_multipath```  | No  | ```False``` | Mutltipath toggle |
       | ```enforce_multipath```  | No  | ```False``` | Forcefully enforce multipath |
-      | ```ssh_hosts_key_file```  | No  | ```~/.ssh/id_rsa.pub``` | Path to hosts key file |
+      | ```ssh_hosts_key_file```  | No  | ```/root/.ssh/known_hosts``` | Path to hosts key file |
       | ```quorum_witness_ip```  | No  | No default value | Quorum witness IP |
       | ```mount_prefix```  | No  | No default value | Alternate mount path prefix |
       | ```hpe3par_iscsi_ips```  | No  | No default value | Comma separated iscsi IPs. If not provided, all iscsi IPs will be read from the array and populated in hpe.conf |
       | ```vlan_tag```  | No  | False | Populates the iscsi_ips which are vlan tagged, only applicable if ```hpe3par_iscsi_ips``` is not specified |
       | ```replication_device```  | No  | No default value | Replication backend properties |
+      
+  - The Etcd ports can be modified in [etcd cluster properties](/ansible_3par_docker_plugin/properties/etcd_cluster_properties.yml) as follows:
+  
+      | Property  | Mandatory | Default Value |
+      | ------------- | ------------- | ------------- |
+      | ```etcd_peer_port```  | Yes  | 23800  |
+      | ```etcd_client_port_1```  | Yes  | 23790 |
+      | ```etcd_client_port_2```  | Yes  | 40010 |
+      
+    > **Note:** Please ensure that the ports specified above are unoccupied before installation. If the ports are not available on a particular node, etcd installation will fail.
     
   - It is recommended that the properties file is [encrypted using Ansible Vault](/ansible_3par_docker_plugin/encrypt_properties.md).
 
@@ -134,7 +143,14 @@ Once complete you will be ready to start using the HPE 3PAR Docker Volume Plug-i
      $ cd python-hpedockerplugin/ansible_3par_docker_plugin
      $ ansible-playbook -i hosts uninstall/uninstall_hpe_3par_volume_driver.yml --ask-vault-pass
      ```
-     > **Note:** This process only adds or removes docker volume plugin in nodes in an existing cluster. It does not add or remove nodes in Kubernetes/Openshift cluster
+     
+     * Uninstall plugin along with etcd on nodes on Openshift/Kubernetes environment:
+     ```
+     $ cd python-hpedockerplugin/ansible_3par_docker_plugin
+     $ ansible-playbook -i hosts uninstall/uninstall_hpe_3par_volume_driver_etcd.yml --ask-vault-pass
+     ```
+
+     > **Note:** This process only adds or removes docker volume plugin and/or etcd in nodes in an existing cluster. It does not add or remove nodes in Kubernetes/Openshift cluster
    * On success after adding plugin on new nodes, the additional nodes will have a running docker volume plugin container
    * On success after removing plugin from specified nodes, docker volume plugin container will be removed
      

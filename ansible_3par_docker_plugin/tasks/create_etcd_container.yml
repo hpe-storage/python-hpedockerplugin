@@ -17,10 +17,11 @@
       image: "{{ etcd_image }}"
       state: started
       detach: true
+      pull: yes
       ports:
-        - "23800:23800"
-        - "23790:23790"
-        - "40010:40010"
+        - "{{ etcd_peer_port }}:{{ etcd_peer_port }}"
+        - "{{ etcd_client_port_1 }}:{{ etcd_client_port_1 }}"
+        - "{{ etcd_client_port_2 }}:{{ etcd_client_port_2 }}"
       env:
         ETCD_NAME: "{{ etcd_name }}"
         ETCD_ADVERTISE_CLIENT_URLS: "{{ etcd_advertise_client_url_1 }},{{ etcd_advertise_client_url_2 }}"

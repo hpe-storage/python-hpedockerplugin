@@ -1,17 +1,30 @@
 ---
+  - name: Force fail if DEFAULT backend is not present
+    fail:
+      msg: "The plugin properties file does not have the [DEFAULT] back end"
+    when: INVENTORY['DEFAULT'] is not defined
+
+  - name: Check if pip exists
+    command: which pip
+    register: pip_result
+    failed_when: pip_result.rc != 0 and pip_result.rc != 1
+
   - name: download get-pip.py
     get_url:
       url: https://bootstrap.pypa.io/get-pip.py
       dest: /tmp
+    when: pip_result.rc != 0
 
   - name: install pip
     command: "python /tmp/get-pip.py"
     become: yes
+    when: pip_result.rc != 0
 
   - name: delete get-pip.py
     file:
       state: absent
       path: /tmp/get-pip.py
+    when: pip_result.rc != 0
 
   - name: delete requests library
     shell: rm -rf /usr/lib/python2.7/site-packages/requests*
@@ -31,14 +44,14 @@
     become: yes
     when: (ansible_version.major == 2 and ansible_version.minor >= 6) or ansible_version.major > 2
 
-  - name: uninstall docker-py if ansible version < 2.6
+  - name: uninstall docker if ansible version < 2.6
     pip:
       name: docker
       state: absent
     become: yes
     when: ansible_version.major == 2 and ansible_version.minor < 6
 
-  - name: install docker if ansible version < 2.6
+  - name: install docker-py if ansible version < 2.6
     pip:
       name: docker-py
       state: present
