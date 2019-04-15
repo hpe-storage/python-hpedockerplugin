@@ -17,6 +17,7 @@
       image: "{{ etcd_image }}"
       state: started
       detach: true
+      pull: yes
       ports:
         - "{{ etcd_peer_port }}:{{ etcd_peer_port }}"
         - "{{ etcd_client_port_1 }}:{{ etcd_client_port_1 }}"
