@@ -133,11 +133,19 @@
          { option: 'san_ip', value: 'hpe3par_ip' },
          { option: 'san_login', value: 'hpe3par_username' },
          { option: 'san_password', value: 'hpe3par_password' },
-         { option: 'backend_id', value: 'backend_id' },
-         { option: 'mount_prefix', value: 'mount_prefix' }
+         { option: 'backend_id', value: 'backend_id' }
         ]
     become: yes
     when:  item.1.value in INVENTORY[item.0].keys()
+
+  - name: Populate optional parameters in hpe.conf
+    ini_file:
+      path: /etc/hpedockerplugin/hpe.conf
+      section: DEFAULT
+      option: mount_prefix
+      value: "{{ INVENTORY['DEFAULT']['mount_prefix'] }}"
+      no_extra_spaces: true
+    when: INVENTORY['DEFAULT']['mount_prefix'] is defined
 
   - name: Populate WSAPI URL in hpe.conf
     ini_file:
@@ -313,7 +321,8 @@
         else
         ';'.join(secondary_iscsi_ports['results'][item | int]['stdout_lines'])
         )
-        }}{{', quorum_witness_ip: ' + INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['quorum_witness_ip'] if INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['quorum_witness_ip'] is defined else ''}}
+        }}
+        {{ ', quorum_witness_ip: ' + INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['quorum_witness_ip'] if INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['quorum_witness_ip'] is defined else ''}}
       no_extra_spaces: true
     with_items: "{{ lookup('sequence', 'start=0 end='+((replication_device['results'] | length)-1) |string, wantlist=True) }}"
     when: >-
@@ -326,10 +335,10 @@
       section: "{{ replication_device['results'][item | int]['item'] }}"
       option: replication_device
       value: >-
-        {{ mandatory_replication_device_values['results'][item | int]['ansible_facts']['_raw_params'] }}{{', quorum_witness_ip: ' + INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['quorum_witness_ip'] if INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['quorum_witness_ip'] is defined else ''}}
+        {{ mandatory_replication_device_values['results'][item | int]['ansible_facts']['_raw_params'] }},
+        {{ ', quorum_witness_ip: ' + INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['quorum_witness_ip'] if INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['quorum_witness_ip'] is defined else ''}}
       no_extra_spaces: true
     with_items: "{{ lookup('sequence', 'start=0 end='+((replication_device['results'] | length)-1) |string, wantlist=True) }}"
     when: >-
       INVENTORY[replication_device['results'][item | int]['item']]['replication_device'] is defined and
       INVENTORY[replication_device['results'][item | int]['item']]['hpedockerplugin_driver'] == 'hpedockerplugin.hpe.hpe_3par_fc.HPE3PARFCDriver'
-
