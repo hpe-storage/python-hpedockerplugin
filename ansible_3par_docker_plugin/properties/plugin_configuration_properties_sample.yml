@@ -27,6 +27,7 @@ INVENTORY:
     #hpe3par_iscsi_chap_enabled: True
     #use_multipath: False
     #enforce_multipath: False
+    #vlan_tag: True
 
 #Optional Replication Parameters------------------------------------------------------------------------
     #replication_device:
@@ -37,6 +38,7 @@ INVENTORY:
     #  hpe3par_ip: 192.168.2.50
     #  hpe3par_username: 3paradm
     #  hpe3par_password: 3pardata
+    #  vlan_tag: False
 
 #Additional Backend (Optional)--------------------------------------------------------------------------
   
