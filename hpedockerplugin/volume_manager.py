@@ -1530,8 +1530,8 @@ class VolumeManager(object):
             self._etcd.update_vol(volid,
                                   'node_mount_info',
                                   node_mount_info)
-            LOG.info("node_mount_info updated successfully in etcd with mount_id "
-                     "%s" % mount_id)
+            LOG.info("node_mount_info updated successfully in etcd with "
+                     "mount_id %s" % mount_id)
             self._etcd.update_vol(volid, 'path_info', json.dumps(path_info))
 
             response = json.dumps({u"Err": '', u"Name": volname,
