@@ -1299,6 +1299,7 @@ class VolumeManager(object):
             LOG.error(msg)
             raise exception.HPEPluginMountException(reason=msg)
 
+        undo_steps = []
         volid = vol['id']
         is_snap = False
         if 'is_snap' not in vol:
@@ -1308,6 +1309,12 @@ class VolumeManager(object):
             is_snap = vol['is_snap']
             vol['fsOwner'] = vol['snap_metadata'].get('fsOwner')
             vol['fsMode'] = vol['snap_metadata'].get('fsMode')
+
+        if 'mount_conflict_delay' not in vol:
+            m_conf_delay = volume.DEFAULT_MOUNT_CONFLICT_DELAY
+            vol['mount_conflict_delay'] = m_conf_delay
+            self._etcd.update_vol(volid, 'mount_conflict_delay',
+                                  m_conf_delay)
         # Initialize node-mount-info if volume is being mounted
         # for the first time
         if self._is_vol_not_mounted(vol):
@@ -1315,12 +1322,6 @@ class VolumeManager(object):
                      "mount ID %s" % mount_id)
             node_mount_info = {self._node_id: [mount_id]}
             vol['node_mount_info'] = node_mount_info
-
-            if 'mount_conflict_delay' not in vol:
-                m_conf_delay = volume.DEFAULT_MOUNT_CONFLICT_DELAY
-                vol['mount_conflict_delay'] = m_conf_delay
-                self._etcd.update_vol(volid, 'mount_conflict_delay',
-                                      m_conf_delay)
         else:
             # Volume is in mounted state - Volume fencing logic begins here
             node_mount_info = vol['node_mount_info']
@@ -1373,11 +1374,18 @@ class VolumeManager(object):
                 LOG.debug('connection_info: %(connection_info)s, '
                           'was successfully retrieved',
                           {'connection_info': json.dumps(connection_info)})
+
+                undo_steps.append(
+                    {'undo_func': driver.terminate_connection,
+                     'params': (vol, connector_info, is_snap),
+                     'msg': 'Terminating connection to volume: %s...'
+                            % volname})
             except Exception as ex:
                 msg = (_('Initialize Connection Failed: '
                          'connection info retrieval failed, error is: '),
                        six.text_type(ex))
                 LOG.error(msg)
+                self._rollback(undo_steps)
                 raise exception.HPEPluginMountException(reason=msg)
 
             # Call OS Brick to connect volume
@@ -1385,10 +1393,16 @@ class VolumeManager(object):
                 LOG.debug("OS Brick Connector Connecting Volume...")
                 device_info = self._connector.connect_volume(
                     connection_info['data'])
+
+                undo_steps.append(
+                    {'undo_func': self._connector.disconnect_volume,
+                     'params': (connection_info['data'], None),
+                     'msg': 'Undoing connection to volume: %s...' % volname})
             except Exception as ex:
                 msg = (_('OS Brick connect volume failed, error is: '),
                        six.text_type(ex))
                 LOG.error(msg)
+                self._rollback(undo_steps)
                 raise exception.HPEPluginMountException(reason=msg)
             return device_info, connection_info
 
@@ -1436,6 +1450,7 @@ class VolumeManager(object):
         if path.exists is False:
             msg = (_('path: %s,  does not exist'), path)
             LOG.error(msg)
+            self._rollback(undo_steps)
             raise exception.HPEPluginMountException(reason=msg)
 
         LOG.debug('path for volume: %(name)s, was successfully created: '
@@ -1463,10 +1478,20 @@ class VolumeManager(object):
                       '%(mount)s',
                       {'mount_dir': mount_dir, 'mount': device_info['path']})
 
+            undo_steps.append(
+                {'undo_func': fileutil.remove_dir,
+                 'params': mount_dir,
+                 'msg': 'Removing mount directory: %s...' % mount_dir})
+
             # mount the directory
             fileutil.mount_dir(path.path, mount_dir)
             LOG.debug('Device: %(path)s successfully mounted on %(mount)s',
                       {'path': path.path, 'mount': mount_dir})
+
+            undo_steps.append(
+                {'undo_func': fileutil.umount_dir,
+                 'params': mount_dir,
+                 'msg': 'Unmounting directory: %s...' % mount_dir})
 
             # TODO: find out how to invoke mkfs so that it creates the
             # filesystem without the lost+found directory
@@ -1480,37 +1505,42 @@ class VolumeManager(object):
         else:
             mount_dir = ''
 
-        if 'fsOwner' in vol and vol['fsOwner']:
-            fs_owner = vol['fsOwner'].split(":")
-            uid = int(fs_owner[0])
-            gid = int(fs_owner[1])
-            os.chown(mount_dir, uid, gid)
+        try:
+            if 'fsOwner' in vol and vol['fsOwner']:
+                fs_owner = vol['fsOwner'].split(":")
+                uid = int(fs_owner[0])
+                gid = int(fs_owner[1])
+                os.chown(mount_dir, uid, gid)
 
-        if 'fsMode' in vol and vol['fsMode']:
-            mode = str(vol['fsMode'])
-            chmod(mode, mount_dir)
+            if 'fsMode' in vol and vol['fsMode']:
+                mode = str(vol['fsMode'])
+                chmod(mode, mount_dir)
 
-        path_info = {}
-        path_info['name'] = volname
-        path_info['path'] = path.path
-        path_info['device_info'] = device_info
-        path_info['connection_info'] = pri_connection_info
-        path_info['mount_dir'] = mount_dir
-        if sec_connection_info:
-            path_info['remote_connection_info'] = sec_connection_info
+            path_info = {}
+            path_info['name'] = volname
+            path_info['path'] = path.path
+            path_info['device_info'] = device_info
+            path_info['connection_info'] = pri_connection_info
+            path_info['mount_dir'] = mount_dir
+            if sec_connection_info:
+                path_info['remote_connection_info'] = sec_connection_info
 
-        LOG.info("Updating node_mount_info in etcd with mount_id %s..."
-                 % mount_id)
-        self._etcd.update_vol(volid,
-                              'node_mount_info',
-                              node_mount_info)
-        LOG.info("node_mount_info updated successfully in etcd with mount_id "
-                 "%s" % mount_id)
-        self._etcd.update_vol(volid, 'path_info', json.dumps(path_info))
+            LOG.info("Updating node_mount_info in etcd with mount_id %s..."
+                     % mount_id)
+            self._etcd.update_vol(volid,
+                                  'node_mount_info',
+                                  node_mount_info)
+            LOG.info("node_mount_info updated successfully in etcd with "
+                     "mount_id %s" % mount_id)
+            self._etcd.update_vol(volid, 'path_info', json.dumps(path_info))
 
-        response = json.dumps({u"Err": '', u"Name": volname,
-                               u"Mountpoint": mount_dir,
-                               u"Devicename": path.path})
+            response = json.dumps({u"Err": '', u"Name": volname,
+                                   u"Mountpoint": mount_dir,
+                                   u"Devicename": path.path})
+        except Exception as ex:
+            self._rollback(undo_steps)
+            response = json.dumps({"Err": '%s' % six.text_type(ex)})
+
         return response
 
     def _get_target_driver(self, rcg_info):
@@ -1837,7 +1867,13 @@ class VolumeManager(object):
         for undo_action in reversed(rollback_list):
             LOG.info(undo_action['msg'])
             try:
-                undo_action['undo_func'](**undo_action['params'])
+                params = undo_action['params']
+                if type(params) is dict:
+                    undo_action['undo_func'](**undo_action['params'])
+                elif type(params) is tuple:
+                    undo_action['undo_func'](*undo_action['params'])
+                else:
+                    undo_action['undo_func'](undo_action['params'])
             except Exception as ex:
                 # TODO: Implement retry logic
                 LOG.exception('Ignoring exception: %s' % ex)
