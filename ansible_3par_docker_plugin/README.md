@@ -65,6 +65,8 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
       
     > **Note:** Please ensure that the ports specified above are unoccupied before installation. If the ports are not available on a particular node, etcd installation will fail.
     
+    > **Limitation:** The installer, in the current state does not have the capability to add or remove nodes in the etcd cluster. In case an etcd node is not responding or goes down, it is beyond the current scope to admit it back into the cluster. Please follow the [etcd documentation](https://coreos.com/etcd/docs/latest/etcd-live-cluster-reconfiguration.html) to do so manually.
+    
   - It is recommended that the properties file is [encrypted using Ansible Vault](/ansible_3par_docker_plugin/encrypt_properties.md).
 
   - Modify [hosts](/ansible_3par_docker_plugin/hosts) file to define your Master/Worker nodes as well as where you want to deploy your etcd cluster
