@@ -1,0 +1,25 @@
+---
+  - name: Creates HPE Docker plugin directory
+    file:
+      path: /etc/hpedockerplugin
+      state: directory
+      mode: 0644
+      recurse: yes
+
+  - name: "Copy hpe.conf - iSCSI"
+    copy:
+      src: files/iSCSI_hpe.conf
+      dest: /etc/hpedockerplugin/hpe.conf
+      owner: root
+      group: root
+      mode: 0644
+    when: storage_config == "iscsi"
+
+  - name: "Copy hpe.conf - FC"
+    copy:
+      src: files/FC_hpe.conf
+      dest: /etc/hpedockerplugin/hpe.conf
+      owner: root
+      group: root
+      mode: 0644
+    when: storage_config == "fc"

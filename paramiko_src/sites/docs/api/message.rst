@@ -1,4 +1,0 @@
-Message
-=======
-
-.. automodule:: paramiko.message

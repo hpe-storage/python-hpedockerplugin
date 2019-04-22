@@ -1,0 +1,16 @@
+---
+  - name: Download dory installer
+    get_url:
+      url: https://github.com/hpe-storage/python-hpedockerplugin/raw/master/dory_installer_v31
+      dest: /tmp 
+      mode: 0755
+
+  - name: Install dory, doryd
+    shell: >-
+      yes yes | /tmp/dory_installer_v31
+
+  - name: Remove the dory installer
+    file:
+      path: /tmp/dory_installer_v31
+      state: absent
+

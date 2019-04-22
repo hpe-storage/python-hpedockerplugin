@@ -1,0 +1,16 @@
+#Enable and populate the proxies here
+#[all:vars]
+#http_proxy=
+#https_proxy=
+
+[masters]
+192.168.1.51
+
+[workers]
+192.168.1.52
+192.168.1.53
+
+[etcd]
+192.168.1.51
+192.168.1.52
+192.168.1.53
