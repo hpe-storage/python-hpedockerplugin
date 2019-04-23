@@ -2,7 +2,7 @@
 kind: Pod
 apiVersion: v1
 metadata:
-  name: pod-chris
+  name: pod-hpe
 spec:
   containers:
   - name: minio
@@ -23,4 +23,4 @@ spec:
   volumes:
     - name: export
       persistentVolumeClaim:
-        claimName: pvc-chris
+        claimName: pvc-hpe

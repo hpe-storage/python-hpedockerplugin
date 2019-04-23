@@ -1,8 +1,48 @@
 ---
-- name: Set MountFlags in docker service
-  hosts: all
+- name: Install sshpass locally
+  hosts: localhost
   become: root
+  environment:
+    http_proxy: "{{ http_proxy  | default('')}}"
+    https_proxy: "{{ https_proxy  | default('') }}"
+  tasks:
+    - name: install sshpass
+      package:
+        name: sshpass
+        state: present
 
+- name: Install prerequisites
+  hosts: masters,workers,etcd
+  become: root
+  environment:
+    http_proxy: "{{ http_proxy | default('') }}"
+    https_proxy: "{{ https_proxy | default('') }}"
+  tasks:
+    - name: load plugin settings
+      include_vars: 'properties/plugin_configuration_properties.yml'
+
+    - name: Install prerequisites
+      include: tasks/install_prerequisites_on_all.yml
+      
+    - name: Install prerequisites
+      include: tasks/install_prerequisites.yml
+
+- name: Install prerequisites
+  hosts: etcd
+  become: root
+  environment:
+    http_proxy: "{{ http_proxy | default('') }}"
+    https_proxy: "{{ https_proxy | default('') }}"
+  tasks:
+    - name: load plugin settings
+      include_vars: 'properties/plugin_configuration_properties.yml'
+
+    - name: Install prerequisites
+      include: tasks/install_prerequisites_on_all.yml
+
+- name: Set MountFlags in docker service
+  hosts: masters,workers,etcd 
+  become: root
   tasks:
     - name: Configure docker service
       include: tasks/configure_docker_service.yml
@@ -15,26 +55,25 @@
     - name: Create etcd cluster for 3PAR Docker Volume plugin
       include: tasks/create_etcd_container.yml
 
-
 - name: Install HPE 3PAR Volume Driver for Kubernetes/OpenShift
-  hosts: all
+  hosts: masters,workers,etcd 
   become: root
 
   vars:
     driver_path: "/usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/"
 
-  vars_prompt:
-    - name: "storage_config"
-      prompt: "Configure for FC or iSCSI? Type: 'fc' or 'iscsi'."
-      private: no
-      default: "fc"
-
   tasks:
     - name: Configure multipath
       include: tasks/configure_multipath.yml
 
-    - name: Copy hpe.conf
-      include: tasks/copy_hpe_conf.yml
+    - name: load plugin settings
+      include_vars: 'properties/plugin_configuration_properties.yml'
+
+    - name: load etcd settings
+      include_vars: 'properties/etcd_cluster_properties.yml'
+
+    - name: Create hpe.conf
+      include: tasks/create_conf_file.yml
 
     - name: Create 3PAR Docker Volume plugin
       include: tasks/create_3par_docker_volume_plugin.yml
@@ -42,6 +81,25 @@
     - name: Create the hpe_sock files
       include: tasks/hpe_sock.yml
 
+- name: Copy config file into admin.conf 
+  hosts: masters
+  become: root
+
+  vars:
+    driver_path: "/usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/"
+
+  tasks:
+    - name: Copy config file into admin.conf
+      include: tasks/copy_doryd_config.yml
+
+- name: Deploy FlexVolume drivers
+  hosts: masters,workers,etcd 
+  become: root
+  environment:
+    http_proxy: "{{ http_proxy | default('') }}"
+    https_proxy: "{{ https_proxy | default('') }}"
+
+  tasks:
     - name: Deploy FlexVolume drivers
       include: tasks/deploy_FlexVolume_driver.yml
 
@@ -52,3 +110,4 @@
   tasks:
     - name: Start Dynamic Provisioner (doryd) on Master node
       include: tasks/configure_doryd_service.yml
+
