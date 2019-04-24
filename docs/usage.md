@@ -405,7 +405,7 @@ po/pod1                       1/1       Running   0          11m       10.128.1.
 
 **Static provisioning** is a feature that is native to Kubernetes and that allows cluster admins to make existing storage devices available to a cluster. As a cluster admin, you must know the details of the storage device, its supported configurations, and mount options.
 
-To make existing storage available to a cluster user, you must manually create the storage device, a PV, and a PVC.
+To make existing storage available to a cluster user, you must manually create the storage device, a PV,PVC and POD.
 
 Below is an example yaml specification to create Persistent Volumes using the HPE 3PAR FlexVolume driver. 
 
@@ -414,7 +414,7 @@ Note: If you have OpenShift installed, kubectl create and oc create commands can
 ```
 
 Persistent volume Example
-The following creates a Persistent volume "pv-first" that provisions a compressed volume with the help of HPE 3PAR Docker Volume Plugin.
+The following creates a Persistent volume "pv-first" with the help of HPE 3PAR Docker Volume Plugin.
 
 ```yaml
 $ sudo kubectl create -f - << EOF
