@@ -83,19 +83,16 @@ docker volume create -d hpe --name share_name
 
 ## Changes required to the configuration file
 Following configuration parameters are required to support the above requirements:
-1. **hpe3par_default_cpg:** Default CPG name to be used for FPG creation. User has the option to
-override this value using the option **cpg**.
+1. **hpe3par_server_ip_pool**: List of IP addresses and corresponding subnet masks in the format:
+*IP1:SubnetMask1,IP2:SubnetMask2,IP5-IP10:SubnetMask3...*
 2. **hpe3par_default_fpg_size**: Default size to be used for FPG creation. If not specified in 
-the configuration file, this value defaults to 1TB. User has the option override this using the
-option **fpg_size**
-3. **hpe3par_ip_pool**: List of IP addresses and corresponding subnet masks in the format:
-*IP1:SubnetMask1,IP2:SubnetMask2,IP3:SubnetMask3...*
+the configuration file, this value defaults to 64TB.
 
 
 ## Share Metadata
 Efficient information lookup would be required for the following two cases:
 1. Share lookup by name and
-2. Available VFS lookup for hosting a new share
+2. Available FPG lookup for new share creation
 
 ### Share lookup by name
 This is required for retrieve, update, delete, mount and umount of a share.
@@ -115,14 +112,8 @@ share_metadata = {
     # VFS name
     'vfs': <VFS>,
     
-    # Dictionary having IP address as key and subnet-mask as value
-    ‘vfsIPs': <Share-accessible-via-IPs>,
-    
-    # File store name with naming scheme as <shareName>_FSTORE
-    'fstore': <FILE-STORE>,
-    
     # Share name supplied by the user
-    'shareName': <SHARE-NAME>,
+    'name': <SHARE-NAME>,
     
     # Default is True
     'readonly': <True|False>,
@@ -131,92 +122,66 @@ share_metadata = {
     'size': <SHARE-QUOTA-LIMIT>,
     
     # NFS protocol options. If not supplied, 3PAR defaults will apply
-    'protocolOpts': <NFS/SMB-PROTOCOL-OPTIONS>,
-    
-    # Placeholder for snapshot feature
-    'snapshots': [],
-    
+    'nfsOptions': <NFS-PROTOCOL-OPTIONS>,
+
+    # List of host IPs that can access this share
+    'clientIPs': [],
+
     # Share description
     'comment': comment,
 }
 ```
 
-### Available VFS lookup for hosting a new share
-Available VFS needs to be located when a new share is created with default parameters i.e. FPG
+### Available FPG lookup for new share creation
+Available default FPG needs to be located when a new share is created with default parameters i.e. FPG
 name is not specified on the Docker CLI.
 
 To satisfy this requirement, the additional information needs to be maintained in ETCD under 
-a new key called *“/file-persona/{backend}”*.
+a new key called *“/file-persona/{backend}.metadata”*.
 
 E.g. Below is a sample meta-data for a backend called *DEFAULT*, having two CPGs – CPG1 and CPG2,
-to be stored under ETCD key *“/file-persona/DEFAULT”*:
+to be stored under ETCD key *“/file-persona/DEFAULT.metadata”*:
 
 ```
 {
-    'cpg_fpg_map': {
-        # Total numer of FPGs present on this backend
-        'fpg_cnt': 3,
-        
-        # List of IPs currently in use by VFS on this backend
-        'used_ips': ['ip1', 'ip2', 'ip3'],
-        
-        # Name of CPG (either supplied or default one picked up from configuration) 
-        # as dictionary key
-        'CPG1': {
-            # Default current FPG under which a new share with default parameters to be created
-            # This serves as an indexing key to the below 'fpgs' dictionary
-            'default_current_fpg': 'DockerFPG-2'
-            
-            # FPGs dictionary
-            'fpgs': {
+	# Counter used to generate FPG name
+	'counter': 3,
 
-                # Name of FPG (auto-generated) as dictionary key
-                'DockerFPG-1': {
-                    # FPG size in TB (Min=1TB, Max=64TB). Defaults to 1TB
-                    'fpg_size': 3,
-                    
-                    # VFS name
-                    'vfs': DockerVFS-1',
+	# List of IPs currently in use by VFS on this backend
+	'ips_in_use': ['ip1', 'ip2', 'ip3'],
 
-                    # Dictionary of IPs and corresponding subnet mask being used by
-                    # VFS "DockerVFS-1"
-                    'ips": {'ip1': 'subnet_mask1'},
+	# List of IPs from IP pool that are blocked for use to avoid others from using it
+	# This is a temporary list. Once an IP is successfully assigned to VFS, it is moved
+	# to 'ips_in_use' list
+	'ips_locked_for_use': ['ip4']
 
-                    # Total number of shares created under this FPG by the plugin
-                    'share_cnt': 16,
+	# Dictionary of current default FPGs used to efficiently locate default FPG on a
+	# given CPG when a share is created with default parameters
+	'default_fpgs': {<cpg_name>: <fpg_name>}
+}
+```
 
-                    # Flag indicating whether the maximum number of shares have been
-                    # created under this FPG or not. This is needed in case the user
-                    # supplies legacy FPG name during share creation and the FPG happens
-                    # to already have some shares under it. In this case, 'share_cnt' will
-                    # not be able to tell us if maximum limit has been reached and hence,
-                    # this flag has been introduced.
-                    'reached_full_capacity': True,
-                },
-                # Another FPG dictionary
-                'DockerFPG-2': {
-                    'fpg_size': 1,
-                    'vfa': 'DockerVFS-2'
-                    'ips': {'ip2': 'subnet_mask2'},
-                    'share_cnt': 7,
-                    'reached_full_capacity': False,
-                }
-            }
-        },
-        # Another CPG
-        'CPG2': {
-            'current_fpg': 'DockerFPG-3'
-		   'fpg_cnt': 2,
-            'fpgs': {
-                'DockerFPG-3': {
-                    'fpg_size': 4,
-                    'vfs': DockerVFS-3'
-                    'ips': {'ip3': 'subnet_mask3'},
-                    'share_cnt': 11,
-                    'reached_full_capacity': True,
-                }	
-            }
-        }
-    }
+### FPG metadata
+FPG metadata is stored under the key *"/file-persona/{backend}.metadata/{cpg_name}/{fpg_name}"*
+Following information is stored for each FPG at the above key:
+```
+{
+	# FPG name
+	'fpg': 'DockerFPG_01',
+	
+	# FPG size
+	'fpg_size': 64,
+	
+	# Flag indicating if FPG reached its full capacity
+	'reached_full_capacity': False
+	
+	# Current share count on this FPG
+	'share_cnt': 3,
+	
+	# VFS name
+	'vfs': 'DockerVFS_01',
+	
+	# IP address used by 'vfs'
+	'ips': {'255.255.255.0': [192.168.121.10]}
 }
 ```
