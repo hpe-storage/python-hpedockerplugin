@@ -206,8 +206,8 @@ class HPE3PARCommon(object):
                  {"common_ver": self.VERSION,
                   "rest_ver": hpe3parclient.get_version_string()})
 
-        self.client_login()
         try:
+            self.client_login()
             cpg_names = self.src_bkend_config.hpe3par_cpg
             for cpg_name in cpg_names:
                 self.validate_cpg(cpg_name)

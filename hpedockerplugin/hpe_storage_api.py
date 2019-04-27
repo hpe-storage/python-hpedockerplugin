@@ -380,7 +380,9 @@ class VolumePlugin(object):
                     contents['Opts']['fsOwner'] != ""):
                 fs_owner = contents['Opts']['fsOwner']
                 try:
-                    mode = fs_owner.split(':')
+                    uid, gid = fs_owner.split(':')
+                    int(uid)
+                    int(gid)
                 except ValueError as ex:
                     return json.dumps({'Err': "Invalid value '%s' specified "
                                        "for fsOwner. Please "
