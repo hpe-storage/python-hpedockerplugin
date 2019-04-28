@@ -53,6 +53,9 @@ class Orchestrator(object):
         self.volume_backends_map = {}
         self.volume_backend_lock = threading.Lock()
 
+    def get_default_backend_name(self):
+        return self._def_backend_name
+
     @abc.abstractmethod
     def _get_etcd_client(self, host_config):
         pass

@@ -24,6 +24,7 @@ class CreateVfsCmd(cmd.Cmd):
         # import pdb
         # pdb.set_trace()
         try:
+            LOG.info("Creating VFS %s on the backend" % self._vfs_name)
             result = self._mediator.create_vfs(self._vfs_name,
                                                self._ip, self._netmask,
                                                fpg=self._fpg_name)

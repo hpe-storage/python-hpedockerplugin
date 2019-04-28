@@ -1,11 +1,8 @@
 import json
-import string
 import os
 import six
 import time
 from sh import chmod
-from Crypto.Cipher import AES
-import base64
 
 
 from os_brick.initiator import connector
@@ -53,8 +50,10 @@ class VolumeManager(object):
         self._etcd = etcd_util
 
         self._initialize_configuration()
-        self._decrypt_password(self.src_bkend_config,
-                               self.tgt_bkend_config, backend_name)
+        self._pwd_decryptor = utils.PasswordDecryptor(backend_name,
+                                                      self._etcd)
+        self._pwd_decryptor.decrypt_password(self.src_bkend_config)
+        self._pwd_decryptor.decrypt_password(self.tgt_bkend_config)
 
         # TODO: When multiple backends come into picture, consider
         # lazy initialization of individual driver
@@ -2040,47 +2039,3 @@ class VolumeManager(object):
                         'rcg_name': rcg_name},
              'msg': 'Removing VV %s from Remote Copy Group %s...'
                     % (bkend_vol_name, rcg_name)})
-
-    def _decrypt_password(self, src_bknd, trgt_bknd, backend_name):
-        try:
-            passphrase = self._etcd.get_backend_key(backend_name)
-        except Exception as ex:
-            LOG.info('Exception occurred %s ' % ex)
-            LOG.info("Using PLAIN TEXT for backend '%s'" % backend_name)
-        else:
-            passphrase = self.key_check(passphrase)
-            src_bknd.hpe3par_password = \
-                self._decrypt(src_bknd.hpe3par_password, passphrase)
-            src_bknd.san_password =  \
-                self._decrypt(src_bknd.san_password, passphrase)
-            if trgt_bknd:
-                trgt_bknd.hpe3par_password = \
-                    self._decrypt(trgt_bknd.hpe3par_password, passphrase)
-                trgt_bknd.san_password = \
-                    self._decrypt(trgt_bknd.san_password, passphrase)
-
-    def key_check(self, key):
-        KEY_LEN = len(key)
-        padding_string = string.ascii_letters
-
-        if KEY_LEN < 16:
-            KEY = key + padding_string[:16 - KEY_LEN]
-
-        elif KEY_LEN > 16 and KEY_LEN < 24:
-            KEY = key + padding_string[:24 - KEY_LEN]
-
-        elif KEY_LEN > 24 and KEY_LEN < 32:
-            KEY = key + padding_string[:32 - KEY_LEN]
-
-        elif KEY_LEN > 32:
-            KEY = key[:32]
-
-        else:
-            KEY = key
-
-        return KEY
-
-    def _decrypt(self, encrypted, passphrase):
-        aes = AES.new(passphrase, AES.MODE_CFB, '1234567812345678')
-        decrypt_pass = aes.decrypt(base64.b64decode(encrypted))
-        return decrypt_pass.decode('utf-8')

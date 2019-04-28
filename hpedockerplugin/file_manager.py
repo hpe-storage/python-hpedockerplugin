@@ -1,10 +1,7 @@
-import base64
 import copy
 import json
-import string
 import sh
 import six
-from Crypto.Cipher import AES
 from threading import Thread
 
 from oslo_log import log as logging
@@ -21,13 +18,14 @@ import hpedockerplugin.hpe.array_connection_params as acp
 from hpedockerplugin.i18n import _
 from hpedockerplugin.hpe import hpe_3par_mediator
 from hpedockerplugin import synchronization
+from hpedockerplugin.hpe import utils
 
 LOG = logging.getLogger(__name__)
 
 
 class FileManager(object):
     def __init__(self, host_config, hpepluginconfig, etcd_util,
-                 fp_etcd_client, node_id, backend_name='DEFAULT'):
+                 fp_etcd_client, node_id, backend_name):
         self._host_config = host_config
         self._hpepluginconfig = hpepluginconfig
 
@@ -38,8 +36,9 @@ class FileManager(object):
 
         self._initialize_configuration()
 
-        self._decrypt_password(self.src_bkend_config,
-                               backend_name)
+        self._pwd_decryptor = utils.PasswordDecryptor(backend_name,
+                                                      self._etcd)
+        self._pwd_decryptor.decrypt_password(self.src_bkend_config)
 
         # TODO: When multiple backends come into picture, consider
         # lazy initialization of individual driver
@@ -448,39 +447,3 @@ class FileManager(object):
                 # TODO: Implement retry logic
                 LOG.exception('Ignoring exception: %s' % ex)
                 pass
-
-    def _decrypt(self, encrypted, passphrase):
-        aes = AES.new(passphrase, AES.MODE_CFB, '1234567812345678')
-        decrypt_pass = aes.decrypt(base64.b64decode(encrypted))
-        return decrypt_pass.decode('utf-8')
-
-    def _decrypt_password(self, src_bknd, backend_name):
-        try:
-            passphrase = self._etcd.get_pass_phrase(backend_name)
-        except Exception as ex:
-            LOG.info('Exception occurred %s ' % ex)
-            LOG.info("Using PLAIN TEXT for backend '%s'" % backend_name)
-        else:
-            passphrase = self.key_check(passphrase)
-            src_bknd.hpe3par_password = \
-                self._decrypt(src_bknd.hpe3par_password, passphrase)
-            src_bknd.san_password =  \
-                self._decrypt(src_bknd.san_password, passphrase)
-
-    def key_check(self, key):
-        KEY_LEN = len(key)
-        padding_string = string.ascii_letters
-
-        if KEY_LEN < 16:
-            KEY = key + padding_string[:16 - KEY_LEN]
-
-        elif KEY_LEN > 16 and KEY_LEN < 24:
-            KEY = key + padding_string[:24 - KEY_LEN]
-
-        elif KEY_LEN > 24 and KEY_LEN < 32:
-            KEY = key + padding_string[:32 - KEY_LEN]
-
-        elif KEY_LEN > 32:
-            KEY = key[:32]
-
-        return KEY

@@ -15,11 +15,16 @@
 """Volume-related Utilities and helpers."""
 
 import six
+import string
 import uuid
 
+from Crypto.Cipher import AES
 from Crypto.Random import random
 
+from oslo_log import log as logging
 from oslo_serialization import base64
+
+LOG = logging.getLogger(__name__)
 
 # Default symbols to use for passwords. Avoids visually confusing characters.
 # ~6 bits per symbol
@@ -149,3 +154,51 @@ def get_3par_rcg_name(id):
 def get_remote3par_rcg_name(id, array_id):
     return get_3par_rcg_name(id) + ".r" + (
         six.text_type(array_id))
+
+
+class PasswordDecryptor(object):
+    def __init__(self, backend_name, etcd):
+        self._backend_name = backend_name
+        self._etcd = etcd
+        self._passphrase = self._get_passphrase()
+
+    def _get_passphrase(self):
+        try:
+            passphrase = self._etcd.get_backend_key(self._backend_name)
+            return passphrase
+        except Exception as ex:
+            LOG.info('Exception occurred %s ' % six.text_type(ex))
+            LOG.info("Using PLAIN TEXT for backend '%s'" % self._backend_name)
+        return None
+
+    def decrypt_password(self, config):
+        if self._passphrase and config:
+            passphrase = self._key_check(self._passphrase)
+            config.hpe3par_password = \
+                self._decrypt(config.hpe3par_password, passphrase)
+            config.san_password =  \
+                self._decrypt(config.san_password, passphrase)
+
+    def _key_check(self, key):
+        KEY_LEN = len(key)
+        padding_string = string.ascii_letters
+
+        KEY = key
+        if KEY_LEN < 16:
+            KEY = key + padding_string[:16 - KEY_LEN]
+
+        elif KEY_LEN > 16 and KEY_LEN < 24:
+            KEY = key + padding_string[:24 - KEY_LEN]
+
+        elif KEY_LEN > 24 and KEY_LEN < 32:
+            KEY = key + padding_string[:32 - KEY_LEN]
+
+        elif KEY_LEN > 32:
+            KEY = key[:32]
+
+        return KEY
+
+    def _decrypt(self, encrypted, passphrase):
+        aes = AES.new(passphrase, AES.MODE_CFB, '1234567812345678')
+        decrypt_pass = aes.decrypt(base64.b64decode(encrypted))
+        return decrypt_pass.decode('utf-8')

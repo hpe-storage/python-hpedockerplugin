@@ -22,14 +22,13 @@ class RequestRouter(object):
         self._ctxt_builder_factory = \
             req_ctxt.RequestContextBuilderFactory(all_configs)
 
-    def route_create_request(self, name, contents):
+    def route_create_request(self, name, contents, orchestrator):
         LOG.info("route_create_request: Entering...")
         req_ctxt_builder = \
             self._ctxt_builder_factory.get_request_context_builder()
-        req_ctxt = req_ctxt_builder.build_request_context(contents)
-        orchestrator_name = req_ctxt['orchestrator']
-        orchestrator = self._orchestrators[orchestrator_name]
         if orchestrator:
+            req_ctxt = req_ctxt_builder.build_request_context(
+                contents, orchestrator.get_default_backend_name())
             operation = req_ctxt['operation']
             kwargs = req_ctxt['kwargs']
             resp = getattr(orchestrator, operation)(**kwargs)

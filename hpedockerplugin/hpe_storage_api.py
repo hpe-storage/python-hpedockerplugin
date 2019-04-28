@@ -231,8 +231,9 @@ class VolumePlugin(object):
         if 'Opts' in contents and contents['Opts']:
             if 'filePersona' in contents['Opts']:
                 try:
-                    return self._req_router.route_create_request(name,
-                                                                 contents)
+                    return self._req_router.route_create_request(
+                        name, contents, self._file_orchestrator
+                    )
                 except exception.PluginException as ex:
                     LOG.error(six.text_type(ex))
                     return json.dumps({'Err': ex.msg})

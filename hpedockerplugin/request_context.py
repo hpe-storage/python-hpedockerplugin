@@ -45,7 +45,7 @@ class NullRequestContextBuilder(object):
     def __init__(self, msg):
         self._msg = msg
 
-    def build_request_context(self, contents):
+    def build_request_context(self, contents, def_backend_name):
         raise exception.InvalidInput(self._msg)
 
 
@@ -53,7 +53,7 @@ class RequestContextBuilder(object):
     def __init__(self, backend_configs):
         self._backend_configs = backend_configs
 
-    def build_request_context(self, contents):
+    def build_request_context(self, contents, def_backend_name):
         LOG.info("build_request_context: Entering...")
         self._validate_name(contents['Name'])
 
@@ -67,7 +67,7 @@ class RequestContextBuilder(object):
                 op_name = op_name.split(',')
                 found = not (set(op_name) - set(contents['Opts'].keys()))
                 if found:
-                    return req_ctxt_creator(contents)
+                    return req_ctxt_creator(contents, def_backend_name)
         return self._default_req_ctxt_creator(contents)
 
     @staticmethod
@@ -201,12 +201,17 @@ class FileRequestContextBuilder(RequestContextBuilder):
         build_req_ctxt_map['help'] = self._create_help_req_ctxt
         return build_req_ctxt_map
 
-    def _create_share_req_params(self, name, options):
+    def _create_share_req_params(self, name, options, def_backend_name):
         LOG.info("_create_share_req_params: Entering...")
         # import pdb
         # pdb.set_trace()
-        backend = self._get_str_option(options, 'backend', 'DEFAULT')
-        config = self._backend_configs[backend]
+        backend = self._get_str_option(options, 'backend', def_backend_name)
+        config = self._backend_configs.get(backend)
+        if not config:
+            raise exception.InvalidInput(
+                'ERROR: Backend %s is not configured for File Persona'
+                % backend
+            )
         cpg = self._get_str_option(options, 'cpg', config.hpe3par_cpg[0])
         fpg = self._get_str_option(options, 'fpg', None)
 
@@ -243,7 +248,7 @@ class FileRequestContextBuilder(RequestContextBuilder):
         LOG.info("_create_share_req_params: %s" % share_details)
         return share_details
 
-    def _create_share_req_ctxt(self, contents):
+    def _create_share_req_ctxt(self, contents, def_backend_name):
         LOG.info("_create_share_req_ctxt: Entering...")
         valid_opts = ('backend', 'filePersona', 'cpg', 'fpg',
                       'size', 'readonly', 'nfsOptions', 'comment')
@@ -251,7 +256,8 @@ class FileRequestContextBuilder(RequestContextBuilder):
         self._validate_opts("create share", contents, valid_opts,
                             mandatory_opts)
         share_args = self._create_share_req_params(contents['Name'],
-                                                   contents['Opts'])
+                                                   contents['Opts'],
+                                                   def_backend_name)
         ctxt = {'orchestrator': 'file',
                 'operation': 'create_share',
                 'kwargs': share_args}

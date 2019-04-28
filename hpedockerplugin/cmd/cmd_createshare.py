@@ -39,12 +39,14 @@ class CreateShareCmd(cmd.Cmd):
 
     def _create_share(self):
         share_etcd = self._file_mgr.get_etcd()
+        share_name = self._share_args['name']
         try:
+            LOG.info("Creating share %s on the backend" % share_name)
             share_id = self._mediator.create_share(self._share_args)
             self._share_args['id'] = share_id
         except Exception as ex:
             msg = "Share creation failed [share_name: %s, error: %s" %\
-                  (self._share_args['name'], six.text_type(ex))
+                  (share_name, six.text_type(ex))
             LOG.error(msg)
             self.unexecute()
             raise exception.ShareCreationFailed(msg)
@@ -55,7 +57,7 @@ class CreateShareCmd(cmd.Cmd):
             self._increment_share_cnt_for_fpg()
         except Exception as ex:
             msg = "Share creation failed [share_name: %s, error: %s" %\
-                  (self._share_args['name'], six.text_type(ex))
+                  (share_name, six.text_type(ex))
             LOG.error(msg)
             # TODO:
             self._mediator.delete_share(self._share_args)
@@ -215,12 +217,13 @@ class CreateShareOnExistingFpgCmd(CreateShareCmd):
 
     def execute(self):
         fpg_name = self._share_args['fpg']
+        cpg_name = self._share_args['cpg']
         with self._fp_etcd.get_fpg_lock(self._backend, fpg_name):
             try:
                 # Specified FPG may or may not exist. In case it
                 # doesn't, EtcdFpgMetadataNotFound exception is raised
                 fpg_info = self._fp_etcd.get_fpg_metadata(
-                    self._backend, self._share_args['cpg'], fpg_name)
+                    self._backend, cpg_name, fpg_name)
                 self._share_args['vfs'] = fpg_info['vfs']
                 # Only one IP per FPG is supported at the moment
                 # Given that, list can be dropped
@@ -235,35 +238,41 @@ class CreateShareOnExistingFpgCmd(CreateShareCmd):
                 # CPG passed can be different than actual CPG
                 # used for creating legacy FPG. Override default
                 # or supplied CPG
-                self._share_args['cpg'] = fpg_info['cpg']
+                if cpg_name != fpg_info['cpg']:
+                    raise exception.InvalidInput(
+                        'ERROR: Invalid CPG %s specified or configured in '
+                        'hpe.conf for the specified legacy FPG %s. Please '
+                        'specify correct CPG as %s' %
+                        (cpg_name, fpg_name, fpg_info['cpg'])
+                    )
 
                 vfs_info = self._get_backend_vfs_for_fpg()
                 vfs_name = vfs_info['name']
                 ip_info = vfs_info['IPInfo'][0]
 
-                fpg_metadata = {
-                    'fpg': fpg_name,
-                    'fpg_size': fpg_info['capacityGiB'],
-                    'vfs': vfs_name,
-                    'ips': {ip_info['netmask']: [ip_info['IPAddr']]},
-                    'reached_full_capacity': False
-                }
-                LOG.info("Creating FPG entry in ETCD for legacy FPG: "
-                         "%s" % six.text_type(fpg_metadata))
-
-                # TODO: Consider NOT maintaing FPG information in
-                # ETCD. This will always make it invoke above legacy flow
-                # Create FPG entry in ETCD
-                self._fp_etcd.save_fpg_metadata(self._backend,
-                                                fpg_info['cpg'],
-                                                fpg_name,
-                                                fpg_metadata)
+                # fpg_metadata = {
+                #     'fpg': fpg_name,
+                #     'fpg_size': fpg_info['capacityGiB'],
+                #     'vfs': vfs_name,
+                #     'ips': {ip_info['netmask']: [ip_info['IPAddr']]},
+                #     'reached_full_capacity': False
+                # }
+                # LOG.info("Creating FPG entry in ETCD for legacy FPG: "
+                #          "%s" % six.text_type(fpg_metadata))
+                #
+                # # TODO: Consider NOT maintaing FPG information in
+                # # ETCD. This will always make it invoke above legacy flow
+                # # Create FPG entry in ETCD
+                # self._fp_etcd.save_fpg_metadata(self._backend,
+                #                                 fpg_info['cpg'],
+                #                                 fpg_name,
+                #                                 fpg_metadata)
                 self._share_args['vfs'] = vfs_name
                 # Only one IP per FPG is supported at the moment
                 # Given that, list can be dropped
-                subnet_ips_map = fpg_metadata['ips']
-                subnet, ips = next(iter(subnet_ips_map.items()))
-                self._share_args['vfsIPs'] = [(ips[0], subnet)]
+                netmask = ip_info['netmask']
+                ip = ip_info['IPAddr']
+                self._share_args['vfsIPs'] = [(ip, netmask)]
                 self._create_share()
 
     def _get_legacy_fpg(self):
