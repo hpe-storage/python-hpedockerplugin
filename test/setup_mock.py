@@ -2,6 +2,7 @@ import mock
 
 import test.fake_3par_data as data
 from hpedockerplugin.hpe import hpe_3par_common as hpecommon
+from hpedockerplugin.hpe import utils
 from hpedockerplugin import volume_manager as mgr
 from hpedockerplugin import backend_orchestrator as orch
 from oslo_config import cfg
@@ -59,7 +60,8 @@ def mock_decorator(func):
                 mock.patch.object(orch.VolumeBackendOrchestrator,
                                   '_get_node_id') \
                 as mock_get_node_id, \
-                mock.patch.object(mgr.VolumeManager, '_decrypt_password') \
+                mock.patch.object(utils.PasswordDecryptor,
+                                  'decrypt_password') \
                 as mock_decrypt_password:
             mock_create_client.return_value = mock_3parclient
             _get_etcd_client.return_value = mock_etcd
