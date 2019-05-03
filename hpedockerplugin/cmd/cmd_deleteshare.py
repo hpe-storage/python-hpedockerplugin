@@ -39,7 +39,7 @@ class DeleteShareCmd(cmd.Cmd):
             if 'quota_id' in share:
                 quota_id = share.pop('quota_id')
                 self._mediator.remove_quota(quota_id)
-                self._share_etcd.save_share(share)
+                self._etcd.save_share(share)
         except Exception as ex:
             LOG.error("ERROR: Remove quota failed for %s. %s"
                       % (self._share_info['name'], six.text_type(ex)))
