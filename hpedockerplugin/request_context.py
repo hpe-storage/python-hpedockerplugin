@@ -186,6 +186,7 @@ class FileRequestContextBuilder(RequestContextBuilder):
     def _get_build_req_ctxt_map(self):
         build_req_ctxt_map = OrderedDict()
         # If share-dir is specified, file-store MUST be specified
+        build_req_ctxt_map['filePersona,help'] = self._create_help_req_ctxt
         build_req_ctxt_map['filePersona'] = \
             self._create_share_req_ctxt
         # build_req_ctxt_map['persona,cpg'] = \
@@ -194,11 +195,10 @@ class FileRequestContextBuilder(RequestContextBuilder):
         #     self._create_share_req_ctxt
         # build_req_ctxt_map['persona,cpg,size,fpg_name'] = \
         #     self._create_share_req_ctxt
-        build_req_ctxt_map['virtualCopyOf,shareName'] = \
-            self._create_snap_req_ctxt
-        build_req_ctxt_map['updateShare'] = \
-            self._create_update_req_ctxt
-        build_req_ctxt_map['help'] = self._create_help_req_ctxt
+        # build_req_ctxt_map['virtualCopyOf,shareName'] = \
+        #     self._create_snap_req_ctxt
+        # build_req_ctxt_map['updateShare'] = \
+        #     self._create_update_req_ctxt
         return build_req_ctxt_map
 
     def _create_share_req_params(self, name, options, def_backend_name):
@@ -264,14 +264,40 @@ class FileRequestContextBuilder(RequestContextBuilder):
         LOG.info("_create_share_req_ctxt: Exiting: %s" % ctxt)
         return ctxt
 
+    def _create_help_req_ctxt(self, contents, def_backend_name):
+        LOG.info("_create_help_req_ctxt: Entering...")
+        valid_opts = ('filePersona', 'help')
+        self._validate_opts("create help content for share", contents,
+                            valid_opts, mandatory_opts=None)
+        options = contents['Opts']
+        if options:
+            value = self._get_str_option(options, 'help', None)
+            if not value:
+                return {
+                    'orchestrator': 'file',
+                    'operation': 'create_share_help',
+                    'kwargs': {}
+                }
+
+            if value == 'backends':
+                return {
+                    'orchestrator': 'file',
+                    'operation': 'get_backends_status',
+                    'kwargs': {}
+                }
+            else:
+                raise exception.InvalidInput("ERROR: Invalid value %s for "
+                                             "option 'help' specified." % value)
+
+        LOG.info("_create_help_req_ctxt: Exiting...")
+        return ctxt
+
     def _create_snap_req_ctxt(self, contents):
         pass
 
     def _create_update_req_ctxt(self, contents):
         pass
 
-    def _create_help_req_ctxt(self, contents):
-        pass
 
 
 # TODO: This is work in progress - can be taken up later if agreed upon
@@ -558,12 +584,6 @@ class VolumeRequestContextBuilder(RequestContextBuilder):
                         msg = "'sync_period' must be between 300 and " \
                               "31622400 seconds."
                         raise exception.InvalidInput(reason=msg)
-
-    def _create_help_req_ctxt(self, contents):
-        valid_opts = ['help']
-        self._validate_opts('display help', contents, valid_opts)
-        return {'operation': 'create_help_content',
-                'orchestrator': 'volume'}
 
     @staticmethod
     def _validate_name(vol_name):

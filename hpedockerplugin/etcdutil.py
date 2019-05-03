@@ -30,10 +30,10 @@ RCG_LOCKROOT = '/rcg-lock'
 
 SHAREROOT = '/shares'
 FILEPERSONAROOT = '/file-persona'
-SHAREBACKENDROOT = '/share-backend'
 
 SHARE_LOCKROOT = "/share-lock"
 FILE_BACKEND_LOCKROOT = "/fp-backend-lock"
+FILE_CPG_LOCKROOT = "/fp-cpg-lock"
 FILE_FPG_LOCKROOT = "/fp-fpg-lock"
 
 
@@ -113,8 +113,14 @@ class HpeEtcdClient(object):
         LOG.info(_LI('Update key: %s to ETCD, value is: %s'), etcd_key, val)
 
     def delete_object(self, etcd_key):
-        self.client.delete(etcd_key)
-        LOG.info(_LI('Deleted key: %s from ETCD'), etcd_key)
+        try:
+            self.client.delete(etcd_key)
+            LOG.info(_LI('Deleted key: %s from ETCD'), etcd_key)
+        except etcd.EtcdKeyNotFound:
+            msg = "Key to delete not found ETCD: [key=%s]" % etcd_key
+            LOG.info(msg)
+        except Exception as ex:
+            LOG.info("Unknown Error: %s" % six.text_type(ex))
 
     def get_object(self, etcd_key):
         try:
@@ -151,9 +157,6 @@ class HpeFilePersonaEtcdClient(object):
                                      client_cert, client_key)
         self._client.make_root(FILEPERSONAROOT)
         self._root = FILEPERSONAROOT
-
-        self._client.make_root(SHAREBACKENDROOT)
-        self._backendroot = SHAREBACKENDROOT + '/'
 
     def create_cpg_entry(self, backend, cpg):
         etcd_key = '/'.join([self._root, backend, cpg])
@@ -208,10 +211,6 @@ class HpeFilePersonaEtcdClient(object):
         etcd_key = '%s/%s.metadata' % (self._root, backend)
         return self._client.get_object(etcd_key)
 
-    def get_pass_phrase(self, backend):
-        key = self._backendroot + backend
-        return self._client.get_value(key)
-
     def get_lock(self, lock_type, name=None):
         lockroot_map = {
             'FP_BACKEND': FILE_BACKEND_LOCKROOT,
@@ -226,8 +225,13 @@ class HpeFilePersonaEtcdClient(object):
         return EtcdLock(FILE_BACKEND_LOCKROOT + '/', self._client.client,
                         name=backend)
 
-    def get_fpg_lock(self, backend, fpg):
-        lock_key = '/'.join([backend, fpg])
+    def get_cpg_lock(self, backend, cpg):
+        lock_key = '/'.join([backend, cpg])
+        return EtcdLock(FILE_CPG_LOCKROOT + '/', self._client.client,
+                        name=lock_key)
+
+    def get_fpg_lock(self, backend, cpg, fpg):
+        lock_key = '/'.join([backend, cpg, fpg])
         return EtcdLock(FILE_FPG_LOCKROOT + '/', self._client.client,
                         name=lock_key)
 
@@ -251,8 +255,8 @@ class HpeShareEtcdClient(object):
         etcd_key = self._root + name
         self._client.update_object(etcd_key, key, val)
 
-    def delete_share(self, share):
-        etcd_key = self._root + share['name']
+    def delete_share(self, share_name):
+        etcd_key = self._root + share_name
         self._client.delete_object(etcd_key)
 
     def get_share(self, name):

@@ -63,9 +63,31 @@ class FileBackendOrchestrator(Orchestrator):
         # Removing backend from share dictionary
         # This needs to be put back when share is
         # saved to the ETCD store
-        backend = kwargs.pop('backend')
+        backend = kwargs.get('backend')
         return self._execute_request_for_backend(
             backend, 'create_share', name, **kwargs)
+
+    def create_share_help(self, **kwargs):
+        LOG.info("Working on share help content generation...")
+        create_help_path = "./config/create_share_help.txt"
+        create_help_file = open(create_help_path, "r")
+        create_help_content = create_help_file.read()
+        create_help_file.close()
+        LOG.info(create_help_content)
+        return json.dumps({u"Err": create_help_content})
+
+    def get_backends_status(self, **kwargs):
+        LOG.info("Getting backend status...")
+        line = "=" * 54
+        spaces = ' ' * 42
+        resp = "\n%s\nNAME%sSTATUS\n%s\n" % (line, spaces, line)
+
+        printable_len = 45
+        for k, v in self._manager.items():
+            backend_state = v['backend_state']
+            padding = (printable_len - len(k)) * ' '
+            resp += "%s%s  %s\n" % (k, padding, backend_state)
+        return json.dumps({u'Err': resp})
 
     def remove_object(self, obj):
         share_name = obj['name']

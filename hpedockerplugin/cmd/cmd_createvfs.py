@@ -21,8 +21,6 @@ class CreateVfsCmd(cmd.Cmd):
         self._netmask = netmask
 
     def execute(self):
-        # import pdb
-        # pdb.set_trace()
         try:
             LOG.info("Creating VFS %s on the backend" % self._vfs_name)
             result = self._mediator.create_vfs(self._vfs_name,
@@ -30,17 +28,8 @@ class CreateVfsCmd(cmd.Cmd):
                                                fpg=self._fpg_name)
 
             self._update_fpg_metadata(self._ip, self._netmask)
-
             LOG.info("create_vfs result: %s" % result)
 
-        # except exception.EtcdMetadataNotFound:
-        #     # TODO: On first execution, meta-data won't be there
-        #     # This would require
-        #     pass
-        except exception.IPAddressPoolExhausted as ex:
-            msg = "Create VFS failed. Msg: %s" % six.text_type(ex)
-            LOG.error(msg)
-            raise exception.VfsCreationFailed(reason=msg)
         except exception.ShareBackendException as ex:
             msg = "Create VFS failed. Msg: %s" % six.text_type(ex)
             LOG.error(msg)
@@ -50,10 +39,12 @@ class CreateVfsCmd(cmd.Cmd):
             raise exception.VfsCreationFailed(reason=msg)
 
     def unexecute(self):
+        # No need to implement this as FPG delete should delete this too
         pass
 
     def _update_fpg_metadata(self, ip, netmask):
-        with self._fp_etcd.get_fpg_lock(self._backend, self._fpg_name):
+        with self._fp_etcd.get_fpg_lock(self._backend, self._cpg_name,
+                                        self._fpg_name):
             fpg_info = self._fp_etcd.get_fpg_metadata(self._backend,
                                                       self._cpg_name,
                                                       self._fpg_name)

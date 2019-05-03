@@ -142,14 +142,14 @@ class Orchestrator(object):
         finally:
             self.volume_backend_lock.release()
 
-    def _execute_request_for_backend(self, backend, request, volname,
+    def _execute_request_for_backend(self, backend_name, request, volname,
                                      *args, **kwargs):
         LOG.info(' Operating on backend : %s on volume %s '
-                 % (backend, volname))
+                 % (backend_name, volname))
         LOG.info(' Request %s ' % request)
         LOG.info(' with  args %s ' % str(args))
         LOG.info(' with  kwargs is %s ' % str(kwargs))
-        volume_mgr_info = self._manager.get(backend)
+        volume_mgr_info = self._manager.get(backend_name)
         if volume_mgr_info:
             volume_mgr = volume_mgr_info['mgr']
             if volume_mgr is not None:
@@ -158,7 +158,7 @@ class Orchestrator(object):
 
         msg = "ERROR: Backend '%s' was NOT initialized successfully." \
               " Please check hpe.conf for incorrect entries and rectify " \
-              "it." % backend
+              "it." % backend_name
         LOG.error(msg)
         return json.dumps({u'Err': msg})
 

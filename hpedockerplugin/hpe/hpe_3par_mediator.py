@@ -379,80 +379,23 @@ class HPE3ParMediator(object):
 
         return ','.join(options)
 
-    def _build_createfshare_kwargs(self, fpg, readonly,
-                                   proto_opts, comment,
-                                   client_ip=None):
-        createfshare_kwargs = dict(fpg=fpg,
-                                   comment=comment)
-
-        if client_ip:
-            createfshare_kwargs['clientip'] = client_ip
-        else:
-            # New NFS shares needs seed IP to prevent "all" access.
-            # Readonly and readwrite NFS shares client IPs cannot overlap.
-            if readonly:
-                createfshare_kwargs['clientip'] = LOCAL_IP_RO
-            else:
-                # TODO: May have to assign allowIPs list here
-                createfshare_kwargs['clientip'] = '*'
-                # createfshare_kwargs['clientip'] = LOCAL_IP
-        options = self._get_nfs_options(proto_opts, readonly)
-        createfshare_kwargs['options'] = options
-        return createfshare_kwargs
-
-    def update_capacity_quotas_old(self, fstore, new_size, fpg, vfs):
-
-        def _sync_update_capacity_quotas(fstore, new_size, fpg, vfs):
-            """Update 3PAR quotas and return setfsquota output."""
-
-            hcapacity = six.text_type(new_size)
-            scapacity = hcapacity
-            return self._client.setfsquota(vfs,
-                                           fpg=fpg,
-                                           fstore=fstore,
-                                           scapacity=scapacity,
-                                           hcapacity=hcapacity)
-
+    def delete_file_store(self, fpg_name, fstore_name):
         try:
-            result = _sync_update_capacity_quotas(
-                fstore, new_size, fpg, vfs)
-            LOG.debug("setfsquota result=%s", result)
-        except Exception as e:
-            msg = (_('Failed to update capacity quota '
-                     '%(size)s on %(fstore)s with exception: %(e)s') %
-                   {'size': new_size,
-                    'fstore': fstore,
-                    'e': six.text_type(e)})
+            self._wsapi_login()
+            query = '/filestores?query="name EQ %s AND fpg EQ %s"' %\
+                    (fstore_name, fpg_name)
+            body, fstore = self._client.http.get(query)
+            if body['status'] == '200' and fstore['total'] == 1:
+                fstore_id = fstore['members'][0]['id']
+                del_uri = '/filestores/%s' % fstore_id
+                self._client.http.delete(del_uri)
+        except Exception:
+            msg = (_('ERROR: File store deletion failed: [fstore: %s,'
+                     'fpg:%s') % (fstore_name, fpg_name))
             LOG.error(msg)
             raise exception.ShareBackendException(msg=msg)
-
-        # Non-empty result is an error message returned from the 3PAR
-        if result:
-            msg = (_('Failed to update capacity quota '
-                     '%(size)s on %(fstore)s with error: %(error)s') %
-                   {'size': new_size,
-                    'fstore': fstore,
-                    'error': result})
-            LOG.error(msg)
-            raise exception.ShareBackendException(msg=msg)
-
-    # def delete_file_store(self, fpg_name, fstore_name):
-    #     try:
-    #         self._wsapi_login()
-    #         query = '/filestores?query="name EQ %s AND fpg EQ %s"' %\
-    #                 (fstore_name, fpg_name)
-    #         body, fstore = self._client.http.get(query)
-    #         if body['status'] == '200' and fstore['total'] == 1:
-    #             fstore_id = fstore['members'][0]['id']
-    #             del_uri = '/filestores/%s' % fstore_id
-    #             self._client.http.delete(del_uri)
-    #     except Exception:
-    #         msg = (_('ERROR: File store deletion failed: [fstore: %s,'
-    #                  'fpg:%s') % (fstore_name, fpg_name))
-    #         LOG.error(msg)
-    #         raise exception.ShareBackendException(msg=msg)
-    #     finally:
-    #         self._wsapi_logout()
+        finally:
+            self._wsapi_logout()
 
     def delete_fpg(self, fpg_name):
         try:
@@ -502,8 +445,12 @@ class HPE3ParMediator(object):
                 LOG.error(msg)
                 raise exception.ShareBackendException(msg=msg)
 
+            href = body['links'][0]['href']
+            uri, quota_id = href.split('filepersonaquotas/')
+
             LOG.debug("Quota successfully set: resp=%s, body=%s"
                       % (resp, body))
+            return quota_id
         except Exception as e:
             msg = (_('Failed to update capacity quota '
                      '%(size)s on %(fstore)s with exception: %(e)s') %
@@ -512,6 +459,20 @@ class HPE3ParMediator(object):
                     'e': six.text_type(e)})
             LOG.error(msg)
             raise exception.ShareBackendException(msg=msg)
+
+    def remove_quota(self, quota_id):
+        uri = '/filepersonaquotas/%s' % quota_id
+        try:
+            self._wsapi_login()
+            self._client.http.delete(uri)
+        except Exception as ex:
+            msg = "mediator:remove_quota - failed to remove quota %s" \
+                  "at the backend. Exception: %s" % \
+                  (quota_id, six.text_type(ex))
+            LOG.error(msg)
+            raise exception.ShareBackendException(msg=msg)
+        finally:
+            self._wsapi_logout()
 
     def _parse_protocol_opts(self, proto_opts):
         ret_opts = {}
@@ -608,10 +569,8 @@ class HPE3ParMediator(object):
             self._delete_share(share_name_ro, protocol, fpg, vfs, fstore)
         return fstore
 
-    def delete_share(self, share):
-        LOG.info("Mediator:delete_share %s: Entering..." % share['name'])
-        share_name = share['name']
-        share_id = share['id']
+    def delete_share(self, share_id):
+        LOG.info("Mediator:delete_share %s: Entering..." % share_id)
         uri = '/fileshares/%s' % share_id
         try:
             self._wsapi_login()
@@ -619,7 +578,7 @@ class HPE3ParMediator(object):
         except Exception as ex:
             msg = "mediator:delete_share - failed to remove share %s" \
                   "at the backend. Exception: %s" % \
-                  (share_name, six.text_type(ex))
+                  (share_id, six.text_type(ex))
             LOG.error(msg)
             raise exception.ShareBackendException(msg=msg)
         finally:

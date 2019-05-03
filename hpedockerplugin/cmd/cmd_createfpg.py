@@ -20,7 +20,8 @@ class CreateFpgCmd(cmd.Cmd):
         self._set_default_fpg = set_default_fpg
 
     def execute(self):
-        with self._fp_etcd.get_fpg_lock(self._backend, self._fpg_name):
+        with self._fp_etcd.get_fpg_lock(self._backend, self._cpg_name,
+                                        self._fpg_name):
             LOG.info("Creating FPG %s on the backend using CPG %s" %
                      (self._fpg_name, self._cpg_name))
             self._mediator.create_fpg(self._cpg_name, self._fpg_name)
@@ -44,7 +45,7 @@ class CreateFpgCmd(cmd.Cmd):
                 LOG.error(msg)
                 raise exception.FpgCreationFailed(reason=msg)
 
-    def _unexecute(self):
+    def unexecute(self):
         if self._set_default_fpg:
             self._unset_as_default_fpg()
 

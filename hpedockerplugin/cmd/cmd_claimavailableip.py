@@ -23,7 +23,19 @@ class ClaimAvailableIPCmd(cmd.Cmd):
             raise exception.VfsCreationFailed()
 
     def unexecute(self):
-        pass
+        with self._fp_etcd.get_file_backend_lock(self._backend):
+            backend_metadata = self._fp_etcd.get_backend_metadata(
+                self._backend)
+            ips_in_use = backend_metadata['ips_in_use']
+            if self._locked_ip in ips_in_use:
+                ips_in_use.remove(self._locked_ip)
+
+            ips_locked_for_use = backend_metadata['ips_locked_for_use']
+            if self._locked_ip in ips_locked_for_use:
+                ips_locked_for_use.remove(self._locked_ip)
+
+            self._fp_etcd.save_backend_metadata(self._backend,
+                                                backend_metadata)
 
     def _get_available_ip(self):
         with self._fp_etcd.get_file_backend_lock(self._backend):

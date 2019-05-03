@@ -22,20 +22,36 @@ class CreateShareCmd(cmd.Cmd):
         self._config = file_mgr.get_config()
         self._backend = file_mgr.get_backend()
         self._share_args = share_args
-        # self._size = share_args['size']
-        self._cmds = []
-
-        # Initialize share state
-        self._etcd.save_share({
-            'name': share_args['name'],
-            'backend': self._backend,
-            'status': 'CREATING'
-        })
+        self._status = 'CREATING'
+        self._share_cnt_incremented = False
 
     def unexecute(self):
-        self._etcd.delete_share(self._share_args)
-        for command in reversed(self._cmds):
-            command.unexecute()
+        share_name = self._share_args['name']
+        LOG.info("cmd::unexecute: Removing share entry from ETCD: %s" %
+                 share_name)
+        self._etcd.delete_share(share_name)
+        if self._status == "AVAILABLE":
+            LOG.info("cmd::unexecute: Deleting share from backend: %s" %
+                     share_name)
+            self._mediator.delete_share(self._share_args['id'])
+            self._mediator.delete_file_store(self._share_args['fpg'],
+                                             share_name)
+        if self._share_cnt_incremented:
+            fpg_metadata = self._fp_etcd.get_fpg_metadata(
+                self._backend,
+                self._share_args['cpg'],
+                self._share_args['fpg']
+            )
+            cnt = int(fpg['share_cnt']) - 1
+            fpg_metadata['share_cnt'] = cnt
+            fpg_metadata['reached_full_capacity'] = False
+            self._fp_etcd.save_fpg_metadata(self._backend,
+                                            self._share_args['cpg'],
+                                            self._share_args['fpg'],
+                                            fpg_metadata)
+
+    def create_share(self):
+        self._create_share()
 
     def _create_share(self):
         share_etcd = self._file_mgr.get_etcd()
@@ -52,30 +68,35 @@ class CreateShareCmd(cmd.Cmd):
             raise exception.ShareCreationFailed(msg)
 
         try:
-            self._share_args['status'] = 'AVAILABLE'
+            self._status = 'AVAILABLE'
+            self._share_args['status'] = self._status
             share_etcd.save_share(self._share_args)
             self._increment_share_cnt_for_fpg()
         except Exception as ex:
             msg = "Share creation failed [share_name: %s, error: %s" %\
                   (share_name, six.text_type(ex))
             LOG.error(msg)
-            # TODO:
-            self._mediator.delete_share(self._share_args)
-            self.unexecute()
             raise exception.ShareCreationFailed(msg)
 
     # FPG lock is already acquired in this flow
     def _increment_share_cnt_for_fpg(self):
         cpg_name = self._share_args['cpg']
         fpg_name = self._share_args['fpg']
-        fpg = self._fp_etcd.get_fpg_metadata(self._backend, cpg_name,
+        LOG.info("Incrementing share count for FPG %s..." % fpg_name)
+        fpg = self._fp_etcd.get_fpg_metadata(self._backend,
+                                             cpg_name,
                                              fpg_name)
         cnt = fpg.get('share_cnt', 0) + 1
         fpg['share_cnt'] = cnt
+        LOG.info("Checking if count reached full capacity...")
         if cnt >= share.MAX_SHARES_PER_FPG:
+            LOG.info("Full capacity on FPG %s reached" % fpg_name)
             fpg['reached_full_capacity'] = True
+        LOG.info("Saving modified share count %s to ETCD for FPG %s"
+                 % (cnt, fpg_name))
         self._fp_etcd.save_fpg_metadata(self._backend, cpg_name,
                                         fpg_name, fpg)
+        self._share_cnt_incremented = True
 
 
 class CreateShareOnNewFpgCmd(CreateShareCmd):
@@ -90,51 +111,56 @@ class CreateShareOnNewFpgCmd(CreateShareCmd):
         cpg_name = self._share_args['cpg']
         fpg_name = self._share_args['fpg']
         vfs_name = self._share_args['vfs']
-        try:
-            create_fpg_cmd = CreateFpgCmd(self._file_mgr, cpg_name,
-                                          fpg_name, self._make_default_fpg)
-            create_fpg_cmd.execute()
-            self._cmds.append(create_fpg_cmd)
-        except exception.FpgCreationFailed as ex:
-            msg = "Create share on new FPG failed. Msg: %s" \
-                  % six.text_type(ex)
-            LOG.error(msg)
-            raise exception.ShareCreationFailed(reason=msg)
+        # Since we are creating a new FPG here, CPG must be locked
+        # just to avoid any possible duplicate FPG creation
+        with self._fp_etcd.get_cpg_lock(self._backend, cpg_name):
+            try:
+                create_fpg_cmd = CreateFpgCmd(
+                    self._file_mgr, cpg_name,
+                    fpg_name, self._make_default_fpg
+                )
+                create_fpg_cmd.execute()
+                self._cmds.append(create_fpg_cmd)
+            except exception.FpgCreationFailed as ex:
+                msg = "Create share on new FPG failed. Msg: %s" \
+                      % six.text_type(ex)
+                LOG.error(msg)
+                raise exception.ShareCreationFailed(reason=msg)
 
-        config = self._file_mgr.get_config()
-        claim_free_ip_cmd = ClaimAvailableIPCmd(self._backend,
-                                                config,
-                                                self._fp_etcd)
-        try:
-            ip, netmask = claim_free_ip_cmd.execute()
-            self._cmds.append(claim_free_ip_cmd)
+            config = self._file_mgr.get_config()
+            claim_free_ip_cmd = ClaimAvailableIPCmd(self._backend,
+                                                    config,
+                                                    self._fp_etcd)
+            try:
+                ip, netmask = claim_free_ip_cmd.execute()
+                self._cmds.append(claim_free_ip_cmd)
 
-            create_vfs_cmd = CreateVfsCmd(self._file_mgr, cpg_name,
-                                          fpg_name, vfs_name, ip, netmask)
-            create_vfs_cmd.execute()
-            self._cmds.append(create_vfs_cmd)
+                create_vfs_cmd = CreateVfsCmd(self._file_mgr, cpg_name,
+                                              fpg_name, vfs_name, ip, netmask)
+                create_vfs_cmd.execute()
+                self._cmds.append(create_vfs_cmd)
 
-            # Now that VFS has been created successfully, move the IP from
-            # locked-ip-list to ips-in-use list
-            claim_free_ip_cmd.mark_ip_in_use()
-            self._share_args['vfsIPs'] = [(ip, netmask)]
+                # Now that VFS has been created successfully, move the IP from
+                # locked-ip-list to ips-in-use list
+                claim_free_ip_cmd.mark_ip_in_use()
+                self._share_args['vfsIPs'] = [(ip, netmask)]
 
-        except exception.IPAddressPoolExhausted as ex:
-            msg = "Create VFS failed. Msg: %s" % six.text_type(ex)
-            LOG.error(msg)
-            raise exception.VfsCreationFailed(reason=msg)
-        except exception.VfsCreationFailed as ex:
-            msg = "Create share on new FPG failed. Msg: %s" \
-                  % six.text_type(ex)
-            LOG.error(msg)
-            self.unexecute()
-            raise exception.ShareCreationFailed(reason=msg)
+            except exception.IPAddressPoolExhausted as ex:
+                msg = "Create VFS failed. Msg: %s" % six.text_type(ex)
+                LOG.error(msg)
+                raise exception.VfsCreationFailed(reason=msg)
+            except exception.VfsCreationFailed as ex:
+                msg = "Create share on new FPG failed. Msg: %s" \
+                      % six.text_type(ex)
+                LOG.error(msg)
+                self.unexecute()
+                raise exception.ShareCreationFailed(reason=msg)
 
-        self._share_args['fpg'] = fpg_name
-        self._share_args['vfs'] = vfs_name
+            self._share_args['fpg'] = fpg_name
+            self._share_args['vfs'] = vfs_name
 
-        # All set to create share at this point
-        return self._create_share()
+            # All set to create share at this point
+            return self._create_share()
 
 
 class CreateShareOnDefaultFpgCmd(CreateShareCmd):
@@ -145,7 +171,9 @@ class CreateShareOnDefaultFpgCmd(CreateShareCmd):
         try:
             fpg_info = self._get_default_available_fpg()
             fpg_name = fpg_info['fpg']
-            with self._fp_etcd.get_fpg_lock(self._backend, fpg_name):
+            with self._fp_etcd.get_fpg_lock(self._backend,
+                                            self._share_args['cpg'],
+                                            fpg_name):
                 self._share_args['fpg'] = fpg_name
                 self._share_args['vfs'] = fpg_info['vfs']
                 # Only one IP per FPG is supported at the moment
@@ -160,14 +188,15 @@ class CreateShareOnDefaultFpgCmd(CreateShareCmd):
             # all the FPGs that were created as default and see if
             # any of those have share count less than MAX_SHARE_PER_FPG
             try:
+                cpg = self._share_args['cpg']
                 all_fpgs_for_cpg = self._fp_etcd.get_all_fpg_metadata(
-                    self._backend, self._share_args['cpg']
+                    self._backend, cpg
                 )
                 for fpg in all_fpgs_for_cpg:
                     fpg_name = fpg['fpg']
                     if fpg_name.startswith("Docker"):
-                        with self._fp_etcd.get_fpg_lock(self._backend,
-                                                        fpg_name):
+                        with self._fp_etcd.get_fpg_lock(
+                                self._backend, cpg, fpg_name):
                             if fpg['share_cnt'] < share.MAX_SHARES_PER_FPG:
                                 self._share_args['fpg'] = fpg_name
                                 self._share_args['vfs'] = fpg['vfs']
@@ -218,7 +247,7 @@ class CreateShareOnExistingFpgCmd(CreateShareCmd):
     def execute(self):
         fpg_name = self._share_args['fpg']
         cpg_name = self._share_args['cpg']
-        with self._fp_etcd.get_fpg_lock(self._backend, fpg_name):
+        with self._fp_etcd.get_fpg_lock(self._backend, cpg_name, fpg_name):
             try:
                 # Specified FPG may or may not exist. In case it
                 # doesn't, EtcdFpgMetadataNotFound exception is raised
