@@ -42,7 +42,7 @@ class DeleteShareCmd(cmd.Cmd):
                 self._share_etcd.save_share(share)
         except Exception as ex:
             LOG.error("ERROR: Remove quota failed for %s. %s"
-                      % (self._share_name, six.text_type(ex)))
+                      % (self._share_info['name'], six.text_type(ex)))
 
     def _delete_share(self):
         share_name = self._share_info['name']
