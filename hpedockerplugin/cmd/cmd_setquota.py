@@ -43,7 +43,7 @@ class SetQuotaCmd(cmd.Cmd):
         if self._quota_id:
             try:
                 self._mediator.remove_quota(self._quota_id)
-                self._update_share_metadata(quota_id, add=False)
+                self._update_share_metadata(self._quota_id, add=False)
             except Exception:
                 LOG.error("ERROR: Undo quota failed for %s" %
                           self._share_name)

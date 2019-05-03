@@ -42,7 +42,7 @@ class CreateShareCmd(cmd.Cmd):
                 self._share_args['cpg'],
                 self._share_args['fpg']
             )
-            cnt = int(fpg['share_cnt']) - 1
+            cnt = int(fpg_metadata['share_cnt']) - 1
             fpg_metadata['share_cnt'] = cnt
             fpg_metadata['reached_full_capacity'] = False
             self._fp_etcd.save_fpg_metadata(self._backend,

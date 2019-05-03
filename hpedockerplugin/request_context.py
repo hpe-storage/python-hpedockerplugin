@@ -286,18 +286,16 @@ class FileRequestContextBuilder(RequestContextBuilder):
                     'kwargs': {}
                 }
             else:
-                raise exception.InvalidInput("ERROR: Invalid value %s for "
-                                             "option 'help' specified." % value)
-
+                raise exception.InvalidInput(
+                    "ERROR: Invalid value %s for option 'help' specified."
+                    % value)
         LOG.info("_create_help_req_ctxt: Exiting...")
-        return ctxt
 
     def _create_snap_req_ctxt(self, contents):
         pass
 
     def _create_update_req_ctxt(self, contents):
         pass
-
 
 
 # TODO: This is work in progress - can be taken up later if agreed upon

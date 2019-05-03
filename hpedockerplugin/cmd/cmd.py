@@ -1,7 +1,5 @@
 import abc
 
-from hpedockerplugin import exception
-
 
 class Cmd(object):
     @abc.abstractmethod

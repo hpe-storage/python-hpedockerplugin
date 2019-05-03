@@ -13,6 +13,8 @@ from hpedockerplugin.cmd.cmd_createvfs import CreateVfsCmd
 
 from hpedockerplugin.cmd.cmd_initshare import InitializeShareCmd
 from hpedockerplugin.cmd.cmd_createshare import CreateShareCmd
+from hpedockerplugin.cmd.cmd_createshare import CreateShareOnExistingFpgCmd
+from hpedockerplugin.cmd.cmd_createshare import CreateShareOnNewFpgCmd
 from hpedockerplugin.cmd import cmd_generate_fpg_vfs_names
 from hpedockerplugin.cmd import cmd_setquota
 from hpedockerplugin.cmd import cmd_deleteshare
@@ -113,7 +115,7 @@ class FileManager(object):
     def _create_share_on_fpg(self, fpg_name, share_args):
         try:
             undo_cmds = []
-            create_share_cmd = cmd_createshare.CreateShareOnExistingFpgCmd(
+            create_share_cmd = CreateShareOnExistingFpgCmd(
                 self, share_args
             )
             create_share_cmd.execute()
@@ -135,28 +137,8 @@ class FileManager(object):
             # User wants to create FPG by name fpg_name
             vfs_name = fpg_name + '_vfs'
             share_args['vfs'] = vfs_name
-            cmd = cmd_createshare.CreateShareOnNewFpgCmd(
+            cmd = CreateShareOnNewFpgCmd(
                 self, share_args
-            )
-            return cmd.execute()
-
-    def _create_share_on_default_fpg(self, cpg_name, share_args):
-        try:
-            cmd = cmd_createshare.CreateShareOnDefaultFpgCmd(
-                self, share_args
-            )
-            return cmd.execute()
-        except (exception.EtcdMaxSharesPerFpgLimitException,
-                exception.EtcdDefaultFpgNotPresent) as ex:
-            cmd = cmd_generate_fpg_vfs_names.GenerateFpgVfsNamesCmd(
-                self._backend, cpg_name, self._fp_etcd_client
-            )
-            fpg_name, vfs_name = cmd.execute()
-
-            share_args['fpg'] = fpg_name
-            share_args['vfs'] = vfs_name
-            cmd = cmd_createshare.CreateShareOnNewFpgCmd(
-                self, share_args, make_default_fpg=True
             )
             return cmd.execute()
 
@@ -220,7 +202,7 @@ class FileManager(object):
         for undo_cmd in reversed(undo_cmds):
             undo_cmd.unexecute()
 
-    def _create_share_on_default_fpg_new(self, share_args):
+    def _create_share_on_default_fpg(self, share_args):
         share_name = share_args['name']
         LOG.info("Creating share on default FPG %s..." % share_name)
         undo_cmds = []
@@ -288,7 +270,8 @@ class FileManager(object):
                              (fpg_name, cpg))
                     undo_cmds.append(create_fpg_cmd)
 
-                    LOG.info("Creating VFS %s under FPG %s" % (vfs_name, fpg_name))
+                    LOG.info("Creating VFS %s under FPG %s" %
+                             (vfs_name, fpg_name))
                     create_vfs_cmd = CreateVfsCmd(
                         self, cpg, fpg_name, vfs_name, ip, netmask
                     )
@@ -298,9 +281,9 @@ class FileManager(object):
                     undo_cmds.append(create_vfs_cmd)
 
                     LOG.info("Marking IP %s to be in use by VFS /%s/%s"
-                             %(ip, fpg_name, vfs_name))
-                    # Now that VFS has been created successfully, move the IP from
-                    # locked-ip-list to ips-in-use list
+                             % (ip, fpg_name, vfs_name))
+                    # Now that VFS has been created successfully, move the IP
+                    # from locked-ip-list to ips-in-use list
                     claim_free_ip_cmd.mark_ip_in_use()
                     share_args['vfsIPs'] = [(ip, netmask)]
 
@@ -326,14 +309,14 @@ class FileManager(object):
                 except Exception as ex:
                     msg = "Unknown exception caught: %s" % six.text_type(ex)
                     LOG.error(msg)
-                    self._unexecute(cmds)
+                    self._unexecute(undo_cmds)
                     raise exception.ShareCreationFailed(reason=msg)
 
             except Exception as ex:
                 msg = "Unknown exception occurred while using default FPG " \
                       "for share creation: %s" % six.text_type(ex)
                 LOG.error(msg)
-                self._unexecute(cmds)
+                self._unexecute(undo_cmds)
                 raise exception.ShareCreationFailed(reason=msg)
 
             try:
@@ -377,7 +360,7 @@ class FileManager(object):
         if fpg_name:
             self._create_share_on_fpg(fpg_name, share_args)
         else:
-            self._create_share_on_default_fpg_new(share_args)
+            self._create_share_on_default_fpg(share_args)
 
     def remove_share(self, share_name, share):
         cmd = cmd_deleteshare.DeleteShareCmd(self, share)
