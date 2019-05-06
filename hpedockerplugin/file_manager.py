@@ -146,10 +146,19 @@ class FileManager(object):
             vfs_name = fpg_name + '_vfs'
             share_args['vfs'] = vfs_name
 
-            cmd = CreateShareOnNewFpgCmd(
+            create_share_on_new_fpg_cmd = CreateShareOnNewFpgCmd(
                 self, share_args
             )
-            return cmd.execute()
+            create_share_on_new_fpg_cmd.execute()
+
+            set_quota_cmd = cmd_setquota.SetQuotaCmd(
+                self, share_args['cpg'],
+                share_args['fpg'],
+                share_args['vfs'],
+                share_args['name'],
+                share_args['size']
+            )
+            set_quota_cmd.execute()
 
     def create_share(self, share_name, **args):
         share_args = copy.deepcopy(args)

@@ -140,9 +140,9 @@ class CreateShareOnNewFpgCmd(CreateShareCmd):
                 LOG.info("Available IP %s claimed for VFS creation" % ip)
                 create_vfs_cmd = CreateVfsCmd(self._file_mgr, cpg_name,
                                               fpg_name, vfs_name, ip, netmask)
-                LOG.info("Creating VFS %s with IP %s..." % (vfs_name,ip))
+                LOG.info("Creating VFS %s with IP %s..." % (vfs_name, ip))
                 create_vfs_cmd.execute()
-                LOG.info("VFS %s created with IP %s" % (vfs_name,ip))
+                LOG.info("VFS %s created with IP %s" % (vfs_name, ip))
 
                 # Now that VFS has been created successfully, move the IP from
                 # locked-ip-list to ips-in-use list
@@ -271,7 +271,7 @@ class CreateShareOnExistingFpgCmd(CreateShareCmd):
                 LOG.info("Creating share % under FPG %s"
                          % (self._share_args['name'], fpg_name))
                 self._create_share()
-            except exception.EtcdMetadataNotFound as ex:
+            except exception.EtcdMetadataNotFound:
                 LOG.info("Specified FPG %s not found in ETCD. Checking "
                          "if this is a legacy FPG..." % fpg_name)
                 # Assume it's a legacy FPG, try to get details
