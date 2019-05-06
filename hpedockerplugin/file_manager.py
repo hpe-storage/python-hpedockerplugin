@@ -113,8 +113,15 @@ class FileManager(object):
         return hpe_3par_mediator.HPE3ParMediator(host_config, config)
 
     def _create_share_on_fpg(self, fpg_name, share_args):
+        undo_cmds = []
         try:
-            undo_cmds = []
+            # TODO:Imran: Ideally this should be done on main thread
+            init_share_cmd = InitializeShareCmd(
+                self._backend, share_name, self._etcd
+            )
+            init_share_cmd.execute()
+            undo_cmds.append(init_share_cmd)
+
             create_share_cmd = CreateShareOnExistingFpgCmd(
                 self, share_args
             )
@@ -134,6 +141,7 @@ class FileManager(object):
             except Exception:
                 self._unexecute(undo_cmds)
         except exception.FpgNotFound:
+            self._unexecute(undo_cmds)
             # User wants to create FPG by name fpg_name
             vfs_name = fpg_name + '_vfs'
             share_args['vfs'] = vfs_name

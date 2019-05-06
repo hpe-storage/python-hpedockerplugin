@@ -957,7 +957,7 @@ class HPE3ParMediator(object):
         except Exception:
             msg = (_('Failed to create FPG %s of size %s using CPG %s') %
                    (fpg_name, size, cpg))
-            LOG.exception(msg)
+            LOG.error(msg)
             raise exception.ShareBackendException(msg=msg)
         finally:
             self._wsapi_logout()

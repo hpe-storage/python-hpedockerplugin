@@ -245,35 +245,44 @@ class CreateShareOnExistingFpgCmd(CreateShareCmd):
                                                           share_args)
 
     def execute(self):
+        LOG.info("Creating share on existing FPG...")
         fpg_name = self._share_args['fpg']
         cpg_name = self._share_args['cpg']
+        LOG.info("Existing FPG name: %s" % fpg_name)
         with self._fp_etcd.get_fpg_lock(self._backend, cpg_name, fpg_name):
             try:
+                LOG.info("Checking if FPG %s exists in ETCD...." % fpg_name)
                 # Specified FPG may or may not exist. In case it
                 # doesn't, EtcdFpgMetadataNotFound exception is raised
                 fpg_info = self._fp_etcd.get_fpg_metadata(
                     self._backend, cpg_name, fpg_name)
+                LOG.info("FPG %s found" % fpg_name)
                 self._share_args['vfs'] = fpg_info['vfs']
                 # Only one IP per FPG is supported at the moment
                 # Given that, list can be dropped
                 subnet_ips_map = fpg_info['ips']
                 subnet, ips = next(iter(subnet_ips_map.items()))
                 self._share_args['vfsIPs'] = [(ips[0], subnet)]
+                LOG.info("Creating share % under FPG %s"
+                         % (self._share_args['name'], fpg_name))
                 self._create_share()
             except exception.EtcdMetadataNotFound as ex:
+                LOG.info("Specified FPG %s not found in ETCD. Checking "
+                         "if this is a legacy FPG..." % fpg_name)
                 # Assume it's a legacy FPG, try to get details
                 fpg_info = self._get_legacy_fpg()
 
+                LOG.info("FPG %s is a legacy FPG" % fpg_name)
                 # CPG passed can be different than actual CPG
                 # used for creating legacy FPG. Override default
                 # or supplied CPG
                 if cpg_name != fpg_info['cpg']:
-                    raise exception.InvalidInput(
-                        'ERROR: Invalid CPG %s specified or configured in '
-                        'hpe.conf for the specified legacy FPG %s. Please '
-                        'specify correct CPG as %s' %
-                        (cpg_name, fpg_name, fpg_info['cpg'])
-                    )
+                    msg = ('ERROR: Invalid CPG %s specified or configured in '
+                           'hpe.conf for the specified legacy FPG %s. Please '
+                           'specify correct CPG as %s' %
+                           (cpg_name, fpg_name, fpg_info['cpg']))
+                    LOG.error(msg)
+                    raise exception.InvalidInput(msg)
 
                 vfs_info = self._get_backend_vfs_for_fpg()
                 vfs_name = vfs_info['name']

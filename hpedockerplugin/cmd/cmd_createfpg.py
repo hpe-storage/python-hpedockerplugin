@@ -24,8 +24,8 @@ class CreateFpgCmd(cmd.Cmd):
                                         self._fpg_name):
             LOG.info("Creating FPG %s on the backend using CPG %s" %
                      (self._fpg_name, self._cpg_name))
-            self._mediator.create_fpg(self._cpg_name, self._fpg_name)
             try:
+                self._mediator.create_fpg(self._cpg_name, self._fpg_name)
                 if self._set_default_fpg:
                     self._old_fpg_name = self._set_as_default_fpg()
 
@@ -39,7 +39,8 @@ class CreateFpgCmd(cmd.Cmd):
                                                 self._fpg_name,
                                                 fpg_metadata)
 
-            except exception.EtcdMetadataNotFound as ex:
+            except (exception.ShareBackendException,
+                    exception.EtcdMetadataNotFound) as ex:
                 msg = "Create new FPG %s failed. Msg: %s" \
                       % (self._fpg_name, six.text_type(ex))
                 LOG.error(msg)
