@@ -114,6 +114,7 @@ class FileManager(object):
 
     def _create_share_on_fpg(self, fpg_name, share_args):
         undo_cmds = []
+        share_name = share_args['name']
         try:
             # TODO:Imran: Ideally this should be done on main thread
             init_share_cmd = InitializeShareCmd(
@@ -141,10 +142,10 @@ class FileManager(object):
             except Exception:
                 self._unexecute(undo_cmds)
         except exception.FpgNotFound:
-            self._unexecute(undo_cmds)
             # User wants to create FPG by name fpg_name
             vfs_name = fpg_name + '_vfs'
             share_args['vfs'] = vfs_name
+
             cmd = CreateShareOnNewFpgCmd(
                 self, share_args
             )

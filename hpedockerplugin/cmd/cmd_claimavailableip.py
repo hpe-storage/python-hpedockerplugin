@@ -39,8 +39,21 @@ class ClaimAvailableIPCmd(cmd.Cmd):
 
     def _get_available_ip(self):
         with self._fp_etcd.get_file_backend_lock(self._backend):
-            backend_metadata = self._fp_etcd.get_backend_metadata(
-                self._backend)
+            try:
+                backend_metadata = self._fp_etcd.get_backend_metadata(
+                    self._backend
+                )
+            except exception.EtcdMetadataNotFound:
+                backend_metadata = {
+                    'ips_in_use': [],
+                    'ips_locked_for_use': [],
+                }
+                LOG.info("Backend metadata entry for backend %s not found."
+                         "Creating %s..." %
+                         (self._backend, six.text_type(backend_metadata)))
+                self._fp_etcd.save_backend_metadata(self._backend,
+                                                    backend_metadata)
+
             ips_in_use = backend_metadata['ips_in_use']
             ips_locked_for_use = backend_metadata['ips_locked_for_use']
             total_ips_in_use = set(ips_in_use + ips_locked_for_use)

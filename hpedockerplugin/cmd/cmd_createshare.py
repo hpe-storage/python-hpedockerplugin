@@ -108,40 +108,45 @@ class CreateShareOnNewFpgCmd(CreateShareCmd):
         return self._create_share_on_new_fpg()
 
     def _create_share_on_new_fpg(self):
+        LOG.info("Creating share on new FPG...")
         cpg_name = self._share_args['cpg']
         fpg_name = self._share_args['fpg']
         vfs_name = self._share_args['vfs']
+        LOG.info("New FPG name %s" % fpg_name)
         # Since we are creating a new FPG here, CPG must be locked
         # just to avoid any possible duplicate FPG creation
         with self._fp_etcd.get_cpg_lock(self._backend, cpg_name):
             try:
+                LOG.info("Creating new FPG %s..." % fpg_name)
                 create_fpg_cmd = CreateFpgCmd(
                     self._file_mgr, cpg_name,
                     fpg_name, self._make_default_fpg
                 )
                 create_fpg_cmd.execute()
-                self._cmds.append(create_fpg_cmd)
             except exception.FpgCreationFailed as ex:
                 msg = "Create share on new FPG failed. Msg: %s" \
                       % six.text_type(ex)
                 LOG.error(msg)
                 raise exception.ShareCreationFailed(reason=msg)
 
+            LOG.info("Trying to claim available IP from IP pool...")
             config = self._file_mgr.get_config()
             claim_free_ip_cmd = ClaimAvailableIPCmd(self._backend,
                                                     config,
                                                     self._fp_etcd)
             try:
                 ip, netmask = claim_free_ip_cmd.execute()
-                self._cmds.append(claim_free_ip_cmd)
 
+                LOG.info("Available IP %s claimed for VFS creation" % ip)
                 create_vfs_cmd = CreateVfsCmd(self._file_mgr, cpg_name,
                                               fpg_name, vfs_name, ip, netmask)
+                LOG.info("Creating VFS %s with IP %s..." % (vfs_name,ip))
                 create_vfs_cmd.execute()
-                self._cmds.append(create_vfs_cmd)
+                LOG.info("VFS %s created with IP %s" % (vfs_name,ip))
 
                 # Now that VFS has been created successfully, move the IP from
                 # locked-ip-list to ips-in-use list
+                LOG.info("Marking IP %s for VFS %s in use" % (ip, vfs_name))
                 claim_free_ip_cmd.mark_ip_in_use()
                 self._share_args['vfsIPs'] = [(ip, netmask)]
 
