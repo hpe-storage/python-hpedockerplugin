@@ -577,8 +577,8 @@ class TestMountVolumeISCSIHostChapOn(MountVolumeUnitTest):
             data.connector
 
     def override_configuration(self, all_configs):
-        all_configs['DEFAULT'].hpe3par_iscsi_chap_enabled = True
-        all_configs['DEFAULT'].use_multipath = False
+        all_configs['block'][1]['DEFAULT'].hpe3par_iscsi_chap_enabled = True
+        all_configs['block'][1]['DEFAULT'].use_multipath = False
 
     def check_response(self, resp):
         # resp -> {u'Mountpoint': u'/tmp', u'Name': u'test-vol-001',
@@ -704,7 +704,7 @@ class TestMountVolumeNoISCSIHostNoVLUN(MountVolumeUnitTest):
 
     def override_configuration(self, all_configs):
         # config.hpe3par_iscsi_chap_enabled = True
-        all_configs['DEFAULT'].use_multipath = False
+        all_configs['block'][1]['DEFAULT'].use_multipath = False
 
     def check_response(self, resp):
         # resp -> {u'Mountpoint': u'/tmp', u'Name': u'test-vol-001',

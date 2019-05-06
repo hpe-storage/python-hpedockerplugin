@@ -32,7 +32,6 @@ class HpeDockerUnitTestExecutor(object):
 
     def __init__(self, **kwargs):
         self._kwargs = kwargs
-        self._host_config = None
         self._all_configs = None
 
     @staticmethod
@@ -55,7 +54,7 @@ class HpeDockerUnitTestExecutor(object):
         # Get API parameters from child class
         req_body = self._get_request_body(self.get_request_params())
 
-        _api = api.VolumePlugin(reactor, self._host_config, self._all_configs)
+        _api = api.VolumePlugin(reactor, self._all_configs)
         try:
             resp = getattr(_api, plugin_api)(req_body)
             resp = json.loads(resp)
@@ -95,7 +94,7 @@ class HpeDockerUnitTestExecutor(object):
         # Get API parameters from child class
         req_body = self._get_request_body(self.get_request_params())
 
-        _api = api.VolumePlugin(reactor, self._host_config, self._all_configs)
+        _api = api.VolumePlugin(reactor, self._all_configs)
         req_params = self.get_request_params()
         backend = req_params.get('backend', 'DEFAULT')
 
@@ -126,7 +125,7 @@ class HpeDockerUnitTestExecutor(object):
         # This is important to set as it is used by the mock decorator to
         # take decision which driver to instantiate
         self._protocol = test_case.protocol
-        self._host_config, self._all_configs = self._get_configuration()
+        self._all_configs = self._get_configuration()
 
         if not self.use_real_flow():
             self._mock_execute_api(plugin_api=self._get_plugin_api())
@@ -146,18 +145,48 @@ class HpeDockerUnitTestExecutor(object):
         cfg_param = ['--config-file', cfg_file_name]
         try:
             host_config = setupcfg.get_host_config(cfg_param)
-            all_configs = setupcfg.get_all_backend_configs(cfg_param)
+            backend_configs = setupcfg.get_all_backend_configs(cfg_param)
         except Exception as ex:
             msg = 'Setting up of hpe3pardocker unit test failed, error is: ' \
                   '%s' % six.text_type(ex)
             # LOG.error(msg)
             raise exception.HPEPluginStartPluginException(reason=msg)
 
+        all_configs = self._rearrange_configs(host_config, backend_configs)
+
         # _protocol is set in the immediate child class
         # config = create_configuration(self._protocol)
         # Allow child classes to override configuration
         self.override_configuration(all_configs)
-        return host_config, all_configs
+        return all_configs
+
+    def _rearrange_configs(self, host_config, backend_configs):
+        file_driver = 'hpedockerplugin.hpe.hpe_3par_file.HPE3PARFileDriver'
+        fc_driver = 'hpedockerplugin.hpe.hpe_3par_fc.HPE3PARFCDriver'
+        iscsi_driver = 'hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver'
+        # backend_configs -> {'backend1': config1, 'backend2': config2, ...}
+        # all_configs -> {'block': backend_configs1, 'file': backend_configs2}
+        file_configs = {}
+        block_configs = {}
+        all_configs = {}
+        for backend_name, config in backend_configs.items():
+            configured_driver = config.hpedockerplugin_driver.strip()
+            if configured_driver == file_driver:
+                file_configs[backend_name] = config
+            elif configured_driver == fc_driver or \
+                    configured_driver == iscsi_driver:
+                block_configs[backend_name] = config
+            else:
+                msg = "Bad driver name specified in hpe.conf: %s" %\
+                      configured_driver
+                raise exception.HPEPluginStartPluginException(reason=msg)
+
+        if file_configs:
+            all_configs['file'] = (host_config, file_configs)
+        if block_configs:
+            all_configs['block'] = (host_config, block_configs)
+
+        return all_configs
 
     """
     Allows the child class to override the HPE configuration parameters

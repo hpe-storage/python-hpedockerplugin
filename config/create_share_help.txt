@@ -1,0 +1,18 @@
+
+
+===============================================
+HPE 3PAR Share Plug-in For Docker: Create Help
+===============================================
+Create a share in HPE 3PAR using HPE 3PAR volume plug-in for Docker.
+
+-o filePersona          Presence of this flag allows the File Persona driver to process the request
+-o fpg=x                  x is the name of the file provisioning group (FPG). This option must be specified when user wants
+                            to use a non-default FPG or a legacy FPG. The FPG may or may not be an existing one.
+                            For a non-existing FPG x, a new FPG is created using the CPG that is either explicitly
+                            specified with '-o cpg' option or configured in hpe.conf.
+                            If FPG exists, be it a legacy FPG or Docker managed FPG, share is simply created under it.
+                            In case this option is not specified, then a default FPG is created with size 64TiB if it
+                            doesn't exist. Naming convention for default FPG is DockerFpg_n where n is an integer
+                            starting from 0.
+-o size=x               x is the size of the share in MiB. By default, it is 4TiB
+-o help                 Displays this help content

@@ -24,7 +24,11 @@ class TestCloneDefault(CloneVolumeUnitTest):
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
-        mock_etcd.get_vol_byname.return_value = data.volume
+        mock_etcd.get_vol_byname.side_effect = [
+            None,
+            data.volume,
+            data.volume
+        ]
 
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.copyVolume.return_value = {'taskid': data.TASK_ID}
@@ -39,7 +43,11 @@ class TestCloneDefaultEtcdSaveFails(CloneVolumeUnitTest):
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
-        mock_etcd.get_vol_byname.return_value = data.volume
+        mock_etcd.get_vol_byname.side_effect = [
+            None,
+            data.volume,
+            data.volume
+        ]
         # Make save_vol fail with exception
         mock_etcd.save_vol.side_effect = [Exception("I am dead")]
 
@@ -77,7 +85,11 @@ class TestCloneOfflineCopy(CloneVolumeUnitTest):
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
-        mock_etcd.get_vol_byname.return_value = data.volume
+        mock_etcd.get_vol_byname.side_effect = [
+            None,
+            data.volume,
+            data.volume
+        ]
 
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.copyVolume.return_value = {'taskid': data.TASK_ID}
@@ -100,7 +112,11 @@ class TestCloneFromBaseVolumeActiveTask(CloneVolumeUnitTest):
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
-        mock_etcd.get_vol_byname.return_value = data.volume
+        mock_etcd.get_vol_byname.side_effect = [
+            None,
+            data.volume,
+            data.volume
+        ]
 
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.copyVolume.return_value = {'taskid': data.TASK_ID}
@@ -139,7 +155,11 @@ class TestCloneWithInvalidSize(CloneVolumeUnitTest):
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
         # Source volume that is to be cloned
-        mock_etcd.get_vol_byname.return_value = data.volume
+        mock_etcd.get_vol_byname.side_effect = [
+            None,
+            data.volume,
+            data.volume
+        ]
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.isOnlinePhysicalCopy.return_value = False
 
@@ -165,7 +185,11 @@ class TestCloneDedupVolume(CloneVolumeUnitTest):
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
-        mock_etcd.get_vol_byname.return_value = data.volume_dedup
+        mock_etcd.get_vol_byname.side_effect = [
+            None,
+            data.volume_dedup,
+            data.volume_dedup
+        ]
 
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.copyVolume.return_value = {'taskid': data.TASK_ID}
@@ -190,7 +214,11 @@ class TestCloneWithFlashCache(CloneVolumeUnitTest):
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
-        mock_etcd.get_vol_byname.return_value = data.volume_flash_cache
+        mock_etcd.get_vol_byname.side_effect = [
+            None,
+            data.volume_flash_cache,
+            data.volume_flash_cache
+        ]
 
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.copyVolume.return_value = {'taskid': data.TASK_ID}
@@ -213,7 +241,11 @@ class TestCloneWithQOS(CloneVolumeUnitTest):
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
-        mock_etcd.get_vol_byname.return_value = data.volume_qos
+        mock_etcd.get_vol_byname.side_effect = [
+            None,
+            data.volume_qos,
+            data.volume_qos
+        ]
 
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.copyVolume.return_value = {'taskid': data.TASK_ID}
@@ -244,7 +276,11 @@ class TestCloneWithFlashCacheAddVVSetFails(CloneVolumeUnitTest):
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
-        mock_etcd.get_vol_byname.return_value = data.volume_flash_cache
+        mock_etcd.get_vol_byname.side_effect = [
+            None,
+            data.volume_flash_cache,
+            data.volume_flash_cache,
+        ]
 
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.copyVolume.return_value = {'taskid': data.TASK_ID}
@@ -279,7 +315,11 @@ class TestCloneWithFlashCacheEtcdSaveFails(CloneVolumeUnitTest):
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
-        mock_etcd.get_vol_byname.return_value = data.volume_flash_cache
+        mock_etcd.get_vol_byname.side_effect = [
+            None,
+            data.volume_flash_cache,
+            data.volume_flash_cache
+        ]
         mock_etcd.save_vol.side_effect = \
             [hpe_exc.HPEPluginSaveFailed(obj='clone-vol-001')]
 
@@ -310,7 +350,11 @@ class TestCloneSetFlashCacheFails(CloneVolumeUnitTest):
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
-        mock_etcd.get_vol_byname.return_value = data.volume_flash_cache
+        mock_etcd.get_vol_byname.side_effect = [
+            None,
+            data.volume_flash_cache,
+            data.volume_flash_cache,
+        ]
 
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.copyVolume.return_value = {'taskid': data.TASK_ID}
@@ -344,8 +388,11 @@ class TestCloneWithFlashCacheAndQOSEtcdSaveFails(CloneVolumeUnitTest):
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
-        mock_etcd.get_vol_byname.return_value = \
+        mock_etcd.get_vol_byname.side_effect = [
+            None,
+            data.volume_flash_cache_and_qos,
             data.volume_flash_cache_and_qos
+        ]
         mock_etcd.save_vol.side_effect = \
             [hpe_exc.HPEPluginSaveFailed(obj='clone-vol-001')]
 
@@ -358,8 +405,8 @@ class TestCloneWithFlashCacheAndQOSEtcdSaveFails(CloneVolumeUnitTest):
 # CHAP enabled makes Offline copy flow to execute
 class TestCloneWithCHAP(CloneVolumeUnitTest):
     def override_configuration(self, all_configs):
-        all_configs['DEFAULT'].hpe3par_iscsi_chap_enabled = True
-        all_configs['DEFAULT'].use_multipath = False
+        all_configs['block'][1]['DEFAULT'].hpe3par_iscsi_chap_enabled = True
+        all_configs['block'][1]['DEFAULT'].use_multipath = False
 
     def check_response(self, resp):
         self._test_case.assertEqual(resp, {u"Err": ''})
@@ -377,7 +424,11 @@ class TestCloneWithCHAP(CloneVolumeUnitTest):
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
-        mock_etcd.get_vol_byname.return_value = data.volume
+        mock_etcd.get_vol_byname.side_effect = [
+            None,
+            data.volume,
+            data.volume
+        ]
 
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.copyVolume.return_value = {'taskid': data.TASK_ID}
@@ -402,7 +453,11 @@ class TestCloneCompressedVolume(CloneVolumeUnitTest):
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
-        mock_etcd.get_vol_byname.return_value = data.volume_compression
+        mock_etcd.get_vol_byname.side_effect = [
+            None,
+            data.volume_compression,
+            data.volume_compression
+        ]
 
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.getWsApiVersion.return_value = \

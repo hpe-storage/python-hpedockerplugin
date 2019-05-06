@@ -20,20 +20,20 @@ initialization via the manager_objs backed to the caller.
 """
 
 import threading
-import hpedockerplugin.volume_manager as mgr
 from oslo_log import log as logging
 
 LOG = logging.getLogger(__name__)
 
 
 class BackendInitializerThread(threading.Thread):
-    def __init__(self, manager_objs,
+    def __init__(self, orchestrator, manager_objs,
                  host_config,
                  config,
                  etcd_util,
                  node_id,
                  backend_name):
         threading.Thread.__init__(self)
+        self.orchestrator = orchestrator
         self.manager_objs = manager_objs
         self.backend_name = backend_name
         self.host_config = host_config
@@ -46,7 +46,7 @@ class BackendInitializerThread(threading.Thread):
 
         volume_mgr = {}
         try:
-            volume_mgr_obj = mgr.VolumeManager(
+            volume_mgr_obj = self.orchestrator.get_manager(
                 self.host_config,
                 self.config,
                 self.etcd_util,

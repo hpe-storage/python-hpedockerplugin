@@ -249,7 +249,7 @@ class HPEPluginUnlockFailed(HPEPluginEtcdException):
 
 
 class HPEDriverException(PluginException):
-    pass
+    message = _("Driver exception: %(msg)")
 
 
 class HPEDriverInvalidInput(HPEDriverException):
@@ -274,7 +274,8 @@ class HPEDriverCreateVolumeWithQosFailed(HPEDriverException):
 
 
 class HPEDriverGetQosFromVvSetFailed(HPEDriverException):
-    message = ""
+    message = _("Failed to retrieve QOS from VV-Set %(vvset_name)s:"
+                " %(reason)s")
 
 
 class HPEDriverSetFlashCacheOnVvsFailed(HPEDriverException):
@@ -341,3 +342,81 @@ class DeleteReplicatedVolumeFailed(PluginException):
 
 class RcgStateInTransitionException(PluginException):
     message = _("Remote copy group state is in transition: %(reason)s")
+
+
+class HPEDriverNoQosOrFlashCacheSetForVolume(PluginException):
+    message = _("Volume in VVS without being associated with QOS or "
+                "flash-cache: %(reason)s")
+
+
+class EtcdMetadataNotFound(PluginException):
+    message = _("ETCD metadata not found: %(msg)s")
+
+
+class ShareBackendException(PluginException):
+    message = _("Share backend exception: %(msg)s")
+
+
+class EtcdFpgEntryForCpgNotFound(PluginException):
+    message = _("FPG %(fpg)s does not exist under the specified/default "
+                "CPG %(cpg)s")
+
+
+class FpgNotFound(PluginException):
+    message = _("FPG %(fpg)s does not exist")
+
+
+class EtcdCpgEntryNotFound(PluginException):
+    message = _("CPG %(cpg)s does not exist %(cpg)s")
+
+
+class CmdExecutionError(PluginException):
+    message = _("Failed to execute command. Cause: %(msg)s")
+
+
+class EtcdInvalidLockType(PluginException):
+    message = _("Invalid lock type %(type)s specified")
+
+
+class FileIPPoolExhausted(PluginException):
+    message = _("IP pool exhausted for %(backend)s")
+
+
+class EtcdMaxSharesPerFpgLimitException(PluginException):
+    message = _("Max share limit reached for FPG %(fpg_name)s")
+
+
+class EtcdDefaultFpgNotAvailable(PluginException):
+    message = _("No default FPG is available under CPG %(cpg)s")
+
+
+class EtcdDefaultFpgNotPresent(PluginException):
+    message = _("No default FPG is not present for CPG %(cpg)s")
+
+
+class EtcdBackendMetadataDoesNotExist(PluginException):
+    message = _("Backend metadata doesn't exist for backend: %(backend)s")
+
+
+class EtcdUnknownException(PluginException):
+    message = _("Unknown exception occured: %(reason)s")
+
+
+class IPAddressPoolExhausted(PluginException):
+    message = _("IP adderss pool exhausted")
+
+
+class VfsCreationFailed(PluginException):
+    message = _("VFS creation failed: %(reason)s")
+
+
+class ShareCreationFailed(PluginException):
+    message = _("Share creation failed: %(reason)s")
+
+
+class FpgCreationFailed(PluginException):
+    message = _("FPG creation failed: %(reason)s")
+
+
+class SetQuotaFailed(PluginException):
+    message = _("Set quota failed: %(reason)s")

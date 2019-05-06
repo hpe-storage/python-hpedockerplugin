@@ -25,10 +25,12 @@ Eg.
 
 
 """
+import abc
 import json
 from oslo_log import log as logging
 import os
 import uuid
+import hpedockerplugin.volume_manager as mgr
 import hpedockerplugin.etcdutil as util
 import threading
 import hpedockerplugin.backend_async_initializer as async_initializer
@@ -39,9 +41,10 @@ DEFAULT_BACKEND_NAME = "DEFAULT"
 
 
 class Orchestrator(object):
-    def __init__(self, host_config, backend_configs):
+    def __init__(self, host_config, backend_configs, def_backend_name):
         LOG.info('calling initialize manager objs')
-        self.etcd_util = self._get_etcd_util(host_config)
+        self._def_backend_name = def_backend_name
+        self._etcd_client = self._get_etcd_client(host_config)
         self._manager = self.initialize_manager_objects(host_config,
                                                         backend_configs)
 
@@ -50,13 +53,12 @@ class Orchestrator(object):
         self.volume_backends_map = {}
         self.volume_backend_lock = threading.Lock()
 
-    @staticmethod
-    def _get_etcd_util(host_config):
-        return util.EtcdUtil(
-            host_config.host_etcd_ip_address,
-            host_config.host_etcd_port_number,
-            host_config.host_etcd_client_cert,
-            host_config.host_etcd_client_key)
+    def get_default_backend_name(self):
+        return self._def_backend_name
+
+    @abc.abstractmethod
+    def _get_etcd_client(self, host_config):
+        pass
 
     @staticmethod
     def _get_node_id():
@@ -88,15 +90,15 @@ class Orchestrator(object):
                 volume_mgr['mgr'] = None
                 manager_objs[backend_name] = volume_mgr
 
-                thread = \
-                    async_initializer. \
-                    BackendInitializerThread(
-                        manager_objs,
-                        host_config,
-                        config,
-                        self.etcd_util,
-                        node_id,
-                        backend_name)
+                thread = async_initializer.BackendInitializerThread(
+                    self,
+                    manager_objs,
+                    host_config,
+                    config,
+                    self._etcd_client,
+                    node_id,
+                    backend_name
+                )
                 thread.start()
 
             except Exception as ex:
@@ -123,7 +125,7 @@ class Orchestrator(object):
         # https://docs.python.org/3/library/threading.html
         self.volume_backend_lock.acquire()
         try:
-            vol = self.etcd_util.get_vol_byname(volname)
+            vol = self.get_meta_data_by_name(volname)
             if vol is not None and 'backend' in vol:
                 current_backend = vol['backend']
                 # populate the volume backend map for caching
@@ -136,17 +138,18 @@ class Orchestrator(object):
                 # where the backend can't be read from volume
                 # metadata in etcd
                 LOG.info(' vol obj read from etcd : %s' % vol)
-                return 'DEFAULT'
+                return self._def_backend_name
         finally:
             self.volume_backend_lock.release()
 
-    def __execute_request(self, backend, request, volname, *args, **kwargs):
+    def _execute_request_for_backend(self, backend_name, request, volname,
+                                     *args, **kwargs):
         LOG.info(' Operating on backend : %s on volume %s '
-                 % (backend, volname))
+                 % (backend_name, volname))
         LOG.info(' Request %s ' % request)
         LOG.info(' with  args %s ' % str(args))
         LOG.info(' with  kwargs is %s ' % str(kwargs))
-        volume_mgr_info = self._manager.get(backend)
+        volume_mgr_info = self._manager.get(backend_name)
         if volume_mgr_info:
             volume_mgr = volume_mgr_info['mgr']
             if volume_mgr is not None:
@@ -155,14 +158,55 @@ class Orchestrator(object):
 
         msg = "ERROR: Backend '%s' was NOT initialized successfully." \
               " Please check hpe.conf for incorrect entries and rectify " \
-              "it." % backend
+              "it." % backend_name
         LOG.error(msg)
         return json.dumps({u'Err': msg})
 
     def _execute_request(self, request, volname, *args, **kwargs):
         backend = self.get_volume_backend_details(volname)
-        return self.__execute_request(
+        return self._execute_request_for_backend(
             backend, request, volname, *args, **kwargs)
+
+    @abc.abstractmethod
+    def get_manager(self, host_config, config, etcd_util,
+                    node_id, backend_name):
+        pass
+
+    @abc.abstractmethod
+    def get_meta_data_by_name(self, name):
+        pass
+
+
+class VolumeBackendOrchestrator(Orchestrator):
+    def __init__(self, host_config, backend_configs, def_backend_name):
+        super(VolumeBackendOrchestrator, self).__init__(
+            host_config, backend_configs, def_backend_name)
+
+    def _get_etcd_client(self, host_config):
+        # return util.HpeVolumeEtcdClient(
+        return util.EtcdUtil(
+            host_config.host_etcd_ip_address,
+            host_config.host_etcd_port_number,
+            host_config.host_etcd_client_cert,
+            host_config.host_etcd_client_key)
+
+    def get_manager(self, host_config, config, etcd_client,
+                    node_id, backend_name):
+        return mgr.VolumeManager(host_config, config, etcd_client,
+                                 node_id, backend_name)
+
+    def get_meta_data_by_name(self, name):
+        vol = self._etcd_client.get_vol_byname(name)
+        if vol and 'display_name' in vol:
+            return vol
+        return None
+
+    def volume_exists(self, name):
+        vol = self._etcd_client.get_vol_byname(name)
+        return vol is not None
+
+    def get_path(self, volname):
+        return self._execute_request('get_path', volname)
 
     def volumedriver_remove(self, volname):
         ret_val = self._execute_request('remove_volume', volname)
@@ -187,7 +231,7 @@ class Orchestrator(object):
                             fs_mode, fs_owner,
                             mount_conflict_delay, cpg,
                             snap_cpg, current_backend, rcg_name):
-        ret_val = self.__execute_request(
+        ret_val = self._execute_request_for_backend(
             current_backend,
             'create_volume',
             volname,
@@ -241,21 +285,29 @@ class Orchestrator(object):
         return self._execute_request('mount_volume', volname,
                                      vol_mount, mount_id)
 
-    def get_path(self, volname):
-        return self._execute_request('get_path', volname)
-
     def get_volume_snap_details(self, volname, snapname, qualified_name):
         return self._execute_request('get_volume_snap_details', volname,
                                      snapname, qualified_name)
 
     def manage_existing(self, volname, existing_ref, backend, manage_opts):
-        ret_val = self.__execute_request(backend, 'manage_existing',
-                                         volname, existing_ref,
-                                         backend, manage_opts)
+        ret_val = self._execute_request_for_backend(
+            backend, 'manage_existing', volname, existing_ref,
+            backend, manage_opts)
         self.add_cache_entry(volname)
         return ret_val
 
     def volumedriver_list(self):
         # Use the first volume manager list volumes
-        volume_mgr = next(iter(self._manager.values()))['mgr']
-        return volume_mgr.list_volumes()
+        volume_mgr = None
+        volume_mgr_info = self._manager.get('DEFAULT')
+        if volume_mgr_info:
+            volume_mgr = volume_mgr_info['mgr']
+        else:
+            volume_mgr_info = self._manager.get('DEFAULT_BLOCK')
+            if volume_mgr_info:
+                volume_mgr = volume_mgr_info['mgr']
+
+        if volume_mgr:
+            return volume_mgr.list_volumes()
+        else:
+            return []

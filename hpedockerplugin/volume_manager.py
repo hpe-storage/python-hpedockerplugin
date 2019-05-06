@@ -1,11 +1,8 @@
 import json
-import string
 import os
 import six
 import time
 from sh import chmod
-from Crypto.Cipher import AES
-import base64
 
 
 from os_brick.initiator import connector
@@ -39,7 +36,7 @@ CONF = cfg.CONF
 class VolumeManager(object):
     def __init__(self, host_config, hpepluginconfig, etcd_util,
                  node_id,
-                 backend_name='DEFAULT'):
+                 backend_name):
         self._host_config = host_config
         self._hpepluginconfig = hpepluginconfig
         self._my_ip = netutils.get_my_ipv4()
@@ -53,8 +50,10 @@ class VolumeManager(object):
         self._etcd = etcd_util
 
         self._initialize_configuration()
-        self._decrypt_password(self.src_bkend_config,
-                               self.tgt_bkend_config, backend_name)
+        self._pwd_decryptor = utils.PasswordDecryptor(backend_name,
+                                                      self._etcd)
+        self._pwd_decryptor.decrypt_password(self.src_bkend_config)
+        self._pwd_decryptor.decrypt_password(self.tgt_bkend_config)
 
         # TODO: When multiple backends come into picture, consider
         # lazy initialization of individual driver
@@ -323,6 +322,46 @@ class VolumeManager(object):
         if volume.COMPRESSION.get(vol.get('compressionState')):
             return True
         return volume.DEFAULT_COMPRESSION_VAL
+
+    def _get_vvset_by_volume_name(self, backend_vol_name):
+        return self._hpeplugin_driver.get_vvset_from_volume(
+            backend_vol_name)
+
+    def _set_flash_cache_policy(self, vol, vvset_detail):
+        if vvset_detail is not None:
+            vvset_name = vvset_detail.get('name')
+            LOG.info('vvset_name: %(vvset)s' % {'vvset': vvset_name})
+
+            # check and set the flash-cache if exists
+            if (vvset_detail.get('flashCachePolicy') is not None and
+                    vvset_detail.get('flashCachePolicy') == 1):
+                vol['flash_cache'] = True
+
+    def _set_qos_info(self, vol, vvset_name):
+        LOG.info("Getting QOS info by vv-set-name '%s' for volume'%s'..."
+                 % (vvset_name, vol['display_name']))
+        self._hpeplugin_driver.get_qos_detail(vvset_name)
+        LOG.info("QOS info found for Docker volume '%s'. Setting QOS name"
+                 "for the volume." % vol['display_name'])
+        vol["qos_name"] = vvset_name
+
+    def _set_qos_and_flash_cache_info(self, backend_vol_name, vol):
+        vvset_detail = self._get_vvset_by_volume_name(backend_vol_name)
+        if vvset_detail:
+            self._set_flash_cache_policy(vol, vvset_detail)
+            vvset_name = vvset_detail.get('name')
+            try:
+                if vvset_name:
+                    self._set_qos_info(vol, vvset_name)
+            except Exception as ex:
+                if not vol['flash_cache']:
+                    msg = (_("ERROR: No QOS or flash-cache found for a volume"
+                             " '%s' present in vvset '%s'" % (backend_vol_name,
+                                                              vvset_name)))
+                    log_msg = msg + "error: %s" % six.text_type(ex)
+                    LOG.error(log_msg)
+                    # Error message to be displayed in inspect command
+                    vol["qos_name"] = msg
 
     def manage_existing(self, volname, existing_ref, backend='DEFAULT',
                         manage_opts=None):
@@ -1077,6 +1116,10 @@ class VolumeManager(object):
                     ss_list_to_show.append(snapshot)
                 volume['Status'].update({'Snapshots': ss_list_to_show})
 
+            # TODO: Fix for issue #428. To be included later after testing
+            # backend_vol_name = utils.get_3par_vol_name(volinfo['id'])
+            # self._set_qos_and_flash_cache_info(backend_vol_name, volinfo)
+
             qos_name = volinfo.get('qos_name')
             if qos_name is not None:
                 try:
@@ -1145,10 +1188,6 @@ class VolumeManager(object):
     def list_volumes(self):
         volumes = self._etcd.get_all_vols()
 
-        if not volumes:
-            response = json.dumps({u"Err": ''})
-            return response
-
         volumelist = []
         for volinfo in volumes:
             path_info = self._etcd.get_path_info_from_vol(volinfo)
@@ -1165,8 +1204,7 @@ class VolumeManager(object):
                       'Status': {}}
             volumelist.append(volume)
 
-        response = json.dumps({u"Err": '', u"Volumes": volumelist})
-        return response
+        return volumelist
 
     def get_path(self, volname):
         volinfo = self._etcd.get_vol_byname(volname)
@@ -2001,47 +2039,3 @@ class VolumeManager(object):
                         'rcg_name': rcg_name},
              'msg': 'Removing VV %s from Remote Copy Group %s...'
                     % (bkend_vol_name, rcg_name)})
-
-    def _decrypt_password(self, src_bknd, trgt_bknd, backend_name):
-        try:
-            passphrase = self._etcd.get_backend_key(backend_name)
-        except Exception as ex:
-            LOG.info('Exception occurred %s ' % ex)
-            LOG.info("Using PLAIN TEXT for backend '%s'" % backend_name)
-        else:
-            passphrase = self.key_check(passphrase)
-            src_bknd.hpe3par_password = \
-                self._decrypt(src_bknd.hpe3par_password, passphrase)
-            src_bknd.san_password =  \
-                self._decrypt(src_bknd.san_password, passphrase)
-            if trgt_bknd:
-                trgt_bknd.hpe3par_password = \
-                    self._decrypt(trgt_bknd.hpe3par_password, passphrase)
-                trgt_bknd.san_password = \
-                    self._decrypt(trgt_bknd.san_password, passphrase)
-
-    def key_check(self, key):
-        KEY_LEN = len(key)
-        padding_string = string.ascii_letters
-
-        if KEY_LEN < 16:
-            KEY = key + padding_string[:16 - KEY_LEN]
-
-        elif KEY_LEN > 16 and KEY_LEN < 24:
-            KEY = key + padding_string[:24 - KEY_LEN]
-
-        elif KEY_LEN > 24 and KEY_LEN < 32:
-            KEY = key + padding_string[:32 - KEY_LEN]
-
-        elif KEY_LEN > 32:
-            KEY = key[:32]
-
-        else:
-            KEY = key
-
-        return KEY
-
-    def _decrypt(self, encrypted, passphrase):
-        aes = AES.new(passphrase, AES.MODE_CFB, '1234567812345678')
-        decrypt_pass = aes.decrypt(base64.b64decode(encrypted))
-        return decrypt_pass.decode('utf-8')
