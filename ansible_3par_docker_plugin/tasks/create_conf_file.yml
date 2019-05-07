@@ -75,6 +75,39 @@
       recurse: yes
     become: yes
 
+  - name: Populate file persona mandatory parameters in hpe.conf
+    ini_file:
+      path: /etc/hpedockerplugin/hpe.conf
+      section: "{{ item[0] }}"
+      option: "{{ item[1]['option'] }}"
+      value: "{{ INVENTORY[item[0]][item[1].value]}}"
+      no_extra_spaces: true
+    with_nested:
+      - "{{ INVENTORY.keys()}}"
+      - [
+         { option: 'hpe3par_server_ip_pool', value: 'hpe3par_server_ip_pool' }
+        ]
+    become: yes
+    when: >-
+      INVENTORY[item[0]]['hpedockerplugin_driver'] == 'hpedockerplugin.hpe.hpe_3par_file.HPE3PARFileDriver'
+
+
+  - name: Populate file persona optional parameters in hpe.conf
+    ini_file:
+      path: /etc/hpedockerplugin/hpe.conf
+      section: "{{ item[0] }}"
+      option: "{{ item[1]['option'] }}"
+      value: "{{ INVENTORY[item[0]][item[1].value] | default(None)}}"
+      no_extra_spaces: true
+    with_nested:
+      - "{{ INVENTORY.keys()}}"
+      - [{ option: 'hpe3par_default_fpg_size', value: 'hpe3par_default_fpg_size' }
+        ]
+    become: yes
+    when: >-
+      item.1.value in INVENTORY[item.0].keys() and
+      INVENTORY[item[0]]['hpedockerplugin_driver'] == 'hpedockerplugin.hpe.hpe_3par_file.HPE3PARFileDriver'
+  
   - name: Populate mandatory parameters in hpe.conf
     ini_file:
       path: /etc/hpedockerplugin/hpe.conf
