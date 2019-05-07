@@ -112,54 +112,6 @@ class FileManager(object):
     def _create_mediator(host_config, config):
         return hpe_3par_mediator.HPE3ParMediator(host_config, config)
 
-    def _create_share_on_fpg(self, fpg_name, share_args):
-        undo_cmds = []
-        share_name = share_args['name']
-        try:
-            # TODO:Imran: Ideally this should be done on main thread
-            init_share_cmd = InitializeShareCmd(
-                self._backend, share_name, self._etcd
-            )
-            init_share_cmd.execute()
-            undo_cmds.append(init_share_cmd)
-
-            create_share_cmd = CreateShareOnExistingFpgCmd(
-                self, share_args
-            )
-            create_share_cmd.execute()
-            undo_cmds.append(create_share_cmd)
-
-            try:
-                set_quota_cmd = cmd_setquota.SetQuotaCmd(
-                    self, share_args['cpg'],
-                    share_args['fpg'],
-                    share_args['vfs'],
-                    share_args['name'],
-                    share_args['size']
-                )
-                set_quota_cmd.execute()
-                undo_cmds.append(set_quota_cmd)
-            except Exception:
-                self._unexecute(undo_cmds)
-        except exception.FpgNotFound:
-            # User wants to create FPG by name fpg_name
-            vfs_name = fpg_name + '_vfs'
-            share_args['vfs'] = vfs_name
-
-            create_share_on_new_fpg_cmd = CreateShareOnNewFpgCmd(
-                self, share_args
-            )
-            create_share_on_new_fpg_cmd.execute()
-
-            set_quota_cmd = cmd_setquota.SetQuotaCmd(
-                self, share_args['cpg'],
-                share_args['fpg'],
-                share_args['vfs'],
-                share_args['name'],
-                share_args['size']
-            )
-            set_quota_cmd.execute()
-
     def create_share(self, share_name, **args):
         share_args = copy.deepcopy(args)
         # ====== TODO: Uncomment later ===============
@@ -178,6 +130,47 @@ class FileManager(object):
 
         # Return success
         return json.dumps({"Err": ""})
+
+    def _get_existing_fpg(self, share_args):
+        cpg_name = share_args['cpg']
+        fpg_name = share_args['fpg']
+        try:
+            fpg_info = self._fp_etcd_client.get_fpg_metadata(
+                self._backend,
+                cpg_name, fpg_name
+            )
+        except exception.EtcdMetadataNotFound:
+            LOG.info("Specified FPG %s not found in ETCD. Checking "
+                     "if this is a legacy FPG..." % fpg_name)
+            # Assume it's a legacy FPG, try to get details
+            leg_fpg = self._hpeplugin_driver.get_fpg(fpg_name)
+            LOG.info("FPG %s is a legacy FPG" % fpg_name)
+
+            # CPG passed can be different than actual CPG
+            # used for creating legacy FPG. Override default
+            # or supplied CPG
+            if cpg_name != leg_fpg['cpg']:
+                msg = ('ERROR: Invalid CPG %s specified or configured in '
+                       'hpe.conf for the specified legacy FPG %s. Please '
+                       'specify correct CPG as %s' %
+                       (cpg_name, fpg_name, leg_fpg['cpg']))
+                LOG.error(msg)
+                raise exception.InvalidInput(msg)
+
+            # Get backend VFS information
+            vfs_info = self._hpeplugin_driver.get_vfs(fpg_name)
+            vfs_name = vfs_info['name']
+            ip_info = vfs_info['IPInfo'][0]
+            netmask = ip_info['netmask']
+            ip = ip_info['IPAddr']
+
+            fpg_info = {
+                'ips': {netmask: [ip]},
+                'fpg': fpg_name,
+                'vfs': vfs_name
+            }
+
+        return fpg_info
 
     # If default FPG is full, it raises exception
     # EtcdMaxSharesPerFpgLimitException
@@ -220,7 +213,22 @@ class FileManager(object):
         for undo_cmd in reversed(undo_cmds):
             undo_cmd.unexecute()
 
-    def _create_share_on_default_fpg(self, share_args):
+    def _generate_default_fpg_vfs_names(self, share_args):
+        # Default share creation - generate default names
+        cmd = cmd_generate_fpg_vfs_names.GenerateFpgVfsNamesCmd(
+            self._backend, share_args['cpg'],
+            self._fp_etcd_client
+        )
+        return cmd.execute()
+
+    @staticmethod
+    def _vfs_name_from_fpg_name(share_args):
+        # Generate VFS name using specified FPG with "-o fpg" option
+        fpg_name = share_args['fpg']
+        vfs_name = fpg_name + '_vfs'
+        return fpg_name, vfs_name
+
+    def _create_share_on_fpg(self, share_args, fpg_getter, names_generator):
         share_name = share_args['name']
         LOG.info("Creating share on default FPG %s..." % share_name)
         undo_cmds = []
@@ -228,12 +236,12 @@ class FileManager(object):
         with self._fp_etcd_client.get_cpg_lock(self._backend, cpg):
             try:
                 init_share_cmd = InitializeShareCmd(
-                    self._backend, share_name, self._etcd
+                    self._backend, share_args, self._etcd
                 )
                 init_share_cmd.execute()
                 undo_cmds.append(init_share_cmd)
 
-                fpg_info = self._get_default_available_fpg(share_args)
+                fpg_info = fpg_getter(share_args)
                 share_args['fpg'] = fpg_info['fpg']
                 share_args['vfs'] = fpg_info['vfs']
 
@@ -245,22 +253,26 @@ class FileManager(object):
 
             except (exception.EtcdMaxSharesPerFpgLimitException,
                     exception.EtcdMetadataNotFound,
-                    exception.EtcdDefaultFpgNotPresent):
-                LOG.info("Default FPG not found under backend %s for CPG %s" %
-                         (self._backend, cpg))
+                    exception.EtcdDefaultFpgNotPresent,
+                    exception.FpgNotFound):
+                LOG.info("FPG not found under backend %s for CPG %s"
+                         % (self._backend, cpg))
                 # In all the above cases, default FPG is not present
                 # and we need to create a new one
                 try:
+                    # If fpg option was specified by the user, we won't
+                    # mark it as a default FPG so that it cannot be used
+                    # with default share creation
+                    if 'fpg' in share_args:
+                        mark_fpg_as_default = False
+                    else:
+                        mark_fpg_as_default = True
+
                     # Generate FPG and VFS names. This will also initialize
                     #  backend meta-data in case it doesn't exist
                     LOG.info("Generating FPG and VFS data and also "
                              "initializing backend metadata if not present")
-                    cmd = cmd_generate_fpg_vfs_names.GenerateFpgVfsNamesCmd(
-                        self._backend, cpg,
-                        self._fp_etcd_client
-                    )
-                    fpg_name, vfs_name = cmd.execute()
-
+                    fpg_name, vfs_name = names_generator(share_args)
                     LOG.info("Names generated: FPG=%s, VFS=%s" %
                              (fpg_name, vfs_name))
                     share_args['fpg'] = fpg_name
@@ -281,7 +293,7 @@ class FileManager(object):
 
                     LOG.info("Creating FPG %s using CPG %s" % (fpg_name, cpg))
                     create_fpg_cmd = CreateFpgCmd(
-                        self, cpg, fpg_name, True
+                        self, cpg, fpg_name, mark_fpg_as_default
                     )
                     create_fpg_cmd.execute()
                     LOG.info("FPG %s created successfully using CPG %s" %
@@ -330,10 +342,19 @@ class FileManager(object):
                     self._unexecute(undo_cmds)
                     raise exception.ShareCreationFailed(reason=msg)
 
+            except exception.InvalidInput as ex:
+                msg = "Share creation failed with following exception: " \
+                      " %s" % six.text_type(ex)
+                LOG.error(msg)
+                share_args['failure_reason'] = msg
+                self._unexecute(undo_cmds)
+                raise exception.ShareCreationFailed(reason=msg)
+
             except Exception as ex:
                 msg = "Unknown exception occurred while using default FPG " \
                       "for share creation: %s" % six.text_type(ex)
                 LOG.error(msg)
+                share_args['failure_reason'] = msg
                 self._unexecute(undo_cmds)
                 raise exception.ShareCreationFailed(reason=msg)
 
@@ -376,9 +397,17 @@ class FileManager(object):
         fpg_name = share_args.get('fpg')
 
         if fpg_name:
-            self._create_share_on_fpg(fpg_name, share_args)
+            self._create_share_on_fpg(
+                share_args,
+                self._get_existing_fpg,
+                self._vfs_name_from_fpg_name
+            )
         else:
-            self._create_share_on_default_fpg(share_args)
+            self._create_share_on_fpg(
+                share_args,
+                self._get_default_available_fpg,
+                self._generate_default_fpg_vfs_names
+            )
 
     def remove_share(self, share_name, share):
         cmd = cmd_deleteshare.DeleteShareCmd(self, share)

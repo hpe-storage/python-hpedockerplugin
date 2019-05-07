@@ -293,23 +293,6 @@ class CreateShareOnExistingFpgCmd(CreateShareCmd):
                 vfs_name = vfs_info['name']
                 ip_info = vfs_info['IPInfo'][0]
 
-                # fpg_metadata = {
-                #     'fpg': fpg_name,
-                #     'fpg_size': fpg_info['capacityGiB'],
-                #     'vfs': vfs_name,
-                #     'ips': {ip_info['netmask']: [ip_info['IPAddr']]},
-                #     'reached_full_capacity': False
-                # }
-                # LOG.info("Creating FPG entry in ETCD for legacy FPG: "
-                #          "%s" % six.text_type(fpg_metadata))
-                #
-                # # TODO: Consider NOT maintaing FPG information in
-                # # ETCD. This will always make it invoke above legacy flow
-                # # Create FPG entry in ETCD
-                # self._fp_etcd.save_fpg_metadata(self._backend,
-                #                                 fpg_info['cpg'],
-                #                                 fpg_name,
-                #                                 fpg_metadata)
                 self._share_args['vfs'] = vfs_name
                 # Only one IP per FPG is supported at the moment
                 # Given that, list can be dropped

@@ -30,7 +30,7 @@ class DeleteShareCmd(cmd.Cmd):
                 self._delete_fpg()
         return json.dumps({u"Err": ''})
 
-    def _unexecute(self):
+    def unexecute(self):
         pass
 
     def _remove_quota(self):
