@@ -62,5 +62,6 @@ class BackendInitializerThread(threading.Thread):
             LOG.error('CHILD-THREAD: INITIALIZING backend: %s FAILED Error:'
                       '%s' % (self.backend_name, six.text_type(ex)))
         finally:
-            LOG.info('in finally : %s , %s ' % (self.backend_name, volume_mgr))
+            LOG.info('in finally : %s , %s ' % (self.backend_name,
+                                                volume_mgr))
             self.manager_objs[self.backend_name] = volume_mgr

@@ -103,7 +103,8 @@ class Orchestrator(object):
                 thread.start()
 
             except Exception as ex:
-                LOG.error('MAIN-THREAD: INITIALIZING backend: %s FAILED Error: %s'
+                LOG.error('MAIN-THREAD: INITIALIZING backend: %s FAILED '
+                          'Error: %s'
                           % (backend_name, six.text_type(ex)))
 
         LOG.info("Backends INITIALIZED => %s" % manager_objs.keys())
