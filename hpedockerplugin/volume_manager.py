@@ -66,7 +66,7 @@ class VolumeManager(object):
             LOG.info("Initialized 3PAR driver!")
         except Exception as ex:
             msg = "Failed to initialize 3PAR driver for array: %s!" \
-                  "Exception: %s"\
+                  " Exception: %s"\
                   % (self.src_bkend_config.hpe3par_api_url,
                      six.text_type(ex))
             LOG.info(msg)
@@ -83,7 +83,7 @@ class VolumeManager(object):
                     self.src_bkend_config)
             except Exception as ex:
                 msg = "Failed to initialize 3PAR driver for remote array %s!" \
-                      "Exception: %s"\
+                      " Exception: %s"\
                       % (self.tgt_bkend_config.hpe3par_api_url,
                          six.text_type(ex))
                 LOG.info(msg)

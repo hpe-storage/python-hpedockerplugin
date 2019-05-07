@@ -19,6 +19,7 @@ initialization via the manager_objs backed to the caller.
 
 """
 
+import six
 import threading
 from oslo_log import log as logging
 
@@ -58,8 +59,8 @@ class BackendInitializerThread(threading.Thread):
         except Exception as ex:
             volume_mgr['mgr'] = None
             volume_mgr['backend_state'] = 'FAILED'
-            LOG.error('INITIALIZING backend: %s FAILED Error: %s'
-                      % (self.backend_name, ex))
+            LOG.error('CHILD-THREAD: INITIALIZING backend: %s FAILED Error:'
+                      '%s' % (self.backend_name, six.text_type(ex)))
         finally:
             LOG.info('in finally : %s , %s ' % (self.backend_name, volume_mgr))
             self.manager_objs[self.backend_name] = volume_mgr

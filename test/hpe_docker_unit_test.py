@@ -92,10 +92,11 @@ class HpeDockerUnitTestExecutor(object):
         self.setup_mock_objects()
 
         # Get API parameters from child class
-        req_body = self._get_request_body(self.get_request_params())
+        req_params = self.get_request_params()
+        req_body = self._get_request_body(req_params)
 
         _api = api.VolumePlugin(reactor, self._all_configs)
-        req_params = self.get_request_params()
+        time.sleep(3)
 
         # There are few TCs like enable/disable plugin for which
         # there isn't going to be any request parameters
@@ -103,7 +104,7 @@ class HpeDockerUnitTestExecutor(object):
         if req_params:
             backend = req_params.get('backend', 'DEFAULT')
 
-            while(True):
+            while True:
                 backend_state = _api.is_backend_initialized(backend)
                 print(" ||| Backend %s, backend_state %s " % (backend,
                                                               backend_state))
