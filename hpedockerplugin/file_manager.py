@@ -13,8 +13,6 @@ from hpedockerplugin.cmd.cmd_createvfs import CreateVfsCmd
 
 from hpedockerplugin.cmd.cmd_initshare import InitializeShareCmd
 from hpedockerplugin.cmd.cmd_createshare import CreateShareCmd
-from hpedockerplugin.cmd.cmd_createshare import CreateShareOnExistingFpgCmd
-from hpedockerplugin.cmd.cmd_createshare import CreateShareOnNewFpgCmd
 from hpedockerplugin.cmd import cmd_generate_fpg_vfs_names
 from hpedockerplugin.cmd import cmd_setquota
 from hpedockerplugin.cmd import cmd_deleteshare
