@@ -96,15 +96,20 @@ class HpeDockerUnitTestExecutor(object):
 
         _api = api.VolumePlugin(reactor, self._all_configs)
         req_params = self.get_request_params()
-        backend = req_params.get('backend', 'DEFAULT')
 
-        while(True):
-            backend_state = _api.is_backend_initialized(backend)
-            print(" ||| Backend %s, backend_state %s " % (backend,
-                                                          backend_state))
-            if backend_state == 'OK' or backend_state == 'FAILED':
-                break
-            time.sleep(1)
+        # There are few TCs like enable/disable plugin for which
+        # there isn't going to be any request parameters
+        # Such TCs need to skip the below block and continue
+        if req_params:
+            backend = req_params.get('backend', 'DEFAULT')
+
+            while(True):
+                backend_state = _api.is_backend_initialized(backend)
+                print(" ||| Backend %s, backend_state %s " % (backend,
+                                                              backend_state))
+                if backend_state == 'OK' or backend_state == 'FAILED':
+                    break
+                time.sleep(1)
 
         try:
             resp = getattr(_api, plugin_api)(req_body)
