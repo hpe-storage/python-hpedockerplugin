@@ -137,3 +137,8 @@ Create Snapshot Schedule:
 Display available backends:
 ---------------------------------
  -o help=backends               This option displays list of available backends along with their status
+
+----------------------------------
+Display File Persona related help:
+----------------------------------
+ -o help -o filePersona     These options when used together display help on File Persona
