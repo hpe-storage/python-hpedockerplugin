@@ -187,7 +187,7 @@ class RequestContextBuilder(object):
         vperm = list(set(list(type_flag_perm[2])))
         if len(vperm) < passed_vperm_len:
             msg = "Duplicate characters for given permission are passed. "\
-                  "Please correct the passed permissions for fsMode."
+                  "Please correct the passed permissions for fsMode".
             LOG.error(msg)
             raise exception.InvalidInput(reason=msg)
         if set(vperm) - set(valid_perm):
