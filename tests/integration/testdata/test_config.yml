@@ -15,7 +15,7 @@ plugin:
 # Add etcd service details for secured/unsecured connection
 # Specify the name of the etcd container
 etcd:
-    host: 192.168.82.1
+    host: 192.168.82.1 
     #host: localhost
     port: 2379
     client_cert:
@@ -37,26 +37,58 @@ backend:
     3Par_IP: 192.168.67.2
     multi_cpg: Docker_CI_Multi
 
+backend2:
+    3Par_api_url : https://192.168.67.7:8080/api/v1
+    user_cpg: docker_cpg
+    3par_IP: 192.168.67.7
+    multi_cpg: test_cpg
+
+ActivePassiveRepBackend:
+    3Par_api_url : https://192.168.67.5:8080/api/v1
+
+
 # Multipath configuration details
 # Mention the number of iSCSI ports present in hpe.conf
 # Mention the number of FC zones configured in Fabric
 multipath:
     ports_zones: 1
 
+multipath2:
+    ports_zones: 2
+
 # Mention the snapshot cpg here
 snapshot:
-    snap_cpg: Docker_CI
+    snap_cpg: Docker_CI 
+
+snapshot2:
+    snap_cpg: docker_cpg
+
+snapshot3:
+    snap_cpg: FC_r5
 
 # Mention the details required to create and verify VVset with QoS in 3par array
 # Set Priority : '1' for Low, '2' for Normal and '3' for High
 qos:
     domain: TEST_DOMAIN
+    domain2: test_domain
     min_io: 10000
     max_io: 2000000
     min_bw: 30
     max_bw: 40
     latency: 500
     priority: 1
+
+replication_device:
+    backend_id: CSSOS-SSA04
+    replication_mode: synchronous
+    cpg_map: FC_r1:FC_r1
+    snap_cpg_map: FC_r5:FC_r5
+    hpe3par_api_url: https://192.168.67.7:8080/api/v1
+    hpe3par_username: 3paradm
+    hpe3par_password: 3pardata
+    san_ip: 192.168.67.7
+    san_login: 3paradm
+    san_password: 3pardata
 
 # Bind mounts for containerized plugin
 ubuntu_volumes:
@@ -100,6 +132,4 @@ suse_volumes:
     - /lib64:/lib64
     - /usr/lib64:/usr/lib64
     - /var/run/docker.sock:/var/run/docker.sock
-
-
 

@@ -27,8 +27,13 @@ ETCD_PORT = cfg['etcd']['port']
 CLIENT_CERT = cfg['etcd']['client_cert']
 CLIENT_KEY = cfg['etcd']['client_key']
 HPE3PAR_API_URL = cfg['backend']['3Par_api_url']
+HPE3PAR2_API_URL = cfg['backend2']['3Par_api_url']
+HPE3PAR3_API_URL = cfg['ActivePassiveRepBackend']['3Par_api_url']
 PORTS_ZONES = cfg['multipath']['ports_zones']
+PORTS_ZONES2 = cfg['multipath2']['ports_zones']
 SNAP_CPG = cfg['snapshot']['snap_cpg']
+SNAP_CPG2 = cfg['snapshot2']['snap_cpg']
+SNAP_CPG3 = cfg['snapshot3']['snap_cpg']
 DOMAIN = cfg['qos']['domain']
 MIN_IO = cfg['qos']['min_io']
 MAX_IO = cfg['qos']['max_io']
@@ -36,6 +41,7 @@ MIN_BW = cfg['qos']['min_bw']
 MAX_BW = cfg['qos']['max_bw']
 LATENCY = cfg['qos']['latency']
 PRIORITY = cfg['qos']['priority']
+HPE3PAR_IP = cfg['backend']['3Par_IP']
 
 if PLUGIN_TYPE == 'managed':
     HPE3PAR = cfg['plugin']['managed_plugin_latest']
@@ -79,7 +85,7 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
             self.assertEqual(docker_volume['Driver'], HPE3PAR_OLD)
         # Verify all volume optional parameters in docker managed plugin system
         driver_options = ['size', 'provisioning', 'flash-cache', 'compression', 'cloneOf',
-                          'qos-name', 'mountConflictDelay', 'importVol']
+                          'qos-name', 'mountConflictDelay', 'importVol', 'backend', 'virtualCopyOf', 'scheduleFrequency', 'scheduleName', 'snapshotPrefix']
 
         for option in driver_options:
             if option in kwargs:
@@ -109,7 +115,7 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
         self.assertIn('Status', inspect_volume)
         self.assertIn('volume_detail', inspect_volume['Status'])
 
-        volume_details = ['size', 'provisioning', 'flash_cache', 'compression', 'mountConflictDelay', 'importVol', 'cpg', 'snapcpg']
+        volume_details = ['size', 'provisioning', 'flash_cache', 'compression', 'mountConflictDelay', 'importVol', 'cpg', 'snapcpg', 'backend']
         qos_detail = ['enabled', 'maxIOPS', 'minIOPS', 'priority', 'vvset_name']
 
         for option in volume_details:
@@ -125,6 +131,19 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
                 if option in kwargs:
                     self.assertIn("snap_cpg", inspect_volume['Status']['volume_detail'])
                     self.assertEqual(inspect_volume['Status']['volume_detail']['snap_cpg'], kwargs[option])
+                else:
+                    if (inspect_volume['Status']['volume_detail']['backend'] == 'DEFAULT'):
+                        self.assertEqual(inspect_volume['Status']['volume_detail']['snap_cpg'],SNAP_CPG)
+                    elif (inspect_volume['Status']['volume_detail']['backend'] == 'ActivePassiveRepBackend'):
+                        self.assertEqual(inspect_volume['Status']['volume_detail']['snap_cpg'], SNAP_CPG3)
+
+                    else:
+                        self.assertEqual(inspect_volume['Status']['volume_detail']['snap_cpg'],SNAP_CPG2)
+
+            elif option ==  'backend':
+                if option in kwargs:
+                    self.assertIn(option, inspect_volume['Options'])
+                    self.assertEqual(inspect_volume['Options'][option], kwargs[option])
 
             else:
                 if option in kwargs:
@@ -137,14 +156,27 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
                         self.assertEqual(inspect_volume['Status']['volume_detail'][option], 'thin')
                     elif option == 'mountConflictDelay':
                         self.assertEqual(inspect_volume['Status']['volume_detail'][option], 30)
+                    elif option == 'backend':
+                        self.assertEqual(inspect_volume['Status']['volume_detail'][option], 'DEFAULT')
                     else:
                         self.assertEqual(inspect_volume['Status']['volume_detail'][option], None)
+            self.assertEqual(inspect_volume['Status']['volume_detail']['3par_vol_name'][:3], 'dcv' 
+)
         for option in qos_detail:
             if option in kwargs:
                 self.assertIn(option, inspect_volume['Status']['qos_detail'])
                 self.assertEqual(inspect_volume['Status']['qos_detail'][option], kwargs[option])
             else:
                 pass
+        if 'replicationGroup' in kwargs:
+            self.assertEqual(inspect_volume['Status']['rcg_detail']['role'], 'Primary')
+            self.assertEqual(inspect_volume['Status']['rcg_detail']['rcg_name'], kwargs['replicationGroup'])
+        
+        # Validating if the snapshot 'virtualCopyOf' value is same as the 'Parent volume' of the snapshot
+        if 'snapshot_name' in kwargs:
+            snapshots = inspect_volume['Status']['Snapshots'][0] 
+            if 'snap_schedule' in snapshots:
+                self.assertEqual(kwargs['snapshot_name'], snapshots['ParentName'])
 
         return inspect_volume
 
@@ -182,10 +214,14 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
 
         for option in snapshot_options:
             if option in kwargs:
-                self.assertIn(option, snapshot['Options'])
-                self.assertEqual(snapshot['Options'][option], kwargs[option])
+               if 'importVol' in kwargs:
+                   self.assertEqual(inspect_snapshot['Status']['snap_detail']['parent_volume'],
+                                             kwargs['virtualCopyOf'])
+               else:
+                   self.assertIn(option, snapshot['Options'])
+                   self.assertEqual(snapshot['Options'][option], kwargs[option])
             else:
-                self.assertNotIn(option, snapshot['Options'])
+               self.assertNotIn(option, snapshot['Options'])
 
         self.assertEqual(inspect_snapshot['Status']['snap_detail']['is_snap'],
                          True)
@@ -220,9 +256,30 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
             self.assertEqual(inspect_snapshot['Status']['snap_detail']['snap_cpg'],
                              (kwargs['snapcpg']))
         else:
-            self.assertEqual(inspect_snapshot['Status']['snap_detail']['snap_cpg'],
+            if (inspect_snapshot['Status']['snap_detail']['backend'] == 'DEFAULT'):
+               self.assertEqual(inspect_snapshot['Status']['snap_detail']['snap_cpg'],
                              SNAP_CPG)
+            else:
+               self.assertEqual(inspect_snapshot['Status']['snap_detail']['snap_cpg'],
+                             SNAP_CPG2)
 
+        if 'snap_schedule' in  inspect_snapshot['Status']['snap_detail']:
+            self.assertEqual(snapshot['Options']['scheduleFrequency'], inspect_snapshot['Status']['snap_detail']['snap_schedule']['sched_frequency'])
+            self.assertEqual(snapshot['Options']['snapshotPrefix'], inspect_snapshot['Status']['snap_detail']['snap_schedule']['snap_name_prefix'])
+            self.assertEqual(snapshot['Options']['scheduleName'], inspect_snapshot['Status']['snap_detail']['snap_schedule']['schedule_name'])
+            self.assertEqual(snapshot['Options']['expHrs'], str(inspect_snapshot['Status']['snap_detail']['snap_schedule']['sched_snap_exp_hrs']))
+            self.assertEqual(snapshot['Options']['retHrs'], str(inspect_snapshot['Status']['snap_detail']['snap_schedule']['sched_snap_ret_hrs']))
+
+ 
+
+        if 'backend' in kwargs:
+            self.assertEqual(inspect_snapshot['Status']['snap_detail']['backend'],
+                             (kwargs['backend']))
+        else:
+            self.assertEqual(inspect_snapshot['Status']['snap_detail']['backend'],
+                             'DEFAULT')
+
+        self.assertEqual(inspect_snapshot['Status']['snap_detail']['3par_vol_name'][:3],'dcs')
 
         '''
         snap_details = ['compression', 'flash_cache', 'provisioning']
@@ -409,12 +466,29 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
         # Login to 3Par array and initialize connection for WSAPI calls
         hpe_3par_cli = HPE3ParClient(HPE3PAR_API_URL, True, False, None, True)
         hpe_3par_cli.login('3paradm', '3pardata')
+        hpe_3par_cli.setSSHOptions(HPE3PAR_IP, '3paradm', '3pardata')
+        return hpe_3par_cli
+
+    def _hpe_get_3par_client_login_replication(self):
+        # Login to 3Par array and initialize connection for WSAPI calls
+        hpe_3par_cli = HPE3ParClient(HPE3PAR3_API_URL, True, False, None, True)
+        hpe_3par_cli.login('3paradm', '3pardata')
+        return hpe_3par_cli    
+
+
+    def _hpe_get_3par_client_login_multi_array(self):
+        # Login to 3Par array and initialize connection for WSAPI calls
+        hpe_3par_cli = HPE3ParClient(HPE3PAR2_API_URL, True, False, None, True)
+        hpe_3par_cli.login('3paradm', '3pardata')
         return hpe_3par_cli
 
     def hpe_verify_volume_created(self, volume_name, vvs_name=None, **kwargs):
 
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-        hpe3par_cli = self._hpe_get_3par_client_login()
+        if 'backend' in kwargs:
+            hpe3par_cli = self._hpe_get_3par_client_login_multi_array()
+        else:
+            hpe3par_cli = self._hpe_get_3par_client_login()
 
         # Get volume details from etcd service
         et = EtcdUtil(ETCD_HOST, ETCD_PORT, CLIENT_CERT, CLIENT_KEY)
@@ -482,7 +556,10 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
             if "snapcpg" in kwargs:
                 self.assertEqual(hpe3par_volume['snapCPG'], kwargs['snapcpg'])
             else:
-                self.assertEqual(hpe3par_volume['snapCPG'], SNAP_CPG)
+                if 'backend' in kwargs:
+                    self.assertEqual(hpe3par_volume['snapCPG'], SNAP_CPG2)
+                else:
+                    self.assertEqual(hpe3par_volume['snapCPG'], SNAP_CPG)
             self.assertEqual(hpe3par_volume['copyType'], 1)
         if 'qos' in kwargs:
             vvset = hpe3par_cli.getVolumeSet(vvs_name)
@@ -503,9 +580,14 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
 
         hpe3par_cli.logout()
 
-    def hpe_verify_volume_deleted(self, volume_name):
+    def hpe_verify_volume_deleted(self, volume_name, backend=None):
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-        hpe3par_cli = self._hpe_get_3par_client_login()
+#        hpe3par_cli = self._hpe_get_3par_client_login()
+
+        if backend is not None:
+           hpe3par_cli = self._hpe_get_3par_client_login_multi_array()
+        else:
+           hpe3par_cli = self._hpe_get_3par_client_login()
 
         # Get volume details from etcd service
         et = EtcdUtil(ETCD_HOST, ETCD_PORT, CLIENT_CERT, CLIENT_KEY)
@@ -523,7 +605,10 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
 
     def hpe_verify_snapshot_created(self, volume_name, snapshot_name, **kwargs):
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-        hpe3par_cli = self._hpe_get_3par_client_login()
+        if 'backend' in kwargs:
+            hpe3par_cli = self._hpe_get_3par_client_login_multi_array()
+        else:
+            hpe3par_cli = self._hpe_get_3par_client_login()
 
         # Get volume details from etcd service
         et = EtcdUtil(ETCD_HOST, ETCD_PORT, CLIENT_CERT, CLIENT_KEY)
@@ -545,7 +630,10 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
                 if "snapcpg" in kwargs:
                     self.assertEqual(hpe3par_snapshot['snapCPG'], kwargs['snapcpg'])
                 else:
-                    self.assertEqual(hpe3par_snapshot['snapCPG'], SNAP_CPG)
+                    if 'backend' in kwargs:
+                        self.assertEqual(hpe3par_snapshot['snapCPG'], SNAP_CPG2)
+                    else:
+                        self.assertEqual(hpe3par_snapshot['snapCPG'], SNAP_CPG)
                 self.assertEqual(hpe3par_snapshot['copyType'], 3)
                 self.assertEqual(hpe3par_snapshot['copyOf'], backend_volume_name)
                 if 'expirationHours' in kwargs:
@@ -564,11 +652,19 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
                                                hpe_snapshot_retention+2]
                     docker_snapshot_retention = int(kwargs['retentionHours']) * 60 * 60
                     self.assertIn(docker_snapshot_retention, hpe_snap_retention_list)
+                if 'importVol' in kwargs:
+                    etcd_volume_snapshot1 = et.get_vol_byname(snapshot_name)
+                    self.assertEqual(etcd_volume_snapshot1['display_name'],kwargs['importVol'])
+                    self.assertEqual(hpe3par_snapshot['name'][:3], "dcs")
+
         hpe3par_cli.logout()
 
-    def hpe_verify_snapshot_deleted(self, volume_name, snapshot_name):
+    def hpe_verify_snapshot_deleted(self, volume_name, snapshot_name, backend=None):
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-        hpe3par_cli = self._hpe_get_3par_client_login()
+        if backend is not None:
+           hpe3par_cli = self._hpe_get_3par_client_login_multi_array()
+        else:
+           hpe3par_cli = self._hpe_get_3par_client_login()
 
         # Get volume details from etcd service
         et = EtcdUtil(ETCD_HOST, ETCD_PORT, CLIENT_CERT, CLIENT_KEY)
@@ -590,9 +686,14 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
             self.assertEqual(etcd_snapshot, [])
         hpe3par_cli.logout()
 
-    def hpe_verify_volume_mount(self, volume_name):
+    def hpe_verify_volume_mount(self, volume_name, backend=None):
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-        hpe3par_cli = self._hpe_get_3par_client_login()
+
+        if backend is not None:
+           hpe3par_cli = self._hpe_get_3par_client_login_multi_array()
+        else:
+           hpe3par_cli = self._hpe_get_3par_client_login()
+
         # Get volume details from etcd service
         et = EtcdUtil(ETCD_HOST, ETCD_PORT, CLIENT_CERT, CLIENT_KEY)
         etcd_volume = et.get_vol_byname(volume_name)
@@ -605,12 +706,20 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
         for member in vluns['members']:
             if member['volumeName'] == backend_volume_name and member['active']:
                 vlun_cnt += 1
-        self.assertEqual(vlun_cnt, PORTS_ZONES)
+        if backend is not None:
+           self.assertEqual(vlun_cnt, PORTS_ZONES2)
+        else:
+           self.assertEqual(vlun_cnt, PORTS_ZONES)
         hpe3par_cli.logout()
 
-    def hpe_verify_volume_unmount(self, volume_name):
+    def hpe_verify_volume_unmount(self, volume_name, backend=None):
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-        hpe3par_cli = self._hpe_get_3par_client_login()
+
+        if backend is not None:
+           hpe3par_cli = self._hpe_get_3par_client_login_multi_array()
+        else:
+           hpe3par_cli = self._hpe_get_3par_client_login()
+
         # Get volume details from etcd service
         et = EtcdUtil(ETCD_HOST, ETCD_PORT, CLIENT_CERT, CLIENT_KEY)
         etcd_volume = et.get_vol_byname(volume_name)
@@ -627,9 +736,14 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
             return
         hpe3par_cli.logout()
 
-    def hpe_verify_snapshot_mount(self, snapshot_name):
+    def hpe_verify_snapshot_mount(self, snapshot_name, backend=None):
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-        hpe3par_cli = self._hpe_get_3par_client_login()
+
+        if backend is not None:
+           hpe3par_cli = self._hpe_get_3par_client_login_multi_array()
+        else:
+           hpe3par_cli = self._hpe_get_3par_client_login()
+
         # Get snapshot details from etcd service
         et = EtcdUtil(ETCD_HOST, ETCD_PORT, CLIENT_CERT, CLIENT_KEY)
         etcd_snapshot = et.get_vol_byname(snapshot_name)
@@ -642,12 +756,20 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
         for member in vluns['members']:
             if member['volumeName'] == backend_snapshot_name and member['active']:
                 vlun_cnt += 1
-        self.assertEqual(vlun_cnt, PORTS_ZONES)
+        if backend is not None:
+           self.assertEqual(vlun_cnt, PORTS_ZONES2)
+        else:
+           self.assertEqual(vlun_cnt, PORTS_ZONES)
         hpe3par_cli.logout()
 
-    def hpe_verify_snapshot_unmount(self, snapshot_name):
+    def hpe_verify_snapshot_unmount(self, snapshot_name, backend=None):
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-        hpe3par_cli = self._hpe_get_3par_client_login()
+
+        if backend is not None:
+           hpe3par_cli = self._hpe_get_3par_client_login_multi_array()
+        else:
+           hpe3par_cli = self._hpe_get_3par_client_login()
+
         # Get snapshot details from etcd service
         et = EtcdUtil(ETCD_HOST, ETCD_PORT, CLIENT_CERT, CLIENT_KEY)
         etcd_snapshot = et.get_vol_byname(snapshot_name)
@@ -747,5 +869,65 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
         hpe3par_cli.logout()
 
 
+    def hpe_recover_remote_copy_group(self, rcg_name, action):
+
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        hpe3par_cli = self._hpe_get_3par_client_login_replication()
+        rcopyInfo = hpe3par_cli.getRemoteCopyGroup(rcg_name)
+        rcopygrpname = rcopyInfo.get("remoteGroupName")
+
+        hpe3par_cli.stopRemoteCopy(rcg_name)
+        
+        rcopyStatus = hpe3par_cli.remoteCopyGroupStatusStoppedCheck(rcg_name)
+        hpe3par_cli.logout()
+
+        hpe3par_cli = self._hpe_get_3par_client_login_multi_array()
+        hpe3par_cli.recoverRemoteCopyGroupFromDisaster(rcopygrpname, int(action), optional=None)
+        hpe3par_cli.recoverRemoteCopyGroupFromDisaster(rcopygrpname, 9)
+        hpe3par_cli.logout()
+        return rcopygrpname
+
+    
+    def hpe_verify_snapshot_schedule(self, schedule_name, snapshot):
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        hpe3par_cli = self._hpe_get_3par_client_login()
+
+        hpe3par_schedule = hpe3par_cli.getSchedule(schedule_name)
+        schedule_details_cli = hpe3par_schedule[2].split(',')
+        
+        self.assertEqual(snapshot['Options']['scheduleName'], schedule_details_cli[0])
+        self.assertEqual(snapshot['Options']['scheduleFrequency'], ' '.join(schedule_details_cli[2:7]))
+        schedule_command = re.split('\s+', schedule_details_cli[1])
+        self.assertEqual(schedule_command[3], (snapshot['Options']['expHrs'])+"h")
+        self.assertEqual(schedule_command[5], (snapshot['Options']['retHrs'])+"h")
+           
+        hpe3par_cli.logout()
 
 
+    def hpe_wait_for_all_backends_to_initialize(self, driver=None, **kwargs):
+        # This is in order to handle Asynchronous backend initialization implemented
+        # as part of plugin 3.1
+        client = docker.APIClient(
+            version=TEST_API_VERSION, timeout=600,
+            **docker.utils.kwargs_from_env()
+        )
+        while True:
+            try:
+                result = client.create_volume(driver=driver,
+                                 driver_opts=kwargs)
+                sleep(5)
+            except docker.errors.APIError as e:
+                if 'INITIALIZING' in str(e):
+                    pass
+                elif 'FAILED' in str(e):
+                    raise e
+                else:
+                    return
+
+
+    def hpe_restore_remote_copy_group(self, rcg_name, action):
+
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        hpe3par_cli = self._hpe_get_3par_client_login_multi_array()
+        hpe3par_cli.recoverRemoteCopyGroupFromDisaster(rcg_name, int(action), optional=None)
+        hpe3par_cli.logout()

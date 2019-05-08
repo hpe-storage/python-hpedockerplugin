@@ -76,6 +76,7 @@ class MultiCpgTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
                 assert pl_data['Enabled'] is False
                 while pl_data['Enabled'] is False:
                     c.enable_plugin(HPE3PAR)
+                    HPE3ParBackendVerification.hpe_wait_for_all_backends_to_initialize(cls, driver=HPE3PAR, help='backends')
                 pl_data = c.inspect_plugin(HPE3PAR)
                 assert pl_data['Enabled'] is True
             except docker.errors.APIError:
@@ -92,6 +93,7 @@ class MultiCpgTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
                                  volumes=PLUGIN_VOLUMES, mounts=[mount],
                                  labels={'type': 'plugin'}
                 )
+                HPE3ParBackendVerification.hpe_wait_for_all_backends_to_initialize(cls, driver=HPE3PAR, help='backends')
             except docker.errors.APIError:
                 pass
 
