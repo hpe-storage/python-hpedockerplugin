@@ -153,6 +153,92 @@ class RequestContextBuilder(object):
                 raise exception.InvalidInput(reason=msg)
 
     @staticmethod
+    def _check_valid_fsMode_string(value):
+        valid_type = ['A', 'D', 'U', 'L']
+        valid_flag = ['f', 'd', 'p', 'i', 's', 'F', 'g']
+        valid_perm1 = ['r', 'w', 'a', 'x', 'd', 'D', 't', 'T']
+        valid_perm2 = ['n', 'N', 'c', 'C', 'o', 'y']
+        valid_perm = valid_perm1 + valid_perm2
+        type_flag_perm = value.split(':')
+        if len(type_flag_perm) != 3:
+            msg = "Incorrect value passed , please check correct "\
+                  "format and values to be passed in help"
+            LOG.error(msg)
+            raise exception.InvalidInput(reason=msg)
+        
+        vtype = type_flag_perm[0]
+        if vtype not in valid_type:
+            msg = "Incorrect value passed for type of a mode, please check "\
+                  "correct format and values to be passed."
+            LOG.error(msg)
+            raise exception.InvalidInput(reason=msg)
+        passed_vflag_len = len(list(type_flag_perm))
+        vflag = list(set(list(type_flag_perm[1])))
+        if len(vflag) < passed_vflag_len:
+            msg = "Duplicate characters for given flag are passed. "\
+                  "Please correct the passed flag charecters for fsMode."
+            LOG.error(msg)
+            raise exception.InvalidInput(reason=msg)
+        if set(vflag) - set(valid_flag):
+            msg = "Invalid flag passed for the fsMode. Please "\
+                  "pass the correct flag charecters"
+            LOG.error(msg)
+            raise exception.InvalidInput(reason=msg)
+        passed_vperm_len = len(list(type_flag_perm[2]))
+        vperm = list(set(list(type_flag_perm[2])))
+        if len(vperm) < passed_vperm_len:
+            msg = "Duplicate characters for given permission are passed. "\
+                  "Please correct the passed permissions for fsMode".
+            LOG.error(msg)
+            raise exception.InvalidInput(reason=msg)
+        if set(vperm) - set(valid_perm):
+            msg = "Invalid charecters for the permissions of fsMode are "\
+                  "passed. Please remove the invalid charecters."
+        return True
+
+    def _check_is_valid_acl_string(self, fsMode):
+        fsMode_list = fsMode.split(',')
+        if len(fsMode_list) != 3:
+            msg = "Passed acl string is not valid. "\
+                  "Pass correct acl string."
+            LOG.error(msg)
+            raise exception.InvalidInput(reason=msg)
+        for value in fsMode_list:
+            self._check_valid_fsMode_string(value)
+        return True
+
+    @staticmethod
+    def _is_valid_octal_num(fsMode):
+        return re.match('^0[0-7]{3}$', fsMode)
+    
+    def _validate_fsMode(self, fsMode):
+        is_valid_fs_mode = True
+        if ':' in fsMode:
+            is_valid_fs_mode = self._check_is_valid_acl_string(fsMode)
+        else:
+            is_valid_fs_mode = self._is_valid_octal_num(fsMode)
+        if not is_valid_fs_mode:
+            msg = "Invalid value passed for the fsMode."
+            LOG.error(msg)
+            raise exception.InvalidInput(reason=msg)
+
+    @staticmethod
+    def _validate_fsOwner(fsOwner):
+        fsOwner_list = fsOwner.split(':')
+        if len(fsOwner_list) != 2:
+            msg = "Invalid value specified for fsOwner Option."
+            LOG.error(msg)
+            raise exception.InvalidInput(reason=msg)
+        try:
+            for val in fsOwner_list:
+                int(val)
+        except ValueError as ex:
+            msg = "Please provide correct fsowner inforamtion. You have "\
+                  "passed non integer values."
+            LOG.error(msg)
+            raise exception.InvalidInput(reason=msg)
+
+    @staticmethod
     def _validate_opts(operation, contents, valid_opts, mandatory_opts=None):
         LOG.info("Validating options for operation '%s'" % operation)
         if 'Opts' in contents and contents['Opts']:
@@ -214,6 +300,15 @@ class FileRequestContextBuilder(RequestContextBuilder):
             )
         cpg = self._get_str_option(options, 'cpg', config.hpe3par_cpg[0])
         fpg = self._get_str_option(options, 'fpg', None)
+        #swapnil
+        fsMode = self._get_str_option(options, 'fsMode', None)
+        fsOwner = self._get_str_option(options, 'fsOwner', None)
+        
+        if fsMode:
+            self._validate_fsMode(fsMode)
+
+        if fsOwner:
+            self._validate_fsOwner(fsOwner)
 
         # Default share size or quota in MiB which is 1TiB
         size = self._get_int_option(options, 'size', 1 * 1024 * 1024)
@@ -244,7 +339,8 @@ class FileRequestContextBuilder(RequestContextBuilder):
         share_details = share.create_metadata(backend, cpg, fpg, name, size,
                                               readonly=readonly,
                                               nfs_options=nfs_options,
-                                              comment=comment)
+                                              comment=comment, fsMOde=fsMode,
+                                              fsOwner=fsOwner)
         LOG.info("_create_share_req_params: %s" % share_details)
         return share_details
 
