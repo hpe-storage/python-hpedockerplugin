@@ -6,7 +6,7 @@ from hpedockerplugin import exception
 
 
 LOG = logging.getLogger(__name__)
-FPG_SIZE = 64
+FPG_SIZE = 16
 
 
 class CreateFpgCmd(cmd.Cmd):
@@ -32,7 +32,8 @@ class CreateFpgCmd(cmd.Cmd):
                 fpg_metadata = {
                     'fpg': self._fpg_name,
                     'fpg_size': FPG_SIZE,
-                    'reached_full_capacity': False
+                    'reached_full_capacity': False,
+                    'docker_managed': True
                 }
                 self._fp_etcd.save_fpg_metadata(self._backend,
                                                 self._cpg_name,

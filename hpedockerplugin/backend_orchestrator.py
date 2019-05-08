@@ -29,6 +29,7 @@ import abc
 import json
 from oslo_log import log as logging
 import os
+import six
 import uuid
 import hpedockerplugin.volume_manager as mgr
 import hpedockerplugin.etcdutil as util
@@ -102,8 +103,9 @@ class Orchestrator(object):
                 thread.start()
 
             except Exception as ex:
-                LOG.error('INITIALIZING backend: %s FAILED Error: %s'
-                          % (backend_name, ex))
+                LOG.error('MAIN-THREAD: INITIALIZING backend: %s FAILED '
+                          'Error: %s'
+                          % (backend_name, six.text_type(ex)))
 
         LOG.info("Backends INITIALIZED => %s" % manager_objs.keys())
 

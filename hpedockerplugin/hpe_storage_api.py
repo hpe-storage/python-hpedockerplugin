@@ -115,7 +115,7 @@ class VolumePlugin(object):
         if backend_name in self._file_orchestrator._manager:
             mgr_obj = self._file_orchestrator._manager[backend_name]
             return mgr_obj.get('backend_state')
-        return 'FAILED'
+        return 'INITIALIZING'
 
     def disconnect_volume_callback(self, connector_info):
         LOG.info(_LI('In disconnect_volume_callback: connector info is %s'),
