@@ -21,5 +21,5 @@ def create_metadata(backend, cpg, fpg, share_name, size,
         'clientIPs': [],
         'comment': comment,
         'fsMode': fsMode,
-        'fsOwner': fsowner,
+        'fsOwner': fsOwner,
     }

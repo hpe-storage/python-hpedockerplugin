@@ -165,7 +165,6 @@ class RequestContextBuilder(object):
                   "format and values to be passed in help"
             LOG.error(msg)
             raise exception.InvalidInput(reason=msg)
-        
         vtype = type_flag_perm[0]
         if vtype not in valid_type:
             msg = "Incorrect value passed for type of a mode, please check "\
@@ -188,7 +187,7 @@ class RequestContextBuilder(object):
         vperm = list(set(list(type_flag_perm[2])))
         if len(vperm) < passed_vperm_len:
             msg = "Duplicate characters for given permission are passed. "\
-                  "Please correct the passed permissions for fsMode".
+                  "Please correct the passed permissions for fsMode."
             LOG.error(msg)
             raise exception.InvalidInput(reason=msg)
         if set(vperm) - set(valid_perm):
@@ -210,7 +209,7 @@ class RequestContextBuilder(object):
     @staticmethod
     def _is_valid_octal_num(fsMode):
         return re.match('^0[0-7]{3}$', fsMode)
-    
+
     def _validate_fsMode(self, fsMode):
         is_valid_fs_mode = True
         if ':' in fsMode:
@@ -300,10 +299,9 @@ class FileRequestContextBuilder(RequestContextBuilder):
             )
         cpg = self._get_str_option(options, 'cpg', config.hpe3par_cpg[0])
         fpg = self._get_str_option(options, 'fpg', None)
-        #swapnil
+        # swapnil
         fsMode = self._get_str_option(options, 'fsMode', None)
         fsOwner = self._get_str_option(options, 'fsOwner', None)
-        
         if fsMode:
             self._validate_fsMode(fsMode)
 
