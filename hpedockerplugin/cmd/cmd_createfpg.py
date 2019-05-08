@@ -32,6 +32,7 @@ class CreateFpgCmd(cmd.Cmd):
                 fpg_metadata = {
                     'fpg': self._fpg_name,
                     'fpg_size': FPG_SIZE,
+                    'share_cnt': 0,
                     'reached_full_capacity': False,
                     'docker_managed': True
                 }
