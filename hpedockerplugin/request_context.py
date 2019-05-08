@@ -215,8 +215,8 @@ class FileRequestContextBuilder(RequestContextBuilder):
         cpg = self._get_str_option(options, 'cpg', config.hpe3par_cpg[0])
         fpg = self._get_str_option(options, 'fpg', None)
 
-        # Default share size or quota in MiB which is 4TiB
-        size = self._get_int_option(options, 'size', 4 * 1024 * 1024)
+        # Default share size or quota in MiB which is 1TiB
+        size = self._get_int_option(options, 'size', 1 * 1024 * 1024)
 
         # TODO: This check would be required when VFS needs to be created.
         # NOT HERE

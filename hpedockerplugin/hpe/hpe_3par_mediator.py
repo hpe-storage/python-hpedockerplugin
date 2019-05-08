@@ -936,7 +936,7 @@ class HPE3ParMediator(object):
             raise exception.ShareBackendException(msg)
         return task_id
 
-    def create_fpg(self, cpg, fpg_name, size=64):
+    def create_fpg(self, cpg, fpg_name, size=16):
         try:
             self._wsapi_login()
             uri = '/fpgs/'
@@ -963,7 +963,7 @@ class HPE3ParMediator(object):
             self._wsapi_logout()
 
     def create_vfs(self, vfs_name, ip, subnet, cpg=None, fpg=None,
-                   size=64):
+                   size=16):
         uri = '/virtualfileservers/'
         ip_info = {
             'IPAddr': ip,

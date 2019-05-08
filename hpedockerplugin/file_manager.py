@@ -165,7 +165,8 @@ class FileManager(object):
             fpg_info = {
                 'ips': {netmask: [ip]},
                 'fpg': fpg_name,
-                'vfs': vfs_name
+                'vfs': vfs_name,
+                'docker_managed': False
             }
 
         return fpg_info
@@ -242,6 +243,7 @@ class FileManager(object):
                 fpg_info = fpg_getter(share_args)
                 share_args['fpg'] = fpg_info['fpg']
                 share_args['vfs'] = fpg_info['vfs']
+                share_args['docker_managed'] = fpg_info.get('docker_managed')
 
                 # Only one IP per FPG is supported at the moment
                 # Given that, list can be dropped

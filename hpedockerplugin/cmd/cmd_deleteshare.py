@@ -25,9 +25,11 @@ class DeleteShareCmd(cmd.Cmd):
                 self._backend, self._cpg_name, self._fpg_name):
             self._remove_quota()
             self._delete_share()
-            remaining_cnt = self._decrement_share_cnt()
-            if remaining_cnt == 0:
-                self._delete_fpg()
+            # Decrement count only if it is Docker managed FPG
+            if self._share_info.get('docker_managed'):
+                remaining_cnt = self._decrement_share_cnt()
+                if remaining_cnt == 0:
+                    self._delete_fpg()
         return json.dumps({u"Err": ''})
 
     def unexecute(self):

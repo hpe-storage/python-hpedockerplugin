@@ -71,7 +71,9 @@ class CreateShareCmd(cmd.Cmd):
             self._status = 'AVAILABLE'
             self._share_args['status'] = self._status
             share_etcd.save_share(self._share_args)
-            self._increment_share_cnt_for_fpg()
+            # Increment count only if it is Docker managed FPG
+            if self._share_args.get('docker_managed'):
+                self._increment_share_cnt_for_fpg()
         except Exception as ex:
             msg = "Share creation failed [share_name: %s, error: %s" %\
                   (share_name, six.text_type(ex))
