@@ -148,10 +148,11 @@ class FileManager(object):
             # used for creating legacy FPG. Override default
             # or supplied CPG
             if cpg_name != leg_fpg['cpg']:
-                msg = ('ERROR: Invalid CPG %s specified or configured in '
-                       'hpe.conf for the specified legacy FPG %s. Please '
-                       'specify correct CPG as %s' %
-                       (cpg_name, fpg_name, leg_fpg['cpg']))
+                msg = ("ERROR: Invalid CPG %s specified as an option or "
+                       "configured in hpe.conf that doesn't match the parent "
+                       "CPG %s of the specified legacy FPG %s. Please "
+                       "specify CPG as '-o cpg=%s'" %
+                       (cpg_name, fpg_name, leg_fpg['cpg'], leg_fpg['cpg']))
                 LOG.error(msg)
                 raise exception.InvalidInput(msg)
 
