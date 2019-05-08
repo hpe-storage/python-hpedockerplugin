@@ -32,8 +32,9 @@ class CreateFpgCmd(cmd.Cmd):
                 fpg_metadata = {
                     'fpg': self._fpg_name,
                     'fpg_size': FPG_SIZE,
+                    'share_cnt': 0,
                     'reached_full_capacity': False,
-                    'docker_managed': True
+                    'docker_managed': True,
                 }
                 self._fp_etcd.save_fpg_metadata(self._backend,
                                                 self._cpg_name,
