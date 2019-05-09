@@ -21,12 +21,17 @@ class GenerateFpgVfsNamesCmd(cmd.Cmd):
             try:
                 backend_metadata = self._fp_etcd.get_backend_metadata(
                     self._backend)
-                counter = backend_metadata['counter'] + 1
+                counter = int(backend_metadata.get('counter', 0)) + 1
                 backend_metadata['counter'] = counter
                 new_fpg_name = "DockerFpg_%s" % counter
                 new_vfs_name = "DockerVfs_%s" % counter
-                default_fpgs = backend_metadata['default_fpgs']
-                default_fpgs.update({self._cpg_name: new_fpg_name})
+                default_fpgs = backend_metadata.get('default_fpgs')
+                if default_fpgs:
+                    default_fpgs.update({self._cpg_name: new_fpg_name})
+                else:
+                    backend_metadata['default_fpgs'] = {
+                        self._cpg_name: new_fpg_name
+                    }
 
                 # Save updated backend_metadata
                 self._fp_etcd.save_backend_metadata(self._backend,

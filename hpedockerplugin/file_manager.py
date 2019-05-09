@@ -228,7 +228,45 @@ class FileManager(object):
         vfs_name = fpg_name + '_vfs'
         return fpg_name, vfs_name
 
-    def _create_share_on_fpg(self, share_args, fpg_getter, names_generator):
+    def _create_fpg(self, share_args, undo_cmds):
+        LOG.info("Generating FPG and VFS names...")
+        cpg = share_args['cpg']
+        fpg_name, vfs_name = self._vfs_name_from_fpg_name(share_args)
+        LOG.info("Names generated: FPG=%s, VFS=%s" %
+                 (fpg_name, vfs_name))
+        LOG.info("Creating FPG %s using CPG %s" % (fpg_name, cpg))
+        create_fpg_cmd = CreateFpgCmd(self, cpg, fpg_name, False)
+        create_fpg_cmd.execute()
+        LOG.info("FPG %s created successfully using CPG %s" %
+                 (fpg_name, cpg))
+        undo_cmds.append(create_fpg_cmd)
+        return fpg_name, vfs_name
+
+    def _create_default_fpg(self, share_args, undo_cmds):
+        LOG.info("Generating FPG and VFS names...")
+        cpg = share_args['cpg']
+        while True:
+            fpg_name, vfs_name = self._generate_default_fpg_vfs_names(
+                share_args
+            )
+            LOG.info("Names generated: FPG=%s, VFS=%s" %
+                     (fpg_name, vfs_name))
+            LOG.info("Creating FPG %s using CPG %s" % (fpg_name, cpg))
+            try:
+                create_fpg_cmd = CreateFpgCmd(self, cpg, fpg_name, True)
+                create_fpg_cmd.execute()
+                LOG.info("FPG %s created successfully using CPG %s" %
+                         (fpg_name, cpg))
+                undo_cmds.append(create_fpg_cmd)
+                return fpg_name, vfs_name
+            except (exception.FpgCreationFailed,
+                    exception.FpgAlreadyExists) as ex:
+                LOG.info("FPG %s could not be created. Error: %s" %
+                         (fpg_name, six.text_type(ex)))
+                LOG.info("Retrying with new FPG name...")
+                continue
+
+    def _create_share_on_fpg(self, share_args, fpg_getter, fpg_creator):
         share_name = share_args['name']
         LOG.info("Creating share on default FPG %s..." % share_name)
         undo_cmds = []
@@ -271,11 +309,7 @@ class FileManager(object):
 
                     # Generate FPG and VFS names. This will also initialize
                     #  backend meta-data in case it doesn't exist
-                    LOG.info("Generating FPG and VFS data and also "
-                             "initializing backend metadata if not present")
-                    fpg_name, vfs_name = names_generator(share_args)
-                    LOG.info("Names generated: FPG=%s, VFS=%s" %
-                             (fpg_name, vfs_name))
+                    fpg_name, vfs_name = fpg_creator(share_args, undo_cmds)
                     share_args['fpg'] = fpg_name
                     share_args['vfs'] = vfs_name
 
@@ -291,15 +325,6 @@ class FileManager(object):
                     ip, netmask = claim_free_ip_cmd.execute()
                     LOG.info("Acquired IP %s for VFS creation" % ip)
                     undo_cmds.append(claim_free_ip_cmd)
-
-                    LOG.info("Creating FPG %s using CPG %s" % (fpg_name, cpg))
-                    create_fpg_cmd = CreateFpgCmd(
-                        self, cpg, fpg_name, mark_fpg_as_default
-                    )
-                    create_fpg_cmd.execute()
-                    LOG.info("FPG %s created successfully using CPG %s" %
-                             (fpg_name, cpg))
-                    undo_cmds.append(create_fpg_cmd)
 
                     LOG.info("Creating VFS %s under FPG %s" %
                              (vfs_name, fpg_name))
@@ -333,6 +358,13 @@ class FileManager(object):
                 except exception.FpgCreationFailed as ex:
                     msg = "Create share on new FPG failed. Msg: %s" \
                           % six.text_type(ex)
+                    LOG.error(msg)
+                    self._unexecute(undo_cmds)
+                    raise exception.ShareCreationFailed(reason=msg)
+
+                except exception.HPEDriverNonExistentCpg as ex:
+                    msg = "Non existing CPG specified/configured: %s" %\
+                          six.text_type(ex)
                     LOG.error(msg)
                     self._unexecute(undo_cmds)
                     raise exception.ShareCreationFailed(reason=msg)
@@ -401,13 +433,13 @@ class FileManager(object):
             self._create_share_on_fpg(
                 share_args,
                 self._get_existing_fpg,
-                self._vfs_name_from_fpg_name
+                self._create_fpg
             )
         else:
             self._create_share_on_fpg(
                 share_args,
                 self._get_default_available_fpg,
-                self._generate_default_fpg_vfs_names
+                self._create_default_fpg
             )
 
     def remove_share(self, share_name, share):
