@@ -423,7 +423,7 @@ class FpgAlreadyExists(PluginException):
 
 
 class UserGroupNotFoundOn3PAR(PluginException):
-    message = _("fsusergroup or fsuser doesn't exist on 3PAR: (reason)s")
+    message = _("fsusergroup or fsuser doesn't exist on 3PAR: %(reason)s")
 
 
 class SetQuotaFailed(PluginException):

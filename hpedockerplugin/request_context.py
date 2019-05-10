@@ -299,7 +299,6 @@ class FileRequestContextBuilder(RequestContextBuilder):
             )
         cpg = self._get_str_option(options, 'cpg', config.hpe3par_cpg[0])
         fpg = self._get_str_option(options, 'fpg', None)
-        # swapnil
         fsMode = self._get_str_option(options, 'fsMode', None)
         fsOwner = self._get_str_option(options, 'fsOwner', None)
         if fsMode:
