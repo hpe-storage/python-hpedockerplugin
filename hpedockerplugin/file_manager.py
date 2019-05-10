@@ -608,6 +608,7 @@ class FileManager(object):
             my_ip = netutils.get_my_ipv4()
             self._hpeplugin_driver.add_client_ip_for_share(share['id'],
                                                            my_ip)
+
             # TODO: Client IPs should come from array. We cannot depend on ETCD
             # for this info as user may use different ETCDs for different hosts
             client_ips = share['clientIPs']
@@ -621,9 +622,26 @@ class FileManager(object):
             }
             share['path_info'] = node_mnt_info
             if fUser or fGroup or fMode:
+                LOG.info("Inside fUser or fGroup or fMode")
                 is_first_call = True
-                fUName, fGName = self._hpeplugin_driver.usr_check(fUser,
-                                                                  fGroup)
+                fUName = None
+                fGName = None
+                try:
+                    fUName, fGName = self._hpeplugin_driver.usr_check(fUser,
+                                                                      fGroup)
+                    if fUName is None or fGName is None:
+                        msg = ("Either user or group does not exist on 3PAR "
+                               "Please create local users and group with "
+                               "required user id and group is")
+                        LOG.error(msg)
+                        raise exception.UserGroupNotFoundOn3PAR(msg)
+                except exception.UserGroupNotFoundOn3PAR as ex:
+                    msg = six.text_type(ex)
+                    LOG.error(msg)
+                    response = json.dumps({u"Err": msg, u"Name": share_name,
+                                           u"Mountpoint": mount_dir,
+                                           u"Devicename": share_path})
+                    return response
 
         self._create_mount_dir(mount_dir)
         LOG.info("Mounting share path %s to %s" % (share_path, mount_dir))

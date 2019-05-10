@@ -337,7 +337,7 @@ class FileRequestContextBuilder(RequestContextBuilder):
         share_details = share.create_metadata(backend, cpg, fpg, name, size,
                                               readonly=readonly,
                                               nfs_options=nfs_options,
-                                              comment=comment, fsMOde=fsMode,
+                                              comment=comment, fsMode=fsMode,
                                               fsOwner=fsOwner)
         LOG.info("_create_share_req_params: %s" % share_details)
         return share_details
@@ -346,7 +346,7 @@ class FileRequestContextBuilder(RequestContextBuilder):
         LOG.info("_create_share_req_ctxt: Entering...")
         valid_opts = ('backend', 'filePersona', 'cpg', 'fpg',
                       'size', 'readonly', 'nfsOptions', 'comment',
-                      'mountConflictDelay')
+                      'mountConflictDelay', 'fsMode', 'fsOwner')
         mandatory_opts = ('filePersona',)
         self._validate_opts("create share", contents, valid_opts,
                             mandatory_opts)
