@@ -81,6 +81,13 @@ class FileManager(object):
 
     def _initialize_configuration(self):
         self.src_bkend_config = self._get_src_bkend_config()
+        def_fpg_size = self.src_bkend_config.hpe3par_default_fpg_size
+        if def_fpg_size:
+            if def_fpg_size < 1 or def_fpg_size > 64:
+                msg = "Configured hpe3par_default_fpg_size MUST be in the " \
+                      "range 1 and 64. Specified value is %s" % def_fpg_size
+                LOG.error(msg)
+                raise exception.InvalidInput(msg)
 
     def _get_src_bkend_config(self):
         LOG.info("Getting source backend configuration...")
