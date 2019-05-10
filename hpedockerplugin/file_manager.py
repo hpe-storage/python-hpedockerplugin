@@ -299,14 +299,6 @@ class FileManager(object):
                 # In all the above cases, default FPG is not present
                 # and we need to create a new one
                 try:
-                    # If fpg option was specified by the user, we won't
-                    # mark it as a default FPG so that it cannot be used
-                    # with default share creation
-                    if 'fpg' in share_args:
-                        mark_fpg_as_default = False
-                    else:
-                        mark_fpg_as_default = True
-
                     # Generate FPG and VFS names. This will also initialize
                     #  backend meta-data in case it doesn't exist
                     fpg_name, vfs_name = fpg_creator(share_args, undo_cmds)
