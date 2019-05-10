@@ -1065,10 +1065,10 @@ class HPE3ParMediator(object):
         cmd2 = ['showfsgroup']
         try:
             LOG.info("Now will execute first cmd1")
-            cmd1 = cmd1.append('\r')
+            cmd1.append('\r')
             res_cmd1 = self._client._run(cmd1)
             f_user_name = self._check_usr_grp_existence(fUser, res_cmd1)
-            cmd2 = cmd2.append('\r')
+            cmd2.append('\r')
             res_cmd2 = self._client._run(cmd2)
             f_group_name = self._check_usr_grp_existence(fGroup, res_cmd2)
             return f_user_name, f_group_name

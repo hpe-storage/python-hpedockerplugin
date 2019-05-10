@@ -624,8 +624,6 @@ class FileManager(object):
             if fUser or fGroup or fMode:
                 LOG.info("Inside fUser or fGroup or fMode")
                 is_first_call = True
-                fUName = None
-                fGName = None
                 try:
                     fUName, fGName = self._hpeplugin_driver.usr_check(fUser,
                                                                       fGroup)
