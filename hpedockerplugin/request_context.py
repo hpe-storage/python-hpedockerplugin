@@ -251,7 +251,8 @@ class FileRequestContextBuilder(RequestContextBuilder):
     def _create_share_req_ctxt(self, contents, def_backend_name):
         LOG.info("_create_share_req_ctxt: Entering...")
         valid_opts = ('backend', 'filePersona', 'cpg', 'fpg',
-                      'size', 'readonly', 'nfsOptions', 'comment')
+                      'size', 'readonly', 'nfsOptions', 'comment',
+                      'mountConflictDelay')
         mandatory_opts = ('filePersona',)
         self._validate_opts("create share", contents, valid_opts,
                             mandatory_opts)
@@ -266,7 +267,7 @@ class FileRequestContextBuilder(RequestContextBuilder):
 
     def _create_help_req_ctxt(self, contents, def_backend_name):
         LOG.info("_create_help_req_ctxt: Entering...")
-        valid_opts = ('filePersona', 'help')
+        valid_opts = ('filePersona', 'help', 'mountConflictDelay')
         self._validate_opts("create help content for share", contents,
                             valid_opts, mandatory_opts=None)
         options = contents['Opts']

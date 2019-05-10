@@ -31,6 +31,7 @@ from hpedockerplugin import fileutil
 hpe3parclient = importutils.try_import("hpe3parclient")
 if hpe3parclient:
     from hpe3parclient import file_client
+    from hpe3parclient import exceptions as hpeexceptions
 
 LOG = log.getLogger(__name__)
 MIN_CLIENT_VERSION = (4, 0, 0)
@@ -56,6 +57,11 @@ LOCAL_IP = '127.0.0.1'
 LOCAL_IP_RO = '127.0.0.2'
 SUPER_SHARE = 'DOCKER_SUPER_SHARE'
 TMP_RO_SNAP_EXPORT = "Temp RO snapshot export as source for creating RW share."
+
+BAD_REQUEST = '404'
+OTHER_FAILURE_REASON = 29
+NON_EXISTENT_CPG = 15
+INV_INPUT_ILLEGAL_CHAR = 69
 
 
 class HPE3ParMediator(object):
@@ -218,6 +224,15 @@ class HPE3ParMediator(object):
         for fsquota in result['members']:
             total_mb += float(fsquota['hardBlock'])
         return total_mb / units.Ki
+
+    def get_fpgs(self, filter):
+        try:
+            self._wsapi_login()
+            uri = '/fpgs?query="name EQ %s"' % filter
+            resp, body = self._client.http.get(uri)
+            return body['members'][0]
+        finally:
+            self._wsapi_logout()
 
     def get_fpg(self, fpg_name):
         try:
@@ -947,16 +962,31 @@ class HPE3ParMediator(object):
                 'comment': 'Docker created FPG'
             }
             resp, body = self._client.http.post(uri, body=args)
-            task_id = body['taskId']
-            self._wait_for_task_completion(task_id, interval=10)
+
+            LOG.info("Create FPG Response: %s" % six.text_type(resp))
+            LOG.info("Create FPG Response Body: %s" % six.text_type(body))
+            if (resp['status'] == BAD_REQUEST and
+                    body['code'] == OTHER_FAILURE_REASON and
+                    'already exists' in body['desc']):
+                LOG.error(body['desc'])
+                raise exception.FpgAlreadyExists(reason=body['desc'])
+
+            task_id = body.get('taskId')
+            if task_id:
+                self._wait_for_task_completion(task_id, interval=10)
+        except hpeexceptions.HTTPBadRequest as ex:
+            error_code = ex.get_code()
+            if error_code == NON_EXISTENT_CPG:
+                LOG.error("CPG %s doesn't exist on array" % cpg)
+                raise exception.HPEDriverNonExistentCpg(cpg=cpg)
         except exception.ShareBackendException as ex:
             msg = 'Create FPG task failed: cpg=%s,fpg=%s, ex=%s'\
                   % (cpg, fpg_name, six.text_type(ex))
             LOG.error(msg)
             raise exception.ShareBackendException(msg=msg)
-        except Exception:
-            msg = (_('Failed to create FPG %s of size %s using CPG %s') %
-                   (fpg_name, size, cpg))
+        except Exception as ex:
+            msg = (_('Failed to create FPG %s of size %s using CPG %s: '
+                     'Exception: %s') % (fpg_name, size, cpg, ex))
             LOG.error(msg)
             raise exception.ShareBackendException(msg=msg)
         finally:
