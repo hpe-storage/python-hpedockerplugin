@@ -1069,18 +1069,6 @@ class HPE3ParMediator(object):
             res_cmd1 = self._client._run(cmd1)
             f_user_name = self._check_usr_grp_existence(fUser, res_cmd1)
             cmd2.append('\r')
-=======
-            msg = ("User or Group not found on 3PAR")
-            LOG.error(msg)
-            raise exception.UserGroupNotFoundOn3PAR(msg=msg)
-
-    def usr_check(self, fUser, fGroup):
-        cmd1 = ['showfsuser']
-        cmd2 = ['showfsgroup']
-        try:
-            res_cmd1 = self._client._run(cmd1)
-            f_user_name = self._check_usr_grp_existence(fUser, res_cmd1)
->>>>>>> Done changes for fsMode fsOwner
             res_cmd2 = self._client._run(cmd2)
             f_group_name = self._check_usr_grp_existence(fGroup, res_cmd2)
             return f_user_name, f_group_name
