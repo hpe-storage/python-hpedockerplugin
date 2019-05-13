@@ -11,7 +11,7 @@ Create a share in HPE 3PAR using HPE 3PAR volume plug-in for Docker.
                             For a non-existing FPG x, a new FPG is created using the CPG that is either explicitly
                             specified with '-o cpg' option or configured in hpe.conf.
                             If FPG exists, be it a legacy FPG or Docker managed FPG, share is simply created under it.
-                            In case this option is not specified, then a default FPG is created with size 64TiB if it
+                            In case this option is not specified, then a default FPG is created with size 16TiB if it
                             doesn't exist. Naming convention for default FPG is DockerFpg_n where n is an integer
                             starting from 0.
 -o size=x                 x is the size of the share in MiB. By default, it is 1TiB
