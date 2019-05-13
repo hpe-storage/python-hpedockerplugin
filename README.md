@@ -2,7 +2,7 @@
 
 HPE Docker Volume Plugin is an open source project that provides persistent storage and features for your containerized applications using HPE 3PAR StoreServ Storage arrays.
 
-The HPE Docker Volume Plugin supports popular container platforms like Docker, Kubernetes, OpenShift and SuSE CaaS/CAP 
+The HPE Docker Volume Plugin supports popular container platforms like Docker, Kubernetes, OpenShift 
 
 ## HPE Docker Volume Plugin Overview
 
