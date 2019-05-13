@@ -1,6 +1,9 @@
 # Quick Start Guide to installing the HPE 3PAR Volume Plug-in for Docker
 # Deployment meathods for HPE 3PAR Volume Plugin-in 
 
+- HPE 3PAR Docker volume Plugin can be deployed in following meathods, 
+
+* [Ansible Installer for HPE Docker volume Plugin] (#Ansible Installer)
 * [Quick Start Guide for Standalone Docker environments](#docker)
 * [Quick Start Guide for Kubernetes/OpenShift environments](#k8)
 * [Usage](#usage)
