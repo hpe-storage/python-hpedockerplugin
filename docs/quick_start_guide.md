@@ -1,4 +1,5 @@
 # Quick Start Guide to installing the HPE 3PAR Volume Plug-in for Docker
+# Deployment meathods for HPE 3PAR Volume Plugin-in 
 
 * [Quick Start Guide for Standalone Docker environments](#docker)
 * [Quick Start Guide for Kubernetes/OpenShift environments](#k8)
