@@ -17,3 +17,10 @@ Create a share in HPE 3PAR using HPE 3PAR volume plug-in for Docker.
 -o size=x                 x is the size of the share in MiB. By default, it is 4TiB
 -o help -o filePersona    When used together, these options display this help content
 -o help=backends -o filePersona  When used togther, these options display status of the backends configured for File Persona
+-o fsOwner=x              x is the user id and group id that should own the root directory  of nfs file share in the form of
+                          [userId:groupId]. Administartor also need to make sure that local user and local group with these
+                          ids are present on 3PAR before trying to mount the created share.
+                          For such shares which has userId and groupId specified, mount will succeed only if users and group
+                          with specified ids are present on 3PAR.
+-o fsMode=x               x is 1 to 4 octal degits that represent the file mode to be applied to the root directory of the
+                          file system.

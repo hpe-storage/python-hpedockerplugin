@@ -630,7 +630,7 @@ class FileManager(object):
                     if fUName is None or fGName is None:
                         msg = ("Either user or group does not exist on 3PAR "
                                "Please create local users and group with "
-                               "required user id and group is")
+                               "required user id and group id")
                         LOG.error(msg)
                         raise exception.UserGroupNotFoundOn3PAR(msg)
                 except exception.UserGroupNotFoundOn3PAR as ex:
