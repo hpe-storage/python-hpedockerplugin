@@ -1,7 +1,9 @@
 import copy
 import json
 import sh
+from sh import chmod
 import six
+import os
 from threading import Thread
 
 from oslo_log import log as logging
@@ -549,7 +551,21 @@ class FileManager(object):
         if 'status' in share:
             if share['status'] == 'FAILED':
                 LOG.error("Share not present")
-
+        fUser = None
+        fGroup = None
+        fMode = None
+        fUName = None
+        fGName = None
+        is_first_call = False
+        if share['fsOwner']:
+            fOwner = share['fsOwner'].split(':')
+            fUser = int(fOwner[0])
+            fGroup = int(fOwner[1])
+        if share['fsMode']:
+            try:
+                fMode = int(share['fsMode'])
+            except ValueError:
+                fMode = share['fsMode']
         fpg = share['fpg']
         vfs = share['vfs']
         file_store = share['name']
@@ -592,6 +608,7 @@ class FileManager(object):
             my_ip = netutils.get_my_ipv4()
             self._hpeplugin_driver.add_client_ip_for_share(share['id'],
                                                            my_ip)
+
             # TODO: Client IPs should come from array. We cannot depend on ETCD
             # for this info as user may use different ETCDs for different hosts
             client_ips = share['clientIPs']
@@ -604,12 +621,39 @@ class FileManager(object):
                 }
             }
             share['path_info'] = node_mnt_info
+            if fUser or fGroup or fMode:
+                LOG.info("Inside fUser or fGroup or fMode")
+                is_first_call = True
+                try:
+                    fUName, fGName = self._hpeplugin_driver.usr_check(fUser,
+                                                                      fGroup)
+                    if fUName is None or fGName is None:
+                        msg = ("Either user or group does not exist on 3PAR "
+                               "Please create local users and group with "
+                               "required user id and group id")
+                        LOG.error(msg)
+                        raise exception.UserGroupNotFoundOn3PAR(msg)
+                except exception.UserGroupNotFoundOn3PAR as ex:
+                    msg = six.text_type(ex)
+                    LOG.error(msg)
+                    response = json.dumps({u"Err": msg, u"Name": share_name,
+                                           u"Mountpoint": mount_dir,
+                                           u"Devicename": share_path})
+                    return response
 
         self._create_mount_dir(mount_dir)
         LOG.info("Mounting share path %s to %s" % (share_path, mount_dir))
         sh.mount('-t', 'nfs', share_path, mount_dir)
         LOG.debug('Device: %(path)s successfully mounted on %(mount)s',
                   {'path': share_path, 'mount': mount_dir})
+        if is_first_call:
+            os.chown(mount_dir, fUser, fGroup)
+            try:
+                int(fMode)
+                chmod(fMode, mount_dir)
+            except ValueError:
+                self._hpeplugin_driver.set_ACL(fMode, mount_dir, fUName,
+                                               fGName)
 
         self._etcd.save_share(share)
         response = json.dumps({u"Err": '', u"Name": share_name,

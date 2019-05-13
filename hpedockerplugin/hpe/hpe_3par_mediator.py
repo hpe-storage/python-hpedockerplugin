@@ -1033,6 +1033,51 @@ class HPE3ParMediator(object):
         finally:
             self._wsapi_logout()
 
+    def set_ACL(fUName, fGName, fMode):
+        LOG.info("Inside set ACL call but temperory not making"
+                 " any rest call.")
+
+    def _check_usr_grp_existence(self, fUserOwner, res_cmd):
+        fuserowner = str(fUserOwner)
+        uname_index = 0
+        uid_index = 1
+        user_name = None
+        first_line = res_cmd[1]
+        first_line_list = first_line.split(',')
+        for index, value in enumerate(first_line_list):
+            if value == 'Username':
+                uname_index = index
+            if value == 'UID':
+                uid_index = index
+        res_len = len(res_cmd)
+        end_index = res_len - 3
+        for line in res_cmd[2:end_index]:
+            line_list = line.split(',')
+            if fuserowner == line_list[uid_index]:
+                user_name = line_list[uname_index]
+                return user_name
+        if user_name is None:
+            return None
+
+    def usr_check(self, fUser, fGroup):
+        LOG.info("I am inside usr_check")
+        cmd1 = ['showfsuser']
+        cmd2 = ['showfsgroup']
+        try:
+            LOG.info("Now will execute first cmd1")
+            cmd1.append('\r')
+            res_cmd1 = self._client._run(cmd1)
+            f_user_name = self._check_usr_grp_existence(fUser, res_cmd1)
+            cmd2.append('\r')
+            res_cmd2 = self._client._run(cmd2)
+            f_group_name = self._check_usr_grp_existence(fGroup, res_cmd2)
+            return f_user_name, f_group_name
+        except hpeexceptions.SSHException as ex:
+            msg = (_('Failed to get the corresponding user and group name '
+                     'reason is %s:') % six.text_type(ex))
+            LOG.error(msg)
+            raise exception.ShareBackendException(msg=msg)
+
     def add_client_ip_for_share(self, share_id, client_ip):
         uri = '/fileshares/%s' % share_id
         body = {
@@ -1042,6 +1087,11 @@ class HPE3ParMediator(object):
         self._wsapi_login()
         try:
             self._client.http.put(uri, body=body)
+        except hpeexceptions.HTTPBadRequest as ex:
+            msg = (_("It is first mount request but ip is already"
+                     " added to the share. Exception %s : ")
+                   % six.text_type(ex))
+            LOG.info(msg)
         finally:
             self._wsapi_logout()
 
