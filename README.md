@@ -1,4 +1,4 @@
-## HPE Docker Volume Plugin for HPE 3PAR StoreServ
+## HPE 3PAR Volume Plugin for Docker
 
 HPE Docker Volume Plugin is an open source project that provides persistent storage and features for your containerized applications using HPE 3PAR StoreServ Storage arrays.
 
@@ -48,3 +48,7 @@ See the [usage guide](/docs/usage.md) for details on the supported operations an
 ## Troubleshooting
 
 Troubleshooting issues with the plugin can be performed using these [tips](/docs/troubleshooting.md)
+
+## SPOCK Link for HPE 3PAR Volume Plugin for Docker
+
+* [SPOCK Link](https://spock.corp.int.hpe.com/spock/utility/document.aspx?docurl=Shared%20Documents/hw/3par/3par_volume_plugin_for_docker.pdf)
