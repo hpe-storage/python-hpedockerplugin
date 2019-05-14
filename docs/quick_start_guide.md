@@ -105,6 +105,27 @@ $ systemctl daemon-reload
 $ systemctl restart docker.service
 ```
 
+#### SLES12 SP3 or later:
+
+1. Rebuild the initrd, otherwise the system may not boot anymore
+
+```
+$ dracut --force --add multipath
+```
+
+2. Configure `/etc/multipath.conf`
+
+```
+$ multipath -t > /etc/multipath.conf
+```
+
+3. Enable the iscsid and multipathd services
+
+```
+$ systemctl enable multipathd
+$ systemctl start multipathd
+```
+
 Now the systems are ready to setup the HPE 3PAR Volume Plug-in for Docker.
 
 
@@ -128,7 +149,7 @@ sudo docker run -d -v /usr/share/ca-certificates/:/etc/ssl/certs -p 4001:4001 \
 -name etcd0 \
 -advertise-client-urls http://${HostIP}:2379,http://${HostIP}:4001 \
 -listen-client-urls http://0.0.0.0:2379,http://0.0.0.0:4001 \
--initial-advertise-peer-urls http://${HostIP}:23800 \
+-initial-advertise-peer-urls http://${HostIP}:2380 \
 -listen-peer-urls http://0.0.0.0:2380 \
 -initial-cluster-token etcd-cluster-1 \
 -initial-cluster etcd0=http://${HostIP}:2380 \

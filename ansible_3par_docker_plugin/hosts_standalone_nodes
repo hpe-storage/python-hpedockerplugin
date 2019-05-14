@@ -1,0 +1,8 @@
+[all]
+10.10.10.1
+10.10.10.2
+10.10.10.3
+
+#[all:vars]
+#http_proxy=
+#https_proxy=

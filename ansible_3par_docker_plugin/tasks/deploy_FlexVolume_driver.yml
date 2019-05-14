@@ -1,31 +1,16 @@
 ---
-  - name: load etcd settings
-    include_vars: '../properties/etcd_properties.yml'
+  - name: Download dory installer
+    get_url:
+      url: https://github.com/hpe-storage/python-hpedockerplugin/raw/master/dory_installer_v31
+      dest: /tmp 
+      mode: 0755
 
-  - name: Create FlexVolume driver directory
+  - name: Install dory, doryd
+    shell: >-
+      yes yes | /tmp/dory_installer_v31
+
+  - name: Remove the dory installer
     file:
-      path: "{{ item }}"
-      state: directory
-      mode: 0644
-      recurse: yes
-    with_items:
-      - "{{ driver_path }}"
-      - /etc/kubernetes/
+      path: /tmp/dory_installer_v31
+      state: absent
 
-  - name: Verify /etc/kubernetes/admin.conf exists
-    copy:
-      src: /root/.kube/config
-      dest: /etc/kubernetes/admin.conf
-      owner: "root"
-      mode: 0755
-      ignore_errors: yes
-
-  - name: Install FlexVolume drivers
-    copy:
-      src: "{{ item }}"
-      dest: "{{ driver_path }}"
-      owner: "root"
-      mode: 0755
-      remote_src: yes
-    with_fileglob:
-      - "../files/dory/*"

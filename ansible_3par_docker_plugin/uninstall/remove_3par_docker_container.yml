@@ -2,29 +2,25 @@
   - name: load etcd settings
     include_vars: '../properties/etcd_cluster_properties.yml'
 
-  - name: Stop & remove etcd container
-    docker_container:
-      name: etcd_hpe
-      image: "{{ etcd_image }}"
-      state: stopped
-
   - name: Stop & remove hpedockerplugin container
     docker_container:
       name: plugin_container
-      image: hpestorage/legacyvolumeplugin:2.1
+      image: "{{ INVENTORY['DEFAULT']['volume_plugin'] }}"
       state: stopped
 
   - pause:
       seconds: 15
 
-  - name: Remove etcd container
-    docker_container:
-      name: etcd_hpe
-      image: "{{ etcd_image }}"
-      state: absent
-
   - name: Remove hpedockerplugin container
     docker_container:
       name: plugin_container
-      image: hpestorage/legacyvolumeplugin:2.1
+      image: "{{ INVENTORY['DEFAULT']['volume_plugin'] }}"
       state: absent
+
+  - name: Remove the HPE docker volume plugin image
+    docker_image:
+      state: absent
+      name: "{{ INVENTORY['DEFAULT']['volume_plugin'].split(':')[0] }}"
+      tag: "{{ INVENTORY['DEFAULT']['volume_plugin'].split(':')[1] }}"
+      force: yes 
+

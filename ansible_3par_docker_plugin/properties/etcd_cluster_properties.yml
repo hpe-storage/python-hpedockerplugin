@@ -29,5 +29,4 @@ etcd_listen_client_url_2: "{{ etcd_url_scheme }}://0.0.0.0:{{ etcd_client_port_2
 etcd_initial_advertise_peer_urls: "{{ etcd_url_scheme }}://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:{{ etcd_peer_port }}"
 etcd_listen_peer_urls: "{{ etcd_url_scheme }}://0.0.0.0:{{ etcd_peer_port }}"
 etcd_initial_cluster_token: etcd-cluster-1
-etcd_initial_cluster: "{{ hostvars[groups['etcd'][0]]['ansible_default_ipv4']['address'] }}={{ etcd_url_scheme }}://{{ hostvars[groups['etcd'][0]]['ansible_default_ipv4']['address'] }}:{{ etcd_peer_port }},{{ hostvars[groups['etcd'][1]]['ansible_default_ipv4']['address'] }}={{ etcd_url_scheme }}://{{ hostvars[groups['etcd'][1]]['ansible_default_ipv4']['address'] }}:{{ etcd_peer_port }},{{ hostvars[groups['etcd'][2]]['ansible_default_ipv4']['address'] }}={{ etcd_url_scheme }}://{{ hostvars[groups['etcd'][2]]['ansible_default_ipv4']['address'] }}:{{ etcd_peer_port }}"
 etcd_initial_cluster_state: "new"

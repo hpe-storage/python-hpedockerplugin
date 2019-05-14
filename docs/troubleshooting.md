@@ -41,3 +41,12 @@ Logs of plugin provides useful information on troubleshooting issue/error furthe
 Plugin logs will be available in system logs (e.g. `/var/log/syslog` on Ubuntu).
 
 On RHEL and CentOS, issue `journalctl -f -u docker.service` to get the plugin logs.
+
+#### Removing Dangling LUN
+
+If no volumes are in mounted state and `lsscsi` lists any 3PAR data volumes then user is recommended to run the following script to clean up the dangling LUN.
+
+```
+for i in `lsscsi | grep 3PARdata | awk '{print $6}'| grep -v "-"| cut -d"/" -f3`; do echo $i; echo 1 > /sys/block/$i/device/delete; done
+rescan-scsi-bus.sh -r -f -m
+```
