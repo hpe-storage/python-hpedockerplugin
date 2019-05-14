@@ -19,22 +19,6 @@ Steps for Deploying the Managed Plugin (HPE 3PAR Volume Plug-in for Docker) in a
 
 ### **Prerequisite packages to be installed on host OS:**
 
-#### Ubuntu 16.04 or later:
-
-
-1. Install the iSCSI (optional if you aren't using iSCSI) and Multipath packages
-```
-$ sudo apt-get install -y open-iscsi multipath-tools
-```
-
-2. Enable the **iscsid** and **multipathd** services
-```
-$ systemctl daemon-reload
-$ systemctl restart open-iscsi multipath-tools docker
-```
-
-
-
 #### RHEL/CentOS 7.3 or later:
 
 1. Install the iSCSI (optional if you aren't using iSCSI) and Multipath packages
@@ -189,15 +173,6 @@ Before enabling the plugin, validate the following:
 
 3. Run the following commands to install the plugin:
 
-**Ubuntu**
-
->version=2.1
-
-```
-$ docker plugin install store/hpestorage/hpedockervolumeplugin:<version>  --disable --alias hpe
-$ docker plugin set hpe certs.source=/tmp
-$ docker plugin enable hpe
-```
 
 **RHEL/CentOS**
 
@@ -223,7 +198,7 @@ There are two methods for installing the HPE 3PAR Volume Plug-in for Docker for 
 1. [Ansible playbook to deploy the HPE 3PAR Volume Plug-in for Docker (**RECOMMENDED**)](/ansible_3par_docker_plugin/README.md)
 
 
-2. [Manual install HPE 3PAR Volume Plug-in for Docker](/docs/manual_install_guide_hpe_3par_plugin_with_openshift_kubernetes.md)
+2. [Install Guide for HPE 3PAR Volume Plug-in for Docker](/docs/manual_install_guide_hpe_3par_plugin_with_openshift_kubernetes.md)
 
 
 ## Usage <a name="usage"></a>
