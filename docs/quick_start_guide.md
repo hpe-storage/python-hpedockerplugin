@@ -1,6 +1,6 @@
-# Deployment meathods for HPE 3PAR Volume Plugin-in 
+# Deployment methods for HPE 3PAR Volume Plugin-in 
 
-## HPE 3PAR Docker volume Plugin can be deployed in following meathods: 
+## HPE 3PAR Docker volume Plugin can be deployed in following methods: 
 
 * [Ansible playbook to deploy the HPE 3PAR Volume Plug-in for Docker (RECOMMENDED)](/ansible_3par_docker_plugin)
 * [Quick Start Guide for Standalone Docker environments](#docker)
@@ -137,7 +137,7 @@ sudo docker run -d -v /usr/share/ca-certificates/:/etc/ssl/certs -p 4001:4001 \
 -initial-cluster-state new
 ```
 
-### HPE 3PAR Volume Managed Plug-in config
+### HPE 3PAR Volume `Managed Plug-in` config
 
 1. Add HPE 3PAR into `~/.ssh/known_hosts`
 
