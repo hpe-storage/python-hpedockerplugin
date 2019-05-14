@@ -100,3 +100,5 @@ $ showsched
 
 - after doing scsi rescan if the symlinks for the device are not populated in /dev/disk/by-path, Plugin will not function correctly during mount operation.
 
+- For volume uppersize limiation, please do refer 3PAR's documentation.
+
