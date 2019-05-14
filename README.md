@@ -98,3 +98,5 @@ $ showsched
 
 - If two or more backends are defined with the same name then the last backend is picked up and rest ignored.
 
+- after doing scsi rescan if the symlinks for the device are not populated in /dev/disk/by-path, Plugin will not function correctly during mount operation.
+
