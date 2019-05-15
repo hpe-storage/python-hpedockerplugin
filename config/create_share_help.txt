@@ -36,4 +36,6 @@ Create a share in HPE 3PAR using HPE 3PAR volume plug-in for Docker.
                             permissions field can take one or more of these values [r,w,a,x,d,D,t,T,n,N,c,C,o,y]
                             Please refer 3PAR cli user guide more details on meaning of each flag.
                           Note: For fsMode values user can specify either of mode bits or ACL string. Both can not be used 
-                            simultaneously.
+                            simultaneously. While using fsMode it is mandatory to specify fsOwner. If Only fsMode is used
+                            User will not be able to mount the share. This is because permissions and ownership changes are
+                            done during the first mount call. 
