@@ -155,7 +155,7 @@ class RequestContextBuilder(object):
     @staticmethod
     def _check_valid_fsMode_string(value):
         valid_type = ['A', 'D', 'U', 'L']
-        valid_flag = ['f', 'd', 'p', 'i', 's', 'F', 'g']
+        valid_flag = ['f', 'd', 'p', 'i', 'S', 'F', 'g']
         valid_perm1 = ['r', 'w', 'a', 'x', 'd', 'D', 't', 'T']
         valid_perm2 = ['n', 'N', 'c', 'C', 'o', 'y']
         valid_perm = valid_perm1 + valid_perm2
