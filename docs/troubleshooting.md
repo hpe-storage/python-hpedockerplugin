@@ -74,7 +74,7 @@ for any older version below v3.1
 
 ```
 $docker logs -f <container id of Plugin> 
-container id of plugin can got by $docker ps -a | grep hpe 
+Getting container id of plugin: docker ps -a | grep hpe 
 ```
 
  ## Capturing Logs in Kubernetes/OpenShift environments
