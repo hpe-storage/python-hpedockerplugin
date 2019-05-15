@@ -79,7 +79,7 @@ Getting container id of plugin: docker ps -a | grep hpe
 
  ## Capturing Logs in Kubernetes/OpenShift environments
  
- Collect above Containerized Plugin logs along with than following logs are required.
+ Collect above Containerized Plugin logs along with the following logs.
  
  ```
  /var/log/dory.log
