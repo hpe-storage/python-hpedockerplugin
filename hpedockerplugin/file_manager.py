@@ -666,16 +666,15 @@ class FileManager(object):
                              " Please also refer the logs for same. "
                              "Exception is  %s") % six.text_type(ex))
                     LOG.info(msg)
-                    LOG.info("Unmounting the share as permissions are not set.")
+                    LOG.info("Unmounting the share,permissions are not set.")
                     sh.umount(mount_dir)
-                    LOG.info("Setting ACL failed hence Remove the created directory.")
+                    LOG.info("Removing the created directory.")
                     sh.rm('-rf', mount_dir)
                     LOG.error(msg)
                     response = json.dumps({u"Err": msg, u"Name": share_name,
                                            u"Mountpoint": mount_dir,
                                            u"Devicename": share_path})
                     return response
-                    
         self._etcd.save_share(share)
         response = json.dumps({u"Err": '', u"Name": share_name,
                                u"Mountpoint": mount_dir,
