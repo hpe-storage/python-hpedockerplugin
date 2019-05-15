@@ -630,7 +630,8 @@ class FileManager(object):
                     if fUName is None or fGName is None:
                         msg = ("Either user or group does not exist on 3PAR "
                                "Please create local users and group with "
-                               "required user id and group id")
+                               "required user id and group id refer 3PAR cli"
+                               " user guide")
                         LOG.error(msg)
                         raise exception.UserGroupNotFoundOn3PAR(msg)
                 except exception.UserGroupNotFoundOn3PAR as ex:
@@ -652,9 +653,14 @@ class FileManager(object):
                 int(fMode)
                 chmod(fMode, mount_dir)
             except ValueError:
-                self._hpeplugin_driver.set_ACL(fMode, mount_dir, fUName,
-                                               fGName)
-
+                fUserId = share['id']
+                try:
+                    self._hpeplugin_driver.set_ACL(fMode, fUserId, fUName,
+                                                   fGName)
+                except exception.ShareBackendException as ex:
+                    msg = (_("Exception raised for ACL setting,"
+                             " but proceed %s") % six.text_type(ex))
+                    LOG.info(msg)
         self._etcd.save_share(share)
         response = json.dumps({u"Err": '', u"Name": share_name,
                                u"Mountpoint": mount_dir,

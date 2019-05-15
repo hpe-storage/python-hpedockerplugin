@@ -23,4 +23,6 @@ Create a share in HPE 3PAR using HPE 3PAR volume plug-in for Docker.
                             For such shares which has userId and groupId specified, mount will succeed only if users and
                             group with specified ids are present on 3PAR.
 -o fsMode=x               x is 1 to 4 octal degits that represent the file mode to be applied to the root directory of the
-                            file system.
+                            file system. Ex: fsMode="0754" , Here 0 before number is mandatory. This ensures specified user
+                            of fsOwner will have rwx permissions, group will have rx permissions and others will have read
+                            permissions.
