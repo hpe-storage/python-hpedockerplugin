@@ -89,7 +89,7 @@ Getting container id of plugin: docker ps -a | grep hpe
  
  ### Dynamic Provisioner Hang 
  
- if you observ any doryd hang in your system, following command need to run to bring back online.
+ if you observe any doryd hang in your system, following command need to run to bring back online.
  
  ```
  systemctl restart doryd.service
