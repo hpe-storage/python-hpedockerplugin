@@ -659,8 +659,23 @@ class FileManager(object):
                                                    fGName)
                 except exception.ShareBackendException as ex:
                     msg = (_("Exception raised for ACL setting,"
-                             " but proceed %s") % six.text_type(ex))
+                             " but proceed. User is adviced to correct"
+                             " the passed fsMode to suit its owner and"
+                             " group requirement. Delete the share and "
+                             " create new with correct fsMode value."
+                             " Please also refer the logs for same. "
+                             "Exception is  %s") % six.text_type(ex))
                     LOG.info(msg)
+                    LOG.info("Unmounting the share as permissions are not set.")
+                    sh.umount(mount_dir)
+                    LOG.info("Setting ACL failed hence Remove the created directory.")
+                    sh.rm('-rf', mount_dir)
+                    LOG.error(msg)
+                    response = json.dumps({u"Err": msg, u"Name": share_name,
+                                           u"Mountpoint": mount_dir,
+                                           u"Devicename": share_path})
+                    return response
+                    
         self._etcd.save_share(share)
         response = json.dumps({u"Err": '', u"Name": share_name,
                                u"Mountpoint": mount_dir,
