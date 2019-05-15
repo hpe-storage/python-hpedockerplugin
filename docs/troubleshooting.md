@@ -32,7 +32,7 @@ For setting up secured etcd cluster, refer this doc:
 
 Sometimes it is useful to get more verbose output from the plugin. In order to do this one must change the logging property to be one of the following values: INFO, WARN, ERROR, DEBUG.
 
-REST Calls made to 3PAR Array from Volume Plugin enable 
+To enable logging for REST calls made to 3PAR array from Volume Plugin use below flag
 ```
 hpe3par_debug=True in /etc/hpedockerplugin/hpe.conf
 ```
