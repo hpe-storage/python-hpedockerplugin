@@ -32,6 +32,11 @@ For setting up secured etcd cluster, refer this doc:
 
 Sometimes it is useful to get more verbose output from the plugin. In order to do this one must change the logging property to be one of the following values: INFO, WARN, ERROR, DEBUG.
 
+To enable logging for REST calls made to 3PAR array from Volume Plugin use below flag
+```
+hpe3par_debug=True in /etc/hpedockerplugin/hpe.conf
+```
+
 #### Logs for the plugin
 
 Logs of plugin provides useful information on troubleshooting issue/error further. On Ubuntu, grep for the `plugin id` in the logs , where the `plugin id` can be identified by:
@@ -50,3 +55,43 @@ If no volumes are in mounted state and `lsscsi` lists any 3PAR data volumes then
 for i in `lsscsi | grep 3PARdata | awk '{print $6}'| grep -v "-"| cut -d"/" -f3`; do echo $i; echo 1 > /sys/block/$i/device/delete; done
 rescan-scsi-bus.sh -r -f -m
 ```
+
+### Collecting necessary Logs
+
+if any issue found please do collect following logs from your Docker host
+
+```
+v3.1 onwards 
+/etc/hpedockerplugin/3pardcv.log
+```
+#### Managed Plugin
+for any older version below v3.1
+
+```
+/var/log/messages
+```
+#### Containerized Plugin 
+
+```
+$docker logs -f <container id of Plugin> 
+Getting container id of plugin: docker ps -a | grep hpe 
+```
+
+ ## Capturing Logs in Kubernetes/OpenShift environments
+ 
+ Collect above Containerized Plugin logs along with the following logs.
+ 
+ ```
+ /var/log/dory.log
+ ```
+ 
+ Note: From all the nodes in the Kubernetes/OpenShift Cluster.
+ 
+ ### Dynamic Provisioner Hang 
+ 
+ if you observe any doryd hang in your system, following command need to run to bring back online.
+ 
+ ```
+ systemctl restart doryd.service
+ ```
+ 
