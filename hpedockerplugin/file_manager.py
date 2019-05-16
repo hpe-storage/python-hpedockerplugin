@@ -628,10 +628,11 @@ class FileManager(object):
                     fUName, fGName = self._hpeplugin_driver.usr_check(fUser,
                                                                       fGroup)
                     if fUName is None or fGName is None:
-                        msg = ("Either user or group does not exist on 3PAR "
-                               "Please create local users and group with "
-                               "required user id and group id refer 3PAR cli"
-                               " user guide")
+                        msg = ("Either user or group does not exist on 3PAR."
+                               " Please create local users and group with"
+                               " required user id and group id on 3PAR."
+                               " Refer 3PAR cli user guide to create 3PAR"
+                               " local users on 3PAR")
                         LOG.error(msg)
                         raise exception.UserGroupNotFoundOn3PAR(msg)
                 except exception.UserGroupNotFoundOn3PAR as ex:

@@ -1045,11 +1045,11 @@ class HPE3ParMediator(object):
             acl_flags = acl_values[1]
             acl_principal = ""
             if index == 0:
-                acl_principal = principal_list[0]
+                acl_principal = principal_list[index]
             if index == 1:
-                acl_principal = principal_list[1]
+                acl_principal = principal_list[index]
             if index == 2:
-                acl_principal = principal_list[2]
+                acl_principal = principal_list[index]
             acl_permission = acl_values[2]
             acl_object = {}
             acl_object['aclType'] = acl_type
@@ -1057,16 +1057,14 @@ class HPE3ParMediator(object):
             acl_object['aclPrincipal'] = acl_principal
             acl_object['aclPermissions'] = acl_permission
             ACLList.append(acl_object)
-            LOG.info("Inside set ACL call but temperory not making"
-                     " any rest call.")
         args = {
             'owner': fUName,
             'group': fGName,
             'ACLList': ACLList
         }
-        LOG.info("args is %s  ", args)
-        self._wsapi_login()
+        LOG.info("ACL args being passed is %s  ", args)
         try:
+            self._wsapi_login()
             uri = '/fileshares/' + fUserId + '/dirperms'
 
             self._client.http.put(uri, body=args)
