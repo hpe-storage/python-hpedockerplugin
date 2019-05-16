@@ -390,9 +390,7 @@ $ docker volume ls
 DRIVER   VOLUME NAME
 hpe      export
 ```
-
 On the Kubernetes/OpenShift side, it should now look something like this:
-
 ```
 $ kubectl get pv,pvc,pod -o wide
 NAME       CAPACITY   ACCESSMODES   RECLAIMPOLICY   STATUS    CLAIM            STORAGECLASS   REASON   AGE
@@ -403,9 +401,94 @@ pvc/pvc1     Bound     pv100     20Gi       RWO                          11m
 
 NAME                          READY     STATUS    RESTARTS   AGE       IP             NODE
 po/pod1                       1/1       Running   0          11m       10.128.1.53    cld6b16
-
 ```
 
+**Static provisioning** is a feature that is native to Kubernetes and that allows cluster admins to make existing storage devices available to a cluster. As a cluster admin, you must know the details of the storage device, its supported configurations, and mount options.
+
+To make existing storage available to a cluster user, you must manually create the storage device, a PV,PVC and POD.
+
+Below is an example yaml specification to create Persistent Volumes using the HPE 3PAR FlexVolume driver. 
+
+```
+Note: If you have OpenShift installed, kubectl create and oc create commands can be used interchangeably when creating PVs, PVCs, and PODs.
+```
+
+Persistent volume Example
+The following creates a Persistent volume "pv-first" with the help of HPE 3PAR Docker Volume Plugin.
+
+```yaml
+$ sudo kubectl create -f - << EOF
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:                                             
+  name: pv-first
+spec:
+    capacity:
+      storage: 10Gi
+    accessModes:
+    - ReadWriteOnce
+    flexVolume:
+      driver: hpe.com/hpe
+      options: 
+        size: "10"
+EOF
+```
+
+Persistent Volume Claim Example
+Now let’s create a claim PersistentVolumeClaim (PVC). Here we specify the PVC name pvc-first.
+
+```yaml
+$ sudo kubectl create -f - << EOF
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pvc-first
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+EOF
+```
+
+At this point, after creating the PV and PVC definitions, the volume hasn’t been created yet. The actual volume gets created on-the-fly during the pod deployment and volume mount phase.
+
+Pod Example
+So, let’s create a pod "pod-first" using the minio container along with some persistent storage:
+
+```yaml
+$ sudo kubectl create -f - << EOF
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-first
+spec:
+  containers:
+  - name: minio
+    image: minio/minio:latest
+    args:
+    - server
+    - /export
+    env:
+    - name: MINIO_ACCESS_KEY
+      value: minio
+    - name: MINIO_SECRET_KEY
+      value: doryspeakswhale
+    ports:
+    - containerPort: 9000
+    volumeMounts:
+    - name: export
+      mountPath: /export
+  volumes:
+    - name: export
+      persistentVolumeClaim:
+        claimName: pvc-first
+EOF
+```
 Now the **pod** can be deleted to unmount the Docker volume. Deleting a **Docker volume** does not require manual clean-up because the dynamic provisioner provides automatic clean-up. You can delete the **PersistentVolumeClaim** and see the **PersistentVolume** and **Docker volume** automatically deleted.
 
 

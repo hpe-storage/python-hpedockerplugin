@@ -16,3 +16,11 @@
       name: plugin_container
       image: "{{ INVENTORY['DEFAULT']['volume_plugin'] }}"
       state: absent
+
+  - name: Remove the HPE docker volume plugin image
+    docker_image:
+      state: absent
+      name: "{{ INVENTORY['DEFAULT']['volume_plugin'].split(':')[0] }}"
+      tag: "{{ INVENTORY['DEFAULT']['volume_plugin'].split(':')[1] }}"
+      force: yes 
+

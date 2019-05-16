@@ -17,3 +17,10 @@
       image: "{{ etcd_image }}"
       state: absent
 
+  - name: Remove the etcd image
+    docker_image:
+      state: absent
+      name: "{{ etcd_image.split(':')[0] }}"
+      tag: "{{ etcd_version }}"
+      force: yes
+

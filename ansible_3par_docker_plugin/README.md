@@ -62,6 +62,10 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
       | ```etcd_peer_port```  | Yes  | 23800  |
       | ```etcd_client_port_1```  | Yes  | 23790 |
       | ```etcd_client_port_2```  | Yes  | 40010 |
+      
+    > **Note:** Please ensure that the ports specified above are unoccupied before installation. If the ports are not available on a particular node, etcd installation will fail.
+    
+    > **Limitation:** The installer, in the current state does not have the capability to add or remove nodes in the etcd cluster. In case an etcd node is not responding or goes down, it is beyond the current scope to admit it back into the cluster. Please follow the [etcd documentation](https://coreos.com/etcd/docs/latest/etcd-live-cluster-reconfiguration.html) to do so manually.
     
   - It is recommended that the properties file is [encrypted using Ansible Vault](/ansible_3par_docker_plugin/encrypt_properties.md).
 
@@ -141,7 +145,14 @@ Once complete you will be ready to start using the HPE 3PAR Docker Volume Plug-i
      $ cd python-hpedockerplugin/ansible_3par_docker_plugin
      $ ansible-playbook -i hosts uninstall/uninstall_hpe_3par_volume_driver.yml --ask-vault-pass
      ```
-     > **Note:** This process only adds or removes docker volume plugin in nodes in an existing cluster. It does not add or remove nodes in Kubernetes/Openshift cluster
+     
+     * Uninstall plugin along with etcd on nodes on Openshift/Kubernetes environment:
+     ```
+     $ cd python-hpedockerplugin/ansible_3par_docker_plugin
+     $ ansible-playbook -i hosts uninstall/uninstall_hpe_3par_volume_driver_etcd.yml --ask-vault-pass
+     ```
+
+     > **Note:** This process only adds or removes docker volume plugin and/or etcd in nodes in an existing cluster. It does not add or remove nodes in Kubernetes/Openshift cluster
    * On success after adding plugin on new nodes, the additional nodes will have a running docker volume plugin container
    * On success after removing plugin from specified nodes, docker volume plugin container will be removed
      

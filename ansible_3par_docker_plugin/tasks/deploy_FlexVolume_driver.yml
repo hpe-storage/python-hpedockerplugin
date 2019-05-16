@@ -2,15 +2,15 @@
   - name: Download dory installer
     get_url:
       url: https://github.com/hpe-storage/python-hpedockerplugin/raw/master/dory_installer_v31
-      dest: "{{ driver_path }}"
+      dest: /tmp 
       mode: 0755
 
   - name: Install dory, doryd
     shell: >-
-      yes yes | "{{ driver_path }}/dory_installer_v31"
+      yes yes | /tmp/dory_installer_v31
 
   - name: Remove the dory installer
     file:
-      path: "{{ driver_path }}/dory_installer_v31"
+      path: /tmp/dory_installer_v31
       state: absent
 

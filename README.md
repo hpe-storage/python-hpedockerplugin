@@ -1,8 +1,8 @@
-## HPE Docker Volume Plugin for HPE 3PAR StoreServ
+## HPE 3PAR Volume Plugin for Docker
 
 HPE Docker Volume Plugin is an open source project that provides persistent storage and features for your containerized applications using HPE 3PAR StoreServ Storage arrays.
 
-The HPE Docker Volume Plugin supports popular container platforms like Docker, Kubernetes, OpenShift and SuSE CaaS/CAP 
+The HPE Docker Volume Plugin supports popular container platforms like Docker, Kubernetes, OpenShift 
 
 ## HPE Docker Volume Plugin Overview
 
@@ -53,6 +53,11 @@ See the [usage guide](/docs/usage.md) for details on the supported operations an
 
 Troubleshooting issues with the plugin can be performed using these [tips](/docs/troubleshooting.md)
 
+
+## SPOCK Link for HPE 3PAR Volume Plugin for Docker
+
+* [SPOCK Link](https://spock.corp.int.hpe.com/spock/utility/document.aspx?docurl=Shared%20Documents/hw/3par/3par_volume_plugin_for_docker.pdf)
+
 ## Limitations
 - List of issues around the containerized version of the plugin/Managed plugin is present in https://github.com/hpe-storage/python-hpedockerplugin/issues 
 
@@ -92,3 +97,8 @@ $ showsched
 - If a mount fails due to dangling LUN use this section of troubleshooting guide [Removing Dangling LUN](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/troubleshooting.md#removing-dangling-lun)
 
 - If two or more backends are defined with the same name then the last backend is picked up and rest ignored.
+
+- after doing scsi rescan if the symlinks for the device are not populated in /dev/disk/by-path, Plugin will not function correctly during mount operation.
+
+- For volume uppersize limiation, please do refer 3PAR's documentation.
+

@@ -95,9 +95,9 @@
 - name: Deploy FlexVolume drivers
   hosts: masters,workers,etcd 
   become: root
-
-  vars:
-    driver_path: "/usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/"
+  environment:
+    http_proxy: "{{ http_proxy | default('') }}"
+    https_proxy: "{{ https_proxy | default('') }}"
 
   tasks:
     - name: Deploy FlexVolume drivers
