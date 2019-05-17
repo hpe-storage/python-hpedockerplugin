@@ -25,13 +25,23 @@ class CreateFpgCmd(cmd.Cmd):
             LOG.info("Creating FPG %s on the backend using CPG %s" %
                      (self._fpg_name, self._cpg_name))
             try:
-                self._mediator.create_fpg(self._cpg_name, self._fpg_name)
+                config = self._file_mgr.get_config()
+                fpg_size = FPG_SIZE
+                if config.hpe3par_default_fpg_size:
+                    fpg_size = int(config.hpe3par_default_fpg_size)
+                    LOG.info("Default FPG size overridden to %s" % fpg_size)
+
+                self._mediator.create_fpg(
+                    self._cpg_name,
+                    self._fpg_name,
+                    fpg_size
+                )
                 if self._set_default_fpg:
                     self._old_fpg_name = self._set_as_default_fpg()
 
                 fpg_metadata = {
                     'fpg': self._fpg_name,
-                    'fpg_size': FPG_SIZE,
+                    'fpg_size': fpg_size,
                     'share_cnt': 0,
                     'reached_full_capacity': False,
                     'docker_managed': True

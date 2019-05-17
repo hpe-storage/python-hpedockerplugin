@@ -418,5 +418,17 @@ class FpgCreationFailed(PluginException):
     message = _("FPG creation failed: %(reason)s")
 
 
+class FpgAlreadyExists(PluginException):
+    message = _("FPG already exists: %(reason)s")
+
+
+class UserGroupNotFoundOn3PAR(PluginException):
+    message = _("fsusergroup or fsuser doesn't exist on 3PAR: %(reason)s")
+
+
 class SetQuotaFailed(PluginException):
     message = _("Set quota failed: %(reason)s")
+
+
+class HPEDriverNonExistentCpg(HPEDriverException):
+    message = "CPG %(cpg)s does not exist"

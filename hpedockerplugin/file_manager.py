@@ -1,7 +1,9 @@
 import copy
 import json
 import sh
+from sh import chmod
 import six
+import os
 from threading import Thread
 
 from oslo_log import log as logging
@@ -81,6 +83,13 @@ class FileManager(object):
 
     def _initialize_configuration(self):
         self.src_bkend_config = self._get_src_bkend_config()
+        def_fpg_size = self.src_bkend_config.hpe3par_default_fpg_size
+        if def_fpg_size:
+            if def_fpg_size < 1 or def_fpg_size > 64:
+                msg = "Configured hpe3par_default_fpg_size MUST be in the " \
+                      "range 1 and 64. Specified value is %s" % def_fpg_size
+                LOG.error(msg)
+                raise exception.InvalidInput(msg)
 
     def _get_src_bkend_config(self):
         LOG.info("Getting source backend configuration...")
@@ -228,7 +237,45 @@ class FileManager(object):
         vfs_name = fpg_name + '_vfs'
         return fpg_name, vfs_name
 
-    def _create_share_on_fpg(self, share_args, fpg_getter, names_generator):
+    def _create_fpg(self, share_args, undo_cmds):
+        LOG.info("Generating FPG and VFS names...")
+        cpg = share_args['cpg']
+        fpg_name, vfs_name = self._vfs_name_from_fpg_name(share_args)
+        LOG.info("Names generated: FPG=%s, VFS=%s" %
+                 (fpg_name, vfs_name))
+        LOG.info("Creating FPG %s using CPG %s" % (fpg_name, cpg))
+        create_fpg_cmd = CreateFpgCmd(self, cpg, fpg_name, False)
+        create_fpg_cmd.execute()
+        LOG.info("FPG %s created successfully using CPG %s" %
+                 (fpg_name, cpg))
+        undo_cmds.append(create_fpg_cmd)
+        return fpg_name, vfs_name
+
+    def _create_default_fpg(self, share_args, undo_cmds):
+        LOG.info("Generating FPG and VFS names...")
+        cpg = share_args['cpg']
+        while True:
+            fpg_name, vfs_name = self._generate_default_fpg_vfs_names(
+                share_args
+            )
+            LOG.info("Names generated: FPG=%s, VFS=%s" %
+                     (fpg_name, vfs_name))
+            LOG.info("Creating FPG %s using CPG %s" % (fpg_name, cpg))
+            try:
+                create_fpg_cmd = CreateFpgCmd(self, cpg, fpg_name, True)
+                create_fpg_cmd.execute()
+                LOG.info("FPG %s created successfully using CPG %s" %
+                         (fpg_name, cpg))
+                undo_cmds.append(create_fpg_cmd)
+                return fpg_name, vfs_name
+            except (exception.FpgCreationFailed,
+                    exception.FpgAlreadyExists) as ex:
+                LOG.info("FPG %s could not be created. Error: %s" %
+                         (fpg_name, six.text_type(ex)))
+                LOG.info("Retrying with new FPG name...")
+                continue
+
+    def _create_share_on_fpg(self, share_args, fpg_getter, fpg_creator):
         share_name = share_args['name']
         LOG.info("Creating share on default FPG %s..." % share_name)
         undo_cmds = []
@@ -261,21 +308,9 @@ class FileManager(object):
                 # In all the above cases, default FPG is not present
                 # and we need to create a new one
                 try:
-                    # If fpg option was specified by the user, we won't
-                    # mark it as a default FPG so that it cannot be used
-                    # with default share creation
-                    if 'fpg' in share_args:
-                        mark_fpg_as_default = False
-                    else:
-                        mark_fpg_as_default = True
-
                     # Generate FPG and VFS names. This will also initialize
                     #  backend meta-data in case it doesn't exist
-                    LOG.info("Generating FPG and VFS data and also "
-                             "initializing backend metadata if not present")
-                    fpg_name, vfs_name = names_generator(share_args)
-                    LOG.info("Names generated: FPG=%s, VFS=%s" %
-                             (fpg_name, vfs_name))
+                    fpg_name, vfs_name = fpg_creator(share_args, undo_cmds)
                     share_args['fpg'] = fpg_name
                     share_args['vfs'] = vfs_name
 
@@ -291,15 +326,6 @@ class FileManager(object):
                     ip, netmask = claim_free_ip_cmd.execute()
                     LOG.info("Acquired IP %s for VFS creation" % ip)
                     undo_cmds.append(claim_free_ip_cmd)
-
-                    LOG.info("Creating FPG %s using CPG %s" % (fpg_name, cpg))
-                    create_fpg_cmd = CreateFpgCmd(
-                        self, cpg, fpg_name, mark_fpg_as_default
-                    )
-                    create_fpg_cmd.execute()
-                    LOG.info("FPG %s created successfully using CPG %s" %
-                             (fpg_name, cpg))
-                    undo_cmds.append(create_fpg_cmd)
 
                     LOG.info("Creating VFS %s under FPG %s" %
                              (vfs_name, fpg_name))
@@ -333,6 +359,13 @@ class FileManager(object):
                 except exception.FpgCreationFailed as ex:
                     msg = "Create share on new FPG failed. Msg: %s" \
                           % six.text_type(ex)
+                    LOG.error(msg)
+                    self._unexecute(undo_cmds)
+                    raise exception.ShareCreationFailed(reason=msg)
+
+                except exception.HPEDriverNonExistentCpg as ex:
+                    msg = "Non existing CPG specified/configured: %s" %\
+                          six.text_type(ex)
                     LOG.error(msg)
                     self._unexecute(undo_cmds)
                     raise exception.ShareCreationFailed(reason=msg)
@@ -401,13 +434,13 @@ class FileManager(object):
             self._create_share_on_fpg(
                 share_args,
                 self._get_existing_fpg,
-                self._vfs_name_from_fpg_name
+                self._create_fpg
             )
         else:
             self._create_share_on_fpg(
                 share_args,
                 self._get_default_available_fpg,
-                self._generate_default_fpg_vfs_names
+                self._create_default_fpg
             )
 
     def remove_share(self, share_name, share):
@@ -518,7 +551,21 @@ class FileManager(object):
         if 'status' in share:
             if share['status'] == 'FAILED':
                 LOG.error("Share not present")
-
+        fUser = None
+        fGroup = None
+        fMode = None
+        fUName = None
+        fGName = None
+        is_first_call = False
+        if share['fsOwner']:
+            fOwner = share['fsOwner'].split(':')
+            fUser = int(fOwner[0])
+            fGroup = int(fOwner[1])
+        if share['fsMode']:
+            try:
+                fMode = int(share['fsMode'])
+            except ValueError:
+                fMode = share['fsMode']
         fpg = share['fpg']
         vfs = share['vfs']
         file_store = share['name']
@@ -561,6 +608,7 @@ class FileManager(object):
             my_ip = netutils.get_my_ipv4()
             self._hpeplugin_driver.add_client_ip_for_share(share['id'],
                                                            my_ip)
+
             # TODO: Client IPs should come from array. We cannot depend on ETCD
             # for this info as user may use different ETCDs for different hosts
             client_ips = share['clientIPs']
@@ -573,13 +621,61 @@ class FileManager(object):
                 }
             }
             share['path_info'] = node_mnt_info
+            if fUser or fGroup or fMode:
+                LOG.info("Inside fUser or fGroup or fMode")
+                is_first_call = True
+                try:
+                    fUName, fGName = self._hpeplugin_driver.usr_check(fUser,
+                                                                      fGroup)
+                    if fUName is None or fGName is None:
+                        msg = ("Either user or group does not exist on 3PAR."
+                               " Please create local users and group with"
+                               " required user id and group id on 3PAR."
+                               " Refer 3PAR cli user guide to create 3PAR"
+                               " local users on 3PAR")
+                        LOG.error(msg)
+                        raise exception.UserGroupNotFoundOn3PAR(msg)
+                except exception.UserGroupNotFoundOn3PAR as ex:
+                    msg = six.text_type(ex)
+                    LOG.error(msg)
+                    response = json.dumps({u"Err": msg, u"Name": share_name,
+                                           u"Mountpoint": mount_dir,
+                                           u"Devicename": share_path})
+                    return response
 
         self._create_mount_dir(mount_dir)
         LOG.info("Mounting share path %s to %s" % (share_path, mount_dir))
         sh.mount('-t', 'nfs', share_path, mount_dir)
         LOG.debug('Device: %(path)s successfully mounted on %(mount)s',
                   {'path': share_path, 'mount': mount_dir})
-
+        if is_first_call:
+            os.chown(mount_dir, fUser, fGroup)
+            try:
+                int(fMode)
+                chmod(fMode, mount_dir)
+            except ValueError:
+                fUserId = share['id']
+                try:
+                    self._hpeplugin_driver.set_ACL(fMode, fUserId, fUName,
+                                                   fGName)
+                except exception.ShareBackendException as ex:
+                    msg = (_("Exception raised for ACL setting,"
+                             " but proceed. User is adviced to correct"
+                             " the passed fsMode to suit its owner and"
+                             " group requirement. Delete the share and "
+                             " create new with correct fsMode value."
+                             " Please also refer the logs for same. "
+                             "Exception is  %s") % six.text_type(ex))
+                    LOG.error(msg)
+                    LOG.info("Unmounting the share,permissions are not set.")
+                    sh.umount(mount_dir)
+                    LOG.info("Removing the created directory.")
+                    sh.rm('-rf', mount_dir)
+                    LOG.error(msg)
+                    response = json.dumps({u"Err": msg, u"Name": share_name,
+                                           u"Mountpoint": mount_dir,
+                                           u"Devicename": share_path})
+                    return response
         self._etcd.save_share(share)
         response = json.dumps({u"Err": '', u"Name": share_name,
                                u"Mountpoint": mount_dir,
