@@ -77,8 +77,8 @@ $ multipath -t > /etc/multipath.conf
 3. Enable the multipathd services
 
 ```
-$ systemctl enable multipathd
-$ systemctl start multipathd
+$ systemctl enable multipathd iscsid
+$ systemctl start multipathd iscsid
 ```
 >Note: To read more about multipathd service config on SLES12 refer https://www.suse.com/documentation/sles-12/stor_admin/data/sec_multipath_config.html#sec_multipath_configuration_start and https://www.suse.com/documentation/sles-12/stor_admin/data/sec_multipath_conf_file.html
 
