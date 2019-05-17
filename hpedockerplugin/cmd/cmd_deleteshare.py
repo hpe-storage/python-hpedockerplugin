@@ -50,8 +50,12 @@ class DeleteShareCmd(cmd.Cmd):
         share_name = self._share_info['name']
         LOG.info("cmd_deleteshare:remove_share: Removing %s..." % share_name)
         try:
+            LOG.info("Deleting share %s from backend..." % share_name)
             self._mediator.delete_share(self._share_info['id'])
-            LOG.info("file_manager:remove_share: Removed %s" % share_name)
+            LOG.info("Share %s deleted from backend" % share_name)
+            LOG.info("Deleting file store %s from backend..." % share_name)
+            self._mediator.delete_file_store(self._fpg_name, share_name)
+            LOG.info("File store %s deleted from backend" % share_name)
 
         except Exception as e:
             msg = 'Failed to remove share %(share_name)s from backend: %(e)s'\
@@ -106,12 +110,17 @@ class DeleteShareCmd(cmd.Cmd):
                 # Remove FPG from default FPG list
                 default_fpgs = backend_metadata.get('default_fpgs')
                 if default_fpgs:
-                    default_fpg = default_fpgs.get(self._cpg_name)
-                    if self._fpg_name == default_fpg:
+                    fpg_list = default_fpgs.get(self._cpg_name)
+                    if self._fpg_name in fpg_list:
                         LOG.info("Removing default FPG entry [cpg:%s,"
                                  "fpg:%s..."
                                  % (self._cpg_name, self._fpg_name))
-                        del default_fpgs[self._cpg_name]
+                        fpg_list.remove(self._fpg_name)
+
+                        # If last fpg got removed from the list, remove
+                        # the CPG entry from default_fpgs
+                        if not fpg_list:
+                            del default_fpgs[self._cpg_name]
 
                 # Update backend metadata
                 self._fp_etcd.save_backend_metadata(self._backend,

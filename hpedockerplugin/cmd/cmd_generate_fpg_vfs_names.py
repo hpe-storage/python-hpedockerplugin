@@ -17,6 +17,7 @@ class GenerateFpgVfsNamesCmd(cmd.Cmd):
         return self._generate_default_fpg_vfs_names()
 
     def _generate_default_fpg_vfs_names(self):
+        LOG.info("Cmd: Generating default FPG and VFS names...")
         with self._fp_etcd.get_file_backend_lock(self._backend):
             try:
                 backend_metadata = self._fp_etcd.get_backend_metadata(
@@ -27,10 +28,15 @@ class GenerateFpgVfsNamesCmd(cmd.Cmd):
                 new_vfs_name = "DockerVfs_%s" % counter
                 default_fpgs = backend_metadata.get('default_fpgs')
                 if default_fpgs:
-                    default_fpgs.update({self._cpg_name: new_fpg_name})
+                    # TODO:Imran: Put fpg_names in list
+                    fpg_list = default_fpgs[self._cpg_name]
+                    if fpg_list:
+                        fpg_list.appent(new_fpg_name)
+                    else:
+                        default_fpgs.update({self._cpg_name: [new_fpg_name]})
                 else:
                     backend_metadata['default_fpgs'] = {
-                        self._cpg_name: new_fpg_name
+                        self._cpg_name: [new_fpg_name]
                     }
 
                 # Save updated backend_metadata
@@ -47,13 +53,15 @@ class GenerateFpgVfsNamesCmd(cmd.Cmd):
                     'ips_in_use': [],
                     'ips_locked_for_use': [],
                     'counter': 1,
-                    'default_fpgs': {self._cpg_name: new_fpg_name}
+                    'default_fpgs': {self._cpg_name: [new_fpg_name]}
                 }
                 LOG.info("Backend metadata entry for backend %s not found."
                          "Creating %s..." %
                          (self._backend, six.text_type(backend_metadata)))
                 self._fp_etcd.save_backend_metadata(self._backend,
                                                     backend_metadata)
+                LOG.info("Cmd: Returning FPG %s and VFS %s" %
+                         (new_fpg_name, new_vfs_name))
                 return new_fpg_name, new_vfs_name
 
     def unexecute(self):

@@ -68,7 +68,16 @@ class CreateFpgCmd(cmd.Cmd):
                 backend_metadata = self._fp_etcd.get_backend_metadata(
                     self._backend)
                 default_fpgs = backend_metadata['default_fpgs']
-                default_fpgs.update({self._cpg_name: self._fpg_name})
+                if default_fpgs:
+                    fpg_list = default_fpgs.get(self._cpg_name)
+                    if fpg_list:
+                        fpg_list.append(self._fpg_name)
+                    else:
+                        default_fpgs[self._cpg_name] = [self._fpg_name]
+                else:
+                    backend_metadata['default_fpgs'] = {
+                        self._cpg_name: [self._fpg_name]
+                    }
 
                 # Save updated backend_metadata
                 self._fp_etcd.save_backend_metadata(self._backend,
