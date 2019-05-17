@@ -666,7 +666,7 @@ class FileManager(object):
                              " create new with correct fsMode value."
                              " Please also refer the logs for same. "
                              "Exception is  %s") % six.text_type(ex))
-                    LOG.info(msg)
+                    LOG.error(msg)
                     LOG.info("Unmounting the share,permissions are not set.")
                     sh.umount(mount_dir)
                     LOG.info("Removing the created directory.")
