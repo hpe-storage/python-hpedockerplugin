@@ -628,9 +628,11 @@ class FileManager(object):
                     fUName, fGName = self._hpeplugin_driver.usr_check(fUser,
                                                                       fGroup)
                     if fUName is None or fGName is None:
-                        msg = ("Either user or group does not exist on 3PAR "
-                               "Please create local users and group with "
-                               "required user id and group id")
+                        msg = ("Either user or group does not exist on 3PAR."
+                               " Please create local users and group with"
+                               " required user id and group id on 3PAR."
+                               " Refer 3PAR cli user guide to create 3PAR"
+                               " local users on 3PAR")
                         LOG.error(msg)
                         raise exception.UserGroupNotFoundOn3PAR(msg)
                 except exception.UserGroupNotFoundOn3PAR as ex:
@@ -652,9 +654,28 @@ class FileManager(object):
                 int(fMode)
                 chmod(fMode, mount_dir)
             except ValueError:
-                self._hpeplugin_driver.set_ACL(fMode, mount_dir, fUName,
-                                               fGName)
-
+                fUserId = share['id']
+                try:
+                    self._hpeplugin_driver.set_ACL(fMode, fUserId, fUName,
+                                                   fGName)
+                except exception.ShareBackendException as ex:
+                    msg = (_("Exception raised for ACL setting,"
+                             " but proceed. User is adviced to correct"
+                             " the passed fsMode to suit its owner and"
+                             " group requirement. Delete the share and "
+                             " create new with correct fsMode value."
+                             " Please also refer the logs for same. "
+                             "Exception is  %s") % six.text_type(ex))
+                    LOG.error(msg)
+                    LOG.info("Unmounting the share,permissions are not set.")
+                    sh.umount(mount_dir)
+                    LOG.info("Removing the created directory.")
+                    sh.rm('-rf', mount_dir)
+                    LOG.error(msg)
+                    response = json.dumps({u"Err": msg, u"Name": share_name,
+                                           u"Mountpoint": mount_dir,
+                                           u"Devicename": share_path})
+                    return response
         self._etcd.save_share(share)
         response = json.dumps({u"Err": '', u"Name": share_name,
                                u"Mountpoint": mount_dir,

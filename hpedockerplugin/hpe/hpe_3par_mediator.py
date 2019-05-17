@@ -1033,9 +1033,51 @@ class HPE3ParMediator(object):
         finally:
             self._wsapi_logout()
 
-    def set_ACL(fUName, fGName, fMode):
-        LOG.info("Inside set ACL call but temperory not making"
-                 " any rest call.")
+    def set_ACL(self, fMode, fUserId, fUName, fGName):
+        # fsMode = "A:fdps:rwaAxdD,A:fFdps:rwaxdnNcCoy,A:fdgps:DtnNcy"
+        ACLList = []
+        per_type = {"A": 1, "D": 2, "U": 3, "L": 4}
+        fsMode_list = fMode.split(",")
+        principal_list = ['OWNER@', 'GROUP@', 'EVERYONE@']
+        for index, value in enumerate(fsMode_list):
+            acl_values = value.split(":")
+            acl_type = per_type.get(acl_values[0])
+            acl_flags = acl_values[1]
+            acl_principal = ""
+            if index == 0:
+                acl_principal = principal_list[index]
+            if index == 1:
+                acl_principal = principal_list[index]
+            if index == 2:
+                acl_principal = principal_list[index]
+            acl_permission = acl_values[2]
+            acl_object = {}
+            acl_object['aclType'] = acl_type
+            acl_object['aclFlags'] = acl_flags
+            acl_object['aclPrincipal'] = acl_principal
+            acl_object['aclPermissions'] = acl_permission
+            ACLList.append(acl_object)
+        args = {
+            'owner': fUName,
+            'group': fGName,
+            'ACLList': ACLList
+        }
+        LOG.info("ACL args being passed is %s  ", args)
+        try:
+            self._wsapi_login()
+            uri = '/fileshares/' + fUserId + '/dirperms'
+
+            self._client.http.put(uri, body=args)
+
+            LOG.debug("Share permissions changed successfully")
+
+        except hpeexceptions.HTTPBadRequest as ex:
+            msg = (_("File share permission change failed. Exception %s : ")
+                   % six.text_type(ex))
+            LOG.error(msg)
+            raise exception.ShareBackendException(msg=msg)
+        finally:
+            self._wsapi_logout()
 
     def _check_usr_grp_existence(self, fUserOwner, res_cmd):
         fuserowner = str(fUserOwner)
