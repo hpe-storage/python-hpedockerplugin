@@ -171,7 +171,7 @@ class RequestContextBuilder(object):
                   "correct format and values to be passed."
             LOG.error(msg)
             raise exception.InvalidInput(reason=msg)
-        passed_vflag_len = len(list(type_flag_perm))
+        passed_vflag_len = len(list(type_flag_perm[1]))
         vflag = list(set(list(type_flag_perm[1])))
         if len(vflag) < passed_vflag_len:
             msg = "Duplicate characters for given flag are passed. "\
