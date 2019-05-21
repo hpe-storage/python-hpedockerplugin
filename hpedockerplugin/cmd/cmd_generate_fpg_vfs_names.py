@@ -26,18 +26,6 @@ class GenerateFpgVfsNamesCmd(cmd.Cmd):
                 backend_metadata['counter'] = counter
                 new_fpg_name = "DockerFpg_%s" % counter
                 new_vfs_name = "DockerVfs_%s" % counter
-                default_fpgs = backend_metadata.get('default_fpgs')
-                if default_fpgs:
-                    # TODO:Imran: Put fpg_names in list
-                    fpg_list = default_fpgs[self._cpg_name]
-                    if fpg_list:
-                        fpg_list.appent(new_fpg_name)
-                    else:
-                        default_fpgs.update({self._cpg_name: [new_fpg_name]})
-                else:
-                    backend_metadata['default_fpgs'] = {
-                        self._cpg_name: [new_fpg_name]
-                    }
 
                 # Save updated backend_metadata
                 self._fp_etcd.save_backend_metadata(self._backend,
@@ -52,8 +40,7 @@ class GenerateFpgVfsNamesCmd(cmd.Cmd):
                 backend_metadata = {
                     'ips_in_use': [],
                     'ips_locked_for_use': [],
-                    'counter': 1,
-                    'default_fpgs': {self._cpg_name: [new_fpg_name]}
+                    'counter': 0
                 }
                 LOG.info("Backend metadata entry for backend %s not found."
                          "Creating %s..." %

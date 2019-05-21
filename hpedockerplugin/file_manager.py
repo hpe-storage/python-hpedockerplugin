@@ -186,6 +186,25 @@ class FileManager(object):
             LOG.error("Share could not be created on FPG %s" % fpg_name)
             raise exception.ShareCreationFailed(share_args['cpg'])
 
+    def _get_fpg_available_capacity(self, fpg_name):
+        LOG.info("Getting FPG %s from backend..." % fpg_name)
+        backend_fpg = self._hpeplugin_driver.get_fpg(fpg_name)
+        LOG.info("%s" % six.text_type(backend_fpg))
+        LOG.info("Getting all quotas for FPG %s..." % fpg_name)
+        quotas = self._hpeplugin_driver.get_quotas_for_fpg(fpg_name)
+        used_capacity_GiB = 0
+        for quota in quotas['members']:
+            used_capacity_GiB += (quota['hardBlockMiB'] / 1024)
+        fpg_total_capacity_GiB = backend_fpg['availCapacityGiB']
+        LOG.info("Total capacity of FPG %s: %s GiB" %
+                 (fpg_name, fpg_total_capacity_GiB))
+        LOG.info("Capacity used on FPG %s is %s GiB" %
+                 (fpg_name, used_capacity_GiB))
+        fpg_avail_capacity = fpg_total_capacity_GiB - used_capacity_GiB
+        LOG.info("Available capacity on FPG %s is %s GiB" %
+                 (fpg_name, fpg_avail_capacity))
+        return fpg_avail_capacity
+
     # If default FPG is full, it raises exception
     # EtcdMaxSharesPerFpgLimitException
     def _get_default_available_fpg(self, share_args):
@@ -194,14 +213,20 @@ class FileManager(object):
         exc = None
         for fpg_name in self._get_current_default_fpg_name(share_args):
             try:
-                backend_fpg = self._hpeplugin_driver.get_fpg(fpg_name)
-                LOG.info("%s" % six.text_type(backend_fpg))
+                fpg_available_capacity = self._get_fpg_available_capacity(
+                    fpg_name
+                )
+                LOG.info("FPG available capacity in GiB: %s" %
+                         fpg_available_capacity)
                 # Share size in MiB - convert it to GiB
                 share_size_in_gib = share_args['size'] / 1024
 
                 # Yield only those default FPGs that have enough available
                 # capacity to create the requested share
-                if backend_fpg['availCapacityGiB'] >= share_size_in_gib:
+                if fpg_available_capacity >= share_size_in_gib:
+                    LOG.info("Found default FPG with enough available "
+                             "capacity %s GiB to create share of size %s GiB"
+                             % (fpg_available_capacity, share_size_in_gib))
                     # Get backend VFS information
                     vfs_info = self._hpeplugin_driver.get_vfs(fpg_name)
                     vfs_name = vfs_info['name']
@@ -219,9 +244,15 @@ class FileManager(object):
                     yield fpg_data
 
                     if fpg_data['result'] == 'DONE':
+                        LOG.info("Share creation done using FPG %s" %
+                                 fpg_name)
                         processing_done = True
                         break
                     else:
+                        LOG.info("Share could not be created on FPG %s. "
+                                 "Finding another default FPG with enough "
+                                 "capacity to create share of size %s"
+                                 % (fpg_name, share_size_in_gib))
                         continue
 
             except exception.FpgNotFound:
@@ -326,6 +357,8 @@ class FileManager(object):
                          (fpg_name, six.text_type(ex)))
                 LOG.info("Retrying with new FPG name...")
                 continue
+            except exception.HPEPluginEtcdException as ex:
+                raise ex
             except Exception as ex:
                 LOG.error("Unknown exception caught while creating default "
                           "FPG: %s" % six.text_type(ex))
@@ -525,22 +558,36 @@ class FileManager(object):
         return cmd.execute()
 
     @staticmethod
-    def get_share_details(share_name, db_share):
-        err = ''
-        mountdir = ''
-        devicename = ''
+    def _rm_implementation_details(db_share):
+        LOG.info("Removing implementation details from share %s..."
+                 % db_share['name'])
+        share = copy.deepcopy(db_share)
+        share.pop("nfsOptions")
+        share.pop("quota_id")
+        share.pop("id")
+        LOG.info("Implementation details removed: %s" % share)
+        return share
 
+    @staticmethod
+    def get_share_details(share_name, db_share):
+        # TODO: mount_dir to be fixed later
         path_info = db_share.get('share_path_info')
-        if path_info is not None:
+        if path_info:
             mountdir = path_info['mount_dir']
             devicename = path_info['path']
+        else:
+            mountdir = ''
+            devicename = ''
 
+        db_share_copy = FileManager._rm_implementation_details(db_share)
+        size_in_gib = "%d GiB" % (db_share_copy['size'] / 1024)
+        db_share_copy['size'] = size_in_gib
         # use volinfo as volname could be partial match
         share = {'Name': share_name,
                  'Mountpoint': mountdir,
                  'Devicename': devicename,
-                 'Status': db_share}
-        response = json.dumps({u"Err": err, u"Volume": share})
+                 'Status': db_share_copy}
+        response = json.dumps({u"Err": '', u"Volume": share})
         LOG.debug("Get share: \n%s" % str(response))
         return response
 

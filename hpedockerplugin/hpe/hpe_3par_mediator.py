@@ -359,6 +359,43 @@ class HPE3ParMediator(object):
         finally:
             self._wsapi_logout()
 
+    def get_file_stores_for_fpg(self, fpg_name):
+        uri = '/filestores?query="fpg EQ %s"' % fpg_name
+        try:
+            self._wsapi_login()
+            resp, body = self._client.http.get(uri)
+            return body
+        except Exception as ex:
+            msg = "mediator:get_file_shares - failed to get file stores " \
+                  "for  FPG %s from the backend. Exception: %s" % \
+                  (fpg_name, six.text_type(ex))
+            LOG.error(msg)
+            raise exception.ShareBackendException(msg=msg)
+        finally:
+            self._wsapi_logout()
+
+    def shares_present_on_fpg(self, fpg_name):
+        fstores = self.get_file_stores_for_fpg(fpg_name)
+        for fstore in fstores['members']:
+            if fstore['name'] != '.admin':
+                return True
+        return False
+
+    def get_quotas_for_fpg(self, fpg_name):
+        uri = '/filepersonaquotas?query="fpg EQ %s"' % fpg_name
+        try:
+            self._wsapi_login()
+            resp, body = self._client.http.get(uri)
+            return body
+        except Exception as ex:
+            msg = "mediator:get_quota - failed to get quotas for FPG %s" \
+                  "from the backend. Exception: %s" % \
+                  (fpg_name, six.text_type(ex))
+            LOG.error(msg)
+            raise exception.ShareBackendException(msg=msg)
+        finally:
+            self._wsapi_logout()
+
     def _create_share(self, share_details):
         fpg_name = share_details['fpg']
         vfs_name = share_details['vfs']
@@ -410,6 +447,9 @@ class HPE3ParMediator(object):
         try:
             self._wsapi_login()
             self._client.http.delete(uri)
+        except hpeexceptions.HTTPNotFound:
+            LOG.warning("Share %s not found on backend" % share_id)
+            pass
         except Exception as ex:
             msg = "mediator:delete_share - failed to remove share %s" \
                   "at the backend. Exception: %s" % \

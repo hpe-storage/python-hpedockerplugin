@@ -307,8 +307,18 @@ class FileRequestContextBuilder(RequestContextBuilder):
         if fsOwner:
             self._validate_fsOwner(fsOwner)
 
+        size_gib = self._get_int_option(options, 'size', 1024)
         # Default share size or quota in MiB which is 1TiB
-        size = self._get_int_option(options, 'size', 1024) * 1024
+        size = size_gib * 1024
+
+        fpg_size_gib = int(config.hpe3par_default_fpg_size) * 1024
+
+        if size_gib > fpg_size_gib:
+            raise exception.InvalidInput(
+                "ERROR: Share size cannot be greater than the FPG size. "
+                "Either specify hpe3par_default_fpg_size >= %s GiB or "
+                "specify option '-o size' < %s GiB"
+                % (size_gib, fpg_size_gib))
 
         # TODO: This check would be required when VFS needs to be created.
         # NOT HERE
