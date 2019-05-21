@@ -3,7 +3,6 @@ import six
 from oslo_log import log as logging
 
 from hpedockerplugin.cmd import cmd
-from hpedockerplugin import exception
 
 LOG = logging.getLogger(__name__)
 
@@ -64,7 +63,8 @@ class DeleteShareCmd(cmd.Cmd):
     # def _add_fpg_to_default_fpgs(self):
     #     # TODO:Imran: Mark FPG as default FPG in FPG metadata
     #     with self._fp_etcd.get_file_backend_lock(self._backend):
-    #         bkend_metadata = self._fp_etcd.get_backend_metadata(self._backend)
+    #         bkend_metadata = self._fp_etcd.get_backend_metadata(
+    #             self._backend)
     #         default_fpgs = bkend_metadata.get('default_fpgs')
     #         if default_fpgs:
     #             fpg_list = default_fpgs.get(self._cpg_name)

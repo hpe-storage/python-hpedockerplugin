@@ -16,17 +16,14 @@
 This 'mediator' de-couples the 3PAR focused client from the OpenStack focused
 driver.
 """
-import sh
 import six
 
 from oslo_log import log
 from oslo_service import loopingcall
 from oslo_utils import importutils
-from oslo_utils import units
 
 from hpedockerplugin import exception
 from hpedockerplugin.i18n import _
-from hpedockerplugin import fileutil
 
 hpe3parclient = importutils.try_import("hpe3parclient")
 if hpe3parclient:

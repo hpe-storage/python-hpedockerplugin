@@ -3,9 +3,6 @@ import six
 from oslo_log import log as logging
 
 from hpedockerplugin.cmd import cmd
-from hpedockerplugin.cmd.cmd_claimavailableip import ClaimAvailableIPCmd
-from hpedockerplugin.cmd.cmd_createfpg import CreateFpgCmd
-from hpedockerplugin.cmd.cmd_createvfs import CreateVfsCmd
 
 from hpedockerplugin import exception
 from hpedockerplugin.hpe import share

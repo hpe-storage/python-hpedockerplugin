@@ -25,7 +25,6 @@ import hpedockerplugin.hpe.array_connection_params as acp
 from hpedockerplugin.i18n import _
 from hpedockerplugin.hpe import hpe_3par_mediator
 from hpedockerplugin import synchronization
-from hpedockerplugin.hpe import share
 from hpedockerplugin.hpe import utils
 
 LOG = logging.getLogger(__name__)
@@ -210,7 +209,6 @@ class FileManager(object):
     def _get_default_available_fpg(self, share_args):
         LOG.info("Getting default available FPG...")
         processing_done = False
-        exc = None
         for fpg_name in self._get_current_default_fpg_name(share_args):
             try:
                 fpg_available_capacity = self._get_fpg_available_capacity(
@@ -307,9 +305,11 @@ class FileManager(object):
             self._backend, share_args['cpg'],
             self._fp_etcd_client
         )
-        LOG.info("_generate_default_fpg_vfs_names: Generating default FPG VFS names")
+        LOG.info("_generate_default_fpg_vfs_names: Generating default "
+                 "FPG VFS names")
         fpg_name, vfs_name = cmd.execute()
-        LOG.info("_generate_default_fpg_vfs_names: Generated: %s, %s" % (fpg_name, vfs_name))
+        LOG.info("_generate_default_fpg_vfs_names: Generated: %s, %s"
+                 % (fpg_name, vfs_name))
         return fpg_name, vfs_name
 
     @staticmethod
@@ -409,7 +409,8 @@ class FileManager(object):
                         fpg_info = fpg_data['fpg']
                         share_args['fpg'] = fpg_info['fpg']
                         share_args['vfs'] = fpg_info['vfs']
-                        share_args['docker_managed'] = fpg_info.get('docker_managed')
+                        share_args['docker_managed'] = fpg_info.get(
+                            'docker_managed')
 
                         # Only one IP per FPG is supported at the moment
                         # Given that, list can be dropped
