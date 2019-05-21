@@ -53,6 +53,16 @@
     when: ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
     become: yes
 
+  - name: Rebuild the initrd, otherwise the system may not boot anymore
+    shell: dracut --force --add multipath
+    become: yes
+    when: ansible_distribution == 'SLES'
+
+  - name: Create multipath file for SLES
+    shell: multipath -t > /etc/multipath.conf
+    become: yes
+    when: ansible_distribution == 'SLES'
+
   - name: Change MountFlags
     ini_file:
       dest: /usr/lib/systemd/system/docker.service
@@ -95,7 +105,8 @@
     with_items:
       - iscsid
       - multipathd
-    when: ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+    when: ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat' or ansible_distribution == 'SLES'
+
     become: yes
 
   - name: load etcd settings
