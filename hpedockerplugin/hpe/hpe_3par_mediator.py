@@ -60,6 +60,11 @@ OTHER_FAILURE_REASON = 29
 NON_EXISTENT_CPG = 15
 INV_INPUT_ILLEGAL_CHAR = 69
 
+# Overriding these class variable so that minimum supported version is 3.3.1
+file_client.HPE3ParFilePersonaClient.HPE3PAR_WS_MIN_BUILD_VERSION = 30301460
+file_client.HPE3ParFilePersonaClient.HPE3PAR_WS_MIN_BUILD_VERSION_DESC = \
+    '3.3.1 (MU3)'
+
 
 class HPE3ParMediator(object):
     """3PAR client-facing code for the 3PAR driver.
