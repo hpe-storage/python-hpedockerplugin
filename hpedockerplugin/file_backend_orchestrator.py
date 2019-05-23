@@ -16,6 +16,8 @@ class FileBackendOrchestrator(Orchestrator):
         super(FileBackendOrchestrator, self).__init__(
             host_config, backend_configs, def_backend_name)
 
+    @staticmethod
+    def _initialize_orchestrator(host_config):
         FileBackendOrchestrator.fp_etcd_client = \
             util.HpeFilePersonaEtcdClient(
                 host_config.host_etcd_ip_address,
