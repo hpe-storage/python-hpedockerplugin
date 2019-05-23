@@ -1,5 +1,3 @@
-import uuid
-
 DEFAULT_MOUNT_SHARE = "True"
 MAX_SHARES_PER_FPG = 16
 
