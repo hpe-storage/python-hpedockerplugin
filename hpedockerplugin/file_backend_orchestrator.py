@@ -16,18 +16,17 @@ class FileBackendOrchestrator(Orchestrator):
         super(FileBackendOrchestrator, self).__init__(
             host_config, backend_configs, def_backend_name)
 
+        FileBackendOrchestrator.fp_etcd_client = \
+            util.HpeFilePersonaEtcdClient(
+                host_config.host_etcd_ip_address,
+                host_config.host_etcd_port_number,
+                host_config.host_etcd_client_cert,
+                host_config.host_etcd_client_key)
+
     # Implementation of abstract function from base class
     def get_manager(self, host_config, config, etcd_client,
                     node_id, backend_name):
         LOG.info("Getting file manager...")
-        if not FileBackendOrchestrator.fp_etcd_client:
-            FileBackendOrchestrator.fp_etcd_client = \
-                util.HpeFilePersonaEtcdClient(
-                    host_config.host_etcd_ip_address,
-                    host_config.host_etcd_port_number,
-                    host_config.host_etcd_client_cert,
-                    host_config.host_etcd_client_key)
-
         return fmgr.FileManager(host_config, config, etcd_client,
                                 FileBackendOrchestrator.fp_etcd_client,
                                 node_id, backend_name)

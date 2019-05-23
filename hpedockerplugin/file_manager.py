@@ -566,6 +566,8 @@ class FileManager(object):
         share.pop("nfsOptions")
         share.pop("quota_id")
         share.pop("id")
+        share.pop("readonly")
+        share.pop("comment")
         LOG.info("Implementation details removed: %s" % share)
         return share
 

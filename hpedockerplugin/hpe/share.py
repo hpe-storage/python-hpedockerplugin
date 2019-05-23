@@ -8,7 +8,7 @@ def create_metadata(backend, cpg, fpg, share_name, size,
                     readonly=False, nfs_options=None, comment='',
                     fsMode=None, fsOwner=None):
     return {
-        'id': str(uuid.uuid4()),
+        'id': None,
         'backend': backend,
         'cpg': cpg,
         'fpg': fpg,
