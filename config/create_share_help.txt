@@ -14,7 +14,7 @@ Create a share in HPE 3PAR using HPE 3PAR volume plug-in for Docker.
                             In case this option is not specified, then a default FPG is created with size 16TiB if it
                             doesn't exist. Naming convention for default FPG is DockerFpg_n where n is an integer
                             starting from 0.
--o size=x                 x is the size of the share in MiB. By default, it is 1TiB
+-o size=x                 x is the size of the share in GiB. By default, it is 1024 GiB.
 -o help -o filePersona    When used together, these options display this help content
 -o help=backends -o filePersona  When used togther, these options display status of the backends configured for File Persona
 -o fsOwner=x              x is the user id and group id that should own the root directory  of nfs file share in the form of
