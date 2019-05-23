@@ -308,7 +308,7 @@ class FileRequestContextBuilder(RequestContextBuilder):
             self._validate_fsOwner(fsOwner)
 
         # Default share size or quota in MiB which is 1TiB
-        size = self._get_int_option(options, 'size', 1 * 1024 * 1024)
+        size = self._get_int_option(options, 'size', 1 * 1024) * 1024
 
         # TODO: This check would be required when VFS needs to be created.
         # NOT HERE
