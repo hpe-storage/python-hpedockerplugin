@@ -365,7 +365,7 @@ class FileManager(object):
 
     def _create_share_on_fpg(self, share_args, fpg_getter, fpg_creator):
         share_name = share_args['name']
-        LOG.info("Creating share on default FPG %s..." % share_name)
+        LOG.info("Creating share %s..." % share_name)
         undo_cmds = []
         cpg = share_args['cpg']
 
@@ -566,6 +566,8 @@ class FileManager(object):
         share.pop("nfsOptions")
         share.pop("quota_id")
         share.pop("id")
+        share.pop("readonly")
+        share.pop("comment")
         LOG.info("Implementation details removed: %s" % share)
         return share
 
