@@ -562,35 +562,48 @@ class FileManager(object):
     def _rm_implementation_details(db_share):
         LOG.info("Removing implementation details from share %s..."
                  % db_share['name'])
-        share = copy.deepcopy(db_share)
-        share.pop("nfsOptions")
-        share.pop("quota_id")
-        share.pop("id")
-        share.pop("readonly")
-        share.pop("comment")
-        LOG.info("Implementation details removed: %s" % share)
-        return share
+        db_share_copy = copy.deepcopy(db_share)
+        db_share_copy.pop("nfsOptions")
+        if 'quota_id' in db_share_copy:
+            db_share_copy.pop("quota_id")
+        db_share_copy.pop("id")
+        db_share_copy.pop("readonly")
+        db_share_copy.pop("comment")
+        if 'path_info' in db_share_copy:
+            db_share_copy.pop('path_info')
 
-    @staticmethod
-    def get_share_details(share_name, db_share):
-        # TODO: mount_dir to be fixed later
-        path_info = db_share.get('share_path_info')
+        LOG.info("Implementation details removed: %s" % db_share_copy)
+        return db_share_copy
+
+    def get_share_details(self, share_name, db_share):
+        mountdir = ''
+        devicename = ''
+        vfs_ip = db_share['vfsIPs'][0][0]
+        share_path = "%s:/%s/%s/%s" % (vfs_ip,
+                                       db_share['fpg'],
+                                       db_share['vfs'],
+                                       db_share['name'])
+        path_info = db_share.get('path_info')
         if path_info:
-            mountdir = path_info['mount_dir']
-            devicename = path_info['path']
-        else:
-            mountdir = ''
-            devicename = ''
+            mountdir = '['
+            node_mnt_info = path_info.get(self._node_id)
+            if node_mnt_info:
+                for mnt_dir in node_mnt_info.values():
+                    mountdir += mnt_dir + ', '
+                mountdir += ']'
+                devicename = share_path
 
         db_share_copy = FileManager._rm_implementation_details(db_share)
+        db_share_copy['sharePath'] = share_path
         size_in_gib = "%d GiB" % (db_share_copy['size'] / 1024)
         db_share_copy['size'] = size_in_gib
+        LOG.info("Returning share: %s" % db_share_copy)
         # use volinfo as volname could be partial match
-        share = {'Name': share_name,
-                 'Mountpoint': mountdir,
-                 'Devicename': devicename,
-                 'Status': db_share_copy}
-        response = json.dumps({u"Err": '', u"Volume": share})
+        resp = {'Name': share_name,
+                'Mountpoint': mountdir,
+                'Devicename': devicename,
+                'Status': db_share_copy}
+        response = json.dumps({u"Err": '', u"Volume": resp})
         LOG.debug("Get share: \n%s" % str(response))
         return response
 
