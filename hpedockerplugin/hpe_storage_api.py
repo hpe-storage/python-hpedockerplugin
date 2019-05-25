@@ -64,11 +64,17 @@ class VolumePlugin(object):
             elif 'DEFAULT_BLOCK' in self._backend_configs:
                 self._def_backend_name = 'DEFAULT_BLOCK'
             else:
-                msg = "DEFAULT backend is not present for the BLOCK driver" \
-                      "configuration. If DEFAULT backend has been " \
+                msg = "ERROR: DEFAULT backend is not present for the BLOCK " \
+                      "driver configuration. If DEFAULT backend has been " \
                       "configured for FILE driver, then DEFAULT_BLOCK " \
                       "backend MUST be configured for BLOCK driver in " \
                       "hpe.conf file."
+                LOG.error(msg)
+                raise exception.InvalidInput(reason=msg)
+            if 'DEFAULT_FILE' in self._backend_configs:
+                msg = "ERROR: 'DEFAULT_FILE' backend cannot be defined " \
+                      "for BLOCK driver."
+                LOG.error(msg)
                 raise exception.InvalidInput(reason=msg)
 
             self.orchestrator = orchestrator.VolumeBackendOrchestrator(
@@ -88,11 +94,17 @@ class VolumePlugin(object):
             elif 'DEFAULT_FILE' in self._f_backend_configs:
                 self._f_def_backend_name = 'DEFAULT_FILE'
             else:
-                msg = "DEFAULT backend is not present for the FILE driver" \
-                      "configuration. If DEFAULT backend has been " \
+                msg = "ERROR: DEFAULT backend is not present for the FILE " \
+                      "driver configuration. If DEFAULT backend has been " \
                       "configured for BLOCK driver, then DEFAULT_FILE " \
                       "backend MUST be configured for FILE driver in " \
                       "hpe.conf file."
+                raise exception.InvalidInput(reason=msg)
+
+            if 'DEFAULT_BLOCK' in self._f_backend_configs:
+                msg = "ERROR: 'DEFAULT_BLOCK' backend cannot be defined " \
+                      "for FILE driver."
+                LOG.error(msg)
                 raise exception.InvalidInput(reason=msg)
 
             self._file_orchestrator = f_orchestrator.FileBackendOrchestrator(
