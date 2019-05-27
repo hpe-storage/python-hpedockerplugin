@@ -25,7 +25,6 @@ import hpedockerplugin.hpe.array_connection_params as acp
 from hpedockerplugin.i18n import _
 from hpedockerplugin.hpe import hpe_3par_mediator
 from hpedockerplugin import synchronization
-from hpedockerplugin.hpe import share
 from hpedockerplugin.hpe import utils
 
 LOG = logging.getLogger(__name__)
@@ -179,22 +178,99 @@ class FileManager(object):
                 'docker_managed': False
             }
 
-        return fpg_info
+        fpg_data = {'fpg': fpg_info}
+        yield fpg_data
+
+        if fpg_data['result'] != 'DONE':
+            LOG.error("Share could not be created on FPG %s" % fpg_name)
+            raise exception.ShareCreationFailed(share_args['cpg'])
+
+    def _get_fpg_available_capacity(self, fpg_name):
+        LOG.info("Getting FPG %s from backend..." % fpg_name)
+        backend_fpg = self._hpeplugin_driver.get_fpg(fpg_name)
+        LOG.info("%s" % six.text_type(backend_fpg))
+        LOG.info("Getting all quotas for FPG %s..." % fpg_name)
+        quotas = self._hpeplugin_driver.get_quotas_for_fpg(fpg_name)
+        used_capacity_GiB = 0
+        for quota in quotas['members']:
+            used_capacity_GiB += (quota['hardBlockMiB'] / 1024)
+        fpg_total_capacity_GiB = backend_fpg['availCapacityGiB']
+        LOG.info("Total capacity of FPG %s: %s GiB" %
+                 (fpg_name, fpg_total_capacity_GiB))
+        LOG.info("Capacity used on FPG %s is %s GiB" %
+                 (fpg_name, used_capacity_GiB))
+        fpg_avail_capacity = fpg_total_capacity_GiB - used_capacity_GiB
+        LOG.info("Available capacity on FPG %s is %s GiB" %
+                 (fpg_name, fpg_avail_capacity))
+        return fpg_avail_capacity
 
     # If default FPG is full, it raises exception
     # EtcdMaxSharesPerFpgLimitException
     def _get_default_available_fpg(self, share_args):
         LOG.info("Getting default available FPG...")
-        fpg_name = self._get_current_default_fpg_name(share_args)
-        fpg_info = self._fp_etcd_client.get_fpg_metadata(
-            self._backend, share_args['cpg'], fpg_name
-        )
-        if fpg_info['share_cnt'] >= share.MAX_SHARES_PER_FPG:
-            raise exception.EtcdMaxSharesPerFpgLimitException(
-                fpg_name=fpg_name)
-        LOG.info("Default FPG found: %s" % fpg_info)
-        return fpg_info
+        processing_done = False
+        for fpg_name in self._get_current_default_fpg_name(share_args):
+            try:
+                fpg_available_capacity = self._get_fpg_available_capacity(
+                    fpg_name
+                )
+                LOG.info("FPG available capacity in GiB: %s" %
+                         fpg_available_capacity)
+                # Share size in MiB - convert it to GiB
+                share_size_in_gib = share_args['size'] / 1024
 
+                # Yield only those default FPGs that have enough available
+                # capacity to create the requested share
+                if fpg_available_capacity >= share_size_in_gib:
+                    LOG.info("Found default FPG with enough available "
+                             "capacity %s GiB to create share of size %s GiB"
+                             % (fpg_available_capacity, share_size_in_gib))
+                    # Get backend VFS information
+                    vfs_info = self._hpeplugin_driver.get_vfs(fpg_name)
+                    vfs_name = vfs_info['name']
+                    ip_info = vfs_info['IPInfo'][0]
+                    netmask = ip_info['netmask']
+                    ip = ip_info['IPAddr']
+
+                    fpg_info = {
+                        'ips': {netmask: [ip]},
+                        'fpg': fpg_name,
+                        'vfs': vfs_name,
+                        'docker_managed': False
+                    }
+                    fpg_data = {'fpg': fpg_info}
+                    yield fpg_data
+
+                    if fpg_data['result'] == 'DONE':
+                        LOG.info("Share creation done using FPG %s" %
+                                 fpg_name)
+                        processing_done = True
+                        break
+                    else:
+                        LOG.info("Share could not be created on FPG %s. "
+                                 "Finding another default FPG with enough "
+                                 "capacity to create share of size %s"
+                                 % (fpg_name, share_size_in_gib))
+                        continue
+
+            except exception.FpgNotFound:
+                LOG.warning("FPG %s present in ETCD but not found on backend. "
+                            "Looking for next FPG" % fpg_name)
+                continue
+
+        # Default FPGs were there but none of them could satisfy the
+        # requirement of creating share. New FPG must be created
+        # hence raising exception to execute FPG creation flow
+        if not processing_done:
+            raise exception.EtcdDefaultFpgNotPresent(share_args['cpg'])
+
+    # TODO:Imran: Backend metadata needs modification
+    # Instead of one FPG, we need FPG listz
+    # Backend metadata
+    # {'default_fpgs': {
+    #       cpg1: [fpg1, fpg2],
+    #       cpg2: [fpg3]
+    # }
     def _get_current_default_fpg_name(self, share_args):
         cpg_name = share_args['cpg']
         try:
@@ -206,14 +282,15 @@ class FileManager(object):
             if default_fpgs:
                 LOG.info("Checking if default FPG present for CPG %s..." %
                          cpg_name)
-                default_fpg = default_fpgs.get(cpg_name)
-                if default_fpg:
+                fpg_list = default_fpgs.get(cpg_name, [])
+                for default_fpg in fpg_list:
                     LOG.info("Default FPG %s found for CPG %s" %
                              (default_fpg, cpg_name))
-                    return default_fpg
-            LOG.info("Default FPG not found under backend %s for CPG %s"
-                     % (self._backend, cpg_name))
-            raise exception.EtcdDefaultFpgNotPresent(cpg=cpg_name)
+                    yield default_fpg
+            else:
+                LOG.info("Default FPG not found under backend %s for CPG %s"
+                         % (self._backend, cpg_name))
+                raise exception.EtcdDefaultFpgNotPresent(cpg=cpg_name)
         except exception.EtcdMetadataNotFound:
             LOG.info("Metadata not found for backend %s" % self._backend)
             raise exception.EtcdDefaultFpgNotPresent(cpg=cpg_name)
@@ -228,13 +305,19 @@ class FileManager(object):
             self._backend, share_args['cpg'],
             self._fp_etcd_client
         )
-        return cmd.execute()
+        LOG.info("_generate_default_fpg_vfs_names: Generating default "
+                 "FPG VFS names")
+        fpg_name, vfs_name = cmd.execute()
+        LOG.info("_generate_default_fpg_vfs_names: Generated: %s, %s"
+                 % (fpg_name, vfs_name))
+        return fpg_name, vfs_name
 
     @staticmethod
     def _vfs_name_from_fpg_name(share_args):
         # Generate VFS name using specified FPG with "-o fpg" option
         fpg_name = share_args['fpg']
         vfs_name = fpg_name + '_vfs'
+        LOG.info("Returning FPG and VFS names: %s, %s" % (fpg_name, vfs_name))
         return fpg_name, vfs_name
 
     def _create_fpg(self, share_args, undo_cmds):
@@ -274,31 +357,83 @@ class FileManager(object):
                          (fpg_name, six.text_type(ex)))
                 LOG.info("Retrying with new FPG name...")
                 continue
+            except exception.HPEPluginEtcdException as ex:
+                raise ex
+            except Exception as ex:
+                LOG.error("Unknown exception caught while creating default "
+                          "FPG: %s" % six.text_type(ex))
 
     def _create_share_on_fpg(self, share_args, fpg_getter, fpg_creator):
         share_name = share_args['name']
-        LOG.info("Creating share on default FPG %s..." % share_name)
+        LOG.info("Creating share %s..." % share_name)
         undo_cmds = []
         cpg = share_args['cpg']
+
+        def __create_share_and_quota():
+            LOG.info("Creating share %s..." % share_name)
+            create_share_cmd = CreateShareCmd(
+                self,
+                share_args
+            )
+            create_share_cmd.execute()
+            LOG.info("Share created successfully %s" % share_name)
+            undo_cmds.append(create_share_cmd)
+
+            LOG.info("Setting quota for share %s..." % share_name)
+            set_quota_cmd = cmd_setquota.SetQuotaCmd(
+                self,
+                share_args['cpg'],
+                share_args['fpg'],
+                share_args['vfs'],
+                share_args['name'],
+                share_args['size']
+            )
+            set_quota_cmd.execute()
+            LOG.info("Quota set for share successfully %s" % share_name)
+            undo_cmds.append(set_quota_cmd)
+
         with self._fp_etcd_client.get_cpg_lock(self._backend, cpg):
             try:
                 init_share_cmd = InitializeShareCmd(
                     self._backend, share_args, self._etcd
                 )
                 init_share_cmd.execute()
-                undo_cmds.append(init_share_cmd)
+                # Since we would want the share to be shown in failed status
+                # even in case of failure, cannot make this as part of undo
+                # undo_cmds.append(init_share_cmd)
 
-                fpg_info = fpg_getter(share_args)
-                share_args['fpg'] = fpg_info['fpg']
-                share_args['vfs'] = fpg_info['vfs']
-                share_args['docker_managed'] = fpg_info.get('docker_managed')
+                fpg_gen = fpg_getter(share_args)
+                while True:
+                    try:
+                        fpg_data = next(fpg_gen)
+                        fpg_info = fpg_data['fpg']
+                        share_args['fpg'] = fpg_info['fpg']
+                        share_args['vfs'] = fpg_info['vfs']
+                        share_args['docker_managed'] = fpg_info.get(
+                            'docker_managed')
 
-                # Only one IP per FPG is supported at the moment
-                # Given that, list can be dropped
-                subnet_ips_map = fpg_info['ips']
-                subnet, ips = next(iter(subnet_ips_map.items()))
-                share_args['vfsIPs'] = [(ips[0], subnet)]
+                        # Only one IP per FPG is supported at the moment
+                        # Given that, list can be dropped
+                        subnet_ips_map = fpg_info['ips']
+                        subnet, ips = next(iter(subnet_ips_map.items()))
+                        share_args['vfsIPs'] = [(ips[0], subnet)]
 
+                        __create_share_and_quota()
+
+                        # Set result to success so that FPG generator can stop
+                        fpg_data['result'] = 'DONE'
+                    except exception.SetQuotaFailed:
+                        fpg_data['result'] = 'IN_PROCESS'
+                        self._unexecute(undo_cmds)
+                        undo_cmds.clear()
+
+                    except StopIteration:
+                        # Let the generator take the call whether it wants to
+                        # report failure or wants to create new default FPG
+                        # for this share
+                        fpg_data['result'] = 'FAILED'
+                        undo_cmds.clear()
+                        break
             except (exception.EtcdMaxSharesPerFpgLimitException,
                     exception.EtcdMetadataNotFound,
                     exception.EtcdDefaultFpgNotPresent,
@@ -343,6 +478,8 @@ class FileManager(object):
                     # from locked-ip-list to ips-in-use list
                     claim_free_ip_cmd.mark_ip_in_use()
                     share_args['vfsIPs'] = [(ip, netmask)]
+
+                    __create_share_and_quota()
 
                 except exception.IPAddressPoolExhausted as ex:
                     msg = "Create VFS failed. Msg: %s" % six.text_type(ex)
@@ -392,32 +529,6 @@ class FileManager(object):
                 self._unexecute(undo_cmds)
                 raise exception.ShareCreationFailed(reason=msg)
 
-            try:
-                LOG.info("Creating share %s..." % share_name)
-                create_share_cmd = CreateShareCmd(
-                    self,
-                    share_args
-                )
-                create_share_cmd.create_share()
-                LOG.info("Share created successfully %s" % share_name)
-                undo_cmds.append(create_share_cmd)
-
-                LOG.info("Setting quota for share %s..." % share_name)
-                set_quota_cmd = cmd_setquota.SetQuotaCmd(
-                    self,
-                    share_args['cpg'],
-                    share_args['fpg'],
-                    share_args['vfs'],
-                    share_args['name'],
-                    share_args['size']
-                )
-                set_quota_cmd.execute()
-                LOG.info("Quota set for share successfully %s" % share_name)
-                undo_cmds.append(set_quota_cmd)
-            except Exception:
-                self._unexecute(undo_cmds)
-                raise
-
     @synchronization.synchronized_fp_share('{share_name}')
     def _create_share(self, share_name, share_args):
         # Check if share already exists
@@ -444,38 +555,60 @@ class FileManager(object):
             )
 
     def remove_share(self, share_name, share):
+        if 'path_info' in share:
+            msg = "Cannot delete share %s as it is in mounted state" \
+                  % share_name
+            LOG.error(msg)
+            return json.dumps({'Err': msg})
         cmd = cmd_deleteshare.DeleteShareCmd(self, share)
         return cmd.execute()
 
-    def remove_snapshot(self, share_name, snapname):
-        pass
+    @staticmethod
+    def _rm_implementation_details(db_share):
+        LOG.info("Removing implementation details from share %s..."
+                 % db_share['name'])
+        db_share_copy = copy.deepcopy(db_share)
+        db_share_copy.pop("nfsOptions")
+        if 'quota_id' in db_share_copy:
+            db_share_copy.pop("quota_id")
+        db_share_copy.pop("id")
+        db_share_copy.pop("readonly")
+        db_share_copy.pop("comment")
+        if 'path_info' in db_share_copy:
+            db_share_copy.pop('path_info')
+
+        LOG.info("Implementation details removed: %s" % db_share_copy)
+        return db_share_copy
 
     def get_share_details(self, share_name, db_share):
-        # db_share = self._etcd.get_vol_byname(share_name,
-        #                                      name_key1='shareName',
-        #                                      name_key2='shareName')
-        # LOG.info("Share details: %s", db_share)
-        # if db_share is None:
-        #     msg = (_LE('Share Get: Share name not found %s'), share_name)
-        #     LOG.warning(msg)
-        #     response = json.dumps({u"Err": ""})
-        #     return response
-
-        err = ''
         mountdir = ''
         devicename = ''
+        vfs_ip = db_share['vfsIPs'][0][0]
+        share_path = "%s:/%s/%s/%s" % (vfs_ip,
+                                       db_share['fpg'],
+                                       db_share['vfs'],
+                                       db_share['name'])
+        path_info = db_share.get('path_info')
+        if path_info:
+            mountdir = '['
+            node_mnt_info = path_info.get(self._node_id)
+            if node_mnt_info:
+                for mnt_dir in node_mnt_info.values():
+                    mountdir += mnt_dir + ', '
+                mountdir += ']'
+                devicename = share_path
 
-        path_info = db_share.get('share_path_info')
-        if path_info is not None:
-            mountdir = path_info['mount_dir']
-            devicename = path_info['path']
-
+        db_share_copy = FileManager._rm_implementation_details(db_share)
+        db_share_copy['sharePath'] = share_path
+        size_in_gib = "%d GiB" % (db_share_copy['size'] / 1024)
+        db_share_copy['size'] = size_in_gib
+        LOG.info("Returning share: %s" % db_share_copy)
         # use volinfo as volname could be partial match
-        share = {'Name': share_name,
-                 'Mountpoint': mountdir,
-                 'Devicename': devicename,
-                 'Status': db_share}
-        response = json.dumps({u"Err": err, u"Volume": share})
+        resp = {'Name': share_name,
+                'Mountpoint': mountdir,
+                'Devicename': devicename,
+                'Status': db_share_copy}
+        response = json.dumps({u"Err": '', u"Volume": resp})
         LOG.debug("Get share: \n%s" % str(response))
         return response
 
@@ -535,12 +668,6 @@ class FileManager(object):
         return "%s%s" % (fileutil.prefix, share_name)
 
     def _create_mount_dir(self, mount_dir):
-        # TODO: Check instead if mount entry is there and based on that
-        # decide
-        # if os.path.exists(mount_dir):
-        #     msg = "Mount path %s already in use" % mount_dir
-        #     raise exception.HPEPluginMountException(reason=msg)
-
         LOG.info('Creating Directory %(mount_dir)s...',
                  {'mount_dir': mount_dir})
         sh.mkdir('-p', mount_dir)
@@ -550,7 +677,26 @@ class FileManager(object):
     def mount_share(self, share_name, share, mount_id):
         if 'status' in share:
             if share['status'] == 'FAILED':
-                LOG.error("Share not present")
+                msg = "Share %s is in FAILED state. Please remove it and " \
+                      "create a new one and then retry mount" % share_name
+                LOG.error(msg)
+                return json.dumps({u"Err": msg})
+            elif share['status'] == 'CREATING':
+                msg = "Share %s is in CREATING state. Please wait for it " \
+                      "to be in AVAILABLE state and then retry mount" \
+                      % share_name
+                LOG.error(msg)
+                return json.dumps({u"Err": msg})
+            elif share['status'] == 'AVAILABLE':
+                msg = "Share %s is in AVAILABLE state. Attempting mount..." \
+                      % share_name
+                LOG.info(msg)
+            else:
+                msg = "ERROR: Share %s is in UNKNOWN state. Aborting " \
+                      "mount..." % share_name
+                LOG.error(msg)
+                return json.dumps({u"Err": msg})
+
         fUser = None
         fGroup = None
         fMode = None
@@ -592,9 +738,6 @@ class FileManager(object):
                 my_ip = netutils.get_my_ipv4()
                 self._hpeplugin_driver.add_client_ip_for_share(share['id'],
                                                                my_ip)
-                # TODO: Client IPs should come from array. We cannot depend on
-                # ETCD for this info as user may use different ETCDs for
-                # different hosts
                 client_ips = share['clientIPs']
                 client_ips.append(my_ip)
                 # node_mnt_info not present
@@ -608,9 +751,6 @@ class FileManager(object):
             my_ip = netutils.get_my_ipv4()
             self._hpeplugin_driver.add_client_ip_for_share(share['id'],
                                                            my_ip)
-
-            # TODO: Client IPs should come from array. We cannot depend on ETCD
-            # for this info as user may use different ETCDs for different hosts
             client_ips = share['clientIPs']
             client_ips.append(my_ip)
 
@@ -729,18 +869,3 @@ class FileManager(object):
             LOG.error("ERROR: Path info missing from ETCD")
         response = json.dumps({u"Err": ''})
         return response
-
-    def import_share(self, volname, existing_ref, backend='DEFAULT',
-                     manage_opts=None):
-        pass
-
-    @staticmethod
-    def _rollback(rollback_list):
-        for undo_action in reversed(rollback_list):
-            LOG.info(undo_action['msg'])
-            try:
-                undo_action['undo_func'](**undo_action['params'])
-            except Exception as ex:
-                # TODO: Implement retry logic
-                LOG.exception('Ignoring exception: %s' % ex)
-                pass
