@@ -672,7 +672,26 @@ class FileManager(object):
     def mount_share(self, share_name, share, mount_id):
         if 'status' in share:
             if share['status'] == 'FAILED':
-                LOG.error("Share not present")
+                msg = "Share %s is in FAILED state. Please remove it and " \
+                      "create a new one and then retry mount" % share_name
+                LOG.error(msg)
+                return json.dumps({u"Err": msg})
+            elif share['status'] == 'CREATING':
+                msg = "Share %s is in CREATING state. Please wait for it " \
+                      "to be in AVAILABLE state and then retry mount" \
+                      % share_name
+                LOG.error(msg)
+                return json.dumps({u"Err": msg})
+            elif share['status'] == 'AVAILABLE':
+                msg = "Share %s is in AVAILABLE state. Attempting mount..." \
+                      % share_name
+                LOG.info(msg)
+            else:
+                msg = "ERROR: Share %s is in UNKNOWN state. Aborting mount..." \
+                      % share_name
+                LOG.error(msg)
+                return json.dumps({u"Err": msg})
+
         fUser = None
         fGroup = None
         fMode = None
