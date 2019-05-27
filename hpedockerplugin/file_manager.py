@@ -583,11 +583,15 @@ class FileManager(object):
     def get_share_details(self, share_name, db_share):
         mountdir = ''
         devicename = ''
-        vfs_ip = db_share['vfsIPs'][0][0]
-        share_path = "%s:/%s/%s/%s" % (vfs_ip,
-                                       db_share['fpg'],
-                                       db_share['vfs'],
-                                       db_share['name'])
+        if db_share['status'] == 'AVAILABLE':
+            vfs_ip = db_share['vfsIPs'][0][0]
+            share_path = "%s:/%s/%s/%s" % (vfs_ip,
+                                           db_share['fpg'],
+                                           db_share['vfs'],
+                                           db_share['name'])
+        else:
+            share_path = None
+
         path_info = db_share.get('path_info')
         if path_info:
             mountdir = '['
