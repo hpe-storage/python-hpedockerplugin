@@ -46,6 +46,7 @@ class Orchestrator(object):
         LOG.info('calling initialize manager objs')
         self._def_backend_name = def_backend_name
         self._etcd_client = self._get_etcd_client(host_config)
+        self._initialize_orchestrator(host_config)
         self._manager = self.initialize_manager_objects(host_config,
                                                         backend_configs)
 
@@ -53,6 +54,10 @@ class Orchestrator(object):
         # cache after doing an etcd volume read operation.
         self.volume_backends_map = {}
         self.volume_backend_lock = threading.Lock()
+
+    @staticmethod
+    def _initialize_orchestrator(host_config):
+        pass
 
     def get_default_backend_name(self):
         return self._def_backend_name

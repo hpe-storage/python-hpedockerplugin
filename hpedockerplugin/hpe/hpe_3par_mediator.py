@@ -16,17 +16,14 @@
 This 'mediator' de-couples the 3PAR focused client from the OpenStack focused
 driver.
 """
-import sh
 import six
 
 from oslo_log import log
 from oslo_service import loopingcall
 from oslo_utils import importutils
-from oslo_utils import units
 
 from hpedockerplugin import exception
 from hpedockerplugin.i18n import _
-from hpedockerplugin import fileutil
 
 hpe3parclient = importutils.try_import("hpe3parclient")
 if hpe3parclient:
@@ -58,10 +55,15 @@ LOCAL_IP_RO = '127.0.0.2'
 SUPER_SHARE = 'DOCKER_SUPER_SHARE'
 TMP_RO_SNAP_EXPORT = "Temp RO snapshot export as source for creating RW share."
 
-BAD_REQUEST = '404'
+BAD_REQUEST = '400'
 OTHER_FAILURE_REASON = 29
 NON_EXISTENT_CPG = 15
 INV_INPUT_ILLEGAL_CHAR = 69
+
+# Overriding these class variable so that minimum supported version is 3.3.1
+file_client.HPE3ParFilePersonaClient.HPE3PAR_WS_MIN_BUILD_VERSION = 30301460
+file_client.HPE3ParFilePersonaClient.HPE3PAR_WS_MIN_BUILD_VERSION_DESC = \
+    '3.3.1 (MU3)'
 
 
 class HPE3ParMediator(object):
@@ -189,42 +191,6 @@ class HPE3ParMediator(object):
                               'err': six.text_type(e)})
             # don't raise exception on logout()
 
-    @staticmethod
-    def build_export_locations(protocol, ips, path):
-
-        if not ips:
-            message = _('Failed to build export location due to missing IP.')
-            raise exception.InvalidInput(reason=message)
-
-        if not path:
-            message = _('Failed to build export location due to missing path.')
-            raise exception.InvalidInput(reason=message)
-
-        share_proto = HPE3ParMediator.ensure_supported_protocol(protocol)
-        if share_proto == 'nfs':
-            return ['%s:%s' % (ip, path) for ip in ips]
-        else:
-            return [r'\\%s\%s' % (ip, path) for ip in ips]
-
-    def get_provisioned_gb(self, fpg):
-        total_mb = 0
-        try:
-            result = self._client.getfsquota(fpg=fpg)
-        except Exception as e:
-            result = {'message': six.text_type(e)}
-
-        error_msg = result.get('message')
-        if error_msg:
-            message = (_('Error while getting fsquotas for FPG '
-                         '%(fpg)s: %(msg)s') %
-                       {'fpg': fpg, 'msg': error_msg})
-            LOG.error(message)
-            raise exception.ShareBackendException(msg=message)
-
-        for fsquota in result['members']:
-            total_mb += float(fsquota['hardBlock'])
-        return total_mb / units.Ki
-
     def get_fpgs(self, filter):
         try:
             self._wsapi_login()
@@ -258,103 +224,6 @@ class HPE3ParMediator(object):
             return body['members'][0]
         finally:
             self._wsapi_logout()
-
-    def get_fpg_status(self, fpg):
-        """Get capacity and capabilities for FPG."""
-
-        try:
-            result = self._client.getfpg(fpg)
-        except Exception as e:
-            msg = (_('Failed to get capacity for fpg %(fpg)s: %(e)s') %
-                   {'fpg': fpg, 'e': six.text_type(e)})
-            LOG.error(msg)
-            raise exception.ShareBackendException(msg=msg)
-
-        if result['total'] != 1:
-            msg = (_('Failed to get capacity for fpg %s.') % fpg)
-            LOG.error(msg)
-            raise exception.ShareBackendException(msg=msg)
-
-        member = result['members'][0]
-        total_capacity_gb = float(member['capacityKiB']) / units.Mi
-        free_capacity_gb = float(member['availCapacityKiB']) / units.Mi
-
-        volumes = member['vvs']
-        if isinstance(volumes, list):
-            volume = volumes[0]  # Use first name from list
-        else:
-            volume = volumes  # There is just a name
-
-        self._wsapi_login()
-        try:
-            volume_info = self._client.getVolume(volume)
-            volume_set = self._client.getVolumeSet(fpg)
-        finally:
-            self._wsapi_logout()
-
-        provisioning_type = volume_info['provisioningType']
-        if provisioning_type not in (THIN, FULL, DEDUPE):
-            msg = (_('Unexpected provisioning type for FPG %(fpg)s: '
-                     '%(ptype)s.') % {'fpg': fpg, 'ptype': provisioning_type})
-            LOG.error(msg)
-            raise exception.ShareBackendException(msg=msg)
-
-        dedupe = provisioning_type == DEDUPE
-        thin_provisioning = provisioning_type in (THIN, DEDUPE)
-
-        flash_cache_policy = volume_set.get('flashCachePolicy', DISABLED)
-        hpe3par_flash_cache = flash_cache_policy == ENABLED
-
-        status = {
-            'pool_name': fpg,
-            'total_capacity_gb': total_capacity_gb,
-            'free_capacity_gb': free_capacity_gb,
-            'thin_provisioning': thin_provisioning,
-            'dedupe': dedupe,
-            'hpe3par_flash_cache': hpe3par_flash_cache,
-            'hp3par_flash_cache': hpe3par_flash_cache,
-        }
-
-        if thin_provisioning:
-            status['provisioned_capacity_gb'] = self.get_provisioned_gb(fpg)
-
-        return status
-
-    @staticmethod
-    def ensure_supported_protocol(share_proto):
-        protocol = share_proto.lower()
-        if protocol == 'cifs':
-            protocol = 'smb'
-        if protocol not in ['smb', 'nfs']:
-            message = (_('Invalid protocol. Expected nfs or smb. Got %s.') %
-                       protocol)
-            LOG.error(message)
-            raise exception.InvalidShareAccess(reason=message)
-        return protocol
-
-    @staticmethod
-    def other_protocol(share_proto):
-        """Given 'nfs' or 'smb' (or equivalent) return the other one."""
-        protocol = HPE3ParMediator.ensure_supported_protocol(share_proto)
-        return 'nfs' if protocol == 'smb' else 'smb'
-
-    @staticmethod
-    def ensure_prefix(uid, protocol=None, readonly=False):
-        if uid.startswith('osf-'):
-            return uid
-
-        if protocol:
-            proto = '-%s' % HPE3ParMediator.ensure_supported_protocol(protocol)
-        else:
-            proto = ''
-
-        if readonly:
-            ro = '-ro'
-        else:
-            ro = ''
-
-        # Format is osf[-ro]-{nfs|smb}-uid
-        return 'osf%s%s-%s' % (proto, ro, uid)
 
     @staticmethod
     def _get_nfs_options(proto_opts, readonly):
@@ -450,6 +319,7 @@ class HPE3ParMediator(object):
             return self._client.http.post(uri, body=req_body)
 
         try:
+            self._wsapi_login()
             resp, body = _sync_update_capacity_quotas(
                 fstore, size, fpg, vfs)
             if resp['status'] != '201':
@@ -474,6 +344,8 @@ class HPE3ParMediator(object):
                     'e': six.text_type(e)})
             LOG.error(msg)
             raise exception.ShareBackendException(msg=msg)
+        finally:
+            self._wsapi_logout()
 
     def remove_quota(self, quota_id):
         uri = '/filepersonaquotas/%s' % quota_id
@@ -489,13 +361,42 @@ class HPE3ParMediator(object):
         finally:
             self._wsapi_logout()
 
-    def _parse_protocol_opts(self, proto_opts):
-        ret_opts = {}
-        opts = proto_opts.split(',')
-        for opt in opts:
-            key, value = opt.split('=')
-            ret_opts[key] = value
-        return ret_opts
+    def get_file_stores_for_fpg(self, fpg_name):
+        uri = '/filestores?query="fpg EQ %s"' % fpg_name
+        try:
+            self._wsapi_login()
+            resp, body = self._client.http.get(uri)
+            return body
+        except Exception as ex:
+            msg = "mediator:get_file_shares - failed to get file stores " \
+                  "for  FPG %s from the backend. Exception: %s" % \
+                  (fpg_name, six.text_type(ex))
+            LOG.error(msg)
+            raise exception.ShareBackendException(msg=msg)
+        finally:
+            self._wsapi_logout()
+
+    def shares_present_on_fpg(self, fpg_name):
+        fstores = self.get_file_stores_for_fpg(fpg_name)
+        for fstore in fstores['members']:
+            if fstore['name'] != '.admin':
+                return True
+        return False
+
+    def get_quotas_for_fpg(self, fpg_name):
+        uri = '/filepersonaquotas?query="fpg EQ %s"' % fpg_name
+        try:
+            self._wsapi_login()
+            resp, body = self._client.http.get(uri)
+            return body
+        except Exception as ex:
+            msg = "mediator:get_quota - failed to get quotas for FPG %s" \
+                  "from the backend. Exception: %s" % \
+                  (fpg_name, six.text_type(ex))
+            LOG.error(msg)
+            raise exception.ShareBackendException(msg=msg)
+        finally:
+            self._wsapi_logout()
 
     def _create_share(self, share_details):
         fpg_name = share_details['fpg']
@@ -536,53 +437,11 @@ class HPE3ParMediator(object):
             raise exception.ShareBackendException(msg=msg)
 
     def create_share(self, share_details):
-        """Create the share and return its path.
-        This method can create a share when called by the driver or when
-        called locally from create_share_from_snapshot().  The optional
-        parameters allow re-use.
-        :param share_id: The share-id with or without osf- prefix.
-        :param share_proto: The protocol (to map to smb or nfs)
-        :param fpg: The file provisioning group
-        :param vfs:  The virtual file system
-        :param fstore:  (optional) The file store.  When provided, an existing
-        file store is used.  Otherwise one is created.
-        :param sharedir: (optional) Share directory.
-        :param readonly: (optional) Create share as read-only.
-        :param size: (optional) Size limit for file store if creating one.
-        :param comment: (optional) Comment to set on the share.
-        :param client_ip: (optional) IP address to give access to.
-        :return: share path string
-        """
         try:
             self._wsapi_login()
             return self._create_share(share_details)
         finally:
             self._wsapi_logout()
-
-    def _delete_share(self, share_name, protocol, fpg, vfs, fstore):
-        try:
-            self._client.removefshare(
-                protocol, vfs, share_name, fpg=fpg, fstore=fstore)
-
-        except Exception as e:
-            msg = (_('Failed to remove share %(share_name)s: %(e)s') %
-                   {'share_name': share_name, 'e': six.text_type(e)})
-            LOG.exception(msg)
-            raise exception.ShareBackendException(msg=msg)
-
-    def _delete_ro_share(self, project_id, share_id, protocol,
-                         fpg, vfs, fstore):
-        share_name_ro = self.ensure_prefix(share_id, readonly=True)
-        if not fstore:
-            fstore = self._find_fstore(project_id,
-                                       share_name_ro,
-                                       protocol,
-                                       fpg,
-                                       vfs,
-                                       allow_cross_protocol=True)
-        if fstore:
-            self._delete_share(share_name_ro, protocol, fpg, vfs, fstore)
-        return fstore
 
     def delete_share(self, share_id):
         LOG.info("Mediator:delete_share %s: Entering..." % share_id)
@@ -590,6 +449,9 @@ class HPE3ParMediator(object):
         try:
             self._wsapi_login()
             self._client.http.delete(uri)
+        except hpeexceptions.HTTPNotFound:
+            LOG.warning("Share %s not found on backend" % share_id)
+            pass
         except Exception as ex:
             msg = "mediator:delete_share - failed to remove share %s" \
                   "at the backend. Exception: %s" % \
@@ -598,315 +460,6 @@ class HPE3ParMediator(object):
             raise exception.ShareBackendException(msg=msg)
         finally:
             self._wsapi_logout()
-
-    def _create_mount_directory(self, mount_location):
-        try:
-            fileutil.execute('mkdir', mount_location, run_as_root=True)
-        except Exception as err:
-            message = ("There was an error creating mount directory: "
-                       "%s. The nested file tree will not be deleted.",
-                       six.text_type(err))
-            LOG.warning(message)
-
-    def _mount_share(self, protocol, export_location, mount_dir):
-        if protocol == 'nfs':
-            sh.mount('-t', 'nfs', export_location, mount_dir)
-            # cmd = ('mount', '-t', 'nfs', export_location, mount_dir)
-            # fileutil.execute(*cmd)
-
-    def _unmount_share(self, mount_location):
-        try:
-            sh.umount(mount_location)
-            # fileutil.execute('umount', mount_location, run_as_root=True)
-        except Exception as err:
-            message = ("There was an error unmounting the share at "
-                       "%(mount_location)s: %(error)s")
-            msg_data = {
-                'mount_location': mount_location,
-                'error': six.text_type(err),
-            }
-            LOG.warning(message, msg_data)
-
-    def _delete_share_directory(self, directory):
-        try:
-            sh.rm('-rf', directory)
-            # fileutil.execute('rm', '-rf', directory, run_as_root=True)
-        except Exception as err:
-            message = ("There was an error removing the share: "
-                       "%s. The nested file tree will not be deleted.",
-                       six.text_type(err))
-            LOG.warning(message)
-
-    def _generate_mount_path(self, fpg, vfs, fstore, share_ip):
-        path = (("%(share_ip)s:/%(fpg)s/%(vfs)s/%(fstore)s") %
-                {'share_ip': share_ip,
-                 'fpg': fpg,
-                 'vfs': vfs,
-                 'fstore': fstore})
-        return path
-
-    @staticmethod
-    def _is_share_from_snapshot(fshare):
-
-        path = fshare.get('shareDir')
-        if path:
-            return '.snapshot' in path.split('/')
-
-        path = fshare.get('sharePath')
-        return path and '.snapshot' in path.split('/')
-
-    def create_snapshot(self, orig_project_id, orig_share_id, orig_share_proto,
-                        snapshot_id, fpg, vfs):
-        """Creates a snapshot of a share."""
-
-        fshare = self._find_fshare(orig_project_id,
-                                   orig_share_id,
-                                   orig_share_proto,
-                                   fpg,
-                                   vfs)
-
-        if not fshare:
-            msg = (_('Failed to create snapshot for FPG/VFS/fshare '
-                     '%(fpg)s/%(vfs)s/%(fshare)s: Failed to find fshare.') %
-                   {'fpg': fpg, 'vfs': vfs, 'fshare': orig_share_id})
-            LOG.error(msg)
-            raise exception.ShareBackendException(msg=msg)
-
-        if self._is_share_from_snapshot(fshare):
-            msg = (_('Failed to create snapshot for FPG/VFS/fshare '
-                     '%(fpg)s/%(vfs)s/%(fshare)s: Share is a read-only '
-                     'share of an existing snapshot.') %
-                   {'fpg': fpg, 'vfs': vfs, 'fshare': orig_share_id})
-            LOG.error(msg)
-            raise exception.ShareBackendException(msg=msg)
-
-        fstore = fshare.get('fstoreName')
-        snapshot_tag = self.ensure_prefix(snapshot_id)
-        try:
-            result = self._client.createfsnap(
-                vfs, fstore, snapshot_tag, fpg=fpg)
-
-            LOG.debug("createfsnap result=%s", result)
-
-        except Exception as e:
-            msg = (_('Failed to create snapshot for FPG/VFS/fstore '
-                     '%(fpg)s/%(vfs)s/%(fstore)s: %(e)s') %
-                   {'fpg': fpg, 'vfs': vfs, 'fstore': fstore,
-                    'e': six.text_type(e)})
-            LOG.exception(msg)
-            raise exception.ShareBackendException(msg=msg)
-
-    def delete_snapshot(self, orig_project_id, orig_share_id, orig_proto,
-                        snapshot_id, fpg, vfs):
-        """Deletes a snapshot of a share."""
-
-        snapshot_tag = self.ensure_prefix(snapshot_id)
-
-        snapshot = self._find_fsnap(orig_project_id, orig_share_id, orig_proto,
-                                    snapshot_tag, fpg, vfs)
-
-        if not snapshot:
-            return
-
-        fstore = snapshot.get('fstoreName')
-
-        for protocol in ('nfs', 'smb'):
-            try:
-                shares = self._client.getfshare(protocol,
-                                                fpg=fpg,
-                                                vfs=vfs,
-                                                fstore=fstore)
-            except Exception as e:
-                msg = (_('Unexpected exception while getting share list. '
-                         'Cannot delete snapshot without checking for '
-                         'dependent shares first: %s') % six.text_type(e))
-                LOG.exception(msg)
-                raise exception.ShareBackendException(msg=msg)
-
-            for share in shares['members']:
-                if protocol == 'nfs':
-                    path = share['sharePath'][1:].split('/')
-                    dot_snapshot_index = 3
-                else:
-                    if share['shareDir']:
-                        path = share['shareDir'].split('/')
-                    else:
-                        path = None
-                    dot_snapshot_index = 0
-
-                snapshot_index = dot_snapshot_index + 1
-                if path and len(path) > snapshot_index:
-                    if (path[dot_snapshot_index] == '.snapshot' and
-                            path[snapshot_index].endswith(snapshot_tag)):
-                        msg = (_('Cannot delete snapshot because it has a '
-                                 'dependent share.'))
-                        raise exception.Invalid(msg)
-
-        snapname = snapshot['snapName']
-        try:
-            result = self._client.removefsnap(
-                vfs, fstore, snapname=snapname, fpg=fpg)
-
-            LOG.debug("removefsnap result=%s", result)
-
-        except Exception as e:
-            msg = (_('Failed to delete snapshot for FPG/VFS/fstore/snapshot '
-                     '%(fpg)s/%(vfs)s/%(fstore)s/%(snapname)s: %(e)s') %
-                   {
-                       'fpg': fpg,
-                       'vfs': vfs,
-                       'fstore': fstore,
-                       'snapname': snapname,
-                       'e': six.text_type(e)})
-            LOG.exception(msg)
-            raise exception.ShareBackendException(msg=msg)
-
-        # Try to reclaim the space
-        try:
-            self._client.startfsnapclean(fpg, reclaimStrategy='maxspeed')
-        except Exception:
-            # Remove already happened so only log this.
-            LOG.exception('Unexpected exception calling startfsnapclean '
-                          'for FPG %(fpg)s.', {'fpg': fpg})
-
-    @staticmethod
-    def _validate_access_type(protocol, access_type):
-
-        if access_type not in ('ip', 'user'):
-            msg = (_("Invalid access type.  Expected 'ip' or 'user'.  "
-                     "Actual '%s'.") % access_type)
-            LOG.error(msg)
-            raise exception.InvalidInput(reason=msg)
-
-        if protocol == 'nfs' and access_type != 'ip':
-            msg = (_("Invalid NFS access type.  HPE 3PAR NFS supports 'ip'. "
-                     "Actual '%s'.") % access_type)
-            LOG.error(msg)
-            raise exception.HPE3ParInvalid(err=msg)
-
-        return protocol
-
-    @staticmethod
-    def _validate_access_level(protocol, access_type, access_level, fshare):
-
-        readonly = access_level == 'ro'
-        snapshot = HPE3ParMediator._is_share_from_snapshot(fshare)
-
-        if snapshot and not readonly:
-            reason = _('3PAR shares from snapshots require read-only access')
-            LOG.error(reason)
-            raise exception.InvalidShareAccess(reason=reason)
-
-        if protocol == 'smb' and access_type == 'ip' and snapshot != readonly:
-            msg = (_("Invalid CIFS access rule. HPE 3PAR optionally supports "
-                     "IP access rules for CIFS shares, but they must be "
-                     "read-only for shares from snapshots and read-write for "
-                     "other shares. Use the required CIFS 'user' access rules "
-                     "to refine access."))
-            LOG.error(msg)
-            raise exception.InvalidShareAccess(reason=msg)
-
-    @staticmethod
-    def ignore_benign_access_results(plus_or_minus, access_type, access_to,
-                                     result):
-
-        # TODO(markstur): Remove the next line when hpe3parclient is fixed.
-        result = [x for x in result if x != '\r']
-
-        if result:
-            if plus_or_minus == DENY:
-                if DOES_NOT_EXIST in result[0]:
-                    return None
-            else:
-                if access_type == 'user':
-                    if USER_ALREADY_EXISTS % access_to in result[0]:
-                        return None
-                elif IP_ALREADY_EXISTS % access_to in result[0]:
-                    return None
-        return result
-
-    def _find_fstore(self, project_id, share_id, share_proto, fpg, vfs,
-                     allow_cross_protocol=False):
-
-        share = self._find_fshare(project_id,
-                                  share_id,
-                                  share_proto,
-                                  fpg,
-                                  vfs,
-                                  allow_cross_protocol=allow_cross_protocol)
-
-        return share.get('fstoreName') if share else None
-
-    def _find_fshare(self, project_id, share_id, share_proto, fpg, vfs,
-                     allow_cross_protocol=False, readonly=False):
-
-        share = self._find_fshare_with_proto(project_id,
-                                             share_id,
-                                             share_proto,
-                                             fpg,
-                                             vfs,
-                                             readonly=readonly)
-
-        if not share and allow_cross_protocol:
-            other_proto = self.other_protocol(share_proto)
-            share = self._find_fshare_with_proto(project_id,
-                                                 share_id,
-                                                 other_proto,
-                                                 fpg,
-                                                 vfs,
-                                                 readonly=readonly)
-        return share
-
-    def _find_fshare_with_proto(self, project_id, share_id, share_proto,
-                                fpg, vfs, readonly=False):
-
-        protocol = self.ensure_supported_protocol(share_proto)
-        share_name = self.ensure_prefix(share_id, readonly=readonly)
-
-        project_fstore = self.ensure_prefix(project_id, share_proto)
-        search_order = [
-            {'fpg': fpg, 'vfs': vfs, 'fstore': project_fstore},
-            {'fpg': fpg, 'vfs': vfs, 'fstore': share_name},
-            {'fpg': fpg},
-            {}
-        ]
-
-        try:
-            for search_params in search_order:
-                result = self._client.getfshare(protocol, share_name,
-                                                **search_params)
-                shares = result.get('members', [])
-                if len(shares) == 1:
-                    return shares[0]
-        except Exception as e:
-            msg = (_('Unexpected exception while getting share list: %s') %
-                   six.text_type(e))
-            raise exception.ShareBackendException(msg=msg)
-
-    def _find_fsnap(self, project_id, share_id, orig_proto, snapshot_tag,
-                    fpg, vfs):
-
-        share_name = self.ensure_prefix(share_id)
-        osf_project_id = self.ensure_prefix(project_id, orig_proto)
-        pattern = '*_%s' % self.ensure_prefix(snapshot_tag)
-
-        search_order = [
-            {'pat': True, 'fpg': fpg, 'vfs': vfs, 'fstore': osf_project_id},
-            {'pat': True, 'fpg': fpg, 'vfs': vfs, 'fstore': share_name},
-            {'pat': True, 'fpg': fpg},
-            {'pat': True},
-        ]
-
-        try:
-            for search_params in search_order:
-                result = self._client.getfsnap(pattern, **search_params)
-                snapshots = result.get('members', [])
-                if len(snapshots) == 1:
-                    return snapshots[0]
-        except Exception as e:
-            msg = (_('Unexpected exception while getting snapshots: %s') %
-                   six.text_type(e))
-            raise exception.ShareBackendException(msg=msg)
 
     def _wait_for_task_completion(self, task_id, interval=1):
         """This waits for a 3PAR background task complete or fail.
@@ -923,9 +476,9 @@ class HPE3ParMediator(object):
                 task_status.append(status)
                 raise loopingcall.LoopingCallDone()
 
-        self._wsapi_login()
         task_status = []
         try:
+            self._wsapi_login()
             timer = loopingcall.FixedIntervalLoopingCall(
                 _wait_for_task, task_id, task_status)
             timer.start(interval=interval).wait()
@@ -976,9 +529,16 @@ class HPE3ParMediator(object):
                 self._wait_for_task_completion(task_id, interval=10)
         except hpeexceptions.HTTPBadRequest as ex:
             error_code = ex.get_code()
+            LOG.error("Exception: %s" % six.text_type(ex))
             if error_code == NON_EXISTENT_CPG:
                 LOG.error("CPG %s doesn't exist on array" % cpg)
                 raise exception.HPEDriverNonExistentCpg(cpg=cpg)
+            elif error_code == OTHER_FAILURE_REASON:
+                msg = six.text_type(ex)
+                if 'already exists' in ex.get_description():
+                    raise exception.FpgAlreadyExists(reason=msg)
+                else:
+                    raise exception.ShareBackendException(msg=msg)
         except exception.ShareBackendException as ex:
             msg = 'Create FPG task failed: cpg=%s,fpg=%s, ex=%s'\
                   % (cpg, fpg_name, six.text_type(ex))
@@ -1126,8 +686,8 @@ class HPE3ParMediator(object):
             'nfsClientlistOperation': 1,
             'nfsClientlist': [client_ip]
         }
-        self._wsapi_login()
         try:
+            self._wsapi_login()
             self._client.http.put(uri, body=body)
         except hpeexceptions.HTTPBadRequest as ex:
             msg = (_("It is first mount request but ip is already"
@@ -1143,8 +703,8 @@ class HPE3ParMediator(object):
             'nfsClientlistOperation': 2,
             'nfsClientlist': [client_ip]
         }
-        self._wsapi_login()
         try:
+            self._wsapi_login()
             self._client.http.put(uri, body=body)
         finally:
             self._wsapi_logout()
