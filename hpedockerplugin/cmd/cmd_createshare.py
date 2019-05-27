@@ -33,19 +33,6 @@ class CreateShareCmd(cmd.Cmd):
             self._mediator.delete_share(self._share_args['id'])
             self._mediator.delete_file_store(self._share_args['fpg'],
                                              share_name)
-        if self._share_cnt_incremented:
-            fpg_metadata = self._fp_etcd.get_fpg_metadata(
-                self._backend,
-                self._share_args['cpg'],
-                self._share_args['fpg']
-            )
-            cnt = int(fpg_metadata['share_cnt']) - 1
-            fpg_metadata['share_cnt'] = cnt
-            fpg_metadata['reached_full_capacity'] = False
-            self._fp_etcd.save_fpg_metadata(self._backend,
-                                            self._share_args['cpg'],
-                                            self._share_args['fpg'],
-                                            fpg_metadata)
 
     def execute(self):
         share_etcd = self._file_mgr.get_etcd()
@@ -65,31 +52,8 @@ class CreateShareCmd(cmd.Cmd):
             self._status = 'AVAILABLE'
             self._share_args['status'] = self._status
             share_etcd.save_share(self._share_args)
-            # Increment count only if it is Docker managed FPG
-            if self._share_args.get('docker_managed'):
-                self._increment_share_cnt_for_fpg()
         except Exception as ex:
             msg = "Share creation failed [share_name: %s, error: %s" %\
                   (share_name, six.text_type(ex))
             LOG.error(msg)
             raise exception.ShareCreationFailed(msg)
-
-    # FPG lock is already acquired in this flow
-    def _increment_share_cnt_for_fpg(self):
-        cpg_name = self._share_args['cpg']
-        fpg_name = self._share_args['fpg']
-        LOG.info("Incrementing share count for FPG %s..." % fpg_name)
-        fpg = self._fp_etcd.get_fpg_metadata(self._backend,
-                                             cpg_name,
-                                             fpg_name)
-        cnt = fpg.get('share_cnt', 0) + 1
-        fpg['share_cnt'] = cnt
-        LOG.info("Checking if count reached full capacity...")
-        if cnt >= share.MAX_SHARES_PER_FPG:
-            LOG.info("Full capacity on FPG %s reached" % fpg_name)
-            fpg['reached_full_capacity'] = True
-        LOG.info("Saving modified share count %s to ETCD for FPG %s"
-                 % (cnt, fpg_name))
-        self._fp_etcd.save_fpg_metadata(self._backend, cpg_name,
-                                        fpg_name, fpg)
-        self._share_cnt_incremented = True
