@@ -555,6 +555,11 @@ class FileManager(object):
             )
 
     def remove_share(self, share_name, share):
+        if 'path_info' in share:
+            msg = "Cannot delete share %s as it is in mounted state" \
+                  % share_name
+            LOG.error(msg)
+            return json.dumps({'Err': msg})
         cmd = cmd_deleteshare.DeleteShareCmd(self, share)
         return cmd.execute()
 
@@ -687,8 +692,8 @@ class FileManager(object):
                       % share_name
                 LOG.info(msg)
             else:
-                msg = "ERROR: Share %s is in UNKNOWN state. Aborting mount..." \
-                      % share_name
+                msg = "ERROR: Share %s is in UNKNOWN state. Aborting " \
+                      "mount..." % share_name
                 LOG.error(msg)
                 return json.dumps({u"Err": msg})
 
