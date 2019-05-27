@@ -31,8 +31,7 @@
       msg: "Driver {{item}} is incorrect"
     with_items:
       - "{{my_driver_list}}"
-    when: >-
-        "{{item}}" not in default_drivers       
+    when: item not in default_drivers
      
   - name: Setting set_mixed flag to true if ISCSI/FC and FileDriver are present
     set_fact:
