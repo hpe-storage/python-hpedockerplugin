@@ -1,6 +1,8 @@
 import copy
 import json
 import six
+from threading import Thread
+
 from oslo_log import log as logging
 
 from hpedockerplugin.cmd import cmd
@@ -37,6 +39,12 @@ class DeleteShareCmd(cmd.Cmd):
             return json.dumps({"Err": msg})
 
         self._delete_share()
+
+        thread = Thread(target=self._continue_delete_on_thread)
+        thread.start()
+        return json.dumps({u"Err": ''})
+
+    def _continue_delete_on_thread(self):
         self._remove_quota()
 
         with self._fp_etcd.get_fpg_lock(
@@ -48,7 +56,6 @@ class DeleteShareCmd(cmd.Cmd):
                 if self._fpg_owned_by_docker():
                     self._delete_fpg()
                     self._update_backend_metadata()
-        return json.dumps({u"Err": ''})
 
     def unexecute(self):
         pass

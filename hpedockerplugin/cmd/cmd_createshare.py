@@ -20,7 +20,6 @@ class CreateShareCmd(cmd.Cmd):
         self._backend = file_mgr.get_backend()
         self._share_args = share_args
         self._status = 'CREATING'
-        self._share_cnt_incremented = False
 
     def unexecute(self):
         share_name = self._share_args['name']
