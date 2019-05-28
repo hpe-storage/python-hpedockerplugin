@@ -39,13 +39,13 @@ class DeleteShareCmd(cmd.Cmd):
             return json.dumps({"Err": msg})
 
         self._delete_share()
+        self._delete_file_store()
 
         thread = Thread(target=self._continue_delete_on_thread)
         thread.start()
         return json.dumps({u"Err": ''})
 
     def _continue_delete_on_thread(self):
-        self._remove_quota()
 
         with self._fp_etcd.get_fpg_lock(
                 self._backend, self._cpg_name, self._fpg_name
@@ -106,11 +106,14 @@ class DeleteShareCmd(cmd.Cmd):
                 LOG.info("Deleting share %s from backend..." % share_name)
                 self._mediator.delete_share(self._share_info['id'])
                 LOG.info("Share %s deleted from backend" % share_name)
+                self._delete_share_from_etcd(share_name)
         except Exception as e:
             msg = 'Failed to remove share %(share_name)s from backend: %(e)s'\
                   % ({'share_name': share_name, 'e': six.text_type(e)})
             LOG.error(msg)
 
+    def _delete_file_store(self):
+        share_name = self._share_info['name']
         try:
             LOG.info("Deleting file store %s from backend..." % share_name)
             self._mediator.delete_file_store(self._fpg_name, share_name)
@@ -120,8 +123,6 @@ class DeleteShareCmd(cmd.Cmd):
                   '%(e)s' \
                   % ({'share_name': share_name, 'e': six.text_type(e)})
             LOG.error(msg)
-
-        self._delete_share_from_etcd(share_name)
 
     def _delete_share_from_etcd(self, share_name):
         try:
