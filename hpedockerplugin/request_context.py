@@ -175,12 +175,12 @@ class RequestContextBuilder(object):
         vflag = list(set(list(type_flag_perm[1])))
         if len(vflag) < passed_vflag_len:
             msg = "Duplicate characters for given flag are passed. "\
-                  "Please correct the passed flag charecters for fsMode."
+                  "Please correct the passed flag characters for fsMode."
             LOG.error(msg)
             raise exception.InvalidInput(reason=msg)
         if set(vflag) - set(valid_flag):
             msg = "Invalid flag passed for the fsMode. Please "\
-                  "pass the correct flag charecters"
+                  "pass the correct flag characters"
             LOG.error(msg)
             raise exception.InvalidInput(reason=msg)
         passed_vperm_len = len(list(type_flag_perm[2]))
