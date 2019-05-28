@@ -6,7 +6,7 @@
 
   - name: Initialize the flag for mixed configuration
     set_fact:
-      set_mixed: ''  
+      set_mixed: 'false'  
  
   - name: Initialize an empty list for backend drivers
     set_fact:
@@ -19,7 +19,7 @@
       - "{{ INVENTORY.keys()}}"
     register: my_driver_list  
     
-  - name:  Initialize valid driver list
+  - name: Initialize valid driver list
     set_fact: 
       default_drivers:
       - hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver
@@ -40,6 +40,36 @@
       ('hpedockerplugin.hpe.hpe_3par_file.HPE3PARFileDriver'  in  my_driver_list and 'hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver' in my_driver_list) or 
       ('hpedockerplugin.hpe.hpe_3par_file.HPE3PARFileDriver'  in  my_driver_list and 'hpedockerplugin.hpe.hpe_3par_fc.HPE3PARFCDriver' in  my_driver_list )    
      
+  - name: Fail when DEFAULT_FILE backend and DEFAULT_BLOCK is defined with single configuration 
+    fail:
+      msg: "DEFAULT_FILE and DEFAULT_BLOCK backends should not be present in single configuration"
+    with_items:
+      - "{{ INVENTORY.keys()}}" 
+    when: >-
+      set_mixed == false and 
+      (INVENTORY['DEFAULT_FILE'] is defined or INVENTORY['DEFAULT_BLOCK'] is defined)
+
+  - name: Fail when DEFAULT backend is having file driver and DEFAULT_FILE backend with file driver is defined 
+    fail:
+      msg: "DEFAULT_FILE backend should not be present when DEFAULT backend has filedriver"
+    with_items:
+      - "{{ INVENTORY.keys()}}" 
+    when: >-
+      set_mixed == true and 
+      INVENTORY['DEFAULT']['hpedockerplugin_driver'] == 'hpedockerplugin.hpe.hpe_3par_file.HPE3PARFileDriver' and 
+      INVENTORY['DEFAULT_FILE'] is defined
+
+  - name: Fail when DEFAULT backend is having block driver and DEFAULT_BLOCK backend with block driver is defined 
+    fail:
+      msg: "DEFAULT_BLOCK backend should not be present when DEFAULT backend has blockdriver"
+    with_items:
+      - "{{ INVENTORY.keys()}}" 
+    when: >-
+      set_mixed == true and 
+      (INVENTORY['DEFAULT']['hpedockerplugin_driver'] == 'hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver' or 
+      INVENTORY['DEFAULT']['hpedockerplugin_driver']  == 'hpedockerplugin.hpe.hpe_3par_fc.HPE3PARFCDriver')
+      and INVENTORY['DEFAULT_BLOCK'] is defined
+    
   - name: Fail when DEFAULT backend driver is block and DEFAULT_FILE backend is not present in mixed configuration
     fail :
       msg: "DEFAULT_FILE backend is not present in mixed configuration"
