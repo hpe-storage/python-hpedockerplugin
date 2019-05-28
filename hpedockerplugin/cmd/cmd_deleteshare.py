@@ -6,6 +6,7 @@ from threading import Thread
 from oslo_log import log as logging
 
 from hpedockerplugin.cmd import cmd
+from hpedockerplugin import exception
 
 LOG = logging.getLogger(__name__)
 
@@ -72,7 +73,8 @@ class DeleteShareCmd(cmd.Cmd):
                                                     backend_metadata)
             except Exception as ex:
                 msg = "WARNING: Metadata for backend %s is not " \
-                      "present" % self._backend
+                      "present. Exception: %s" % \
+                      (self._backend, six.text_type(ex))
                 LOG.warning(msg)
 
     def _fpg_owned_by_docker(self):
