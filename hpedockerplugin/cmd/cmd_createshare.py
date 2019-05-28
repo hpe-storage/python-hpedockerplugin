@@ -3,9 +3,7 @@ import six
 from oslo_log import log as logging
 
 from hpedockerplugin.cmd import cmd
-
 from hpedockerplugin import exception
-from hpedockerplugin.hpe import share
 
 LOG = logging.getLogger(__name__)
 
