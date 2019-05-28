@@ -6,8 +6,10 @@ platform:
 # Plugin type supported: containerized (legacy, version 1) and managed (version 2)
 plugin:
     type: managed
-    managed_plugin_latest: dockerciuser/hpedockerplugin:test
-    managed_plugin_old: dockerciuser/hpedockerplugin:old
+    #managed_plugin_latest: dockerciuser/hpedockerplugin:test
+    managed_plugin_latest: hpestorage/hpedockervolumeplugin:3.2-prerelease
+    #managed_plugin_old: dockerciuser/hpedockerplugin:old
+    managed_plugin_old: hpestorage/hpedockervolumeplugin:3.2-prerelease
     certs_source: /tmp/
     containerized_image: hpestorage/legacyvolumeplugin:2.1
     containerized_plugin: hpe
@@ -45,6 +47,10 @@ backend2:
 
 ActivePassiveRepBackend:
     3Par_api_url : https://192.168.67.5:8080/api/v1
+
+FilePersona:
+    3Par_api_url : https://192.168.67.6:8080/api/v1
+    3Par_IP: 192.168.67.6
 
 
 # Multipath configuration details
