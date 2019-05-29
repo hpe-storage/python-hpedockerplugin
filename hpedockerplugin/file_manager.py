@@ -737,7 +737,7 @@ class FileManager(object):
         #   }
         # }
         mount_dir = self._get_mount_dir(mount_id)
-        LOG.info("Mount directory for fiel is %s " % (mount_dir))
+        LOG.info("Mount directory for file is %s " % (mount_dir))
         path_info = share.get('path_info')
         if path_info:
             node_mnt_info = path_info.get(self._node_id)
