@@ -667,7 +667,7 @@ class FileManager(object):
         LOG.info("Updated etcd with modified node_mount_info: %s!"
                  % node_mount_info)
 
-    def _get_mount_dir(share_name):
+    def _get_mount_dir(self, share_name):
         if self._host_config.mount_prefix:
             mount_prefix = self._host_config.mount_prefix
         else:
