@@ -1,4 +1,3 @@
-import copy
 import json
 import six
 from threading import Thread
