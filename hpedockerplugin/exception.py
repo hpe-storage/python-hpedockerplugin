@@ -432,3 +432,7 @@ class SetQuotaFailed(PluginException):
 
 class HPEDriverNonExistentCpg(HPEDriverException):
     message = "CPG %(cpg)s does not exist"
+
+
+class FpgCapacityInsufficient(PluginException):
+    message = _("FPG %(fpg)s does not have enough capacity")

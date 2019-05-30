@@ -145,6 +145,11 @@ class FileManager(object):
                 self._backend,
                 cpg_name, fpg_name
             )
+            available_capacity = self._get_fpg_available_capacity(fpg_name)
+            share_size_in_gib = share_args['size'] / 1024
+            if available_capacity < share_size_in_gib:
+                raise exception.FpgCapacityInsufficient(fpg=fpg_name)
+
         except exception.EtcdMetadataNotFound:
             LOG.info("Specified FPG %s not found in ETCD. Checking "
                      "if this is a legacy FPG..." % fpg_name)
@@ -361,10 +366,10 @@ class FileManager(object):
                 LOG.error("Unknown exception caught while creating default "
                           "FPG: %s" % six.text_type(ex))
 
-    def _create_share_on_fpg(self, share_args, fpg_getter, fpg_creator):
+    def _create_share_on_fpg(self, share_args, fpg_getter,
+                             fpg_creator, undo_cmds):
         share_name = share_args['name']
         LOG.info("Creating share %s..." % share_name)
-        undo_cmds = []
         cpg = share_args['cpg']
 
         def __create_share_and_quota():
@@ -477,52 +482,27 @@ class FileManager(object):
 
                     __create_share_and_quota()
 
-                except exception.IPAddressPoolExhausted as ex:
-                    msg = "Create VFS failed. Msg: %s" % six.text_type(ex)
-                    LOG.error(msg)
-                    self._unexecute(undo_cmds)
-                    raise exception.VfsCreationFailed(reason=msg)
-                except exception.VfsCreationFailed as ex:
-                    msg = "Create share on new FPG failed. Msg: %s" \
+                except (exception.IPAddressPoolExhausted,
+                        exception.VfsCreationFailed,
+                        exception.FpgCreationFailed,
+                        exception.HPEDriverNonExistentCpg) as ex:
+                    msg = "Share creation on new FPG failed. Reason: %s" \
                           % six.text_type(ex)
-                    LOG.error(msg)
-                    self._unexecute(undo_cmds)
-                    raise exception.ShareCreationFailed(reason=msg)
-
-                except exception.FpgCreationFailed as ex:
-                    msg = "Create share on new FPG failed. Msg: %s" \
-                          % six.text_type(ex)
-                    LOG.error(msg)
-                    self._unexecute(undo_cmds)
-                    raise exception.ShareCreationFailed(reason=msg)
-
-                except exception.HPEDriverNonExistentCpg as ex:
-                    msg = "Non existing CPG specified/configured: %s" %\
-                          six.text_type(ex)
-                    LOG.error(msg)
-                    self._unexecute(undo_cmds)
                     raise exception.ShareCreationFailed(reason=msg)
 
                 except Exception as ex:
-                    msg = "Unknown exception caught: %s" % six.text_type(ex)
-                    LOG.error(msg)
-                    self._unexecute(undo_cmds)
+                    msg = "Unknown exception caught. Reason: %s" \
+                          % six.text_type(ex)
                     raise exception.ShareCreationFailed(reason=msg)
 
-            except exception.InvalidInput as ex:
-                msg = "Share creation failed with following exception: " \
-                      " %s" % six.text_type(ex)
-                LOG.error(msg)
-                share_args['failure_reason'] = msg
-                self._unexecute(undo_cmds)
+            except (exception.FpgCapacityInsufficient,
+                    exception.InvalidInput) as ex:
+                msg = "Share creation failed. Reason: %s" % six.text_type(ex)
                 raise exception.ShareCreationFailed(reason=msg)
 
             except Exception as ex:
-                msg = "Unknown exception occurred while using default FPG " \
-                      "for share creation: %s" % six.text_type(ex)
-                LOG.error(msg)
-                share_args['failure_reason'] = msg
-                self._unexecute(undo_cmds)
+                msg = "Unknown exception occurred while creating share " \
+                      "on new FPG. Reason: %s" % six.text_type(ex)
                 raise exception.ShareCreationFailed(reason=msg)
 
     @synchronization.synchronized_fp_share('{share_name}')
@@ -536,19 +516,29 @@ class FileManager(object):
 
         # Make copy of args as we are going to modify it
         fpg_name = share_args.get('fpg')
+        undo_cmds = []
 
-        if fpg_name:
-            self._create_share_on_fpg(
-                share_args,
-                self._get_existing_fpg,
-                self._create_fpg
-            )
-        else:
-            self._create_share_on_fpg(
-                share_args,
-                self._get_default_available_fpg,
-                self._create_default_fpg
-            )
+        try:
+            if fpg_name:
+                self._create_share_on_fpg(
+                    share_args,
+                    self._get_existing_fpg,
+                    self._create_fpg,
+                    undo_cmds
+                )
+            else:
+                self._create_share_on_fpg(
+                    share_args,
+                    self._get_default_available_fpg,
+                    self._create_default_fpg,
+                    undo_cmds
+                )
+        except exception.PluginException as ex:
+            LOG.error(ex.msg)
+            share_args['status'] = 'FAILED'
+            share_args['detailedStatus'] = ex.msg
+            self._etcd.save_share(share_args)
+            self._unexecute(undo_cmds)
 
     def remove_share(self, share_name, share):
         if 'path_info' in share:
