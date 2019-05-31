@@ -27,7 +27,7 @@ class DeleteShareCmd(cmd.Cmd):
         # Most likely nothing got created at the backend when share is
         # not in AVAILABLE state
         if self._share_info['status'] == 'FAILED':
-            LOG.info("Share %s is not in FAILED state. Removing from ETCD..."
+            LOG.info("Share %s is in FAILED state. Removing from ETCD..."
                      % share_name)
             ret_val, status = self._delete_share_from_etcd(share_name)
             return ret_val
@@ -43,10 +43,6 @@ class DeleteShareCmd(cmd.Cmd):
             self._delete_share()
         except exception.ShareBackendException as ex:
             return json.dumps({"Err": ex.msg})
-        except Exception as e:
-            msg = 'Failed to remove share %(share_name)s from backend: %(e)s' \
-                  % ({'share_name': share_name, 'e': six.text_type(e)})
-            LOG.error(msg)
 
         ret_val, status = self._delete_share_from_etcd(share_name)
         if not status:

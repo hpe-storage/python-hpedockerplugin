@@ -432,9 +432,8 @@ class HPE3ParMediator(object):
             LOG.warning("Share %s not found on backend" % share_id)
             pass
         except Exception as ex:
-            msg = "mediator:delete_share - failed to remove share %s" \
-                  "at the backend. Exception: %s" % \
-                  (share_id, six.text_type(ex))
+            msg = "Failed to remove share %s at the backend. Reason: %s" \
+                  % (share_id, six.text_type(ex))
             LOG.error(msg)
             raise exception.ShareBackendException(msg=msg)
         finally:
@@ -507,11 +506,14 @@ class HPE3ParMediator(object):
             error_code = ex.get_code()
             LOG.error("Exception: %s" % six.text_type(ex))
             if error_code == NON_EXISTENT_CPG:
-                LOG.error("CPG %s doesn't exist on array" % cpg)
-                raise exception.HPEDriverNonExistentCpg(cpg=cpg)
+                msg = "Failed to create FPG %s on the backend. Reason: " \
+                      "CPG %s doesn't exist on array" % (fpg_name, cpg)
+                LOG.error(msg)
+                raise exception.ShareBackendException(msg=msg)
             elif error_code == OTHER_FAILURE_REASON:
-                msg = six.text_type(ex)
-                if 'already exists' in ex.get_description():
+                LOG.error(six.text_type(ex))
+                msg = ex.get_description()
+                if 'already exists' in msg:
                     raise exception.FpgAlreadyExists(reason=msg)
                 else:
                     raise exception.ShareBackendException(msg=msg)
