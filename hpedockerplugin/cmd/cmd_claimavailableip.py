@@ -19,8 +19,8 @@ class ClaimAvailableIPCmd(cmd.Cmd):
             return self._get_available_ip()
         except (exception.IPAddressPoolExhausted,
                 exception.EtcdMetadataNotFound) as ex:
-            LOG.exception(six.text_type(ex))
-            raise exception.VfsCreationFailed()
+            msg = "Claim available IP failed. Reason: %s" % six.text_type(ex)
+            raise exception.VfsCreationFailed(reason=msg)
 
     def unexecute(self):
         with self._fp_etcd.get_file_backend_lock(self._backend):

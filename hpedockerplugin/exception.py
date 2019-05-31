@@ -403,7 +403,7 @@ class EtcdUnknownException(PluginException):
 
 
 class IPAddressPoolExhausted(PluginException):
-    message = _("IP adderss pool exhausted")
+    message = _("IP address pool exhausted")
 
 
 class VfsCreationFailed(PluginException):

@@ -32,33 +32,12 @@ if hpe3parclient:
 
 LOG = log.getLogger(__name__)
 MIN_CLIENT_VERSION = (4, 0, 0)
-DENY = '-'
-ALLOW = '+'
-FULL = 1
-THIN = 2
-DEDUPE = 6
-ENABLED = 1
-DISABLED = 2
-CACHE = 'cache'
-CONTINUOUS_AVAIL = 'continuous_avail'
-ACCESS_BASED_ENUM = 'access_based_enum'
-SMB_EXTRA_SPECS_MAP = {
-    CACHE: CACHE,
-    CONTINUOUS_AVAIL: 'ca',
-    ACCESS_BASED_ENUM: 'abe',
-}
-IP_ALREADY_EXISTS = 'IP address %s already exists'
-USER_ALREADY_EXISTS = '"allow" permission already exists for "%s"'
-DOES_NOT_EXIST = 'does not exist, cannot'
-LOCAL_IP = '127.0.0.1'
-LOCAL_IP_RO = '127.0.0.2'
-SUPER_SHARE = 'DOCKER_SUPER_SHARE'
-TMP_RO_SNAP_EXPORT = "Temp RO snapshot export as source for creating RW share."
 
 BAD_REQUEST = '400'
 OTHER_FAILURE_REASON = 29
 NON_EXISTENT_CPG = 15
 INV_INPUT_ILLEGAL_CHAR = 69
+TASK_STATUS_NORMAL = 1
 
 # Overriding these class variable so that minimum supported version is 3.3.1
 file_client.HPE3ParFilePersonaClient.HPE3PAR_WS_MIN_BUILD_VERSION = 30301460
@@ -477,19 +456,16 @@ class HPE3ParMediator(object):
                 raise loopingcall.LoopingCallDone()
 
         task_status = []
-        try:
-            self._wsapi_login()
-            timer = loopingcall.FixedIntervalLoopingCall(
-                _wait_for_task, task_id, task_status)
-            timer.start(interval=interval).wait()
 
-            if task_status[0]['status'] is not self._client.TASK_DONE:
-                msg = "ERROR: Task with id %d has failed with status %s" %\
-                      (task_id, task_status)
-                LOG.exception(msg)
-                raise exception.ShareBackendException(msg=msg)
-        finally:
-            self._wsapi_logout()
+        timer = loopingcall.FixedIntervalLoopingCall(
+            _wait_for_task, task_id, task_status)
+        timer.start(interval=interval).wait()
+
+        if task_status[0]['status'] is not self._client.TASK_DONE:
+            msg = "ERROR: Task with id %d has failed with status %s" %\
+                  (task_id, task_status)
+            LOG.exception(msg)
+            raise exception.ShareBackendException(msg=msg)
 
     def _check_task_id(self, task_id):
         if type(task_id) is list:
@@ -569,9 +545,9 @@ class HPE3ParMediator(object):
         try:
             self._wsapi_login()
             resp, body = self._client.http.post(uri, body=args)
+            msg = 'Create VFS task failed: vfs=%s, cpg=%s,fpg=%s' \
+                  % (vfs_name, cpg, fpg)
             if resp['status'] != '202':
-                msg = 'Create VFS task failed: vfs=%s, cpg=%s,fpg=%s' \
-                      % (vfs_name, cpg, fpg)
                 LOG.exception(msg)
                 raise exception.ShareBackendException(msg=msg)
 
@@ -590,8 +566,30 @@ class HPE3ParMediator(object):
                                                    fpg, size))
             LOG.exception(msg)
             raise exception.ShareBackendException(msg=msg)
+        else:
+            self._check_vfs_status(task_id, fpg)
         finally:
             self._wsapi_logout()
+
+    def _check_vfs_status(self, task_id, fpg):
+        LOG.info("Checking status of VFS under FPG %s..." % fpg)
+        vfs = self.get_vfs(fpg)
+        overall_state = vfs['overallState']
+
+        if overall_state != TASK_STATUS_NORMAL:
+            LOG.info("Overall state of VFS is not normal")
+            task = self._client.getTask(task_id)
+            detailed_status = task['detailedStatus']
+            lines = detailed_status.split('\n')
+            error_line = ''
+            for line in lines:
+                idx = line.find('Error')
+                if idx != -1:
+                    error_line += line[idx:] + '\n'
+            if error_line:
+                raise exception.ShareBackendException(msg=error_line)
+            else:
+                raise exception.ShareBackendException(msg=detailed_status)
 
     def set_ACL(self, fMode, fUserId, fUName, fGName):
         # fsMode = "A:fdps:rwaAxdD,A:fFdps:rwaxdnNcCoy,A:fdgps:DtnNcy"
