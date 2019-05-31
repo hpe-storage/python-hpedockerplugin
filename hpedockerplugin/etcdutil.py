@@ -119,8 +119,11 @@ class HpeEtcdClient(object):
         except etcd.EtcdKeyNotFound:
             msg = "Key to delete not found ETCD: [key=%s]" % etcd_key
             LOG.info(msg)
+            raise exception.EtcdMetadataNotFound(msg=msg)
         except Exception as ex:
-            LOG.info("Unknown Error: %s" % six.text_type(ex))
+            msg = "Unknown error encountered: %s" % six.text_type(ex)
+            LOG.info(msg)
+            raise exception.HPEPluginEtcdException(reason=msg)
 
     def get_object(self, etcd_key):
         try:

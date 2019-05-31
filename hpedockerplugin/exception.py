@@ -403,7 +403,7 @@ class EtcdUnknownException(PluginException):
 
 
 class IPAddressPoolExhausted(PluginException):
-    message = _("IP adderss pool exhausted")
+    message = _("IP address pool exhausted")
 
 
 class VfsCreationFailed(PluginException):
@@ -432,3 +432,7 @@ class SetQuotaFailed(PluginException):
 
 class HPEDriverNonExistentCpg(HPEDriverException):
     message = "CPG %(cpg)s does not exist"
+
+
+class FpgCapacityInsufficient(PluginException):
+    message = _("FPG %(fpg)s does not have enough capacity")
