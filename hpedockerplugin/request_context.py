@@ -171,16 +171,16 @@ class RequestContextBuilder(object):
                   "correct format and values to be passed."
             LOG.error(msg)
             raise exception.InvalidInput(reason=msg)
-        passed_vflag_len = len(list(type_flag_perm))
+        passed_vflag_len = len(list(type_flag_perm[1]))
         vflag = list(set(list(type_flag_perm[1])))
         if len(vflag) < passed_vflag_len:
             msg = "Duplicate characters for given flag are passed. "\
-                  "Please correct the passed flag charecters for fsMode."
+                  "Please correct the passed flag characters for fsMode."
             LOG.error(msg)
             raise exception.InvalidInput(reason=msg)
         if set(vflag) - set(valid_flag):
             msg = "Invalid flag passed for the fsMode. Please "\
-                  "pass the correct flag charecters"
+                  "pass the correct flag characters"
             LOG.error(msg)
             raise exception.InvalidInput(reason=msg)
         passed_vperm_len = len(list(type_flag_perm[2]))
@@ -191,8 +191,10 @@ class RequestContextBuilder(object):
             LOG.error(msg)
             raise exception.InvalidInput(reason=msg)
         if set(vperm) - set(valid_perm):
-            msg = "Invalid charecters for the permissions of fsMode are "\
-                  "passed. Please remove the invalid charecters."
+            msg = "Invalid characters for the permissions of fsMode are "\
+                  "passed. Please remove the invalid characters."
+            LOG.error(msg)
+            raise exception.InvalidInput(reason=msg)
         return True
 
     def _check_is_valid_acl_string(self, fsMode):

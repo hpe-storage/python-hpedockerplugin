@@ -654,9 +654,13 @@ class FileManager(object):
         LOG.info("Updated etcd with modified node_mount_info: %s!"
                  % node_mount_info)
 
-    @staticmethod
-    def _get_mount_dir(share_name):
-        return "%s%s" % (fileutil.prefix, share_name)
+    def _get_mount_dir(self, share_name):
+        if self._host_config.mount_prefix:
+            mount_prefix = self._host_config.mount_prefix
+        else:
+            mount_prefix = None
+        mnt_prefix = fileutil.mkfile_dir_for_mounting(mount_prefix)
+        return "%s%s" % (mnt_prefix, share_name)
 
     def _create_mount_dir(self, mount_dir):
         LOG.info('Creating Directory %(mount_dir)s...',
@@ -720,6 +724,7 @@ class FileManager(object):
         #   }
         # }
         mount_dir = self._get_mount_dir(mount_id)
+        LOG.info("Mount directory for file is %s " % (mount_dir))
         path_info = share.get('path_info')
         if path_info:
             node_mnt_info = path_info.get(self._node_id)
