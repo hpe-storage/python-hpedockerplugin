@@ -293,6 +293,13 @@ class FileRequestContextBuilder(RequestContextBuilder):
         # import pdb
         # pdb.set_trace()
         backend = self._get_str_option(options, 'backend', def_backend_name)
+
+        if backend == 'DEFAULT_BLOCK':
+            msg = 'Backend DEFAULT_BLOCK is reserved for Block ' \
+                  'operations. Cannot specify it for File operations'
+            LOG.error(msg)
+            raise exception.InvalidInput(msg)
+
         config = self._backend_configs.get(backend)
         if not config:
             raise exception.InvalidInput(

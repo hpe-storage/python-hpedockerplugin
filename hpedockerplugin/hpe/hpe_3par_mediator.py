@@ -204,6 +204,15 @@ class HPE3ParMediator(object):
         finally:
             self._wsapi_logout()
 
+    def get_all_vfs(self):
+        try:
+            self._wsapi_login()
+            uri = '/virtualfileservers'
+            resp, body = self._client.http.get(uri)
+            return body['members']
+        finally:
+            self._wsapi_logout()
+
     @staticmethod
     def _get_nfs_options(proto_opts, readonly):
         """Validate the NFS extra_specs and return the options to use."""
@@ -513,10 +522,10 @@ class HPE3ParMediator(object):
             elif error_code == OTHER_FAILURE_REASON:
                 LOG.error(six.text_type(ex))
                 msg = ex.get_description()
-                if 'already exists' in msg:
+                if 'already exists' in msg or \
+                        msg.startswith('A createfpg task is already running'):
                     raise exception.FpgAlreadyExists(reason=msg)
-                else:
-                    raise exception.ShareBackendException(msg=msg)
+            raise exception.ShareBackendException(msg=ex.get_description())
         except exception.ShareBackendException as ex:
             msg = 'Create FPG task failed: cpg=%s,fpg=%s, ex=%s'\
                   % (cpg, fpg_name, six.text_type(ex))

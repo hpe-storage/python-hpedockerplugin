@@ -457,7 +457,8 @@ class FileManager(object):
                     claim_free_ip_cmd = ClaimAvailableIPCmd(
                         self._backend,
                         self.src_bkend_config,
-                        self._fp_etcd_client
+                        self._fp_etcd_client,
+                        self._hpeplugin_driver
                     )
                     ip, netmask = claim_free_ip_cmd.execute()
                     LOG.info("Acquired IP %s for VFS creation" % ip)

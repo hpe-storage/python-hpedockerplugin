@@ -323,6 +323,12 @@ class VolumePlugin(object):
             if ('backend' in contents['Opts'] and
                     contents['Opts']['backend'] != ""):
                 current_backend = str(contents['Opts']['backend'])
+                if current_backend == 'DEFAULT_FILE':
+                    msg = 'Backend DEFAULT_FILE is reserved for File ' \
+                          'Persona. Cannot specify it for Block operations'
+                    LOG.error(msg)
+                    return json.dumps({'Err': msg})
+
                 # check if current_backend present in config file
                 if current_backend in self._backend_configs:
                     # check if current_backend is initialised

@@ -8,11 +8,12 @@ LOG = logging.getLogger(__name__)
 
 
 class ClaimAvailableIPCmd(cmd.Cmd):
-    def __init__(self, backend, config, fp_etcd):
+    def __init__(self, backend, config, fp_etcd, mediator):
         self._backend = backend
         self._fp_etcd = fp_etcd
         self._config = config
         self._locked_ip = None
+        self._mediator = mediator
 
     def execute(self):
         try:
@@ -54,9 +55,10 @@ class ClaimAvailableIPCmd(cmd.Cmd):
                 self._fp_etcd.save_backend_metadata(self._backend,
                                                     backend_metadata)
 
-            ips_in_use = backend_metadata['ips_in_use']
+            # ips_in_use = backend_metadata['ips_in_use']
+            all_in_use_backend_ips = self._get_all_in_use_ip_from_backend()
             ips_locked_for_use = backend_metadata['ips_locked_for_use']
-            total_ips_in_use = set(ips_in_use + ips_locked_for_use)
+            total_ips_in_use = set(all_in_use_backend_ips + ips_locked_for_use)
             ip_netmask_pool = self._config.hpe3par_server_ip_pool[0]
             for netmask, ips in ip_netmask_pool.items():
                 available_ips = ips - total_ips_in_use
@@ -71,6 +73,15 @@ class ClaimAvailableIPCmd(cmd.Cmd):
                     self._locked_ip = available_ip
                     return available_ip, netmask
             raise exception.IPAddressPoolExhausted()
+
+    def _get_all_in_use_ip_from_backend(self):
+        ips = []
+        all_vfs = self._mediator.get_all_vfs()
+        for vfs in all_vfs:
+            all_ip_info = vfs['IPInfo']
+            for ip_info in all_ip_info:
+                ips.append(ip_info['IPAddr'])
+        return ips
 
     def mark_ip_in_use(self):
         with self._fp_etcd.get_file_backend_lock(self._backend):
