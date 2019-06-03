@@ -49,7 +49,7 @@
       set_mixed == false and 
       (INVENTORY['DEFAULT_FILE'] is defined or INVENTORY['DEFAULT_BLOCK'] is defined)
 
-  - name: Fail when DEFAULT backend is having file driver and DEFAULT_FILE backend with file driver is defined 
+  - name: Fail when DEFAULT and DEFAULT_FILE backend defined with file driver
     fail:
       msg: "DEFAULT_FILE backend should not be present when DEFAULT backend has filedriver"
     with_items:
@@ -59,7 +59,7 @@
       INVENTORY['DEFAULT']['hpedockerplugin_driver'] == 'hpedockerplugin.hpe.hpe_3par_file.HPE3PARFileDriver' and 
       INVENTORY['DEFAULT_FILE'] is defined
 
-  - name: Fail when DEFAULT backend is having block driver and DEFAULT_BLOCK backend with block driver is defined 
+  - name: Fail when DEFAULT and DEFAULT_BLOCK backend is defined with block driver
     fail:
       msg: "DEFAULT_BLOCK backend should not be present when DEFAULT backend has blockdriver"
     with_items:
