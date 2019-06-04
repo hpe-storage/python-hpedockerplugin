@@ -40,7 +40,7 @@
       ('hpedockerplugin.hpe.hpe_3par_file.HPE3PARFileDriver'  in  my_driver_list and 'hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver' in my_driver_list) or 
       ('hpedockerplugin.hpe.hpe_3par_file.HPE3PARFileDriver'  in  my_driver_list and 'hpedockerplugin.hpe.hpe_3par_fc.HPE3PARFCDriver' in  my_driver_list )    
      
-  - name: Fail when DEFAULT_FILE backend and DEFAULT_BLOCK is defined with single configuration 
+  - name: Fail when DEFAULT_FILE and DEFAULT_BLOCK backend is defined with single configuration 
     fail:
       msg: "DEFAULT_FILE and DEFAULT_BLOCK backends should not be present in single configuration"
     with_items:
@@ -49,7 +49,7 @@
       set_mixed == false and 
       (INVENTORY['DEFAULT_FILE'] is defined or INVENTORY['DEFAULT_BLOCK'] is defined)
 
-  - name: Fail when DEFAULT and DEFAULT_FILE backend defined with file driver
+  - name: Fail when DEFAULT and DEFAULT_FILE backend is defined with file driver
     fail:
       msg: "DEFAULT_FILE backend should not be present when DEFAULT backend has filedriver"
     with_items:
