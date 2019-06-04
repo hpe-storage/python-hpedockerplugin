@@ -1,6 +1,6 @@
 import pytest
-import time
 import docker
+import time
 import yaml
 import re
 
@@ -13,7 +13,8 @@ from .etcdutil import EtcdUtil
 from hpe3parclient import exceptions as exc
 from hpe3parclient.client import HPE3ParClient
 from oslo_utils import units
-from time import sleep
+#from time import sleep
+#from time import time
 
 # Importing test data from YAML config file
 #with open("tests/integration/testdata/test_config.yml", 'r') as ymlfile:
@@ -30,7 +31,7 @@ CLIENT_KEY = cfg['etcd']['client_key']
 HPE3PAR_API_URL = cfg['backend']['3Par_api_url']
 HPE3PAR2_API_URL = cfg['backend2']['3Par_api_url']
 HPE3PAR3_API_URL = cfg['ActivePassiveRepBackend']['3Par_api_url']
-HPE3PAR4_API_URL = cfg['FilePersona']['3Par_api_url']
+HPE3PAR4_API_URL = cfg['filepersona']['3Par_api_url']
 PORTS_ZONES = cfg['multipath']['ports_zones']
 PORTS_ZONES2 = cfg['multipath2']['ports_zones']
 SNAP_CPG = cfg['snapshot']['snap_cpg']
@@ -44,7 +45,7 @@ MAX_BW = cfg['qos']['max_bw']
 LATENCY = cfg['qos']['latency']
 PRIORITY = cfg['qos']['priority']
 HPE3PAR_IP = cfg['backend']['3Par_IP']
-HPE3PAR_IP1 = cfg['FilePersona']['3Par_IP']
+HPE3PAR_IP1 = cfg['filepersona']['3Par_IP']
 
 if PLUGIN_TYPE == 'managed':
     HPE3PAR = cfg['plugin']['managed_plugin_latest']
@@ -184,11 +185,13 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
         return inspect_volume
 
     def hpe_inspect_share(self, volume, **kwargs):
+        #Inspect a share  
         inspect_volume = self.client.inspect_volume(volume['Name'])
         self.assertEqual(volume['Name'], inspect_volume['Name'])
         self.assertEqual(volume['Driver'], inspect_volume['Driver'])
         self.assertEqual(volume['Options'], inspect_volume['Options'])
         self.assertIn('Status', inspect_volume)
+        # Loop until the status of the share is set to "AVAILABLE"
         timeout = time.time() + 600
         while 1:
             inspect_volume = self.client.inspect_volume(volume['Name'])
@@ -197,18 +200,17 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
                 break
 
         if inspect_volume['Status']['status'] == 'AVAILABLE':
-            # def hpe_inspect_share(self, volume, **kwargs):
-            #inspect_volume = self.client.inspect_volume(volume['Name'])
-            #status = ['backend', 'cpg', 'fpg', 'name', 'protocol', 'size', 'status', 'vfs', 'vfsIPs']
+            #Login to 3par array and get available file share list 
             hpe3par_cli = self._hpe_get_3par_client_login_filePersona()
-            #uri = '/fileshares/%s' % inspect_volume['Status']['id']
             uri = '/fileshares/'
             fileshare_list = hpe3par_cli.http.get(uri)
+            #Loop through above created list to find 'id' of the share in 'volume' object
             members = fileshare_list[1]['members']
             for i in members:
                 if i.get('name') == volume['Name']:
                     fshare_index = members.index(i)
-                    fshare_details = members[fshare_index]          
+                    fshare_details = members[fshare_index]  
+            #Get file share details and asset values with docker inspect volume output         
             uri = '/fileshares/%s' % fshare_details['id']
             fileshare_info = hpe3par_cli.http.get(uri)
 
@@ -216,6 +218,7 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
             self.assertEqual(inspect_volume['Status']['protocol'], 'nfs')
             self.assertEqual(inspect_volume['Status']['fpg'], fileshare_info[1]['fpg'])
             self.assertEqual(inspect_volume['Status']['vfs'], fileshare_info[1]['vfs'])
+            #Assert 'cpg','vfs', and 'size' details of share, with showfpg,showvfs,showfsquota 3par cli output.
             show_fpg = hpe3par_cli._run(['showfpg', '-d', fileshare_info[1]['fpg']])
             self.assertEqual(inspect_volume['Status']['cpg'], show_fpg[17].split(':')[1].strip())
             show_vfs = hpe3par_cli._run(['showvfs', '-d', '-vfs', fileshare_info[1]['vfs']])
@@ -229,14 +232,14 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
                 size_in_GiB = int(show_fsize[2].split(",")[-2])/1024
                 self.assertEqual(int(inspect_volume['Status']['size'].split(" ")[0]), size_in_GiB/1024)
 
-            
+            #Assert client IP's of share after share mount.
             if 'mount' in kwargs:
 
                 any_in = lambda c, d: any((i in d for i in c))
                 self.assertEqual(any_in(inspect_volume['Status']['clientIPs'], fileshare_info[1]['nfsClientlist']), True)
             hpe3par_cli.logout()
 
-        return fileshare_info
+            return fileshare_info
 
 
 
@@ -666,10 +669,13 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         hpe3par_cli = self._hpe_get_3par_client_login_filePersona()
 
-        #Get share details from wsapi
+        uri = '/fileshares/'
+        fileshare_list = hpe3par_cli.http.get(uri)
+        #Loop through above created list and validate share not in list
+        members = fileshare_list[1]['members']
+        for i in members:
+            self.assertNotEqual(i.get('name'),volume_name)
 
-        hpe3par_volume = hpe3par_cli.getVolume(volume_name)
-        self.assertEqual(hpe3par_volume['name'], None)
         hpe3par_cli.logout()
 
 
