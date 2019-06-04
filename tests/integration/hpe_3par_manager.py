@@ -1,6 +1,5 @@
 import pytest
 import docker
-import time
 import yaml
 import re
 
@@ -9,12 +8,12 @@ from .helpers import requires_api_version
 
 from . import utils
 import urllib3
+
+from time import sleep, time
 from .etcdutil import EtcdUtil
 from hpe3parclient import exceptions as exc
 from hpe3parclient.client import HPE3ParClient
 from oslo_utils import units
-#from time import sleep
-#from time import time
 
 # Importing test data from YAML config file
 #with open("tests/integration/testdata/test_config.yml", 'r') as ymlfile:
@@ -192,11 +191,11 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
         self.assertEqual(volume['Options'], inspect_volume['Options'])
         self.assertIn('Status', inspect_volume)
         # Loop until the status of the share is set to "AVAILABLE"
-        timeout = time.time() + 600
+        timeout = time() + 600
         while 1:
             inspect_volume = self.client.inspect_volume(volume['Name'])
-            time.sleep(10)
-            if inspect_volume['Status']['status'] == 'AVAILABLE' or time.time() > timeout:
+            sleep(10)
+            if inspect_volume['Status']['status'] == 'AVAILABLE' or time() > timeout:
                 break
 
         if inspect_volume['Status']['status'] == 'AVAILABLE':
@@ -210,7 +209,7 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
                 if i.get('name') == volume['Name']:
                     fshare_index = members.index(i)
                     fshare_details = members[fshare_index]  
-            #Get file share details and asset values with docker inspect volume output         
+            #Get file share details and assert values with docker inspect volume output         
             uri = '/fileshares/%s' % fshare_details['id']
             fileshare_info = hpe3par_cli.http.get(uri)
 

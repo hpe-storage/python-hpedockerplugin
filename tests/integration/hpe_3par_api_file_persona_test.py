@@ -4,7 +4,6 @@ import docker
 import yaml
 import os
 from .base import TEST_API_VERSION, BUSYBOX
-#from . import helpers
 from .helpers import requires_api_version, random_name
 from .hpe_3par_manager import HPE3ParBackendVerification,HPE3ParVolumePluginTest
 
@@ -133,7 +132,10 @@ class FilePersonaTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
 
         # Create file share with -o fpg option.
         volume = self.hpe_create_volume(volume_name, driver=HPE3PAR, filePersona="", fpg="Test_Fpg_2")
-        self.hpe_inspect_share(volume)
+        fileshareinfo = self.hpe_inspect_share(volume)
+        fileshare_id = fileshareinfo[1]['id']
+        self.hpe_verify_share_created(volume_name, fileshare_id)
+
         container = client.containers.run(BUSYBOX, command='sh', detach=True,
                               tty=True, stdin_open=True,
                               name=container_name, volumes=[volume_name + ':/data1']
@@ -173,6 +175,9 @@ class FilePersonaTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
         # Create file share. Test will create file share on default fpg and vfs.
         volume = self.hpe_create_volume(volume_name, driver=HPE3PAR, filePersona="")
         fileshareinfo = self.hpe_inspect_share(volume)
+        fileshare_id = fileshareinfo[1]['id']
+        self.hpe_verify_share_created(volume_name, fileshare_id)
+        
         container = client.containers.run(BUSYBOX, command='sh', detach=True,
                               tty=True, stdin_open=True,
                               name=container_name, volumes=[volume_name + ':/data1']
@@ -212,8 +217,9 @@ class FilePersonaTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
 
         # Create file share with -o fpg -o cpg option.
         volume = self.hpe_create_volume(volume_name, driver=HPE3PAR, filePersona="", fpg="Test_Fpg_2", cpg='FC_r6')
-        time.sleep(10)
-        self.hpe_inspect_share(volume)
+        fileshareinfo = self.hpe_inspect_share(volume)
+        fileshare_id = fileshareinfo[1]['id']
+        self.hpe_verify_share_created(volume_name, fileshare_id)
         container = client.containers.run(BUSYBOX, command='sh', detach=True,
                               tty=True, stdin_open=True,
                               name=container_name, volumes=[volume_name + ':/data1']
@@ -264,7 +270,7 @@ class FilePersonaTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
                               )
 
         self.hpe_inspect_container_volume_mount(volume_name, container_name)
-        time.sleep(60)
+        fileshareinfo = self.hpe_inspect_share(volume, mount='yes') 
         container_id = container.id
         self.hpe_unmount_volume(container_id)
         container.remove()
