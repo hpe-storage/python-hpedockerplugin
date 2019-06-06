@@ -8,11 +8,12 @@ from .helpers import requires_api_version
 
 from . import utils
 import urllib3
+
+from time import sleep, time
 from .etcdutil import EtcdUtil
 from hpe3parclient import exceptions as exc
 from hpe3parclient.client import HPE3ParClient
 from oslo_utils import units
-from time import sleep
 
 # Importing test data from YAML config file
 #with open("tests/integration/testdata/test_config.yml", 'r') as ymlfile:
@@ -28,10 +29,13 @@ CLIENT_CERT = cfg['etcd']['client_cert']
 CLIENT_KEY = cfg['etcd']['client_key']
 HPE3PAR_API_URL = cfg['backend']['3Par_api_url']
 HPE3PAR2_API_URL = cfg['backend2']['3Par_api_url']
+HPE3PAR3_API_URL = cfg['ActivePassiveRepBackend']['3Par_api_url']
+HPE3PAR4_API_URL = cfg['filepersona']['3Par_api_url']
 PORTS_ZONES = cfg['multipath']['ports_zones']
 PORTS_ZONES2 = cfg['multipath2']['ports_zones']
 SNAP_CPG = cfg['snapshot']['snap_cpg']
 SNAP_CPG2 = cfg['snapshot2']['snap_cpg']
+SNAP_CPG3 = cfg['snapshot3']['snap_cpg']
 DOMAIN = cfg['qos']['domain']
 MIN_IO = cfg['qos']['min_io']
 MAX_IO = cfg['qos']['max_io']
@@ -39,6 +43,8 @@ MIN_BW = cfg['qos']['min_bw']
 MAX_BW = cfg['qos']['max_bw']
 LATENCY = cfg['qos']['latency']
 PRIORITY = cfg['qos']['priority']
+HPE3PAR_IP = cfg['backend']['3Par_IP']
+HPE3PAR_IP1 = cfg['filepersona']['3Par_IP']
 
 if PLUGIN_TYPE == 'managed':
     HPE3PAR = cfg['plugin']['managed_plugin_latest']
@@ -82,7 +88,7 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
             self.assertEqual(docker_volume['Driver'], HPE3PAR_OLD)
         # Verify all volume optional parameters in docker managed plugin system
         driver_options = ['size', 'provisioning', 'flash-cache', 'compression', 'cloneOf',
-                          'qos-name', 'mountConflictDelay', 'importVol', 'backend']
+                          'qos-name', 'mountConflictDelay', 'importVol', 'backend', 'virtualCopyOf', 'scheduleFrequency', 'scheduleName', 'snapshotPrefix']
 
         for option in driver_options:
             if option in kwargs:
@@ -131,6 +137,9 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
                 else:
                     if (inspect_volume['Status']['volume_detail']['backend'] == 'DEFAULT'):
                         self.assertEqual(inspect_volume['Status']['volume_detail']['snap_cpg'],SNAP_CPG)
+                    elif (inspect_volume['Status']['volume_detail']['backend'] == 'ActivePassiveRepBackend'):
+                        self.assertEqual(inspect_volume['Status']['volume_detail']['snap_cpg'], SNAP_CPG3)
+
                     else:
                         self.assertEqual(inspect_volume['Status']['volume_detail']['snap_cpg'],SNAP_CPG2)
 
@@ -162,8 +171,77 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
                 self.assertEqual(inspect_volume['Status']['qos_detail'][option], kwargs[option])
             else:
                 pass
+        if 'replicationGroup' in kwargs:
+            self.assertEqual(inspect_volume['Status']['rcg_detail']['role'], 'Primary')
+            self.assertEqual(inspect_volume['Status']['rcg_detail']['rcg_name'], kwargs['replicationGroup'])
+        
+        # Validating if the snapshot 'virtualCopyOf' value is same as the 'Parent volume' of the snapshot
+        if 'snapshot_name' in kwargs:
+            snapshots = inspect_volume['Status']['Snapshots'][0] 
+            if 'snap_schedule' in snapshots:
+                self.assertEqual(kwargs['snapshot_name'], snapshots['ParentName'])
 
         return inspect_volume
+
+    def hpe_inspect_share(self, volume, **kwargs):
+        #Inspect a share  
+        inspect_volume = self.client.inspect_volume(volume['Name'])
+        self.assertEqual(volume['Name'], inspect_volume['Name'])
+        self.assertEqual(volume['Driver'], inspect_volume['Driver'])
+        self.assertEqual(volume['Options'], inspect_volume['Options'])
+        self.assertIn('Status', inspect_volume)
+        # Loop until the status of the share is set to "AVAILABLE"
+        timeout = time() + 600
+        while 1:
+            inspect_volume = self.client.inspect_volume(volume['Name'])
+            sleep(10)
+            if inspect_volume['Status']['status'] == 'AVAILABLE' or time() > timeout:
+                break
+
+        if inspect_volume['Status']['status'] == 'AVAILABLE':
+            #Login to 3par array and get available file share list 
+            hpe3par_cli = self._hpe_get_3par_client_login_filePersona()
+            uri = '/fileshares/'
+            fileshare_list = hpe3par_cli.http.get(uri)
+            #Loop through above created list to find 'id' of the share in 'volume' object
+            members = fileshare_list[1]['members']
+            for i in members:
+                if i.get('name') == volume['Name']:
+                    fshare_index = members.index(i)
+                    fshare_details = members[fshare_index]  
+            #Get file share details and assert values with docker inspect volume output         
+            uri = '/fileshares/%s' % fshare_details['id']
+            fileshare_info = hpe3par_cli.http.get(uri)
+
+            self.assertEqual(fileshare_info[1]['name'], inspect_volume['Name'])
+            self.assertEqual(inspect_volume['Status']['protocol'], 'nfs')
+            self.assertEqual(inspect_volume['Status']['fpg'], fileshare_info[1]['fpg'])
+            self.assertEqual(inspect_volume['Status']['vfs'], fileshare_info[1]['vfs'])
+            #Assert 'cpg','vfs', and 'size' details of share, with showfpg,showvfs,showfsquota 3par cli output.
+            show_fpg = hpe3par_cli._run(['showfpg', '-d', fileshare_info[1]['fpg']])
+            self.assertEqual(inspect_volume['Status']['cpg'], show_fpg[17].split(':')[1].strip())
+            show_vfs = hpe3par_cli._run(['showvfs', '-d', '-vfs', fileshare_info[1]['vfs']])
+            self.assertEqual(inspect_volume['Status']['vfsIPs'][0][0], show_vfs[(-2)].split(',')[1])
+            self.assertEqual(inspect_volume['Status']['vfsIPs'][0][1], show_vfs[(-2)].split(',')[2])
+            show_fsize = hpe3par_cli._run(['showfsquota', '-fpg', fileshare_info[1]['fpg']])
+            size_unit = (inspect_volume['Status']['size']).split(" ")[1]
+            if size_unit == "GiB":
+                self.assertEqual(int(inspect_volume['Status']['size'].split(" ")[0]), int(show_fsize[2].split(",")[-2])/1024)
+            if size_unit == "TiB":
+                size_in_GiB = int(show_fsize[2].split(",")[-2])/1024
+                self.assertEqual(int(inspect_volume['Status']['size'].split(" ")[0]), size_in_GiB/1024)
+
+            #Assert client IP's of share after share mount.
+            if 'mount' in kwargs:
+
+                any_in = lambda c, d: any((i in d for i in c))
+                self.assertEqual(any_in(inspect_volume['Status']['clientIPs'], fileshare_info[1]['nfsClientlist']), True)
+            hpe3par_cli.logout()
+
+            return fileshare_info
+
+
+
 
     def hpe_create_snapshot(self, snapshot_name, driver, **kwargs):
         # Create a snapshot
@@ -247,6 +325,16 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
             else:
                self.assertEqual(inspect_snapshot['Status']['snap_detail']['snap_cpg'],
                              SNAP_CPG2)
+
+        if 'snap_schedule' in  inspect_snapshot['Status']['snap_detail']:
+            self.assertEqual(snapshot['Options']['scheduleFrequency'], inspect_snapshot['Status']['snap_detail']['snap_schedule']['sched_frequency'])
+            self.assertEqual(snapshot['Options']['snapshotPrefix'], inspect_snapshot['Status']['snap_detail']['snap_schedule']['snap_name_prefix'])
+            self.assertEqual(snapshot['Options']['scheduleName'], inspect_snapshot['Status']['snap_detail']['snap_schedule']['schedule_name'])
+            self.assertEqual(snapshot['Options']['expHrs'], str(inspect_snapshot['Status']['snap_detail']['snap_schedule']['sched_snap_exp_hrs']))
+            self.assertEqual(snapshot['Options']['retHrs'], str(inspect_snapshot['Status']['snap_detail']['snap_schedule']['sched_snap_ret_hrs']))
+
+ 
+
         if 'backend' in kwargs:
             self.assertEqual(inspect_snapshot['Status']['snap_detail']['backend'],
                              (kwargs['backend']))
@@ -441,13 +529,29 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
         # Login to 3Par array and initialize connection for WSAPI calls
         hpe_3par_cli = HPE3ParClient(HPE3PAR_API_URL, True, False, None, True)
         hpe_3par_cli.login('3paradm', '3pardata')
+        hpe_3par_cli.setSSHOptions(HPE3PAR_IP, '3paradm', '3pardata')
         return hpe_3par_cli
+
+    def _hpe_get_3par_client_login_replication(self):
+        # Login to 3Par array and initialize connection for WSAPI calls
+        hpe_3par_cli = HPE3ParClient(HPE3PAR3_API_URL, True, False, None, True)
+        hpe_3par_cli.login('3paradm', '3pardata')
+        return hpe_3par_cli    
+
 
     def _hpe_get_3par_client_login_multi_array(self):
         # Login to 3Par array and initialize connection for WSAPI calls
         hpe_3par_cli = HPE3ParClient(HPE3PAR2_API_URL, True, False, None, True)
         hpe_3par_cli.login('3paradm', '3pardata')
         return hpe_3par_cli
+
+    def _hpe_get_3par_client_login_filePersona(self):
+        # Login to 3Par array and initialize connection for WSAPI calls
+        hpe_3par_cli = HPE3ParClient(HPE3PAR4_API_URL, True, False, None, True)
+        hpe_3par_cli.login('3paradm', '3pardata')
+        hpe_3par_cli.setSSHOptions(HPE3PAR_IP1, '3paradm', '3pardata')
+        return hpe_3par_cli
+
 
     def hpe_verify_volume_created(self, volume_name, vvs_name=None, **kwargs):
 
@@ -546,6 +650,33 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
 
 
         hpe3par_cli.logout()
+
+
+    def hpe_verify_share_created(self, volume_name, fileshare_id):
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        hpe3par_cli = self._hpe_get_3par_client_login_filePersona()
+
+        #Get share details from wsapi
+
+        uri = '/fileshares/%s' % fileshare_id
+        fileshare_info = hpe3par_cli.http.get(uri)
+
+        self.assertEqual(fileshare_info[1]['name'], volume_name)
+        hpe3par_cli.logout()
+
+    def hpe_verify_share_deleted(self, volume_name):
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        hpe3par_cli = self._hpe_get_3par_client_login_filePersona()
+
+        uri = '/fileshares/'
+        fileshare_list = hpe3par_cli.http.get(uri)
+        #Loop through above created list and validate share not in list
+        members = fileshare_list[1]['members']
+        for i in members:
+            self.assertNotEqual(i.get('name'),volume_name)
+
+        hpe3par_cli.logout()
+
 
     def hpe_verify_volume_deleted(self, volume_name, backend=None):
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -836,5 +967,65 @@ class HPE3ParBackendVerification(BaseAPIIntegrationTest):
         hpe3par_cli.logout()
 
 
+    def hpe_recover_remote_copy_group(self, rcg_name, action):
+
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        hpe3par_cli = self._hpe_get_3par_client_login_replication()
+        rcopyInfo = hpe3par_cli.getRemoteCopyGroup(rcg_name)
+        rcopygrpname = rcopyInfo.get("remoteGroupName")
+
+        hpe3par_cli.stopRemoteCopy(rcg_name)
+        
+        rcopyStatus = hpe3par_cli.remoteCopyGroupStatusStoppedCheck(rcg_name)
+        hpe3par_cli.logout()
+
+        hpe3par_cli = self._hpe_get_3par_client_login_multi_array()
+        hpe3par_cli.recoverRemoteCopyGroupFromDisaster(rcopygrpname, int(action), optional=None)
+        hpe3par_cli.recoverRemoteCopyGroupFromDisaster(rcopygrpname, 9)
+        hpe3par_cli.logout()
+        return rcopygrpname
+
+    
+    def hpe_verify_snapshot_schedule(self, schedule_name, snapshot):
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        hpe3par_cli = self._hpe_get_3par_client_login()
+
+        hpe3par_schedule = hpe3par_cli.getSchedule(schedule_name)
+        schedule_details_cli = hpe3par_schedule[2].split(',')
+        
+        self.assertEqual(snapshot['Options']['scheduleName'], schedule_details_cli[0])
+        self.assertEqual(snapshot['Options']['scheduleFrequency'], ' '.join(schedule_details_cli[2:7]))
+        schedule_command = re.split('\s+', schedule_details_cli[1])
+        self.assertEqual(schedule_command[3], (snapshot['Options']['expHrs'])+"h")
+        self.assertEqual(schedule_command[5], (snapshot['Options']['retHrs'])+"h")
+           
+        hpe3par_cli.logout()
 
 
+    def hpe_wait_for_all_backends_to_initialize(self, driver=None, **kwargs):
+        # This is in order to handle Asynchronous backend initialization implemented
+        # as part of plugin 3.1
+        client = docker.APIClient(
+            version=TEST_API_VERSION, timeout=600,
+            **docker.utils.kwargs_from_env()
+        )
+        while True:
+            try:
+                result = client.create_volume(driver=driver,
+                                 driver_opts=kwargs)
+                sleep(5)
+            except docker.errors.APIError as e:
+                if 'INITIALIZING' in str(e):
+                    pass
+                elif 'FAILED' in str(e):
+                    raise e
+                else:
+                    return
+
+
+    def hpe_restore_remote_copy_group(self, rcg_name, action):
+
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        hpe3par_cli = self._hpe_get_3par_client_login_multi_array()
+        hpe3par_cli.recoverRemoteCopyGroupFromDisaster(rcg_name, int(action), optional=None)
+        hpe3par_cli.logout()
