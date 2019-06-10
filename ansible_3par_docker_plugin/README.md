@@ -63,6 +63,9 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
       | ```etcd_client_port_1```  | Yes  | 23790 |
       | ```etcd_client_port_2```  | Yes  | 40010 |
       
+  - The Etcd data directory for backup and restore can be modified in [etcd cluster properties](/ansible_3par_docker_plugin/properties/etcd_cluster_properties.yml)
+      e.g. etcd_data_directory=/var/lib/etcd
+    
     > **Note:** Please ensure that the ports specified above are unoccupied before installation. If the ports are not available on a particular node, etcd installation will fail.
     
     > **Limitation:** The installer, in the current state does not have the capability to add or remove nodes in the etcd cluster. In case an etcd node is not responding or goes down, it is beyond the current scope to admit it back into the cluster. Please follow the [etcd documentation](https://coreos.com/etcd/docs/latest/etcd-live-cluster-reconfiguration.html) to do so manually.
