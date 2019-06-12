@@ -17,13 +17,18 @@ class FileBackendOrchestrator(Orchestrator):
             host_config, backend_configs, def_backend_name)
 
     @staticmethod
-    def _initialize_orchestrator(host_config):
-        FileBackendOrchestrator.fp_etcd_client = \
-            util.HpeFilePersonaEtcdClient(
-                host_config.host_etcd_ip_address,
-                host_config.host_etcd_port_number,
-                host_config.host_etcd_client_cert,
-                host_config.host_etcd_client_key)
+    def _get_fp_etcd_client(host_config):
+        return util.HpeFilePersonaEtcdClient(
+            host_config.host_etcd_ip_address,
+            host_config.host_etcd_port_number,
+            host_config.host_etcd_client_cert,
+            host_config.host_etcd_client_key
+        )
+
+    def _initialize_orchestrator(self, host_config):
+        FileBackendOrchestrator.fp_etcd_client = self._get_fp_etcd_client(
+            host_config
+        )
 
     # Implementation of abstract function from base class
     def get_manager(self, host_config, config, etcd_client,

@@ -908,3 +908,354 @@ get_id_login = [
 
 standard_logout = [
     mock.call.logout()]
+
+create_share_args = {
+    'id': '1422125830661572115',
+    'backend': 'DEFAULT_FILE',
+    'cpg': 'swap_fs_cpg',
+    'fpg': 'DockerFpg_2',
+    'name': 'GoodShare',
+    'size': 1048576,
+    'readonly': False,
+    'nfsOptions': None,
+    'protocol': 'nfs',
+    'comment': None,
+    'fsMode': None,
+    'fsOwner': None,
+    'status': 'AVAILABLE',
+    'vfsIPs': [['192.168.98.41', '255.255.192.0']],
+}
+
+etcd_share = {
+    'id': '1422125830661572115',
+    'backend': 'DEFAULT_FILE',
+    'cpg': 'swap_fs_cpg',
+    'fpg': 'DockerFpg_2',
+    'vfs': 'DockerVfs_2',
+    'name': 'GoodShare',
+    'size': 1048576,
+    'readonly': False,
+    'nfsOptions': None,
+    'protocol': 'nfs',
+    'clientIPs': [],
+    'comment': None,
+    'fsMode': None,
+    'fsOwner': None,
+    'status': 'AVAILABLE',
+    'vfsIPs': [['192.168.98.41', '255.255.192.0']],
+    'quota_id': '13209547719864709510'
+}
+
+etcd_bkend_mdata_with_default_fpg = {
+    'ips_in_use': [],
+    'ips_locked_for_use': [],
+    'counter': 1,
+    'default_fpgs': {'fake_cpg': ['DockerFpg_0']}
+}
+
+bkend_fpg = {
+    'members': [
+        {
+            'id': '5233be44-292c-43f2-a9b8-373479d785a3', 'overAllState': 1,
+             'totalCapacityGiB': 10240.0,
+             'comment': 'Docker created FPG',
+             'cpg': 'fs_cpg',
+             'name': 'Imran_fpg',
+             'usedCapacityGiB': 5.35,
+             'availCapacityGiB': 10234.65,
+        }
+    ],
+    'total': 1
+}
+
+quotas_for_fpg = {
+    'members': [
+        {
+            'currentBlockMiB': 0,
+            'hardFileLimit': 0,
+            'softBlockMiB': 1048576,
+            'hardBlockMiB': 1048576,
+            'currentFileLimit': 2,
+            'id': '10098013665158623372',
+            'fpg': 'DockerFpg_0',
+            'graceBlockInSec': 0,
+            'softFileLimit': 0,
+            'overallState': 1,
+            'graceFileLimitInSec': 0,
+            'key': 3,
+            'type': 3,
+            'name': 'MyShare_101',
+            'vfs': 'DockerVfs_0'
+        },
+        {
+            'currentBlockMiB': 0,
+            'hardFileLimit': 0,
+            'softBlockMiB': 13631488,
+            'hardBlockMiB': 13631488,
+            'currentFileLimit': 2,
+            'id': '10211052782065922663',
+            'fpg': 'DockerFpg_0',
+            'graceBlockInSec': 0,
+            'softFileLimit': 0,
+            'overallState': 1,
+            'graceFileLimitInSec': 0,
+            'key': 4,
+            'type': 3,
+            'name': 'MyShare_102',
+            'vfs': 'DockerVfs_0'
+        }
+    ],
+    'total': 2
+}
+
+bkend_vfs = {
+    'members': [
+        {
+            'comment': 'Docker created VFS',
+            'id': '5233be44-292c-43f2-a9b8-373479d785a3-2',
+            'name': 'Imran_fpg_vfs',
+            'overallState': 1,
+            'IPInfo': [
+                {
+                    'fpg': 'Imran_fpg',
+                    'vlanTag': 0,
+                    'vfs': 'Imran_fpg_vfs',
+                    'IPAddr': '192.168.98.5',
+                    'networkName': 'user',
+                    'netmask': '255.255.192.0'
+                }
+            ],
+            'fpg': 'Imran_fpg',
+            'blockGraceTimeSec': 604800,
+            'snapshotQuotaEnabled': False
+        }
+    ],
+    'total': 1
+}
+
+fpg_create_resp = {
+    'status': '202'
+}
+
+fpg_create_body = {
+    "taskId": 5565
+}
+
+fpg_create_task_resp = {
+    'status': '200'
+}
+
+fpg_create_task_body = {
+    "id": 5565,
+    "type": 20,
+    "name": "createfpg_task",
+    "status": 1,
+    "completedPhases": 1,
+    "totalPhases": 1,
+    "completedSteps": 0,
+    "totalsteps": 1,
+    "startTime": "2019-05-20 16:22:58 IST",
+    "finishTime": "-",
+    "user": "3paradm",
+    "detailedStatus": "2019-05-20 16:22:58 IST Created     task.\n"
+                      "2019-05-20 16:22:58 IST Updated     Executing "
+                      "\"createfpg_task\" as 0:63364\n2019-05-20 16:22:58 "
+                      "IST Updated     Size: 16t\n2019-05-20 16:22:58 IST "
+                      "Updated     FPG Name: DockerFpg_1\n"
+                      "2019-05-20 16:22:58 IST Updated     CPG Name: fs_cpg\n"
+                      "2019-05-20 16:22:59 IST Updated     Automatically "
+                      "assigned nodeid: 1\n2019-05-20 16:22:59 IST Updated"
+                      "     createfpg_vvs: DockerFpg_1 16t 5565\n2019-05-20 "
+                      "16:22:59 IST Updated     Creating VV: DockerFpg_1.1 "
+                      "16t in fs_cpg\n2019-05-20 16:23:00 IST Updated     vv "
+                      "DockerFpg_1.1 attached to node 0 File Services\n"
+                      "2019-05-20 16:23:00 IST Updated     vv DockerFpg_1.1 "
+                      "attached to node 1 File Services\n"
+}
+
+sh_create_resp = {
+    'status': '201'
+}
+
+sh_create_body = {
+    "links": [
+        {
+            "href": "https://192.168.67.6:8080/api/v1/fileshares/"
+                    "14818594021406325994"
+        }
+    ]
+}
+
+set_quota_resp = {
+    'status': '201'
+}
+
+set_quota_body = {
+    "links": [
+        {
+            "href": "https://192.168.67.6:8080/api/v1/filepersonaquotas/"
+                    "17562742969854637283",
+        }
+    ]
+}
+
+all_vfs_resp = {
+    'status': '200'
+}
+
+all_vfs_body = {
+    'members': [
+        {
+            'IPInfo': [
+                {
+                    'networkName': 'user',
+                    'vlanTag': 0,
+                    'fpg': 'DockerFpg_19',
+                    'IPAddr': '192.168.70.27',
+                    'netmask': '255.255.192.0',
+                    'vfs': 'DockerVfs_19'
+                }
+            ],
+            'comment': 'Docker created VFS',
+            'fpg': 'DockerFpg_19',
+            'id': '5000031e-c00b-445d-8cc2-d1369fa1ac6d-2',
+            'name': 'DockerVfs_19',
+            'overallState': 1,
+        },
+        {
+            'IPInfo': [
+                {
+                    'networkName': 'user',
+                    'vlanTag': 0,
+                    'fpg': 'DockerFpg_1',
+                    'IPAddr': '192.168.98.41',
+                    'netmask': '255.255.192.0',
+                    'vfs': 'DockerVfs_1'
+                }
+            ],
+            'comment': 'Docker created VFS',
+            'fpg': 'DockerFpg_1',
+            'id': '43baa30e-3e57-40d4-b8a3-b9a94ce2de78-2',
+            'name': 'DockerVfs_1',
+            'overallState': 1,
+        },
+        {
+            'IPInfo': [
+                {
+                    'networkName': 'user',
+                    'vlanTag': 0,
+                    'fpg': 'swap_fpg2',
+                    'IPAddr': '192.168.110.7',
+                    'netmask': '255.255.192.0',
+                    'vfs': 'swap_fpg2_vfs'
+                }
+            ],
+            'comment': 'Docker created VFS',
+            'fpg': 'swap_fpg2',
+            'id': '00d76323-6ac6-4b0f-b4cc-8fe79d9f2df2-2',
+            'name': 'swap_fpg2_vfs',
+            'overallState': 1,
+        },
+        {
+            'IPInfo': [
+                {
+                    'networkName': 'user',
+                    'vlanTag': 0,
+                    'fpg': 'ImranFpg',
+                    'IPAddr': '192.168.98.42',
+                    'netmask': '255.255.192.0',
+                    'vfs': 'ImranFpg_vfs'
+                }
+            ],
+            'comment': 'Docker created VFS',
+            'fpg': 'ImranFpg',
+            'id': 'e29c7282-7d12-4973-976e-cd02163f6c9e-2',
+            'name': 'ImranFpg_vfs',
+            'overallState': 1,
+        },
+        {
+            'IPInfo': [
+                {
+                    'networkName': 'user',
+                    'vlanTag': 0,
+                    'fpg': 'DockerFpg_0',
+                    'IPAddr': '192.168.110.5',
+                    'netmask': '255.255.192.0',
+                    'vfs': 'DockerVfs_0'
+                }
+            ],
+            'comment': 'Docker created VFS',
+            'fpg': 'DockerFpg_0',
+            'id': 'cea9120c-80e2-4f2a-ae91-7166e50046c0-2',
+            'name': 'DockerVfs_0',
+            'overallState': 1,
+        }
+    ],
+    'total': 5
+}
+
+vfs_create_resp = {
+    'status': '202'
+}
+
+vfs_create_body = {
+    "taskId": 5566,
+}
+
+vfs_create_task_resp = {
+    'status': '200'
+}
+
+vfs_create_task_body = {
+    "id": 5566,
+    "type": 20,
+    "name": "createvfs_task",
+    "status": 1,
+    "startTime": "2019-05-20 16:24:20 IST",
+    "finishTime": "2019-05-20 16:24:50 IST",
+    "user": "3paradm",
+    "detailedStatus": "2019-05-20 16:24:20 IST Created     task.\n"
+                      "2019-05-20 16:24:20 IST Updated     Executing "
+                      "\"createvfs_task\" as 0:2428\n2019-05-20 16:24:21 "
+                      "IST Updated     Generating self signed certificate.\n"
+                      "2019-05-20 16:24:21 IST Updated     Creating VFS "
+                      "\"DockerVfs_1\" in FPG DockerFpg_1.\n2019-05-20 "
+                      "16:24:29 IST Updated     Applying certificate data.\n"
+                      "2019-05-20 16:24:39 IST Updated     Associating IP "
+                      "192.168.98.11 with VFS \"DockerVfs_1\".\n2019-05-20 "
+                      "16:24:50 IST Updated     Associated IP 192.168.98.11 "
+                      "with VFS \"DockerVfs_1\".\n2019-05-20 16:24:50 IST "
+                      "Updated     Setting snap quota accounting switch "
+                      "value\n2019-05-20 16:24:50 IST Updated     Value for "
+                      "Snap quota accounting switch is set to: disable.\n"
+                      "2019-05-20 16:24:50 IST Updated     Created VFS "
+                      "\"DockerVfs_1\" on FPG DockerFpg_1.\n2019-05-20 "
+                      "16:24:50 IST Completed   scheduled task."
+}
+
+get_vfs_resp = {
+    "status": "200",
+}
+
+get_vfs_body = {
+    "members": [
+        {
+            "comment": "Docker created VFS",
+            "id": "5233be44-292c-43f2-a9b8-373479d785a3-2",
+            "name": "Imran_fpg_vfs",
+            "overallState": 1,
+            "IPInfo": [
+                {
+                    "fpg": "Imran_fpg",
+                    "vlanTag": 0,
+                    "vfs": "Imran_fpg_vfs",
+                    "IPAddr": "192.168.98.5",
+                    "networkName": "user",
+                    "netmask": "255.255.192.0"
+                }
+            ],
+            "fpg": "Imran_fpg"
+        }
+    ],
+    "total": 1
+}

@@ -401,9 +401,6 @@ class FileManager(object):
                     self._backend, share_args, self._etcd
                 )
                 init_share_cmd.execute()
-                # Since we would want the share to be shown in failed status
-                # even in case of failure, cannot make this as part of undo
-                # undo_cmds.append(init_share_cmd)
 
                 fpg_gen = fpg_getter(share_args)
                 while True:
