@@ -191,7 +191,8 @@ class HPEPluginMountException(PluginException):
 
 
 class HPEPluginCheckMountException(PluginException):
-    message = _("HPE Docker Volume Plugin Check if Mount already exists on host Failed: %(reason)s")
+    message = _("HPE Docker Volume Plugin Check if Mount already exists"
+                " on host Failed: %(reason)s")
 
 
 class HPEPluginUMountException(PluginException):
