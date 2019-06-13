@@ -1195,7 +1195,20 @@ class VolumeManager(object):
         return (len(node_mount_info) == 0)
 
     def _is_vol_mounted_on_this_node(self, node_mount_info):
-        return self._node_id in node_mount_info
+        if self._node_id in node_mount_info:
+            # get the information from etcd where the volume should be mounted
+            path_info = self._etcd.get_path_info_from_vol(vol)
+            # important is here the device which should be mounted...
+            path_name = path_info['path']
+            # ... and the target it should be mounted to!
+            mount_dir = path_info['mount_dir']
+            # now check if this mount is really present on the node
+            if fileutil.check_if_mounted(path_name, mount_dir):
+                return True
+            else:
+                return False
+        else:
+            return False
 
     def _update_mount_id_list(self, vol, mount_id):
         node_mount_info = vol['node_mount_info']
