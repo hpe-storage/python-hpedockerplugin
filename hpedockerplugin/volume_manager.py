@@ -1194,7 +1194,7 @@ class VolumeManager(object):
     def _is_first_mount(node_mount_info):
         return (len(node_mount_info) == 0)
 
-    def _is_vol_mounted_on_this_node(self, node_mount_info):
+    def _is_vol_mounted_on_this_node(self, node_mount_info, vol):
         if self._node_id in node_mount_info:
             # get the information from etcd where the volume should be mounted
             path_info = self._etcd.get_path_info_from_vol(vol)
@@ -1340,7 +1340,7 @@ class VolumeManager(object):
             node_mount_info = vol['node_mount_info']
 
             # If mounted on this node itself then just append mount-id
-            if self._is_vol_mounted_on_this_node(node_mount_info):
+            if self._is_vol_mounted_on_this_node(node_mount_info, vol):
                 self._update_mount_id_list(vol, mount_id)
                 return self._get_success_response(vol)
             else:
