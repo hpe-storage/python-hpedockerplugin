@@ -354,8 +354,7 @@ class FileManager(object):
                          (fpg_name, cpg))
                 undo_cmds.append(create_fpg_cmd)
                 return fpg_name, vfs_name
-            except (exception.FpgCreationFailed,
-                    exception.FpgAlreadyExists) as ex:
+            except exception.FpgAlreadyExists as ex:
                 LOG.info("FPG %s could not be created. Error: %s" %
                          (fpg_name, six.text_type(ex)))
                 LOG.info("Retrying with new FPG name...")
@@ -721,6 +720,26 @@ class FileManager(object):
         # Or it was mounted on a different node and now it's being
         # mounted on this node. Add host IP to Client IP list, create
         # mount directory, apply permissions and mount file share
+        fUName = None
+        fGName = None
+        permSpecified = False
+        if fUser or fGroup or fMode:
+            permSpecified = True
+            LOG.info("Inside fUser or fGroup or fMode")
+            fUName, fGName = self._hpeplugin_driver.usr_check(fUser,
+                                                              fGroup)
+            if fUName is None or fGName is None:
+                msg = ("Either user or group does not exist on 3PAR."
+                       " Please create local users and group with"
+                       " required user id and group id on 3PAR."
+                       " Refer 3PAR cli user guide to create 3PAR"
+                       " local users on 3PAR")
+                LOG.error(msg)
+                response = json.dumps({u"Err": msg, u"Name": share_name,
+                                       u"Mountpoint": mount_dir,
+                                       u"Devicename": share_path})
+                return response
+
         my_ip = netutils.get_my_ipv4()
         self._hpeplugin_driver.add_client_ip_for_share(share['id'],
                                                        my_ip)
@@ -739,23 +758,7 @@ class FileManager(object):
         LOG.debug('Device: %(path)s successfully mounted on %(mount)s',
                   {'path': share_path, 'mount': mount_dir})
 
-        if fUser or fGroup or fMode:
-            LOG.info("Inside fUser or fGroup or fMode")
-            is_first_call = True
-            fUName, fGName = self._hpeplugin_driver.usr_check(fUser,
-                                                              fGroup)
-            if fUName is None or fGName is None:
-                msg = ("Either user or group does not exist on 3PAR."
-                       " Please create local users and group with"
-                       " required user id and group id on 3PAR."
-                       " Refer 3PAR cli user guide to create 3PAR"
-                       " local users on 3PAR")
-                LOG.error(msg)
-                response = json.dumps({u"Err": msg, u"Name": share_name,
-                                       u"Mountpoint": mount_dir,
-                                       u"Devicename": share_path})
-                return response
-
+        if permSpecified:
             os.chown(mount_dir, fUser, fGroup)
             try:
                 int(fMode)

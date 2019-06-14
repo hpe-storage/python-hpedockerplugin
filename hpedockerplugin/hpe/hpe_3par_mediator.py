@@ -505,11 +505,6 @@ class HPE3ParMediator(object):
 
             LOG.info("Create FPG Response: %s" % six.text_type(resp))
             LOG.info("Create FPG Response Body: %s" % six.text_type(body))
-            if (resp['status'] == BAD_REQUEST and
-                    body['code'] == OTHER_FAILURE_REASON and
-                    'already exists' in body['desc']):
-                LOG.error(body['desc'])
-                raise exception.FpgAlreadyExists(reason=body['desc'])
 
             task_id = body.get('taskId')
             if task_id:

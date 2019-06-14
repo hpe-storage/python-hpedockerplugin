@@ -818,7 +818,7 @@ class HpeDockerShareUnitTests(testtools.TestCase):
         return 'file'
 
     @tc_banner_decorator
-    def test_create_share_default(self):
+    def __test_create_share_default(self):
         test = createshare_tester.TestCreateShareDefault()
         test.run_test(self)
 
@@ -828,12 +828,12 @@ class HpeDockerShareUnitTests(testtools.TestCase):
         test.run_test(self)
 
     @tc_banner_decorator
-    def test_remove_regular_share(self):
+    def __test_remove_regular_share(self):
         del_regular_share = deleteshare_tester.TestDeleteShare.Regular()
         test = deleteshare_tester.TestDeleteShare(del_regular_share)
         test.run_test(self)
 
     @tc_banner_decorator
-    def test_mount_nfs_share(self):
+    def __test_mount_nfs_share(self):
         test = mountshare_tester.TestMountNfsShare()
         test.run_test(self)
