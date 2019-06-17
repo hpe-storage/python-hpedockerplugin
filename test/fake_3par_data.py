@@ -957,12 +957,12 @@ bkend_fpg = {
     'members': [
         {
             'id': '5233be44-292c-43f2-a9b8-373479d785a3', 'overAllState': 1,
-             'totalCapacityGiB': 10240.0,
-             'comment': 'Docker created FPG',
-             'cpg': 'fs_cpg',
-             'name': 'Imran_fpg',
-             'usedCapacityGiB': 5.35,
-             'availCapacityGiB': 10234.65,
+            'totalCapacityGiB': 10240.0,
+            'comment': 'Docker created FPG',
+            'cpg': 'fs_cpg',
+            'name': 'Imran_fpg',
+            'usedCapacityGiB': 5.35,
+            'availCapacityGiB': 10234.65,
         }
     ],
     'total': 1

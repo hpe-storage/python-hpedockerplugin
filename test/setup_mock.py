@@ -82,7 +82,7 @@ def mock_decorator(func):
                                   'decrypt_password') \
                 as mock_decrypt_password, \
                 mock.patch.object(f_orch.FileBackendOrchestrator,
-                                 '_get_etcd_client') \
+                                  '_get_etcd_client') \
                 as mock_get_etcd_client, \
                 mock.patch.object(f_orch.FileBackendOrchestrator,
                                   '_get_fp_etcd_client') \
