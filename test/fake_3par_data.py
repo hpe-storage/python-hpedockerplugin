@@ -950,7 +950,7 @@ etcd_bkend_mdata_with_default_fpg = {
     'ips_in_use': [],
     'ips_locked_for_use': [],
     'counter': 1,
-    'default_fpgs': {'fake_cpg': ['DockerFpg_0']}
+    'default_fpgs': {'fs_cpg': ['DockerFpg_0']}
 }
 
 bkend_fpg = {
@@ -1090,6 +1090,37 @@ set_quota_resp = {
     'status': '201'
 }
 
+resp = {
+    'status': '200'
+}
+
+get_quotas_for_fpg = {
+    "members": [
+        {
+            "softBlockMiB": 1048576,
+            "hardBlockMiB": 1048576,
+            "id": "10098013665158623372",
+            "fpg": "DockerFpg_0",
+            "overallState": 1,
+            "key": 3,
+            "type": 3,
+            "name": "MyShare_101",
+            "vfs": "DockerVfs_0"
+        },
+        {
+            "softBlockMiB": 1048576,
+            "hardBlockMiB": 1048576,
+            "id": "10211052782065922663",
+            "fpg": "DockerFpg_0",
+            "overallState": 1,
+            "key": 4,
+            "type": 3,
+            "name": "MyShare_102",
+            "vfs": "DockerVfs_0"
+        }
+    ],
+    "total": 2
+}
 set_quota_body = {
     "links": [
         {

@@ -818,13 +818,13 @@ class HpeDockerShareUnitTests(testtools.TestCase):
         return 'file'
 
     @tc_banner_decorator
-    def __test_create_share_default(self):
-        test = createshare_tester.TestCreateShareDefault()
+    def __test_create_first_default_share(self):
+        test = createshare_tester.TestCreateFirstDefaultShare()
         test.run_test(self)
 
     @tc_banner_decorator
-    def test_create_first_default_share(self):
-        test = createshare_tester.TestCreateFirstDefaultShare()
+    def __test_create_second_default_share(self):
+        test = createshare_tester.TestCreateSecondDefaultShare()
         test.run_test(self)
 
     @tc_banner_decorator
