@@ -70,6 +70,15 @@ def create_filesystem(path):
     return True
 
 
+def mkfile_dir_for_mounting(mount_prefix):
+    if mount_prefix:
+        global prefix
+        prefix = mount_prefix
+        return prefix
+    else:
+        return prefix
+
+
 def mkdir_for_mounting(path, mount_prefix):
     try:
         data = path.split("/")

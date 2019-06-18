@@ -55,3 +55,11 @@ def synchronized_rcg(lock_name):
             return __synchronized('RCG', lock_name, f, *a, **k)
         return _wrapped
     return _synchronized
+
+
+def synchronized_fp_share(lock_name):
+    def _synchronized(f):
+        def _wrapped(*a, **k):
+            return __synchronized('FP_SHARE', lock_name, f, *a, **k)
+        return _wrapped
+    return _synchronized

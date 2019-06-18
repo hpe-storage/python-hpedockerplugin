@@ -98,8 +98,8 @@ class HPE3PARISCSIDriver(object):
         self._check_flags(common)
         common.check_for_setup_error()
 
-        common.client_login()
         try:
+            common.client_login()
             self.initialize_iscsi_ports(common)
         finally:
             self._logout(common)

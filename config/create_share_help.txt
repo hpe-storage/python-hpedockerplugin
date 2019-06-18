@@ -1,0 +1,41 @@
+
+
+===============================================
+HPE 3PAR Share Plug-in For Docker: Create Help
+===============================================
+Create a share in HPE 3PAR using HPE 3PAR volume plug-in for Docker.
+
+-o filePersona          Presence of this flag allows the File Persona driver to process the request
+-o fpg=x                  x is the name of the file provisioning group (FPG). This option must be specified when user wants
+                            to use a non-default FPG or a legacy FPG. The FPG may or may not be an existing one.
+                            For a non-existing FPG x, a new FPG is created using the CPG that is either explicitly
+                            specified with '-o cpg' option or configured in hpe.conf.
+                            If FPG exists, be it a legacy FPG or Docker managed FPG, share is simply created under it.
+                            In case this option is not specified, then a default FPG is created with size 16TiB if it
+                            doesn't exist. Naming convention for default FPG is DockerFpg_n where n is an integer
+                            starting from 0.
+-o size=x                 x is the size of the share in GiB. By default, it is 1024 GiB.
+-o help -o filePersona    When used together, these options display this help content
+-o help=backends -o filePersona  When used togther, these options display status of the backends configured for File Persona
+-o fsOwner=x              x is the user id and group id that should own the root directory  of nfs file share in the form of
+                            [userId:groupId]. Administartor also need to make sure that local user and local group with these
+                            ids are present on 3PAR before trying to mount the created share.
+                            For such shares which has userId and groupId specified, mount will succeed only if users and
+                            group with specified ids are present on 3PAR.
+-o fsMode=x               x is 1 to 4 octal degits that represent the file mode to be applied to the root directory of the
+                            file system. Ex: fsMode="0754" , Here 0 before number is mandatory. This ensures specified user
+                            of fsOwner will have rwx permissions, group will have rx permissions and others will have read
+                            permissions.
+                          x can also be ACL string. This also represents ACL permissions that are allowed on share directory.
+                            fsMode contains list of ACEs. Use Commas to seperate ACEs. Each ACE here contains 3 values named,
+                            type, flag and permissions. These 3 values are seperated by ':'. First ACE represents Owner,
+                            Second ACE represents Group and third ACE represents EveryOne. These has to be represented in
+                            order. Ex: A:fd:rwa,A:g:rwaxdnNcCoy,A:fdS:DtnNcy 
+                            type field can take only one of these values [A,D,U,L] 
+                            flag field can take one or more of these values [f,d,p,i,S,F,g]
+                            permissions field can take one or more of these values [r,w,a,x,d,D,t,T,n,N,c,C,o,y]
+                            Please refer 3PAR cli user guide more details on meaning of each flag.
+                          Note: For fsMode values user can specify either of mode bits or ACL string. Both can not be used 
+                            simultaneously. While using fsMode it is mandatory to specify fsOwner. If Only fsMode is used
+                            User will not be able to mount the share. This is because permissions and ownership changes are
+                            done during the first mount call. 

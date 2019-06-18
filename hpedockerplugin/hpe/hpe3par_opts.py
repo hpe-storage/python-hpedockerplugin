@@ -1,4 +1,5 @@
 from oslo_config import cfg
+from hpedockerplugin.hpe import vfs_ip_pool as ip_pool
 
 
 hpe3par_opts = [
@@ -48,6 +49,12 @@ hpe3par_opts = [
                      "standard dict config form: replication_device = "
                      "target_device_id:<required>,"
                      "key1:value1,key2:value2..."),
+    cfg.IntOpt('hpe3par_default_fpg_size',
+               default=16,
+               help='FPG size in TiB'),
+    cfg.MultiOpt('hpe3par_server_ip_pool',
+                 item_type=ip_pool.VfsIpPool(),
+                 help='Target server IP pool'),
 ]
 
 san_opts = [

@@ -2,6 +2,7 @@ import mock
 
 import test.fake_3par_data as data
 from hpedockerplugin.hpe import hpe_3par_common as hpecommon
+from hpedockerplugin.hpe import utils
 from hpedockerplugin import volume_manager as mgr
 from hpedockerplugin import backend_orchestrator as orch
 from oslo_config import cfg
@@ -49,18 +50,21 @@ def mock_decorator(func):
 
         with mock.patch.object(hpecommon.HPE3PARCommon, '_create_client') \
                 as mock_create_client, \
-                mock.patch.object(orch.Orchestrator, '_get_etcd_util') \
-                as mock_get_etcd_util, \
+                mock.patch.object(orch.VolumeBackendOrchestrator,
+                                  '_get_etcd_client') \
+                as _get_etcd_client, \
                 mock.patch.object(mgr.VolumeManager, '_get_connector') \
                 as mock_get_connector, \
                 mock.patch('hpedockerplugin.volume_manager.connector') \
                 as mock_osbricks_connector, \
-                mock.patch.object(orch.Orchestrator, '_get_node_id') \
+                mock.patch.object(orch.VolumeBackendOrchestrator,
+                                  '_get_node_id') \
                 as mock_get_node_id, \
-                mock.patch.object(mgr.VolumeManager, '_decrypt_password') \
+                mock.patch.object(utils.PasswordDecryptor,
+                                  'decrypt_password') \
                 as mock_decrypt_password:
             mock_create_client.return_value = mock_3parclient
-            mock_get_etcd_util.return_value = mock_etcd
+            _get_etcd_client.return_value = mock_etcd
             mock_get_connector.return_value = mock_protocol_connector
             mock_get_node_id.return_value = data.THIS_NODE_ID
             mock_decrypt_password.return_value = data.HPE3PAR_USER_PASS

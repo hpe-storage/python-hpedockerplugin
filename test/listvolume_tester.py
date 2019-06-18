@@ -13,7 +13,7 @@ class ListVolumeUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
-        mock_etcd.get_all_vols.return_value = None
+        mock_etcd.get_all_vols.return_value = []
 
     def override_configuration(self, config):
         pass

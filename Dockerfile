@@ -20,6 +20,7 @@ RUN apk add --no-cache --update \
     sg3_utils\
     eudev \
     libssl1.0 \
+    nfs-utils \
 	sudo \
  && apk update \
  && apk upgrade \
@@ -91,4 +92,3 @@ RUN sed -i \
 ENV TAG $TAG
 ENV GIT_SHA $GIT_SHA
 ENV BUILD_DATE $BUILD_DATE
-
