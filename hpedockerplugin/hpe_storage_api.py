@@ -886,7 +886,7 @@ class VolumePlugin(object):
             return self.orchestrator.get_volume_snap_details(volname,
                                                              snapname,
                                                              qualified_name)
-        return json.dumps({u"Err": '', u"Volume": ''})
+        return json.dumps({u"Err": ''})
 
     @app.route("/VolumeDriver.List", methods=["POST"])
     def volumedriver_list(self, body):

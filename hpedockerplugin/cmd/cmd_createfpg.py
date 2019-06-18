@@ -55,7 +55,8 @@ class CreateFpgCmd(cmd.Cmd):
                                                 fpg_metadata)
                 self._fpg_metadata_saved = True
             except (exception.ShareBackendException,
-                    exception.EtcdMetadataNotFound) as ex:
+                    exception.EtcdMetadataNotFound,
+                    Exception) as ex:
                 msg = "Create new FPG %s failed. Msg: %s" \
                       % (self._fpg_name, six.text_type(ex))
                 LOG.error(msg)

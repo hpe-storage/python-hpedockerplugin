@@ -78,6 +78,10 @@ class HPE3ParMediator(object):
     def no_client():
         return hpe3parclient is None
 
+    def _create_client(self):
+        return file_client.HPE3ParFilePersonaClient(
+            self._config.hpe3par_api_url)
+
     def do_setup(self, timeout=30):
 
         if self.no_client():
@@ -100,8 +104,7 @@ class HPE3ParMediator(object):
             raise exception.HPE3ParInvalidClient(message=msg)
 
         try:
-            self._client = file_client.HPE3ParFilePersonaClient(
-                self._config.hpe3par_api_url)
+            self._client = self._create_client()
         except Exception as e:
             msg = (_('Failed to connect to HPE 3PAR File Persona Client: %s') %
                    six.text_type(e))
@@ -502,11 +505,6 @@ class HPE3ParMediator(object):
 
             LOG.info("Create FPG Response: %s" % six.text_type(resp))
             LOG.info("Create FPG Response Body: %s" % six.text_type(body))
-            if (resp['status'] == BAD_REQUEST and
-                    body['code'] == OTHER_FAILURE_REASON and
-                    'already exists' in body['desc']):
-                LOG.error(body['desc'])
-                raise exception.FpgAlreadyExists(reason=body['desc'])
 
             task_id = body.get('taskId')
             if task_id:
@@ -556,9 +554,9 @@ class HPE3ParMediator(object):
         try:
             self._wsapi_login()
             resp, body = self._client.http.post(uri, body=args)
-            msg = 'Create VFS task failed: vfs=%s, cpg=%s,fpg=%s' \
-                  % (vfs_name, cpg, fpg)
             if resp['status'] != '202':
+                msg = 'Create VFS task failed: vfs=%s, cpg=%s,fpg=%s' \
+                      % (vfs_name, cpg, fpg)
                 LOG.exception(msg)
                 raise exception.ShareBackendException(msg=msg)
 
