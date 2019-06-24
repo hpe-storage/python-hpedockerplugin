@@ -4,16 +4,16 @@ import test.fake_3par_data as data
 import test.hpe_docker_unit_test as hpedockerunittest
 
 
-class MountShareUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):
+class UnmountShareUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):
     def __init__(self):
         self._backend_name = None
-        self._share = copy.deepcopy(data.etcd_share)
+        self._share = copy.deepcopy(data.etcd_mounted_share)
 
     def _get_plugin_api(self):
-        return 'volumedriver_mount'
+        return 'volumedriver_unmount'
 
     def get_request_params(self):
-        return {"Name": 'DemoShare-99',
+        return {"Name": 'GoodShare',
                 "ID": "Fake-Mount-ID"}
 
     def setup_mock_objects(self):
@@ -47,7 +47,7 @@ class MountShareUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):
         pass
 
 
-class TestMountNfsShare(MountShareUnitTest):
+class TestUnmountNfsShare(UnmountShareUnitTest):
     def __init__(self, **kwargs):
         super(type(self), self).__init__(**kwargs)
 

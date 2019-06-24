@@ -34,7 +34,8 @@ class SetQuotaCmd(cmd.Cmd):
 
             LOG.info("Updated quota metadata for share: %s" % share)
 
-        except exception.ShareBackendException as ex:
+        except (exception.ShareBackendException,
+                exception.HPEPluginSaveFailed) as ex:
             msg = "Set quota failed. Msg: %s" % six.text_type(ex)
             LOG.error(msg)
             raise exception.SetQuotaFailed(reason=msg)
