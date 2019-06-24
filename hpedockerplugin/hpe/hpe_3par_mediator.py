@@ -478,19 +478,6 @@ class HPE3ParMediator(object):
             LOG.exception(msg)
             raise exception.ShareBackendException(msg=msg)
 
-    def _check_task_id(self, task_id):
-        if type(task_id) is list:
-            task_id = task_id[0]
-        try:
-            int(task_id)
-        except ValueError:
-            # 3PAR returned error instead of task_id
-            # Log the error message
-            msg = task_id
-            LOG.error(msg)
-            raise exception.ShareBackendException(msg)
-        return task_id
-
     def create_fpg(self, cpg, fpg_name, size=16):
         try:
             self._wsapi_login()

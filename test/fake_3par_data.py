@@ -1,8 +1,10 @@
 import json
 import mock
+from oslo_utils import netutils
 
 THIS_NODE_ID = "This-Node-Id"
 OTHER_NODE_ID = "Other-Node-Id"
+FAKE_MOUNT_ID = 'Fake-Mount-ID'
 KNOWN_HOSTS_FILE = 'dummy'
 HPE3PAR_CPG = 'DockerCPG'
 HPE3PAR_CPG2 = 'fakepool'
@@ -91,48 +93,6 @@ FAKE_ISCSI_PORTS = [{
     'IPAddr': '1.1.1.2',
     'iSCSIName': TARGET_IQN,
 }]
-
-share = {
-    'backend': 'DEFAULT',
-    'id': 'FAKE_UUID',
-    # 'fpg': [{'imran_fpg': ['10.50.9.90']}],
-    'fpg': 'DockerFpg_0',
-    'vfs': 'DockerVfs_0',
-    'vfsIP': '10.50.9.90',
-    'fstore': 'imran_fstore',
-    'name': 'DemoShare-99',
-    'display_name': 'DemoShare-99',
-    'shareDir': 'DemoShareDir99',
-    'protocol': 'nfs',
-    'readonly': False,
-    'softQuota': None,
-    'hardQuota': None,
-    'clientIPs': [],
-    'protocolOpts': None,
-    'snapshots': [],
-    'comment': 'Demo Share 99',
-}
-
-share_to_remove = {
-    'backend': 'DEFAULT',
-    'id': 'FAKE_UUID',
-    # 'fpg': [{'imran_fpg': ['10.50.9.90']}],
-    'fpg': 'imran_fpg',
-    'vfs': 'imran_vfs',
-    'vfsIP': '10.50.9.90',
-    'fstore': 'ia_fstore',
-    'name': 'ia_fstore',
-    'display_name': 'ia_fstore',
-    'shareDir': None,
-    'protocol': 'nfs',
-    'readonly': False,
-    'softQuota': None,
-    'hardQuota': None,
-    'clientIPs': [],
-    'protocolOpts': None,
-    'snapshots': [],
-    'comment': 'Test Share 06',
-}
 
 volume = {
     'name': VOLUME_NAME,
@@ -953,6 +913,26 @@ etcd_bkend_mdata_with_default_fpg = {
     'default_fpgs': {'fs_cpg': ['DockerFpg_0']}
 }
 
+etcd_bkend_mdata_with_default_fpg_and_ips = {
+    'ips_in_use': ['192.168.98.41'],
+    'ips_locked_for_use': [],
+    'counter': 1,
+    'default_fpgs': {'fs_cpg': ['DockerFpg_0']}
+}
+
+etcd_fpg_metadata = {
+    "fpg": "DockerFpg_1",
+    "fpg_size": 16,
+    "vfs": "DockerVfs_1",
+    "ips": {
+        "255.255.192.0": ["192.168.98.41"]
+    }
+}
+
+get_bkend_fpg_resp = {
+    'status': '200'
+}
+
 bkend_fpg = {
     'members': [
         {
@@ -1289,4 +1269,69 @@ get_vfs_body = {
         }
     ],
     "total": 1
+}
+
+get_fstore_resp = {
+    "status": "200",
+}
+
+get_fstore_body = {
+    "total": 1,
+    "members": [
+        {
+            "fpg": "DockerFpg_1",
+            "overallState": 1,
+            "securityMode": 2,
+            "id": "b1a085a1-4834-49fc-b9cd-37b7e3fcf55d-2",
+            "name": "GoodShare",
+            "vfs": "DockerVfs_1"
+        }
+    ]
+}
+
+no_fpg_resp = {
+    "status": "200",
+}
+
+no_fpg_body = {
+    "total": 0,
+    "members": []
+}
+
+no_fstore_body = {
+    "total": 0,
+    "members": []
+}
+
+fpg_delete_task_resp = {
+    'status': '202'
+}
+
+fpg_delete_task_body = {
+    "id": 5565,
+    "type": 20,
+    "name": "deletefpg_task",
+    "status": 1,
+    "taskId": 1234
+}
+
+etcd_mounted_share = {
+    'id': '1422125830661572115',
+    'backend': 'DEFAULT_FILE',
+    'cpg': 'swap_fs_cpg',
+    'fpg': 'DockerFpg_2',
+    'vfs': 'DockerVfs_2',
+    'name': 'GoodShare',
+    'size': 1048576,
+    'readonly': False,
+    'nfsOptions': None,
+    'protocol': 'nfs',
+    'clientIPs': [netutils.get_my_ipv4()],
+    'comment': None,
+    'fsMode': None,
+    'fsOwner': None,
+    'status': 'AVAILABLE',
+    'vfsIPs': [['192.168.98.41', '255.255.192.0']],
+    'quota_id': '13209547719864709510',
+    'path_info': {THIS_NODE_ID: [FAKE_MOUNT_ID]}
 }
