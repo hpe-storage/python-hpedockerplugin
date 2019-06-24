@@ -1,13 +1,11 @@
 import abc
 import json
 import re
-import six
 from collections import OrderedDict
 
 from oslo_log import log as logging
 
 import hpedockerplugin.exception as exception
-from hpedockerplugin.hpe import volume
 from hpedockerplugin.hpe import share
 
 LOG = logging.getLogger(__name__)
@@ -593,8 +591,8 @@ class FileRequestContextBuilder(RequestContextBuilder):
 #
 #             for mode in fs_mode_str:
 #                 if int(mode) > 7:
-#                     msg = "Invalid value '%s' specified for fsMode. Please " \
-#                           "specify an octal value." % fs_mode_str
+#                     msg = "Invalid value '%s' specified for fsMode. Please"\
+#                           " specify an octal value." % fs_mode_str
 #                     raise exception.InvalidInput(msg)
 #         return fs_mode_str
 #
@@ -631,12 +629,13 @@ class FileRequestContextBuilder(RequestContextBuilder):
 #         hpepluginconfig = self._backend_configs[backend_name]
 #         replication_device = hpepluginconfig.replication_device
 #
-#         LOG.info("Replication device: %s" % six.text_type(replication_device))
+#         LOG.info("Replication device: %s" % six.text_type(
+#             replication_device))
 #
 #         if rcg_name and not replication_device:
-#             msg = "Request to create replicated volume cannot be fulfilled " \
-#                   "without defining 'replication_device' entry defined in " \
-#                   "hpe.conf for the backend '%s'. Please add it and execute " \
+#             msg = "Request to create replicated volume cannot be fulfilled"\
+#                   "without defining 'replication_device' entry defined in"\
+#                   "hpe.conf for the backend '%s'. Please add it and execute"\
 #                   "the request again." % backend_name
 #             raise exception.InvalidInput(reason=msg)
 #
@@ -645,10 +644,10 @@ class FileRequestContextBuilder(RequestContextBuilder):
 #             backend_names.sort()
 #
 #             msg = "'%s' is a replication enabled backend. " \
-#                   "Request to create replicated volume cannot be fulfilled " \
-#                   "without specifying 'replicationGroup' option in the " \
-#                   "request. Please either specify 'replicationGroup' or use " \
-#                   "a normal backend and execute the request again. List of " \
+#                   "Request to create replicated volume cannot be fulfilled "\
+#                   "without specifying 'replicationGroup' option in the "\
+#                   "request. Please either specify 'replicationGroup' or use"\
+#                   "a normal backend and execute the request again. List of"\
 #                   "backends defined in hpe.conf: %s" % (backend_name,
 #                                                         backend_names)
 #             raise exception.InvalidInput(reason=msg)
@@ -658,7 +657,7 @@ class FileRequestContextBuilder(RequestContextBuilder):
 #             def _check_valid_replication_mode(mode):
 #                 valid_modes = ['synchronous', 'asynchronous', 'streaming']
 #                 if mode.lower() not in valid_modes:
-#                     msg = "Unknown replication mode '%s' specified. Valid " \
+#                     msg = "Unknown replication mode '%s' specified. Valid "\
 #                           "values are 'synchronous | asynchronous | " \
 #                           "streaming'" % mode
 #                     raise exception.InvalidInput(reason=msg)
@@ -667,13 +666,13 @@ class FileRequestContextBuilder(RequestContextBuilder):
 #             _check_valid_replication_mode(rep_mode)
 #             if replication_device.get('quorum_witness_ip'):
 #                 if rep_mode.lower() != 'synchronous':
-#                     msg = "For Peer Persistence, replication mode must be " \
+#                     msg = "For Peer Persistence, replication mode must be "\
 #                           "synchronous"
 #                     raise exception.InvalidInput(reason=msg)
 #
 #             sync_period = replication_device.get('sync_period')
 #             if sync_period and rep_mode == 'synchronous':
-#                 msg = "'sync_period' can be defined only for 'asynchronous'" \
+#                 msg = "'sync_period' can be defined only for 'asynchronous'"\
 #                       " and 'streaming' replicate modes"
 #                 raise exception.InvalidInput(reason=msg)
 #

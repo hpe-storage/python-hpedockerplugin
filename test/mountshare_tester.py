@@ -13,8 +13,6 @@ class MountShareUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):
         return 'volumedriver_mount'
 
     def get_request_params(self):
-        if self._backend_name:
-            opts['backend'] = self._backend_name
         return {"Name": 'DemoShare-99',
                 "ID": "Fake-Mount-ID"}
 

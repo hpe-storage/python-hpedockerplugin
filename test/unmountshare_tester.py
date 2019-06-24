@@ -13,8 +13,6 @@ class UnmountShareUnitTest(hpedockerunittest.HpeDockerUnitTestExecutor):
         return 'volumedriver_unmount'
 
     def get_request_params(self):
-        if self._backend_name:
-            opts['backend'] = self._backend_name
         return {"Name": 'GoodShare',
                 "ID": "Fake-Mount-ID"}
 
