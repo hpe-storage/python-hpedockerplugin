@@ -17,6 +17,7 @@
 import six
 import string
 import uuid
+import platform
 
 from Crypto.Cipher import AES
 from Crypto.Random import random
@@ -154,6 +155,14 @@ def get_3par_rcg_name(id):
 def get_remote3par_rcg_name(id, array_id):
     return get_3par_rcg_name(id) + ".r" + (
         six.text_type(array_id))
+
+
+def is_host_os_rhel():
+    platform_type = list(platform.linux_distribution())
+    if 'Red Hat Enterprise Linux Server' in platform_type:
+        return True
+    else:
+        return False
 
 
 class PasswordDecryptor(object):
