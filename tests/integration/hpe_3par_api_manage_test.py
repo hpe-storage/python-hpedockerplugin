@@ -52,6 +52,7 @@ class ManageVolumeTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
 
     @classmethod
     def setUpClass(cls):
+        urllib3.disable_warnings()
         hpe_3par_cli.login('3paradm', '3pardata')
         pass
 
