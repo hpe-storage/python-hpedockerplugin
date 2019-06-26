@@ -846,11 +846,16 @@ class HpeDockerShareUnitTests(testtools.TestCase):
         test.run_test(self)
 
     @tc_banner_decorator
-    def test_mount_nfs_share(self):
+    def test_mount_share(self):
         test = mountshare_tester.TestMountNfsShare()
         test.run_test(self)
 
     @tc_banner_decorator
-    def test_unmount_nfs_share(self):
+    def test_mount_share_with_acl(self):
+        test = mountshare_tester.TestMountNfsShareWithAcl()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_unmount_share(self):
         test = unmountshare_tester.TestUnmountNfsShare()
         test.run_test(self)

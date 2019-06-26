@@ -38,19 +38,10 @@ class CreateShareCmd(cmd.Cmd):
             LOG.info("Creating share %s on the backend" % share_name)
             share_id = self._mediator.create_share(self._share_args)
             self._share_args['id'] = share_id
-        except Exception as ex:
-            msg = "Share creation failed [share_name: %s, error: %s" %\
-                  (share_name, six.text_type(ex))
-            LOG.error(msg)
-            self.unexecute()
-            raise exception.ShareCreationFailed(msg)
-
-        try:
-            self._status = 'AVAILABLE'
-            self._share_args['status'] = self._status
             share_etcd.save_share(self._share_args)
         except Exception as ex:
             msg = "Share creation failed [share_name: %s, error: %s" %\
                   (share_name, six.text_type(ex))
             LOG.error(msg)
+            self.unexecute()
             raise exception.ShareCreationFailed(msg)

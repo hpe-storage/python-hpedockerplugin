@@ -53,6 +53,7 @@ class SetQuotaCmd(cmd.Cmd):
         share = self._share_etcd.get_share(self._share_name)
         if add:
             share['quota_id'] = quota_id
+            self._status = 'AVAILABLE'
         elif 'quota_id' in share:
             share.pop('quota_id')
         self._share_etcd.save_share(share)

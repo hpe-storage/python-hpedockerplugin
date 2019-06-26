@@ -646,7 +646,7 @@ class HPE3ParMediator(object):
             if value == 'UID':
                 uid_index = index
         res_len = len(res_cmd)
-        end_index = res_len - 3
+        end_index = res_len - 2
         for line in res_cmd[2:end_index]:
             line_list = line.split(',')
             if fuserowner == line_list[uid_index]:
