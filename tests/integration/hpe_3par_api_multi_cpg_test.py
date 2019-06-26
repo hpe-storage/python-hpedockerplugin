@@ -51,83 +51,14 @@ class MultiCpgTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
 
     @classmethod
     def setUpClass(cls):
-
+        urllib3.disable_warnings()
         hpe_3par_cli.login('3paradm', '3pardata')
-
-        if PLUGIN_TYPE == 'managed':
-            c = docker.APIClient(
-                version=TEST_API_VERSION, timeout=600,
-                **docker.utils.kwargs_from_env()
-                )
-            try:
-                prv = c.plugin_privileges(HPE3PAR)
-                logs = [d for d in c.pull_plugin(HPE3PAR, prv)]
-                assert filter(lambda x: x['status'] == 'Download complete', logs)
-                if HOST_OS == 'ubuntu':
-                    c.configure_plugin(HPE3PAR, {
-                        'certs.source': CERTS_SOURCE
-                    })
-                else:
-                    c.configure_plugin(HPE3PAR, {
-                        'certs.source': CERTS_SOURCE,
-                        'glibc_libs.source': '/lib64'
-                    })
-                pl_data = c.inspect_plugin(HPE3PAR)
-                assert pl_data['Enabled'] is False
-                while pl_data['Enabled'] is False:
-                    c.enable_plugin(HPE3PAR)
-                    HPE3ParBackendVerification.hpe_wait_for_all_backends_to_initialize(cls, driver=HPE3PAR, help='backends')
-                pl_data = c.inspect_plugin(HPE3PAR)
-                assert pl_data['Enabled'] is True
-            except docker.errors.APIError:
-                pass
-        else:
-            c = docker.from_env(version=TEST_API_VERSION, timeout=600)
-            try:
-                mount = docker.types.Mount(type='bind', source='/opt/hpe/data',
-                                           target='/opt/hpe/data', propagation='rshared'
-                )
-                c.containers.run(PLUGIN_IMAGE, detach=True,
-                                 name='hpe_legacy_plugin', privileged=True, network_mode='host',
-                                 restart_policy={'Name': 'on-failure', 'MaximumRetryCount': 5},
-                                 volumes=PLUGIN_VOLUMES, mounts=[mount],
-                                 labels={'type': 'plugin'}
-                )
-                HPE3ParBackendVerification.hpe_wait_for_all_backends_to_initialize(cls, driver=HPE3PAR, help='backends')
-            except docker.errors.APIError:
-                pass
-
 
     @classmethod
     def tearDownClass(cls):
 
         hpe_3par_cli.logout()
-
-        if PLUGIN_TYPE == 'managed':
-            c = docker.APIClient(
-                version=TEST_API_VERSION, timeout=600,
-                **docker.utils.kwargs_from_env()
-            )
-            try:
-                c.disable_plugin(HPE3PAR)
-            except docker.errors.APIError:
-                pass
-
-            try:
-                c.remove_plugin(HPE3PAR, force=True)
-            except docker.errors.APIError:
-                pass
-        else:
-            c = docker.from_env(version=TEST_API_VERSION, timeout=600)
-            try:
-                container_list = c.containers.list(all=True, filters={'label': 'type=plugin'})
-                container_list[0].stop()
-                container_list[0].remove()
-                os.remove("/run/docker/plugins/hpe.sock")
-                os.remove("/run/docker/plugins/hpe.sock.lock")
-            except docker.errors.APIError:
-                pass
-
+        
 
     def test_multi_cpg(self):
     
