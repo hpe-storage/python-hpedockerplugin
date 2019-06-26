@@ -35,7 +35,7 @@ else:
         PLUGIN_VOLUMES = cfg['rhel_volumes']
 
 @requires_api_version('1.21')
-class RemoteCopyTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest)
+class RemoteCopyTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
 
     def test_active_passive_replication(self):
         '''
