@@ -39,9 +39,18 @@ class PluginTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
             version=TEST_API_VERSION, timeout=600,
             **docker.utils.kwargs_from_env()
         )
-  
+        try:
+            c.disable_plugin(HPE3PAR)
+        except docker.errors.APIError:
+            pass
+
         try:
             c.disable_plugin(HPE3PAR_OLD)
+        except docker.errors.APIError:
+            pass
+
+        try:
+            c.remove_plugin(HPE3PAR, force=True)
         except docker.errors.APIError:
             pass
 
@@ -49,6 +58,7 @@ class PluginTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
             c.remove_plugin(HPE3PAR_OLD, force=True)
         except docker.errors.APIError:
             pass
+
 
     def ensure_plugin_installed(self, plugin_name):
         # This test will ensure if the plugin is installed
