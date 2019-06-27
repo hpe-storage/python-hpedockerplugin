@@ -37,6 +37,52 @@ else:
 @requires_api_version('1.21')
 class RemoteCopyTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
 
+    @classmethod
+    def setUpClass(cls):
+        if PLUGIN_TYPE == 'managed':
+            c = docker.APIClient(
+                version=TEST_API_VERSION, timeout=600,
+                **docker.utils.kwargs_from_env()
+                )
+            try:
+                prv = c.plugin_privileges(HPE3PAR)
+                logs = [d for d in c.pull_plugin(HPE3PAR, prv)]
+                assert filter(lambda x: x['status'] == 'Download complete', logs)
+                if HOST_OS == 'ubuntu':
+                    c.configure_plugin(HPE3PAR, {
+                        'certs.source': CERTS_SOURCE
+                    })
+                else:
+                    c.configure_plugin(HPE3PAR, {
+                        'certs.source': CERTS_SOURCE,
+                        'glibc_libs.source': '/lib64'
+                    })
+                pl_data = c.inspect_plugin(HPE3PAR)
+                assert pl_data['Enabled'] is False
+                while pl_data['Enabled'] is False:
+                    c.enable_plugin(HPE3PAR)
+                    HPE3ParBackendVerification.hpe_wait_for_all_backends_to_initialize(cls, driver=HPE3PAR, help='backends')
+                pl_data = c.inspect_plugin(HPE3PAR)
+                assert pl_data['Enabled'] is True
+            except docker.errors.APIError:
+                pass
+        else:
+            c = docker.from_env(version=TEST_API_VERSION, timeout=600)
+            try:
+                mount = docker.types.Mount(type='bind', source='/opt/hpe/data',
+                                           target='/opt/hpe/data', propagation='rshared'
+                )
+                c.containers.run(PLUGIN_IMAGE, detach=True,
+                                 name='hpe_legacy_plugin', privileged=True, network_mode='host',
+                                 restart_policy={'Name': 'on-failure', 'MaximumRetryCount': 5},
+                                 volumes=PLUGIN_VOLUMES, mounts=[mount],
+                                 labels={'type': 'plugin'}
+                )
+                HPE3ParBackendVerification.hpe_wait_for_all_backends_to_initialize(cls, driver=HPE3PAR, help='backends')
+            except docker.errors.APIError:
+                pass
+
+
     def test_active_passive_replication(self):
         '''
            This test creates an active-passive replication group and tests the failover, recover and restore functionality.
