@@ -765,7 +765,11 @@ class FileManager(object):
 
         self._create_mount_dir(mount_dir)
         LOG.info("Mounting share path %s to %s" % (share_path, mount_dir))
-        sh.mount('-t', 'nfs', share_path, mount_dir)
+        if utils.is_host_os_rhel():
+            sh.mount('-o', 'context="system_u:object_r:nfs_t:s0"',
+                     '-t', 'nfs', share_path, mount_dir)
+        else:
+            sh.mount('-t', 'nfs', share_path, mount_dir)
         LOG.debug('Device: %(path)s successfully mounted on %(mount)s',
                   {'path': share_path, 'mount': mount_dir})
 

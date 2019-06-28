@@ -508,7 +508,6 @@ class TestCreateShareOnLegacyFpg(CreateShareUnitTest):
         mock_3parclient.getWsApiVersion.assert_called()
 
 
-# TODO: This is work in progress
 class TestCreateFirstDefaultShareSetQuotaFails(CreateShareUnitTest):
     def get_request_params(self):
         return {u"Name": u"MyDefShare_01",
@@ -546,9 +545,6 @@ class TestCreateFirstDefaultShareSetQuotaFails(CreateShareUnitTest):
         mock_file_client.http.get.side_effect = \
             file_client_http_get_side_effect
         # ***** END - Setup side effect lists *****
-
-        # Step #1:
-        # Skip check for volume existence <-- REST layer
 
         # Step #0:
         # Skip check for volume existence <-- REST LAYER
@@ -628,55 +624,55 @@ class TestCreateFirstDefaultShareSetQuotaFails(CreateShareUnitTest):
         )
         mock_file_client.TASK_DONE = 1
 
-        # Step #15:
+        # Step #11:
         # Verify VFS is in good state
         file_client_http_get_side_effect.append(
             (data.get_vfs_resp, data.get_vfs_body)
         )
 
-        # Step #11:
+        # Step #12:
         # Allow IP info to be updated by returning empty dict
         # This brings VFS creation process to completion
         etcd_get_fpg_metadata_side_effect.append({})
 
-        # Step #12:
-        # Allow marking of IP to be in use
-        etcd_get_backend_metadata_side_effect.append(
-            data.etcd_bkend_mdata_with_default_fpg
-        )
-        # Step #16:
-        # Allow marking of IP to be in use
-        etcd_get_backend_metadata_side_effect.append(
-            data.etcd_bkend_mdata_with_default_fpg
-        )
         # Step #13:
+        # Allow marking of IP to be in use
+        etcd_get_backend_metadata_side_effect.append(
+            data.etcd_bkend_mdata_with_default_fpg
+        )
+        # Step #14:
+        # Allow marking of IP to be in use
+        etcd_get_backend_metadata_side_effect.append(
+            data.etcd_bkend_mdata_with_default_fpg
+        )
+        # Step #15:
         # Create share response and body
         file_client_http_post_side_effect.append(
             (data.sh_create_resp, data.sh_create_body)
         )
-        # Step #14:
+        # Step #16:
         # Set quota FAILS
         file_client_http_post_side_effect.append(
             hpe3par_ex.HTTPBadRequest("Set Quota Failed")
         )
-        # Step #16:
+        # Step #17:
         # Delete file store requires its ID. Query file store
         # by name
         file_client_http_get_side_effect.append(
             (data.get_fstore_resp, data.get_fstore_body)
         )
-        # Step #17:
+        # Step #18:
         # IP marked for use to be returned to IP pool as part of rollback
         # Return backend metadata that has the IPs in use
         etcd_get_backend_metadata_side_effect.append(
             data.etcd_bkend_mdata_with_default_fpg_and_ips
         )
-        # Step #18:
+        # Step #19:
         # To delete backend FPG, get FPG by name to retrieve its ID
         file_client_http_get_side_effect.append(
             (data.get_bkend_fpg_resp, data.bkend_fpg)
         )
-        # Step #19:
+        # Step #20:
         # Wait for delete FPG task completion
         mock_file_client.http.delete.return_value = \
             (data.fpg_delete_task_resp, data.fpg_delete_task_body)
@@ -685,7 +681,7 @@ class TestCreateFirstDefaultShareSetQuotaFails(CreateShareUnitTest):
         )
         mock_file_client.TASK_DONE = 1
 
-        # Step #20:
+        # Step #21:
         # Allow removal of default FPG from backend metadata
         etcd_get_backend_metadata_side_effect.append(
             data.etcd_bkend_mdata_with_default_fpg_and_ips
