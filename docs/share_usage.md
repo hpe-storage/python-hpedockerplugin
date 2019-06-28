@@ -101,24 +101,32 @@ FPG would be created for each backend.
 ### Command to create HPE share
 ```sh
 $ docker volume create –d hpe --name <Share-name> <-o filePersona> 
-[ -o size=<Share-size-in-GiB>  –o cpg=<CPG-name>  -o fpg=<FPG-name> ]
+[ -o size=<Share-size-in-GiB>  –o cpg=<CPG-name>  -o fpg=<FPG-name>  
+  -o fsOwner=<userId:groupId>  -o fsMode=<Linux_style_permissions OR ACL-string> ]
 ```
 
 **Where:**
 
-- ***size:*** specifies the desired size of the share in GiB. By default it is 1024 GiB.  
-- ***cpg:*** specifies the cpg to be used for the share. This parameter can be used with or without ‘fpg’ option. When used with ‘fpg’, the FPG is created with the specified name if it doesn’t exist. If it does exist, then share is created under it. When used without ‘fpg’ option, default FPG under the specified CPG is selected for share creation. If default FPG doesn’t exist, a new default FPG is created under which the share is created.
-- ***fpg:*** FPG to be used for share creation. If the FPG does not exist, a new FPG with the specified name is created using either the CPG specified using ‘cpg’ option or specified in configuration file.
-- ***fsOwner:*** fsOwner is the user id and group id that should own the root directory of NFS file share in the form [userId:groupId]. Administrator must ensure that local user and local group with these IDs are present on 3PAR before trying to mount the share otherwise mount will fail.
-- ***fsMode:*** the value of fsMode is 1 to 4 octal digits representing the file mode to be applied to the root directory of the file system. Ex: fsMode="0754". Here 0 as the first digit is mandatory. This ensures specified user of fsOwner will have rwx permissions, group will have r-x permissions and others will have just the read permission.
-fsMode can also be an ACL string representing ACL permissions that are applied on the share directory. It contains three ACEs delimited by comma with each ACE consisting of three parts:
+- ***size:*** optional parameter which specifies the desired size of the share in GiB. By default it is 1024 GiB.  
+- ***cpg:*** optional parameter which specifies the cpg to be used for the share. This parameter can be used with or without ‘fpg’ option. When used with ‘fpg’, the FPG is created with the specified name if it doesn’t exist. If it does exist, then share is created under it. When used without ‘fpg’ option, default FPG under the specified CPG is selected for share creation. If default FPG doesn’t exist, a new default FPG is created under which the share is created.
+- ***fpg:*** optional parameter which specifies the FPG to be used for share creation. If the FPG does not exist, a new FPG with the specified name is created using either the CPG specified using ‘cpg’ option or specified in configuration file.
+- ***fsOwner:*** optional parameter which specifies the user-id and group-id that should own the root directory of NFS file share in the form [userId:groupId]. Administrator must ensure that local user and local group with these IDs are present on 3PAR before trying to mount the share otherwise mount will fail.
+- ***fsMode:*** optional parameter which specifies the permissions whose value is 1 to 4 octal digits 
+                representing the file mode to be applied to the root directory of the file system. 
+                Ex: fsMode="0754". Here 0 as the first digit is mandatory. This ensures specified user of 
+                fsOwner will have rwx permissions, group will have r-x permissions and others will have 
+                just the read permission.
+                fsMode can also be an ACL string representing ACL permissions that are applied on the share 
+                directory. It contains three ACEs delimited by comma with each ACE consisting of three 
+                parts:
 
     1. type,
     2. flag and
     3. permissions
 
     These three parts are delimited by semi-colon.
-    Out of the three ACEs in the ACL, the first ACE represents the ‘owner’, second one the ‘group’ and the third one ‘everyone’ to be specified in the same order.
+    Out of the three ACEs in the ACL, the first ACE represents the ‘owner’, second one the ‘group’ and the 
+    third one ‘everyone’ to be specified in the same order.
 
     E.g.: ```sh A:fd:rwa,A:g:rwaxdnNcCoy,A:fdS:DtnNcy```
 
@@ -127,7 +135,9 @@ fsMode can also be an ACL string representing ACL permissions that are applied o
     * permissions field can take one or more of these values [r,w,a,x,d,D,t,T,n,N,c,C,o,y]  
 
     Please refer 3PAR CLI user guide more details on meaning of each flag.  
-    **Note:** For fsMode values user can specify either of mode bits or ACL string. Both cannot be used simultaneously. While using fsMode it is mandatory to specify fsOwner. If Only fsMode is used, user will not be able to mount the share. 
+    **Note:** For fsMode values user can specify either of mode bits or ACL string. Both cannot be used 
+    simultaneously. While using fsMode it is mandatory to specify fsOwner. If Only fsMode is used, user 
+    will not be able to mount the share. 
 
 ##### Creating default HPE share  
 ```  
@@ -147,7 +157,9 @@ FPG is created with default size of 16TiB.
 ```  
 docker volume create -d hpe --name <share_name> -o filePersona -o cpg=<cpg_name>  
 ```  
-This command creates share of default size 1TiB on the default FPG whose parent CPG is ‘cpg_name’. If default FPG is not present, it is created on CPG ‘cpg_name’ with size ‘hpe3par_default_fpg_size’ if it is defined in hpe.conf. Else its size defaults to 16TiB.
+This command creates share of default size 1TiB on the default FPG whose parent CPG is ‘cpg_name’. If 
+default FPG is not present, it is created on CPG ‘cpg_name’ with size ‘hpe3par_default_fpg_size’ if it 
+is defined in hpe.conf. Else its size defaults to 16TiB.
 
 ‘size’ can be specified to create a share of size other than default size of 1TiB.  
   
@@ -155,7 +167,10 @@ This command creates share of default size 1TiB on the default FPG whose parent 
 ```  
 docker volume create -d hpe --name <share_name> -o filePersona -o fpg=<fpg_name>  
 ```  
-This command creates share of size 1TiB by default on the specified FPG ‘fpg_name’. If the FPG ‘fpg_name’ does not exist, then it is created on the CPG specified in hpe.conf. Please note that the FPG can either be Docker managed FPG or a legacy FPG. In either case, the FPG must have enough capacity to accommodate the share.
+This command creates share of size 1TiB by default on the specified FPG ‘fpg_name’. If the FPG ‘fpg_name’ 
+does not exist, then it is created on the CPG specified in hpe.conf. Please note that the FPG can either 
+be Docker managed FPG or a legacy FPG. In either case, the FPG must have enough capacity to accommodate 
+the share.
 
 ‘size’ can be specified to create a share of size other than default size of 1TiB.  
   
@@ -163,7 +178,10 @@ This command creates share of size 1TiB by default on the specified FPG ‘fpg_n
 ```  
 docker volume create -d hpe --name <share_name> -o filePersona -o fpg=<fpg_name> -o cpg=<cpg_name>  
 ```  
-This command creates share of default size 1TiB on the specified FPG ‘fpg_name’. If the FPG ‘fpg_name’ does not exist, then it is created on the specified CPG. Please note that the FPG can either be Docker managed FPG or a legacy FPG. However, in both these cases, the specified CPG must match the parent CPG of the FPG. Else, the operation results in error.
+This command creates share of default size 1TiB on the specified FPG ‘fpg_name’. If the FPG ‘fpg_name’ 
+does not exist, then it is created on the specified CPG. Please note that the FPG can either be Docker 
+managed FPG or a legacy FPG. However, in both these cases, the specified CPG must match the parent CPG 
+of the FPG. Else, the operation results in error.
 
 ‘size’ can be specified to create a share of size other than default size of 1TiB.  
 
