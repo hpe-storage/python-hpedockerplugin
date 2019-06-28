@@ -21,10 +21,11 @@ class CreateShareCmd(cmd.Cmd):
 
     def unexecute(self):
         share_name = self._share_args['name']
+        share = self._share_etcd.get_share(share_name)
         LOG.info("cmd::unexecute: Removing share entry from ETCD: %s" %
                  share_name)
         self._etcd.delete_share(share_name)
-        if self._status == "AVAILABLE":
+        if share['status'] == "AVAILABLE":
             LOG.info("cmd::unexecute: Deleting share from backend: %s" %
                      share_name)
             self._mediator.delete_share(self._share_args['id'])
