@@ -93,7 +93,10 @@ with the behavior column for each combination:
 |FILE   |-- |BLOCK  |DEFAULT_FILE is not allowed to be configured for Block driver. Plugin initialization fails in this case.|
 
 
-Although HPE does not recommended it, but if the user configures multiple backends that are identical in terms of target array and CPG, then the default FPG created for such backends would not be the same – rather a different default FPG would be created for each backend.
+Although HPE does not recommend it, but if the user configures multiple backends 
+that are identical in terms of target array and CPG, then the default FPG 
+created for such backends would not be the same – rather a different default 
+FPG would be created for each backend.
 
 ### Command to create HPE share
 ```sh
