@@ -6,7 +6,7 @@ shares on 3PAR arrays through Docker interface.
 In order to use HPE 3PAR File Persona feature, user needs to 
 configure a backend one for each target array as below:
 
-#### Configuring backend for file share
+## Configuring backend for file share
 
 ```sh
 [DEFAULT]
@@ -98,7 +98,7 @@ that are identical in terms of target array and CPG, then the default FPG
 created for such backends would not be the same – rather a different default 
 FPG would be created for each backend.
 
-### Command to create HPE share
+## Command to create HPE share
 ```sh
 $ docker volume create –d hpe --name <Share-name> <-o filePersona> 
 [ -o size=<Share-size-in-GiB>  –o cpg=<CPG-name>  -o fpg=<FPG-name>  
@@ -139,7 +139,7 @@ $ docker volume create –d hpe --name <Share-name> <-o filePersona>
     simultaneously. While using fsMode it is mandatory to specify fsOwner. If Only fsMode is used, user 
     will not be able to mount the share. 
 
-##### Creating default HPE share  
+### Creating default HPE share  
 ```  
 docker volume create -d hpe --name <share_name> -o filePersona  
 ```  
@@ -149,10 +149,22 @@ specified in configuration file hpe.conf. If ‘hpe3par_default_fpg_size’ is
 defined in hpe.conf, then FPG is created with the specified size. Otherwise, 
 FPG is created with default size of 16TiB.  
 
-‘size’ can be specified to create a share of size other than default size of 1TiB.  
+Please note that FPG creation is a long operation which takes around 3 minutes
+and hence it is done asynchronously on a child thread. User must keep inspecting
+the status of the share which is in 'CREATING' state during this time. Once the
+FPG, VFS and file store are created and quota is applied, the status of share is 
+set to 'AVAILABLE' state. User is not allowed to do any operations while the
+share is in 'CREATING' state.
+
+If for some reason a failure is encountered, the status of the share is set 
+to 'FAILED' state and the reason for failure can be seen by inspecting the share.
+
+A share in 'FAILED' state can be removed.
+
+**Note:** ‘size’ can be specified to override the default share size of 1TiB.  
 
   
-##### Creating a share using non-default CPG  
+### Creating a share using non-default CPG  
   
 ```  
 docker volume create -d hpe --name <share_name> -o filePersona -o cpg=<cpg_name>  
@@ -161,34 +173,127 @@ This command creates share of default size 1TiB on the default FPG whose parent 
 default FPG is not present, it is created on CPG ‘cpg_name’ with size ‘hpe3par_default_fpg_size’ if it 
 is defined in hpe.conf. Else its size defaults to 16TiB.
 
-‘size’ can be specified to create a share of size other than default size of 1TiB.  
+**Note:** ‘size’ can be specified to override the default share size of 1TiB.  
+
   
-##### Creating a share using non-default or legacy FPG  
+### Creating a share using non-default or legacy FPG  
 ```  
 docker volume create -d hpe --name <share_name> -o filePersona -o fpg=<fpg_name>  
 ```  
-This command creates share of size 1TiB by default on the specified FPG ‘fpg_name’. If the FPG ‘fpg_name’ 
-does not exist, then it is created on the CPG specified in hpe.conf. Please note that the FPG can either 
-be Docker managed FPG or a legacy FPG. In either case, the FPG must have enough capacity to accommodate 
-the share.
+This command creates a share of default size of 1TiB on the specified FPG ‘fpg_name’. 
+The specified FPG 'fpg_name' may or may not exist.
 
-‘size’ can be specified to create a share of size other than default size of 1TiB.  
+When this command is executed the plugin does the following:
+1. If the FPG 'fpg_name' exists and is Docker managed, share is created under
+   it provided that enough space is available on the FPG to accommodate the 
+   share.
+2. If the FPG 'fpg_name' exists and is a legacy FPG, share is created under it
+   provided that enough space is available on the FPG to accommodate the share
+3. If the FPG 'fpg_name' does not exist, it is created with size 
+   'hpe3par_default_fpg_size' configured in hpe.conf provided none of the 3PAR
+    limits are hit. Post FPG creation, share is created under it.
+
+If enough space is not there or any 3PAR limit is hit, the status of share is 
+set to 'FAILED' along with appropriate error message which can be seen while 
+inspecting the share details.
+
+**Note:** ‘size’ can be specified to override the default share size of 1TiB.  
   
-##### Creating a share on a non-default FPG and CPG  
+### Creating a share on a non-default FPG and CPG  
 ```  
 docker volume create -d hpe --name <share_name> -o filePersona -o fpg=<fpg_name> -o cpg=<cpg_name>  
 ```  
-This command creates share of default size 1TiB on the specified FPG ‘fpg_name’. If the FPG ‘fpg_name’ 
-does not exist, then it is created on the specified CPG. Please note that the FPG can either be Docker 
-managed FPG or a legacy FPG. However, in both these cases, the specified CPG must match the parent CPG 
-of the FPG. Else, the operation results in error.
+This command creates a share of default size of 1TiB on the specified FPG ‘fpg_name’. 
+The specified FPG 'fpg_name' may or may not exist.
 
-‘size’ can be specified to create a share of size other than default size of 1TiB.  
+When this command is executed the plugin does the following:
+1. If the FPG 'fpg_name' exists and it is Docker managed and the specified 
+   CPG 'cpg_name' matches with parent CPG of FPG 'fpg_name', share is created 
+   under it provided that enough space is available on the FPG to accommodate 
+   the share. If specified CPG 'cpg_name' does not match, share creation fails
+   with appropriate error.
+2. If the FPG 'fpg_name' exists and it is a legacy FPG and the specified CPG
+   'cpg_name' matches with the parent CPG of FPG 'fpg_name', share is created 
+   under it provided that enough space is available on the FPG to accommodate
+   the share. If specified CPG 'cpg_name' does not match, share creation fails
+   with appropriate error.
+3. If the FPG 'fpg_name' does not exist, it is created with size 
+   'hpe3par_default_fpg_size' configured in hpe.conf provided none of the 3PAR
+    limits are hit. Post FPG creation, share is created under it.
 
-**Note**: The FPG must have enough capacity to accommodate the share.
+If enough space is not there or any 3PAR limit is hit, the status of share is 
+set to 'FAILED' along with appropriate error message which can be seen while 
+inspecting the share details.
 
-##### Displaying help
+**Note:** 
+1. ‘size’ can be specified to override the default share size of 1TiB.  
+2. The FPG must have enough capacity to accommodate the share.
+
+### Mounting a share
+```
+docker run -it --rm  --mount src=<share-name>,dst=</mount-dir>,volume-driver=hpe --name <container-name> alpine /bin/sh
+```
+
+This command allows mounting of share 'share-name' inside the container 'container-name' on mount 
+directory 'mount-dir' using alpine image. A share can be mounted multiple times
+on the same host or different hosts that have access to the share. A share that
+is mounted multiple times on a host is unmounted only after the last container 
+mounting it is exited or stopped.
+
+Permissions if present are applied after mounting the share.
+
+### Un-mounting a share
+If container shell prompt is there, simply type 'exit' to unmount the share.
+If container is in detached mode, then retrieve container ID using 
+```docker ps -a``` and simply type:
+```
+docker stop <container-id>
+```
+
+### Inspecting a share
+```
+docker volume inspect <share-name>
+```
+Displays details of the share being inspected
+
+### Listing shares
+```
+docker volume ls
+```
+Lists all the shares
+
+### Removing a share
+```
+docker volume rm <share-name>
+```
+This command allows removing a share. If the share being removed happens to be
+the last share under its parent FPG, then the parent FPG is also removed.
+Please note that removal of parent FPG happens asynchronously on a child thread.
+
+### Displaying help
 ```  
 docker volume create -d hpe -o filePersona –o help  
 ```  
-This command displays help content of the file command with possible options that can be used with it.
+This command displays help content of the file command with possible options that 
+can be used with it.
+
+### Displaying backend initialization status
+```  
+docker volume create -d hpe -o filePersona –o help=backends
+```  
+This command displays the initialization status of all the backends that have 
+been configured for file driver.
+
+## Known behavior / issues
+1. All the operations must be performed sequentially. E.g. concurrent creation 
+   of multiple shares can lead to ETCD lock failures.
+2. When block related configuration parameters are used inadvertently in file 
+   driver configuration or vice-versa, it does not result in any error - the
+   plugin simply ignores it.
+3. When both 'DEFAULT' and 'DEFAULT_BLOCK' backends are defined as block driver,
+   'DEFAULT_BLOCK' is not treated as a special keyword. Rather it becomes like 
+   any other backend defined in a multi-backend configuration. Same goes when 
+   'DEFAULT' and 'DEFAULT_FILE' are defined as file driver.
+4. When two backend sections are identically defined, even then each backend 
+   is treated differently and results in having their individual default FPGs
+   when default share creation is done using both the backends.
