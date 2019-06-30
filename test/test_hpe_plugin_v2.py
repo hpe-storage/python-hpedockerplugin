@@ -835,7 +835,7 @@ class HpeDockerShareUnitTests(testtools.TestCase):
 
     # TODO: TC to be enabled once tester class implementation is done
     @tc_banner_decorator
-    def __test_create_first_default_share_set_quota_fails(self):
+    def test_create_first_default_share_set_quota_fails(self):
         test = createshare_tester.TestCreateFirstDefaultShareSetQuotaFails()
         test.run_test(self)
 
@@ -846,11 +846,16 @@ class HpeDockerShareUnitTests(testtools.TestCase):
         test.run_test(self)
 
     @tc_banner_decorator
-    def test_mount_nfs_share(self):
+    def test_mount_share(self):
         test = mountshare_tester.TestMountNfsShare()
         test.run_test(self)
 
     @tc_banner_decorator
-    def test_unmount_nfs_share(self):
+    def test_mount_share_with_acl(self):
+        test = mountshare_tester.TestMountNfsShareWithAcl()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_unmount_share(self):
         test = unmountshare_tester.TestUnmountNfsShare()
         test.run_test(self)

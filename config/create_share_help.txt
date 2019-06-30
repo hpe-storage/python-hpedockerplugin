@@ -6,6 +6,12 @@ HPE 3PAR Share Plug-in For Docker: Create Help
 Create a share in HPE 3PAR using HPE 3PAR volume plug-in for Docker.
 
 -o filePersona          Presence of this flag allows the File Persona driver to process the request
+-o cpg=x                  x specifies the cpg to be used for the share. This parameter can be used with or without
+                            ‘fpg’ option. When used with ‘fpg’, the FPG is created with the specified name if it
+                            does not exist. If it does exist, then share is created under it.
+                            When used without ‘fpg’ option, default FPG under the specified CPG is selected for share
+                            creation. If default FPG does not exist, a new default FPG is created under which the
+                            share is created.
 -o fpg=x                  x is the name of the file provisioning group (FPG). This option must be specified when user wants
                             to use a non-default FPG or a legacy FPG. The FPG may or may not be an existing one.
                             For a non-existing FPG x, a new FPG is created using the CPG that is either explicitly

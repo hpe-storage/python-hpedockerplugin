@@ -906,6 +906,26 @@ etcd_share = {
     'quota_id': '13209547719864709510'
 }
 
+etcd_share_with_acl = {
+    'id': '1422125830661572115',
+    'backend': 'DEFAULT_FILE',
+    'cpg': 'swap_fs_cpg',
+    'fpg': 'DockerFpg_2',
+    'vfs': 'DockerVfs_2',
+    'name': 'GoodShare',
+    'size': 1048576,
+    'readonly': False,
+    'nfsOptions': None,
+    'protocol': 'nfs',
+    'clientIPs': [],
+    'comment': None,
+    'fsMode': 'A:fd:rwax,A:fdg:rwax,A:fdS:DtnNcy',
+    'fsOwner': '1000:1000',
+    'status': 'AVAILABLE',
+    'vfsIPs': [['192.168.98.41', '255.255.192.0']],
+    'quota_id': '13209547719864709510'
+}
+
 etcd_bkend_mdata_with_default_fpg = {
     'ips_in_use': [],
     'ips_locked_for_use': [],
@@ -1335,3 +1355,31 @@ etcd_mounted_share = {
     'quota_id': '13209547719864709510',
     'path_info': {THIS_NODE_ID: [FAKE_MOUNT_ID]}
 }
+
+show_fs_user_resp = [
+    'Username,UID,---------------------SID----------------------,'
+    'Primary_Group,Enabled',
+    'Administrator,10500,S-1-5-21-3407317619-3829948340-1570492076-'
+    '500,Local Users,false',
+    'Guest,10501,S-1-5-21-3407317619-3829948340-1570492076-501,'
+    'Local Users,false',
+    'abc,1000,S-1-5-21-3407317619-3829948340-1570492076-5009,'
+    'Local Users,true',
+    'xyz,1005,S-1-5-21-3407317619-3829948340-1570492076-5011,'
+    'Local Users,true',
+    '--------------------------------------------------------------'
+    '--------------------------',
+    '4,total,,,'
+]
+
+show_fs_group_resp = [
+    'GroupName,GID,---------------------SID----------------------',
+    'Local Users,10800,S-1-5-21-3407317619-3829948340-1570492076-800',
+    'Administrators,10544,S-1-5-32-544',
+    'Users,10545,S-1-5-32-545',
+    'Guests,10546,S-1-5-32-546',
+    'Backup Operators,10551,S-1-5-32-551',
+    'docker,1000,S-1-5-21-3407317619-3829948340-1570492076-5010',
+    '---------------------------------------------------------------------',
+    '6,total,'
+]
