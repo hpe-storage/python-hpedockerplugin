@@ -1,7 +1,7 @@
 # File Persona usage guide
 
 The HPE 3PAR File Persona feature allows user to manage file 
-shares on 3PAR arrays through Docker interface.
+shares on 3PAR arrays having __versions >= 3.3.1__ through Docker interface.
 
 In order to use HPE 3PAR File Persona feature, user needs to 
 configure a backend one for each target array as below:
@@ -242,6 +242,8 @@ mounting it is exited or stopped.
 
 Permissions if present are applied after mounting the share.
 
+**Note:** VFS IPs must be reachable from Docker host for share to be mounted successfully.
+
 ### Un-mounting a share
 If container shell prompt is there, simply type 'exit' to unmount the share.
 If container is in detached mode, then retrieve container ID using 
@@ -267,8 +269,10 @@ Lists all the shares
 docker volume rm <share-name>
 ```
 This command allows removing a share. If the share being removed happens to be
-the last share under its parent FPG, then the parent FPG is also removed.
-Please note that removal of parent FPG happens asynchronously on a child thread.
+the last share under its parent FPG, then the parent FPG is also removed which
+happens asynchronously on a child thread.
+
+**Note:** Any user data present on the share will be lost post this operation.
 
 ### Displaying help
 ```  
