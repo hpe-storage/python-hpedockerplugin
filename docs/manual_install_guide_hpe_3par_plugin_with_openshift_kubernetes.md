@@ -64,16 +64,16 @@ $ export HostIP="<Master node IP>"
 >**NOTE:** This etcd instance is separate from the **etcd** deployed by Kubernetes/OpenShift and is **required** for managing the **HPE 3PAR Volume Plug-in for Docker**. We need to modify the default ports (**2379, 4001, 2380**) of the **new etcd** instance to prevent conflicts. This allows two instances of **etcd** to safely run in the environment.`
 
 ```yaml
-sudo docker run -d -v /usr/share/ca-certificates/:/etc/ssl/certs -p 40010:40010 \
--p 23800:23800 -p 23790:23790 \
+sudo docker run -d --restart unless-stopped -v /usr/share/ca-certificates/:/etc/ssl/certs -p 4001:4001 \
+-p 2380:2380 -p 2379:2379 \
 --name etcd_hpe quay.io/coreos/etcd:v2.2.0 \
 -name etcd0 \
--advertise-client-urls http://${HostIP}:23790,http://${HostIP}:40010 \
--listen-client-urls http://0.0.0.0:23790,http://0.0.0.0:40010 \
--initial-advertise-peer-urls http://${HostIP}:23800 \
--listen-peer-urls http://0.0.0.0:23800 \
+-advertise-client-urls http://${HostIP}:2379,http://${HostIP}:4001 \
+-listen-client-urls http://0.0.0.0:2379,http://0.0.0.0:4001 \
+-initial-advertise-peer-urls http://${HostIP}:2380 \
+-listen-peer-urls http://0.0.0.0:2380 \
 -initial-cluster-token etcd-cluster-1 \
--initial-cluster etcd0=http://${HostIP}:23800 \
+-initial-cluster etcd0=http://${HostIP}:2380 \
 -initial-cluster-state new
 ```
 
@@ -96,14 +96,12 @@ $ vi /etc/multipath.conf
 >Copy the following into /etc/multipath.conf
 
 ```
-defaults
-{
+defaults{
     polling_interval 10
     max_fds 8192
 }
 
-devices
-{
+devices{
     device
 	{
         vendor                  "3PARdata"
