@@ -32,6 +32,9 @@ class TestDeleteShare(DeleteShareUnitTest):
 
     # Nested class to handle regular volume
     class Regular(object):
+        def __init__(self, params={}):
+            self._params = params
+
         def get_request_params(self):
             share_name = 'MyDefShare_01'
             return {"Name": share_name,
@@ -39,8 +42,12 @@ class TestDeleteShare(DeleteShareUnitTest):
 
         def setup_mock_objects(self, mock_objects):
             mock_share_etcd = mock_objects['mock_share_etcd']
-            mock_share_etcd.get_share.return_value = copy.deepcopy(
-                data.etcd_share)
+            if 'share_with_acl' in self._params:
+                mock_share_etcd.get_share.return_value = copy.deepcopy(
+                    data.etcd_share_with_acl)
+            else:
+                mock_share_etcd.get_share.return_value = copy.deepcopy(
+                    data.etcd_share)
             mock_file_client = mock_objects['mock_file_client']
             mock_file_client.http.get.side_effect = [
                 # This file store is deleted as part of share delete
