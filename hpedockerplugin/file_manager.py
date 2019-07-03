@@ -664,6 +664,50 @@ class FileManager(object):
                                        file_store)
         return share_path
 
+    def _internal_mount_share(self, share):
+        share_name = share['name']
+        LOG.info("Performing internal mount for share %s..." % share_name)
+        mount_dir = self.get_mount_dir(share_name)
+        LOG.info("Mount directory for share is %s " % mount_dir)
+        share_path = self._get_share_path(share)
+        LOG.info("Share path is %s " % share_path)
+        my_ip = netutils.get_my_ipv4()
+        self._hpeplugin_driver.add_client_ip_for_share(share['id'],
+                                                       my_ip)
+        self._create_mount_dir(mount_dir)
+        LOG.info("Mounting share path %s to %s" % (share_path, mount_dir))
+        if utils.is_host_os_rhel():
+            sh.mount('-o', 'context="system_u:object_r:nfs_t:s0"',
+                     '-t', 'nfs', share_path, mount_dir)
+        else:
+            sh.mount('-t', 'nfs', share_path, mount_dir)
+        LOG.debug('Device: %(path)s successfully mounted on %(mount)s',
+                  {'path': share_path, 'mount': mount_dir})
+
+        response = {
+            u"Name": share_name,
+            u"Mountpoint": mount_dir,
+            u"Devicename": share_path
+        }
+        return response
+
+    def _internal_unmount_share(self, share):
+        share_name = share['name']
+        mount_dir = self.get_mount_dir(share_name)
+        LOG.info('Unmounting share %s from mount-dir %s...'
+                 % (share_name, mount_dir))
+        sh.umount(mount_dir)
+        LOG.info('Removing mount dir from node %s: %s...'
+                 % (mount_dir, self._node_id))
+        sh.rm('-rf', mount_dir)
+
+        # Remove my_ip from client-ip list this being last
+        # un-mount of share for this node
+        my_ip = netutils.get_my_ipv4()
+        LOG.info("Remove %s from client IP list" % my_ip)
+        self._hpeplugin_driver.remove_client_ip_for_share(
+            share['id'], my_ip)
+
     def mount_share(self, share_name, share, mount_id):
         if 'status' in share:
             if share['status'] == 'FAILED':
@@ -709,7 +753,17 @@ class FileManager(object):
         mount_dir = self.get_mount_dir(share_name)
         LOG.info("Mount directory for file is %s " % mount_dir)
         path_info = share.get('path_info')
+
+        # ACLs need to be set only with the first mount
+        # For second mount onwards, path_info will be present in
+        # ETCD which will make acls_already_set set to True thereby
+        # avoiding redundant backend REST calls for check_user and
+        # set_ACL
+        acls_already_set = False
         if path_info:
+            # Setting the flag to True would avoid backend REST calls
+            # to set_acl and check_user
+            acls_already_set = True
             # Is the share mounted on this node?
             mount_ids = path_info.get(self._node_id)
             if mount_ids:
@@ -733,9 +787,8 @@ class FileManager(object):
         # mount directory, apply permissions and mount file share
         fUName = None
         fGName = None
-        permSpecified = False
-        if fUser or fGroup or fMode:
-            permSpecified = True
+        user_grp_perm = fUser or fGroup or fMode
+        if user_grp_perm and not acls_already_set:
             LOG.info("Inside fUser or fGroup or fMode")
             fUName, fGName = self._hpeplugin_driver.usr_check(fUser,
                                                               fGroup)
@@ -773,7 +826,7 @@ class FileManager(object):
         LOG.debug('Device: %(path)s successfully mounted on %(mount)s',
                   {'path': share_path, 'mount': mount_dir})
 
-        if permSpecified:
+        if user_grp_perm and not acls_already_set:
             os.chown(mount_dir, fUser, fGroup)
             try:
                 int(fMode)

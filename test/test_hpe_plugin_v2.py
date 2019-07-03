@@ -846,6 +846,13 @@ class HpeDockerShareUnitTests(testtools.TestCase):
         test.run_test(self)
 
     @tc_banner_decorator
+    def test_remove_share_with_acl(self):
+        params = {'share_with_acl': True}
+        del_regular_share = deleteshare_tester.TestDeleteShare.Regular(params)
+        test = deleteshare_tester.TestDeleteShare(del_regular_share)
+        test.run_test(self)
+
+    @tc_banner_decorator
     def test_mount_share(self):
         test = mountshare_tester.TestMountNfsShare()
         test.run_test(self)
