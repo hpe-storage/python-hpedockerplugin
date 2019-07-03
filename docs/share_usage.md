@@ -6,6 +6,11 @@ shares on 3PAR arrays having __versions >= 3.3.1__ through Docker interface.
 In order to use HPE 3PAR File Persona feature, user needs to 
 configure a backend one for each target array as below:
 
+## Prerequisites
+1. File Service must be configured on the array
+2. nfs-utils must be installed
+3. HPE 3PAR OS version must be >= 3.3.1 (MU3)
+ 
 ## Configuring backend for file share
 
 ```sh

@@ -25,10 +25,12 @@ class CreateShareCmd(cmd.Cmd):
         share_name = self._share_args['name']
         LOG.info("cmd::unexecute: Removing share entry from ETCD: %s" %
                  share_name)
-        if self._share_created_in_etcd:
-            LOG.info("CreateShareCmd:Undo Deleting share from ETCD: %s"
-                     % share_name)
-            self._etcd.delete_share(share_name)
+
+        # Leaving the share entry in ETCD intact so that user can inspect
+        # the share and look for the reason of failure. Moreover, Docker
+        # daemon has the entry for this share as we returned success on the
+        # main thread. So it would be better that the user removes this failed
+        # share explicitly so that Docker daemon also updates its database
         if self._share_created_at_backend:
             LOG.info("CreateShareCmd:Undo Deleting share from backend: %s"
                      % share_name)
