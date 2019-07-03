@@ -1,10 +1,9 @@
 # File Persona usage guide
 
-The HPE 3PAR File Persona feature allows user to manage file 
-shares on 3PAR arrays having __versions >= 3.3.1__ through Docker interface.
-
-In order to use HPE 3PAR File Persona feature, user needs to 
-configure a backend one for each target array as below:
+The HPE 3PAR File Persona feature allows user to manage file shares on 3PAR 
+arrays through Docker interface. It supports basic create, retrieve, delete,
+mount and unmount operations. Usage details of how each operation can be 
+exercised via Docker CLI is described below.
 
 ## Prerequisites
 1. HPE 3PAR OS version must be >= 3.3.1 (MU3)
@@ -12,6 +11,9 @@ configure a backend one for each target array as below:
 3. File Service must be configured on the array
  
 ## Configuring backend for file share
+In order to use HPE 3PAR File Persona feature, user needs to 
+configure a backend one for each target array as below:
+
 
 ```sh
 [DEFAULT]
