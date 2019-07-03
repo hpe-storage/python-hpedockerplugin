@@ -10,6 +10,7 @@ configure a backend one for each target array as below:
 1. File Service must be configured on the array
 2. nfs-utils must be installed
 3. HPE 3PAR OS version must be >= 3.3.1 (MU3)
+4. Must have File Persona (102400G) license
  
 ## Configuring backend for file share
 
@@ -21,7 +22,7 @@ ssh_hosts_key_file = /root/.ssh/known_hosts
 
 # IP Address and port number of the ETCD instance
 # to be used for storing the share meta data
-host_etcd_ip_address =  10.50.164.1
+host_etcd_ip_address =  xxx.xxx.xxx.xxx
 host_etcd_port_number = 2379
 
 # Client certificate and key details for secured ETCD cluster
@@ -40,28 +41,30 @@ suppress_requests_ssl_warnings = True
 # Set the driver to be File driver
 hpedockerplugin_driver = hpedockerplugin.hpe.hpe_3par_file.HPE3PARFileDriver
 
-hpe3par_api_url = https://10.50.3.24:8080/api/v1
-hpe3par_username = 3paradm
-hpe3par_password = 3pardata
-hpe3par_san_ip = 10.50.3.24
-hpe3par_san_login = 3paradm
-hpe3par_san_password = 3pardata
+hpe3par_api_url = https://xxx.xxx.xxx.xxx:8080/api/v1
+hpe3par_username = <user>
+hpe3par_password = <pwd>
+hpe3par_san_ip = xxx.xxx.xxx.xxx
+hpe3par_san_login = <san_user>
+hpe3par_san_password = <san_pwd>
 
 # Server IP pool is mandatory and can be specified as a mix of range of IPs and
 # individual IPs delimited by comma
 # Each range or individual IP must be followed by the corresponding subnet mask
 # delimited by semi-colon
 # E.g.: IP-Range:Subnet-Mask,Individual-IP:SubnetMask…
-hpe3par_server_ip_pool = 192.168.98.8-192.168.98.13:255.255.192.0
+hpe3par_server_ip_pool = xxx.xxx.xxx.xxx-xxx.xxx.xxx.yyy:255.255.255.0
 
-# Default size of FPG to be in the range 1TiB – 64TiB. If not specified here, it defaults to 64
-hpe3par_default_fpg_size = 10 
+# Override default size of FPG here. It must be in the range 1TiB – 64TiB. If
+# not specified here, it defaults to 64
+hpe3par_default_fpg_size = 10
 ```
-User can define multiple backends in case more than one array needs to be managed by the plugin.
+User can define multiple backends in case more than one array needs to be managed 
+by the plugin.
 
 User can also define backends for block driver(s) along with file driver(s). 
-However, a default backend is mandatory for both block and file drivers for the default use cases 
-to work. Since ‘DEFAULT’ section can be consumed by either 
+However, a default backend is mandatory for both block and file drivers for the 
+default use cases to work. Since ‘DEFAULT’ section can be consumed by either 
 block or file driver but not both at the same time, the other driver
 is left out without a default backend. In order to satisfy the need for the other 
 driver to have default backend, HPE 3PAR Plugin introduces two new keywords to 
@@ -69,17 +72,29 @@ denote default backend names to be used in such a situation:
 1. DEFAULT_FILE and
 2. DEFAULT_BLOCK
 
-In case where user already has ‘DEFAULT’ backend configured for 
-block driver, and file driver also needs to be configured, then 
-‘DEFAULT_FILE’ backend MUST be defined. In this case, if there 
-is a non-default backend defined for file driver without 
-'DEFAULT_FILE' backend defined, plugin won't get initialized 
+In case where user already has ‘DEFAULT’ backend configured for block driver, 
+and file driver also needs to be configured, then ‘DEFAULT_FILE’ backend MUST 
+be defined. In this case, if there is a non-default backend defined for file 
+driver without 'DEFAULT_FILE' backend defined, plugin won't get initialized 
 properly.
 
-Similarly, for the vice-versa case, where ‘DEFAULT’ is configured
- as file driver and the user wants to configure block driver now. 
- In this case, ‘DEFAULT_BLOCK’ MUST be configured for the plugin 
- to work correctly.
+E.g. in the below configuration, we have two backends, first one for block and 
+the second one for file. As you can see, default backend is missing for the file
+driver. Due to this, the driver will fail to initialize.
+```
+[DEFAULT]
+...
+hpedockerplugin_driver = hpedockerplugin.hpe.hpe_3par_fc.HPE3PARFCDriver
+...
+
+[3PAR_FILE]
+...
+hpedockerplugin_driver = hpedockerplugin.hpe.hpe_3par_file.HPE3PARFileDriver
+...
+```
+Similar is the vice-versa case, where ‘DEFAULT’ is configured as file driver 
+and the user wants to configure block driver as well. In this case, ‘DEFAULT_BLOCK’ 
+MUST be configured for the plugin to work correctly.
 
 Below is that table of all possible default configurations along
 with the behavior column for each combination:
@@ -298,7 +313,8 @@ been configured for file driver.
    of multiple shares can lead to ETCD lock failures.
 2. When block related configuration parameters are used inadvertently in file 
    driver configuration or vice-versa, it does not result in any error - the
-   plugin simply ignores it.
+   plugin simply ignores it. Eg: snapcpg, a block configuration parameter, 
+   when used in file driver configuration, it is ignored.
 3. When both 'DEFAULT' and 'DEFAULT_BLOCK' backends are defined as block driver,
    'DEFAULT_BLOCK' is not treated as a special keyword. Rather it becomes like 
    any other backend defined in a multi-backend configuration. Same goes when 
