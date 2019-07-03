@@ -787,7 +787,8 @@ class FileManager(object):
         # mount directory, apply permissions and mount file share
         fUName = None
         fGName = None
-        if fUser or fGroup or fMode and not acls_already_set:
+        user_grp_perm = fUser or fGroup or fMode
+        if user_grp_perm and not acls_already_set:
             LOG.info("Inside fUser or fGroup or fMode")
             fUName, fGName = self._hpeplugin_driver.usr_check(fUser,
                                                               fGroup)
@@ -825,7 +826,7 @@ class FileManager(object):
         LOG.debug('Device: %(path)s successfully mounted on %(mount)s',
                   {'path': share_path, 'mount': mount_dir})
 
-        if not acls_already_set:
+        if user_grp_perm and not acls_already_set:
             os.chown(mount_dir, fUser, fGroup)
             try:
                 int(fMode)
