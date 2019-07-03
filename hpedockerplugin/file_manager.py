@@ -1,7 +1,6 @@
 import copy
 import json
 import sh
-from sh import chmod
 import six
 import os
 from threading import Thread
@@ -140,22 +139,31 @@ class FileManager(object):
     def _get_existing_fpg(self, share_args):
         cpg_name = share_args['cpg']
         fpg_name = share_args['fpg']
+
+        def _check_if_space_sufficient(backend_fpg=None):
+            LOG.info("Checking if FPG %s has enough capcity..." % fpg_name)
+            available_capacity = self._get_fpg_available_capacity(fpg_name,
+                                                                  backend_fpg)
+            share_size_in_gib = share_args['size'] / 1024
+            if available_capacity < share_size_in_gib:
+                LOG.info("FPG %s doesn't have enough capcity..." % fpg_name)
+                raise exception.FpgCapacityInsufficient(fpg=fpg_name)
+            LOG.info("FPG %s has enough capacity" % fpg_name)
+
         try:
             fpg_info = self._fp_etcd_client.get_fpg_metadata(
                 self._backend,
                 cpg_name, fpg_name
             )
-            available_capacity = self._get_fpg_available_capacity(fpg_name)
-            share_size_in_gib = share_args['size'] / 1024
-            if available_capacity < share_size_in_gib:
-                raise exception.FpgCapacityInsufficient(fpg=fpg_name)
-
+            _check_if_space_sufficient()
         except exception.EtcdMetadataNotFound:
             LOG.info("Specified FPG %s not found in ETCD. Checking "
                      "if this is a legacy FPG..." % fpg_name)
             # Assume it's a legacy FPG, try to get details
             leg_fpg = self._hpeplugin_driver.get_fpg(fpg_name)
             LOG.info("FPG %s is a legacy FPG" % fpg_name)
+
+            _check_if_space_sufficient(leg_fpg)
 
             # CPG passed can be different than actual CPG
             # used for creating legacy FPG. Override default
@@ -189,9 +197,10 @@ class FileManager(object):
             LOG.error("Share could not be created on FPG %s" % fpg_name)
             raise exception.ShareCreationFailed(share_args['cpg'])
 
-    def _get_fpg_available_capacity(self, fpg_name):
-        LOG.info("Getting FPG %s from backend..." % fpg_name)
-        backend_fpg = self._hpeplugin_driver.get_fpg(fpg_name)
+    def _get_fpg_available_capacity(self, fpg_name, backend_fpg=None):
+        if not backend_fpg:
+            LOG.info("Getting FPG %s from backend..." % fpg_name)
+            backend_fpg = self._hpeplugin_driver.get_fpg(fpg_name)
         LOG.info("%s" % six.text_type(backend_fpg))
         LOG.info("Getting all quotas for FPG %s..." % fpg_name)
         quotas = self._hpeplugin_driver.get_quotas_for_fpg(fpg_name)
@@ -419,6 +428,8 @@ class FileManager(object):
 
                         # Set result to success so that FPG generator can stop
                         fpg_data['result'] = 'DONE'
+                        break
+
                     except exception.SetQuotaFailed:
                         fpg_data['result'] = 'IN_PROCESS'
                         self._unexecute(undo_cmds)
@@ -754,7 +765,11 @@ class FileManager(object):
 
         self._create_mount_dir(mount_dir)
         LOG.info("Mounting share path %s to %s" % (share_path, mount_dir))
-        sh.mount('-t', 'nfs', share_path, mount_dir)
+        if utils.is_host_os_rhel():
+            sh.mount('-o', 'context="system_u:object_r:nfs_t:s0"',
+                     '-t', 'nfs', share_path, mount_dir)
+        else:
+            sh.mount('-t', 'nfs', share_path, mount_dir)
         LOG.debug('Device: %(path)s successfully mounted on %(mount)s',
                   {'path': share_path, 'mount': mount_dir})
 
@@ -762,7 +777,7 @@ class FileManager(object):
             os.chown(mount_dir, fUser, fGroup)
             try:
                 int(fMode)
-                chmod(fMode, mount_dir)
+                sh.chmod(fMode, mount_dir)
             except ValueError:
                 fUserId = share['id']
                 try:

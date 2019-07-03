@@ -17,6 +17,7 @@ from sh import mkfs
 from sh import mkdir
 from sh import mount
 from sh import umount
+from sh import grep
 import subprocess
 from sh import rm
 from oslo_log import log as logging
@@ -112,6 +113,29 @@ def mount_dir(src, tgt):
         LOG.error(msg)
         raise exception.HPEPluginMountException(reason=msg)
     return True
+
+
+def check_if_mounted(src, tgt):
+    try:
+        # List all mounts with "mount -l".
+        # Then grep the list for the source and the target of the mount
+        # using regular expression with the paths.
+        # _ok_code=[0,1] is used because grep returns an ErrorCode_1
+        # if it cannot find any matches on the pattern.
+        mountpoint = grep(grep(mount("-l"), "-E", src, _ok_code=[0, 1]), "-E",
+                          tgt, _ok_code=[0, 1])
+    except Exception as ex:
+        msg = (_('exception is : %s'), six.text_type(ex))
+        LOG.error(msg)
+        raise exception.HPEPluginCheckMountException(reason=msg)
+    # If there is no line matching the criteria from above then the
+    # mount is not present, return False.
+    if not mountpoint:
+        return False
+    # If there is a mountpoint meeting the criteria then
+    # everything is ok, return True
+    else:
+        return True
 
 
 def umount_dir(tgt):

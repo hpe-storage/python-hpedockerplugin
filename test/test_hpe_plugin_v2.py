@@ -19,6 +19,7 @@ import test.removesnapshot_tester as removesnapshot_tester
 import test.removevolume_tester as removevolume_tester
 
 # import revertsnapshot_tester
+import test.unmountshare_tester as unmountshare_tester
 import test.unmountvolume_tester as unmountvolume_tester
 
 logger = logging.getLogger('hpedockerplugin')
@@ -818,22 +819,43 @@ class HpeDockerShareUnitTests(testtools.TestCase):
         return 'file'
 
     @tc_banner_decorator
-    def __test_create_first_default_share(self):
+    def test_create_first_default_share(self):
         test = createshare_tester.TestCreateFirstDefaultShare()
         test.run_test(self)
 
     @tc_banner_decorator
-    def __test_create_second_default_share(self):
+    def test_create_second_default_share(self):
         test = createshare_tester.TestCreateSecondDefaultShare()
         test.run_test(self)
 
     @tc_banner_decorator
-    def __test_remove_regular_share(self):
+    def test_create_share_on_legacy_fpg(self):
+        test = createshare_tester.TestCreateShareOnLegacyFpg()
+        test.run_test(self)
+
+    # TODO: TC to be enabled once tester class implementation is done
+    @tc_banner_decorator
+    def test_create_first_default_share_set_quota_fails(self):
+        test = createshare_tester.TestCreateFirstDefaultShareSetQuotaFails()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_remove_regular_share(self):
         del_regular_share = deleteshare_tester.TestDeleteShare.Regular()
         test = deleteshare_tester.TestDeleteShare(del_regular_share)
         test.run_test(self)
 
     @tc_banner_decorator
-    def __test_mount_nfs_share(self):
+    def test_mount_share(self):
         test = mountshare_tester.TestMountNfsShare()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_mount_share_with_acl(self):
+        test = mountshare_tester.TestMountNfsShareWithAcl()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_unmount_share(self):
+        test = unmountshare_tester.TestUnmountNfsShare()
         test.run_test(self)

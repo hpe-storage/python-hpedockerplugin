@@ -21,10 +21,11 @@ class CreateShareCmd(cmd.Cmd):
 
     def unexecute(self):
         share_name = self._share_args['name']
+        share = self._share_etcd.get_share(share_name)
         LOG.info("cmd::unexecute: Removing share entry from ETCD: %s" %
                  share_name)
         self._etcd.delete_share(share_name)
-        if self._status == "AVAILABLE":
+        if share['status'] == "AVAILABLE":
             LOG.info("cmd::unexecute: Deleting share from backend: %s" %
                      share_name)
             self._mediator.delete_share(self._share_args['id'])
@@ -38,19 +39,10 @@ class CreateShareCmd(cmd.Cmd):
             LOG.info("Creating share %s on the backend" % share_name)
             share_id = self._mediator.create_share(self._share_args)
             self._share_args['id'] = share_id
-        except Exception as ex:
-            msg = "Share creation failed [share_name: %s, error: %s" %\
-                  (share_name, six.text_type(ex))
-            LOG.error(msg)
-            self.unexecute()
-            raise exception.ShareCreationFailed(msg)
-
-        try:
-            self._status = 'AVAILABLE'
-            self._share_args['status'] = self._status
             share_etcd.save_share(self._share_args)
         except Exception as ex:
             msg = "Share creation failed [share_name: %s, error: %s" %\
                   (share_name, six.text_type(ex))
             LOG.error(msg)
+            self.unexecute()
             raise exception.ShareCreationFailed(msg)

@@ -1,6 +1,8 @@
 import json
+import os
 import six
 from threading import Thread
+import uuid
 
 from oslo_log import log as logging
 
@@ -20,6 +22,7 @@ class DeleteShareCmd(cmd.Cmd):
         self._share_info = share_info
         self._cpg_name = share_info['cpg']
         self._fpg_name = share_info['fpg']
+        self._mount_id = str(uuid.uuid4())
 
     def execute(self):
         share_name = self._share_info['name']
@@ -40,19 +43,29 @@ class DeleteShareCmd(cmd.Cmd):
             return json.dumps({"Err": msg})
 
         try:
+            # A file-store of a share on which files/dirs were created cannot
+            # be deleted unless it is made empty. Deleting share contents...
+            self._del_share_contents(share_name)
             self._delete_share()
         except exception.ShareBackendException as ex:
             return json.dumps({"Err": ex.msg})
 
         ret_val, status = self._delete_share_from_etcd(share_name)
         if not status:
+            LOG.info("Delete share %s from ETCD failed for some reason..."
+                     "Returning without deleting filestore/fpg..."
+                     % share_name)
             return ret_val
 
+        LOG.info("Spawning thread to allow file-store, FPG delete for share "
+                 "%s if needed..." % share_name)
         thread = Thread(target=self._continue_delete_on_thread)
         thread.start()
         return json.dumps({u"Err": ''})
 
     def _continue_delete_on_thread(self):
+        LOG.info("Deleting file store %s and FPG if this is the last share "
+                 "on child thread..." % self._share_info['name'])
         self._delete_file_store()
         with self._fp_etcd.get_fpg_lock(
                 self._backend, self._cpg_name, self._fpg_name
@@ -109,6 +122,43 @@ class DeleteShareCmd(cmd.Cmd):
             LOG.info("Deleting share %s from backend..." % share_name)
             self._mediator.delete_share(self._share_info['id'])
             LOG.info("Share %s deleted from backend" % share_name)
+
+    def _del_share_contents(self, share_name):
+        LOG.info("Deleting contents of share %s..." % share_name)
+        share_mounted = False
+        try:
+            LOG.info("Mounting share %s to delete the contents..."
+                     % share_name)
+            resp = self._file_mgr.mount_share(share_name,
+                                              self._share_info,
+                                              self._mount_id)
+            LOG.info("Share %s mounted successfully" % share_name)
+            share_mounted = True
+            resp = json.loads(resp)
+            LOG.info("Resp from mount: %s" % resp)
+            mount_dir = resp['Mountpoint']
+            cmd = 'rm -rf %s/*' % mount_dir
+            LOG.info("Executing command '%s' to delete share contents..."
+                     % cmd)
+            ret_val = os.system(cmd)
+            if ret_val == 0:
+                LOG.info("Successfully deleted contents of share %s"
+                         % share_name)
+            else:
+                LOG.error("Failed to delete contents of share %s. "
+                          "Command error code: %s" % (share_name, ret_val))
+        except Exception as ex:
+            msg = 'Failed to delete contents of share %s' % share_name
+            LOG.error(msg)
+        finally:
+            if share_mounted:
+                LOG.info("Unmounting share %s after attempting to delete "
+                         "its contents..." % share_name)
+                self._file_mgr.unmount_share(share_name,
+                                             self._share_info,
+                                             self._mount_id)
+                LOG.info("Unmounted share successfully %s after attempting "
+                         "to delete its contents" % share_name)
 
     def _delete_file_store(self):
         share_name = self._share_info['name']
