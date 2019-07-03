@@ -53,9 +53,8 @@ class DeleteShareCmd(cmd.Cmd):
         ret_val, status = self._delete_share_from_etcd(share_name)
         if not status:
             LOG.info("Delete share %s from ETCD failed for some reason..."
-                     "Returning without deleting filestore/fpg..."
+                     "Continuing with deleting filestore/fpg..."
                      % share_name)
-            return ret_val
 
         LOG.info("Spawning thread to allow file-store, FPG delete for share "
                  "%s if needed..." % share_name)
@@ -129,12 +128,9 @@ class DeleteShareCmd(cmd.Cmd):
         try:
             LOG.info("Mounting share %s to delete the contents..."
                      % share_name)
-            resp = self._file_mgr.mount_share(share_name,
-                                              self._share_info,
-                                              self._mount_id)
+            resp = self._file_mgr._internal_mount_share(self._share_info)
             LOG.info("Share %s mounted successfully" % share_name)
             share_mounted = True
-            resp = json.loads(resp)
             LOG.info("Resp from mount: %s" % resp)
             mount_dir = resp['Mountpoint']
             cmd = 'rm -rf %s/*' % mount_dir
@@ -149,14 +145,17 @@ class DeleteShareCmd(cmd.Cmd):
                           "Command error code: %s" % (share_name, ret_val))
         except Exception as ex:
             msg = 'Failed to delete contents of share %s' % share_name
+            # Log error message but allow to continue with deletion of
+            # file-store and if required FPG. By this time the share is
+            # already deleted from ETCD and hence it is all the more
+            # important that deletion of file-store and FPG is attempted
+            # even after hitting this failure
             LOG.error(msg)
         finally:
             if share_mounted:
                 LOG.info("Unmounting share %s after attempting to delete "
                          "its contents..." % share_name)
-                self._file_mgr.unmount_share(share_name,
-                                             self._share_info,
-                                             self._mount_id)
+                self._file_mgr._internal_unmount_share(self._share_info)
                 LOG.info("Unmounted share successfully %s after attempting "
                          "to delete its contents" % share_name)
 

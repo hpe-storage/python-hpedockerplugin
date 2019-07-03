@@ -660,12 +660,15 @@ class HPE3ParMediator(object):
         cmd1 = ['showfsuser']
         cmd2 = ['showfsgroup']
         try:
-            LOG.info("Now will execute first cmd1")
+            LOG.info("Executing first command: %s..." % cmd1)
             cmd1.append('\r')
             res_cmd1 = self._client._run(cmd1)
+            LOG.info("Resp: %s" % res_cmd1)
             f_user_name = self._check_usr_grp_existence(fUser, res_cmd1)
+            LOG.info("Executing second command: %s..." % cmd2)
             cmd2.append('\r')
             res_cmd2 = self._client._run(cmd2)
+            LOG.info("Resp: %s" % res_cmd2)
             f_group_name = self._check_usr_grp_existence(fGroup, res_cmd2)
             return f_user_name, f_group_name
         except hpeexceptions.SSHException as ex:
