@@ -21,6 +21,7 @@ from sh import grep
 import subprocess
 from sh import rm
 from oslo_log import log as logging
+import os
 from hpedockerplugin.i18n import _, _LI
 import hpedockerplugin.exception as exception
 import six
@@ -131,11 +132,28 @@ def check_if_mounted(src, tgt):
     # If there is no line matching the criteria from above then the
     # mount is not present, return False.
     if not mountpoint:
-        return False
+        # there could be cases where the src, tgt mount directories
+        # will not be present in mount -l output , but the
+        # symbolic links pointing to either src/tgt folder will be
+        # present. Eg. /dev/dm-3 will not be there in mount -l
+        # but there will be symlink from
+        # /dev/mapper/360002ac00000000001008506000187b7
+        # or /dev/disk/by-id/dm-uuid-mpath-360002ac00000000001008506000187b7
+        # So, we need to check for the file existence of both src/tgt folders
+        if check_if_file_exists(src) and \
+                check_if_file_exists(tgt):
+            return True
+        else:
+            return False
     # If there is a mountpoint meeting the criteria then
     # everything is ok, return True
     else:
         return True
+
+
+def check_if_file_exists(path):
+    return os.path.isfile(path) \
+        or os.path.isdir(path)
 
 
 def umount_dir(tgt):
