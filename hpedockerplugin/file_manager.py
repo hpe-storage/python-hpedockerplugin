@@ -363,16 +363,18 @@ class FileManager(object):
                          (fpg_name, cpg))
                 undo_cmds.append(create_fpg_cmd)
                 return fpg_name, vfs_name
+            # Only if duplicate FPG exists, we need to retry FPG creation
             except exception.FpgAlreadyExists as ex:
                 LOG.info("FPG %s could not be created. Error: %s" %
                          (fpg_name, six.text_type(ex)))
                 LOG.info("Retrying with new FPG name...")
                 continue
-            except exception.HPEPluginEtcdException as ex:
-                raise ex
+            # Any exception other than duplicate FPG, raise it and fail
+            # share creation process. We could have removed this except
+            # block altogether. Keeping it so that the intent is known
+            # explicitly to any reader of the code
             except Exception as ex:
-                LOG.error("Unknown exception caught while creating default "
-                          "FPG: %s" % six.text_type(ex))
+                raise ex
 
     def _create_share_on_fpg(self, share_args, fpg_getter,
                              fpg_creator, undo_cmds):
