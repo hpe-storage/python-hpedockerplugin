@@ -142,8 +142,10 @@ def check_if_mounted(src, tgt):
         # So, we need to check for the file existence of both src/tgt folders
         if check_if_file_exists(src) and \
                 check_if_file_exists(tgt):
+            LOG.info('SRC and TGT is present')
             return True
         else:
+            LOG.info('SRC %s or TGT %s does not exist' % (src, tgt))
             return False
     # If there is a mountpoint meeting the criteria then
     # everything is ok, return True
@@ -152,8 +154,7 @@ def check_if_mounted(src, tgt):
 
 
 def check_if_file_exists(path):
-    return os.path.isfile(path) \
-        or os.path.isdir(path)
+    return os.path.exists(path)
 
 
 def umount_dir(tgt):
