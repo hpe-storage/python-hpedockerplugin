@@ -173,7 +173,7 @@ class FileManager(object):
                        "configured in hpe.conf that doesn't match the parent "
                        "CPG %s of the specified legacy FPG %s. Please "
                        "specify CPG as '-o cpg=%s'" %
-                       (cpg_name, fpg_name, leg_fpg['cpg'], leg_fpg['cpg']))
+                       (cpg_name, leg_fpg['cpg'], fpg_name, leg_fpg['cpg']))
                 LOG.error(msg)
                 raise exception.InvalidInput(msg)
 
