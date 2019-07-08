@@ -16,6 +16,7 @@ The following guide covers many of the options used for provisioning volumes and
   * [Enabling compression on volume](#compression)
   * [Enabling file permissions and ownership](#file-permission-owner)
   * [Managing volumes using multiple backends](#multi-array-feature)
+  * [Managing File Shares]
   
 
 * ### [Using HPE 3PAR Volume Plug-in with Kubernetes/OpenShift](#k8_usage)
@@ -25,6 +26,7 @@ The following guide covers many of the options used for provisioning volumes and
   * [Persistent Volume Claim Example](#pvc)
   * [Pod Example](#pod)
   * [Restarting the Containerized HPE 3PAR Volume Plug-in](#restart)
+  * [Managing File Shares]
 
 ---
 
@@ -50,6 +52,7 @@ The following section covers the supported actions for the **HPE 3PAR Volume Plu
   * [Display help on usage](#usage-help)
   * [Display available backends and their status](#backends-status)
   * [Importing legacy volumes as docker volumes](#import-vol)
+ 
 
 If you are using **Kubernetes** or **OpenShift**, please go the [Kubernetes/OpenShift Usage section](#k8_usage).
 
@@ -95,6 +98,8 @@ The **HPE 3PAR Docker Volume Plug-in** supports several optional parameters that
 - **backend** -- backend to be used for the volume creation. (**introduced in plugin version 3.0**)
 
 - **help** -- displays usage help and backend initialization status. (**introduced in plugin version 3.0**)
+
+- **filePersona** -- create and manage a 3PAR file share (uses NFS protocol internally for data path) (**introduced in plugin version 3.2**)
 
 
 >Note: Setting flash-cache to True does not guarantee flash-cache will be used. The backend system
