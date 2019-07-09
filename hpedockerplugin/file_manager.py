@@ -831,8 +831,9 @@ class FileManager(object):
         if user_grp_perm and not acls_already_set:
             os.chown(mount_dir, fUser, fGroup)
             try:
-                int(fMode)
-                sh.chmod(fMode, mount_dir)
+                if fMode is not None:
+                    int(fMode)
+                    sh.chmod(fMode, mount_dir)
             except ValueError:
                 fUserId = share['id']
                 try:
