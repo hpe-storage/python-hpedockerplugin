@@ -499,17 +499,21 @@ class HPE3ParMediator(object):
         except hpeexceptions.HTTPBadRequest as ex:
             error_code = ex.get_code()
             LOG.error("Exception: %s" % six.text_type(ex))
-            if error_code == NON_EXISTENT_CPG:
-                msg = "Failed to create FPG %s on the backend. Reason: " \
-                      "CPG %s doesn't exist on array" % (fpg_name, cpg)
-                LOG.error(msg)
-                raise exception.ShareBackendException(msg=msg)
-            elif error_code == OTHER_FAILURE_REASON:
+            if error_code == OTHER_FAILURE_REASON:
                 LOG.error(six.text_type(ex))
                 msg = ex.get_description()
                 if 'already exists' in msg or \
                         msg.startswith('A createfpg task is already running'):
                     raise exception.FpgAlreadyExists(reason=msg)
+            raise exception.ShareBackendException(msg=ex.get_description())
+        except hpeexceptions.HTTPNotFound as ex:
+            error_code = ex.get_code()
+            LOG.error("Exception: %s" % six.text_type(ex))
+            if error_code == NON_EXISTENT_CPG:
+                msg = "Failed to create FPG %s on the backend. Reason: " \
+                      "CPG %s doesn't exist on array" % (fpg_name, cpg)
+                LOG.error(msg)
+                raise exception.ShareBackendException(msg=msg)
             raise exception.ShareBackendException(msg=ex.get_description())
         except exception.ShareBackendException as ex:
             msg = 'Create FPG task failed: cpg=%s,fpg=%s, ex=%s'\
