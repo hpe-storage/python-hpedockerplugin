@@ -233,9 +233,9 @@ $ docker volume create -d hpe --name sample_vol -o size=
 
 10. Install the HPE 3PAR FlexVolume driver:
 ```
-$ wget https://github.com/hpe-storage/python-hpedockerplugin/raw/master/dory_installer_v31
-$ chmod u+x ./dory_installer_v31
-$ sudo ./dory_installer_v31
+$ wget https://github.com/hpe-storage/python-hpedockerplugin/raw/master/dory_installer_v32
+$ chmod u+x ./dory_installer_v32
+$ sudo ./dory_installer_v32
 ```
 
 11. Confirm HPE 3PAR FlexVolume driver installed correctly:
