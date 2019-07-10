@@ -314,6 +314,12 @@ class FileRequestContextBuilder(RequestContextBuilder):
         if fsOwner:
             self._validate_fsOwner(fsOwner)
 
+        if fsMode:
+            if fsOwner is None:
+                raise exception.InvalidInput("ERROR: If mode bits or "
+                    "directory permissions needs to be changed  then,"
+                    " providing fsOwner is mandetory")
+
         size_gib = self._get_int_option(options, 'size', 1024)
         # Default share size or quota in MiB which is 1TiB
         size = size_gib * 1024
