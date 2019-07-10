@@ -304,7 +304,14 @@ class FileRequestContextBuilder(RequestContextBuilder):
                 'ERROR: Backend %s is not configured for File Persona'
                 % backend
             )
-        cpg = self._get_str_option(options, 'cpg', config.hpe3par_cpg[0])
+        cpg = self._get_str_option(
+            options, 'cpg',
+            config.hpe3par_cpg[0] if config.hpe3par_cpg else None)
+        if not cpg:
+            raise exception.InvalidInput(
+                "ERROR: CPG is not configured in hpe.conf. Please specify"
+                "name of an existing CPG in hpe.conf and restart plugin")
+
         fpg = self._get_str_option(options, 'fpg', None)
         fsMode = self._get_str_option(options, 'fsMode', None)
         fsOwner = self._get_str_option(options, 'fsOwner', None)
