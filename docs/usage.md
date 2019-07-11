@@ -19,7 +19,7 @@ The following guide covers many of the options used for provisioning volumes and
   
 
 * ### [Using HPE 3PAR Volume Plug-in with Kubernetes/OpenShift](#k8_usage)
-  * [Kubernetes/OpenShift Terms](#terms)
+  * [Kubernetes/OpenShift Terms](#k8_terms)
   * [StorageClass Example](#sc)
     * [StorageClass options](#sc_parameters)
   * [Persistent Volume Claim Example](#pvc)
@@ -257,7 +257,7 @@ For details, please see [Creating HPE 3PAR snapshot schedule](create_snapshot_sc
 
 The following section will cover different operations and commands that can be used to familiarize yourself and verify the installation of the HPE 3PAR Volume Plug-in for Docker by provisioning storage using Kubernetes/OpenShift resources like **PersistentVolume**, **PersistentVolumeClaim**, **StorageClass**, **Pods**, etc.
 
-* [Kubernetes/OpenShift Terms](#terms)
+* [Kubernetes/OpenShift Terms](#k8_terms)
 * [StorageClass Example](#sc)
   * [StorageClass options](#sc_parameters)
 * [Persistent Volume Claim Example](#pvc)

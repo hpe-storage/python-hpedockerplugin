@@ -4,7 +4,17 @@
 The HPE 3PAR file share feature allows user to manage NFS file shares on 3PAR 
 arrays through Docker interface. 
 
-* ### [Using HPE 3PAR Volume Plug-in for Docker - File Share](#docker_usage)
+## Prerequisites
+1. HPE 3PAR OS version must be 3.3.1 (MU3)
+2. Must have File Persona (102400G) license
+3. File Service must be configured on the array
+
+The following guide covers many of the options used for provisioning 
+volumes and volume management within standalone Docker environments 
+as well as Kubernetes/OpenShift environments.
+
+* ### [Using HPE 3PAR Volume Plug-in for Docker](#docker_usage)
+  * [Configuring backend for file share](#configure_backend)
   * [Creating file share](#createshare_cmd)
   * [Creating default file share](#create_def_share)
   * [Creating file share using non-default CPG](#create_share_non_def_cpg)
@@ -18,12 +28,17 @@ arrays through Docker interface.
   * [Displaying file share help](#show_help)
   * [Displaying file share backend initialization status](#show_status)
 
-## Prerequisites
-1. HPE 3PAR OS version must be 3.3.1 (MU3)
-2. Must have File Persona (102400G) license
-3. File Service must be configured on the array
- 
-## Configuring backend for file share
+* ### [Using HPE 3PAR Volume Plug-in with Kubernetes/OpenShift](#k8_usage)
+  * [Kubernetes/OpenShift Terms](#k8_terms)
+  * [StorageClass Example](#sc)
+    * [StorageClass options](#sc_parameters)
+  * [Persistent Volume Claim Example](#pvc)
+  * [Pod Example](#pod)
+  * [Restarting the Containerized HPE 3PAR Volume Plug-in](#restart)
+
+---
+
+## Configuring backend for file share <a name="configure_backend"></a>
 In order to use HPE 3PAR file share feature, user needs to 
 configure a backend one for each target array as below:
 
@@ -327,7 +342,7 @@ been configured for file driver.
 
 The following section will cover different operations and commands that can be used to familiarize yourself and verify the installation of the HPE 3PAR Volume Plug-in for Docker by provisioning storage using Kubernetes/OpenShift resources like **PersistentVolume**, **PersistentVolumeClaim**, **StorageClass**, **Pods**, etc.
 
-* [Kubernetes/OpenShift Terms](#terms)
+* [Kubernetes/OpenShift Terms](#k8_terms)
 * [StorageClass Example](#sc)
   * [StorageClass options](#sc_parameters)
 * [Persistent Volume Claim Example](#pvc)
@@ -503,7 +518,7 @@ spec:
     capacity:
       storage: 10Gi
     accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
     flexVolume:
       driver: hpe.com/hpe
       options: 
@@ -523,7 +538,7 @@ metadata:
   name: pvc-first
 spec:
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
   resources:
     requests:
       storage: 10Gi
