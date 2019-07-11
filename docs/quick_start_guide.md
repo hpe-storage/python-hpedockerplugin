@@ -36,16 +36,13 @@ $ vi /etc/multipath.conf
 >Copy the following into `/etc/multipath.conf`
 
 ```
-defaults
-{
+defaults{
     polling_interval 10
     max_fds 8192
 }
 
-devices
-{
-    device
-	{
+devices{
+    device{
         vendor                  "3PARdata"
         product                 "VV"
         no_path_retry           18
@@ -124,7 +121,7 @@ export HostIP="<Master node IP>"
 >**NOTE:** etcd stores the HPE 3PAR volume metadata and is required for the plugin to function properly. If you have multiple instances of etcd running on the same Docker node, you will need to modify the default etcd ports (2379, 2380, 4001) and make the adjustment in the **hpe.conf** as well.
 
 ```
-sudo docker run -d -v /usr/share/ca-certificates/:/etc/ssl/certs -p 4001:4001 \
+sudo docker run -d --restart unless-stopped -v /usr/share/ca-certificates/:/etc/ssl/certs -p 4001:4001 \
 -p 2380:2380 -p 2379:2379 \
 --name etcd quay.io/coreos/etcd:v2.2.0 \
 -name etcd0 \
@@ -179,10 +176,16 @@ Before enabling the plugin, validate the following:
 >version=2.1
 
 ```
-$ docker plugin install store/hpestorage/hpedockervolumeplugin:<version> –-disable –-alias hpe
+$ docker plugin install store/hpestorage/hpedockervolumeplugin:2.1 –-disable –-alias hpe
 $ docker plugin set hpe glibc_libs.source=/lib64 certs.source=/tmp
 $ docker plugin enable hpe
 ```
+
+>version=3.0
+$ docker plugin install store/hpestorage/hpedockervolumeplugin:3.0 --grant-all-permissions --disable --alias hpe 
+$ docker plugin set hpe glibc_libs.source=/lib64 certs.source=/tmp
+$ docker plugin enable hpe
+
 
 4. Confirm the plugin is successfully installed by
 
