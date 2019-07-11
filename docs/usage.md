@@ -2,7 +2,7 @@
 
 The following guide covers many of the options used for provisioning volumes and volume management within standalone Docker environments as well as Kubernetes/OpenShift environments.
 
-* ### [Using HPE 3PAR Volume Plug-in with Docker](#docker_usage)
+* ### [Using HPE 3PAR Volume Plug-in for Docker - Block Storage](#docker_usage)
   * [Creating a basic HPE 3PAR volume](#basic)
   * [Volume optional parameters](#options)
   * [Creating replicated volume](#replication)

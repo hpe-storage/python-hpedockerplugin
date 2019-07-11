@@ -45,15 +45,15 @@ Here is an example of the HPE Docker Volume plugin being used in an OpenShift en
   * snapshot schedule
   * file system permissions and ownership
   * multiple backends
-  * nfs share [CRD operations]
+  * file share [CRD operations]
 
 ## Block operations usage
 
-See the [usage guide](/docs/usage.md) for details on the supported operations and usage of the plugin.
+See the [block operations usage guide](/docs/usage.md) for details on the supported operations and usage of the plugin.
 
-## NFS share operations usage
+## File share operations usage
 
-See the [share usage guide](/docs/share_usage.md) for details on the supported operations and usage of the plugin.
+See the [file share operations usage guide](/docs/share_usage.md) for details on the supported operations and usage of the plugin.
 
 ## Troubleshooting
 

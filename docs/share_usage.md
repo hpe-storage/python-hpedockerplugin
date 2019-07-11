@@ -1,17 +1,30 @@
-# File Persona usage guide
 
-The HPE 3PAR File Persona feature allows user to manage file shares on 3PAR 
-arrays through Docker interface. It supports basic create, retrieve, delete,
-mount and unmount operations. Usage details of how each operation can be 
-exercised via Docker CLI is described below.
+# File share usage guide
+
+The HPE 3PAR file share feature allows user to manage NFS file shares on 3PAR 
+arrays through Docker interface. 
+
+* ### [Using HPE 3PAR Volume Plug-in for Docker - File Share](#docker_usage)
+  * [Creating file share](#createshare_cmd)
+  * [Creating default file share](#create_def_share)
+  * [Creating file share using non-default CPG](#create_share_non_def_cpg)
+  * [Creating file share using non-default or legacy FPG](#create_share_non_def_or_leg_fpg)
+  * [Creating file share on a non-default FPG and CPG](#create_share_non_def_fpg_and_cpg)
+  * [Mounting file share](#mount_share)
+  * [Un-mounting file share](#unmount_share)
+  * [Inspecting file share](#inspect_share)
+  * [Listing file shares](#list_share)
+  * [Removing a file share](#remove_share)
+  * [Displaying file share help](#show_help)
+  * [Displaying file share backend initialization status](#show_status)
 
 ## Prerequisites
-1. HPE 3PAR OS version must be >= 3.3.1 (MU3)
+1. HPE 3PAR OS version must be 3.3.1 (MU3)
 2. Must have File Persona (102400G) license
 3. File Service must be configured on the array
  
 ## Configuring backend for file share
-In order to use HPE 3PAR File Persona feature, user needs to 
+In order to use HPE 3PAR file share feature, user needs to 
 configure a backend one for each target array as below:
 
 
@@ -119,7 +132,7 @@ that are identical in terms of target array and CPG, then the default FPG
 created for such backends would not be the same – rather a different default 
 FPG would be created for each backend.
 
-## Command to create HPE share
+## Creating file share <a name="createshare_cmd"></a>
 ```sh
 $ docker volume create –d hpe --name <Share-name> <-o filePersona> 
 [ -o size=<Share-size-in-GiB>  –o cpg=<CPG-name>  -o fpg=<FPG-name>  
@@ -149,7 +162,7 @@ $ docker volume create –d hpe --name <Share-name> <-o filePersona>
     Out of the three ACEs in the ACL, the first ACE represents the ‘owner’, second one the ‘group’ and the 
     third one ‘everyone’ to be specified in the same order.
 
-    E.g.: ```sh A:fd:rwa,A:g:rwaxdnNcCoy,A:fdS:DtnNcy```
+    E.g.: ``` A:fd:rwa,A:g:rwaxdnNcCoy,A:fdS:DtnNcy```
 
     * type field can take only one of these values [A,D,U,L]
     * flag field can take one or more of these values [f,d,p,i,S,F,g]
@@ -160,7 +173,7 @@ $ docker volume create –d hpe --name <Share-name> <-o filePersona>
     simultaneously. While using fsMode it is mandatory to specify fsOwner. If Only fsMode is used, user 
     will not be able to mount the share. 
 
-### Creating default HPE share  
+### Creating default file share <a name="create_def_share"></a>
 ```  
 docker volume create -d hpe --name <share_name> -o filePersona  
 ```  
@@ -185,7 +198,7 @@ A share in 'FAILED' state can be removed.
 **Note:** ‘size’ can be specified to override the default share size of 1TiB.  
 
   
-### Creating a share using non-default CPG  
+### Creating file share using non-default CPG <a name="create_share_non_def_cpg"></a>
   
 ```  
 docker volume create -d hpe --name <share_name> -o filePersona -o cpg=<cpg_name>  
@@ -197,7 +210,7 @@ is defined in hpe.conf. Else its size defaults to 16TiB.
 **Note:** ‘size’ can be specified to override the default share size of 1TiB.  
 
   
-### Creating a share using non-default or legacy FPG  
+### Creating file share using non-default or legacy FPG  <a name="create_share_non_def_or_leg_fpg"></a>
 ```  
 docker volume create -d hpe --name <share_name> -o filePersona -o fpg=<fpg_name>  
 ```  
@@ -220,7 +233,7 @@ inspecting the share details.
 
 **Note:** ‘size’ can be specified to override the default share size of 1TiB.  
   
-### Creating a share on a non-default FPG and CPG  
+### Creating HPE 3PAR file share on a non-default FPG and CPG  <a name="create_share_non_def_fpg_and_cpg"></a>
 ```  
 docker volume create -d hpe --name <share_name> -o filePersona -o fpg=<fpg_name> -o cpg=<cpg_name>  
 ```  
@@ -250,7 +263,7 @@ inspecting the share details.
 1. ‘size’ can be specified to override the default share size of 1TiB.  
 2. The FPG must have enough capacity to accommodate the share.
 
-### Mounting a share
+### Mounting file share <a name="mount_share"></a>
 ```
 docker run -it --rm  --mount src=<share-name>,dst=</mount-dir>,volume-driver=hpe --name <container-name> alpine /bin/sh
 ```
@@ -265,7 +278,7 @@ Permissions if present are applied after mounting the share.
 
 **Note:** VFS IPs must be reachable from Docker host for share to be mounted successfully.
 
-### Un-mounting a share
+### Un-mounting file share <a name="unmount_share"></a>
 If container shell prompt is there, simply type 'exit' to unmount the share.
 If container is in detached mode, then retrieve container ID using 
 ```docker ps -a``` and simply type:
@@ -273,19 +286,20 @@ If container is in detached mode, then retrieve container ID using
 docker stop <container-id>
 ```
 
-### Inspecting a share
+### Inspecting file share <a name="inspect_share"></a>
 ```
 docker volume inspect <share-name>
 ```
 Displays details of the share being inspected
 
-### Listing shares
+### Listing file share <a name="list_share"></a>
 ```
 docker volume ls
 ```
-Lists all the shares
+Lists all the shares. If volumes are also present, those also get
+displayed as part of the output.
 
-### Removing a share
+### Removing a share <a name="remove_share"></a>
 ```
 docker volume rm <share-name>
 ```
@@ -295,31 +309,288 @@ happens asynchronously on a child thread.
 
 **Note:** Any user data present on the share will be lost post this operation.
 
-### Displaying help
+### Displaying file share help <a name="show_help"></a>
 ```  
 docker volume create -d hpe -o filePersona –o help  
 ```  
 This command displays help content of the file command with possible options that 
 can be used with it.
 
-### Displaying backend initialization status
+### Displaying file share backend initialization status <a name="show_status"></a>
 ```  
 docker volume create -d hpe -o filePersona –o help=backends
 ```  
 This command displays the initialization status of all the backends that have 
 been configured for file driver.
 
-## Known behavior / issues
+## Usage of the HPE 3PAR Volume Plug-in for Docker in Kubernetes/OpenShift<a name="k8_usage"></a>
+
+The following section will cover different operations and commands that can be used to familiarize yourself and verify the installation of the HPE 3PAR Volume Plug-in for Docker by provisioning storage using Kubernetes/OpenShift resources like **PersistentVolume**, **PersistentVolumeClaim**, **StorageClass**, **Pods**, etc.
+
+* [Kubernetes/OpenShift Terms](#terms)
+* [StorageClass Example](#sc)
+  * [StorageClass options](#sc_parameters)
+* [Persistent Volume Claim Example](#pvc)
+* [Pod Example](#pod)
+* [Restarting the Containerized HPE 3PAR Volume Plug-in](#restart)
+
+To learn more about Persistent Volume Storage and Kubernetes/OpenShift, go to:
+https://kubernetes.io/docs/tasks/configure-pod-container/configure-persistent-volume-storage/
+
+### Key Kubernetes/OpenShift Terms:<a name="k8_terms"></a>
+* **kubectl** – command line interface for running commands against Kubernetes clusters.
+* **oc** – command line interface for running commands against OpenShift platform.
+* **PV** – Persistent Volume is a piece of storage in the cluster that has been provisioned by an administrator.
+* **PVC** – Persistent Volume Claim is a request for storage by a user.
+* **SC** – Storage Class provides a way for administrators to describe the “classes” of storage they offer.
+* **hostPath volume** – mounts a file or directory from the host node’s filesystem into your Pod.
+
+To get started, in an OpenShift environment, we need to relax the security of your cluster, so pods are allowed to 
+use the **hostPath** volume plugin without granting everyone access to the privileged **SCC**:
+
+1. Edit the restricted SCC:
+```
+$ oc edit scc restricted
+```
+
+2. Add `allowHostDirVolumePlugin: true`
+
+3. Save the changes
+
+4. Restart node service (master node).
+```
+$ sudo systemctl restart origin-node.service
+```
+
+Below is an example yaml specification to create Persistent Volumes using the **HPE 3PAR FlexVolume driver**. The **HPE 3PAR FlexVolume driver** is a simple daemon that listens for **PVCs** and satisfies those claims based on the defined **StorageClass**.
+
+>Note: If you have OpenShift installed, **kubectl create** and **oc create** commands can be used interchangeably when creating **PVs**, **PVCs**, and **SCs**.
+
+**Dynamic volume provisioning** allows storage volumes to be created 
+on-demand. To enable dynamic provisioning, a cluster administrator 
+needs to pre-create one or more **StorageClass** objects for users. 
+The **StorageClass** object defines the storage provisioner (in our 
+case the **HPE 3PAR Volume Plug-in for Docker**) and parameters to be 
+used when requesting persistent storage within a Kubernetes/Openshift 
+environment. The **StorageClass** acts like a "storage profile" and 
+gives the storage admin control over the types and characteristics of 
+the volumes that can be provisioned within the Kubernetes/OpenShift 
+environment. For example, the storage admin can create multiple 
+**StorageClass** profiles that have size restrictions, if they are 
+enabled with ACLs, if a CPG other than the configured one needs to be used etc.
+
+### StorageClass Example<a name="sc"></a>
+
+The following creates a **StorageClass "sc1"** that provisions a 
+default file sharewith the help of HPE 3PAR Docker Volume Plugin.
+
+**Note:** In order to use file share feature, it is mandatory to specify
+'filePersona' option with empty string as value.
+
+```yaml
+$ sudo kubectl create -f - << EOF
+---
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: sc1
+provisioner: hpe.com/hpe
+parameters:
+  filePersona: ""
+EOF
+```
+
+#### Supported StorageClass parameters<a name="sc_parameters"></a>
+
+| StorageClass Options | Type    | Parameters                                 | Example                          |
+|----------------------|---------|--------------------------------------------|----------------------------------|
+| size                 | integer | Size of share in GiB                       | size: "10"                       |
+| cpg                  | String  | Name of the CPG                                   | cpg: SomeCpg             |
+| fpg                  | String  | Existing FPG name including legacy FPG     | fpg: SomeFpg           |
+| fsMode               | String | Unix style permissions or ACL string                                | fsMode: "A:fd:rwa,A:g:rwaxdnNcCoy,A:fdS:DtnNcy"              |
+| fsOwner              | String | User Id and Group Id that should own the mounted directory      | fsOwner: "1000:1000"         
+
+### Persistent Volume Claim Example<a name="pvc"></a>
+
+Now let’s create a claim **PersistentVolumeClaim** (**PVC**). Here we specify the **PVC** name **pvc1** and reference the **StorageClass "sc1"** that we created in the previous step.
+
+```yaml
+$ sudo kubectl create -f - << EOF
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pvc1
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: sc1
+EOF
+```
+
+At this point, after creating the **SC** and **PVC** definitions, the volume hasn’t been created yet. The actual volume gets created on-the-fly during the pod deployment and volume mount phase.
+
+### Pod Example<a name="pod"></a>
+
+So, let’s create a **pod "pod1"** using the **nginx** container along with some persistent storage:
+
+```yaml
+$ sudo kubectl create -f - << EOF
+---
+kind: Pod   
+apiVersion: v1
+metadata:
+  name: pod1
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    volumeMounts:
+    - name: export
+      mountPath: /export
+  restartPolicy: Always
+  volumes:
+  - name: export
+    persistentVolumeClaim:
+      claimName: pvc1
+EOF
+```
+
+When the pod gets created and a mount request is made, the volume is now available and can be seen using the following command:
+
+```
+$ docker volume ls
+DRIVER   VOLUME NAME
+hpe      export
+```
+On the Kubernetes/OpenShift side, it should now look something like this:
+```
+$ kubectl get pv,pvc,pod -o wide
+NAME       CAPACITY   ACCESSMODES   RECLAIMPOLICY   STATUS    CLAIM            STORAGECLASS   REASON   AGE
+pv/pv1     20Gi       RWO           Retain          Bound     default/pvc1                             11m
+
+NAME         STATUS    VOLUME    CAPACITY   ACCESSMODES   STORAGECLASS   AGE
+pvc/pvc1     Bound     pv100     20Gi       RWO                          11m
+
+NAME                          READY     STATUS    RESTARTS   AGE       IP             NODE
+po/pod1                       1/1       Running   0          11m       10.128.1.53    cld6b16
+```
+
+**Static provisioning** is a feature that is native to Kubernetes and that allows cluster admins to make existing storage devices available to a cluster. As a cluster admin, you must know the details of the storage device, its supported configurations, and mount options.
+
+To make existing storage available to a cluster user, you must manually create the storage device, a PV,PVC and POD.
+
+Below is an example yaml specification to create Persistent Volumes using the HPE 3PAR FlexVolume driver. 
+
+```
+Note: If you have OpenShift installed, kubectl create and oc create commands can be used interchangeably when creating PVs, PVCs, and PODs.
+```
+
+Persistent volume Example
+The following creates a Persistent volume "pv-first" with the help of HPE 3PAR Docker Volume Plugin.
+
+```yaml
+$ sudo kubectl create -f - << EOF
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:                                             
+  name: pv-first
+spec:
+    capacity:
+      storage: 10Gi
+    accessModes:
+    - ReadWriteOnce
+    flexVolume:
+      driver: hpe.com/hpe
+      options: 
+        filePersona: ""
+EOF
+```
+
+Persistent Volume Claim Example
+Now let’s create a claim PersistentVolumeClaim (PVC). Here we specify the PVC name pvc-first.
+
+```yaml
+$ sudo kubectl create -f - << EOF
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pvc-first
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+EOF
+```
+
+At this point, after creating the PV and PVC definitions, the volume hasn’t been created yet. The actual volume gets created on-the-fly during the pod deployment and volume mount phase.
+
+Pod Example
+So, let’s create a pod "pod-first" using the minio container along with some persistent storage:
+
+```yaml
+$ sudo kubectl create -f - << EOF
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-first
+spec:
+  containers:
+  - name: minio
+    image: minio/minio:latest
+    args:
+    - server
+    - /export
+    env:
+    - name: MINIO_ACCESS_KEY
+      value: minio
+    - name: MINIO_SECRET_KEY
+      value: doryspeakswhale
+    ports:
+    - containerPort: 9000
+    volumeMounts:
+    - name: export
+      mountPath: /export
+  volumes:
+    - name: export
+      persistentVolumeClaim:
+        claimName: pvc-first
+EOF
+```
+Now the **pod** can be deleted to unmount the Docker volume. Deleting a **Docker volume** does not require manual clean-up because the dynamic provisioner provides automatic clean-up. You can delete the **PersistentVolumeClaim** and see the **PersistentVolume** and **Docker volume** automatically deleted.
+
+
+Congratulations, you have completed all validation steps and have a working **Kubernetes/OpenShift** environment.
+
+### Restarting the Containerized plugin<a name="restart"></a>
+
+If you need to restart the containerized plugin used in Kubernetes/OpenShift environments, run the following command:
+
+```
+$ docker stop <container_id_of_plugin>
+```
+
+>Note: The /run/docker/plugins/hpe.sock and /run/docker/plugins/hpe.sock.lock files are not automatically removed when you stop the container. Therefore, these files will need to be removed manually between each run of the plugin.
+
+```
+$ docker start <container_id_of_plugin>
+```
+
+## Limitations / Known Issues
 1. All the operations must be performed sequentially. E.g. concurrent creation 
    of multiple shares can lead to ETCD lock failures.
 2. When block related configuration parameters are used inadvertently in file 
    driver configuration or vice-versa, it does not result in any error - the
    plugin simply ignores it. Eg: snapcpg, a block configuration parameter, 
    when used in file driver configuration, it is ignored.
-3. When both 'DEFAULT' and 'DEFAULT_BLOCK' backends are defined as block driver,
-   'DEFAULT_BLOCK' is not treated as a special keyword. Rather it becomes like 
-   any other backend defined in a multi-backend configuration. Same goes when 
-   'DEFAULT' and 'DEFAULT_FILE' are defined as file driver.
-4. When two backend sections are identically defined, even then each backend 
+3. When two backend sections are identically defined, even then each backend 
    is treated differently and results in having their individual default FPGs
    when default share creation is done using both the backends.
