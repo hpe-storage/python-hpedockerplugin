@@ -812,11 +812,13 @@ class FileManager(object):
         client_ips = share['clientIPs']
         client_ips.append(my_ip)
 
-        # node_mnt_info not present
-        node_mnt_info = {
-            self._node_id: [mount_id]
-        }
-        share['path_info'] = node_mnt_info
+        if path_info:
+            path_info[self._node_id] = [mount_id]
+        else:
+            # node_mnt_info not present
+            share['path_info'] = {
+                self._node_id: [mount_id]
+            }
 
         self._create_mount_dir(mount_dir)
         LOG.info("Mounting share path %s to %s" % (share_path, mount_dir))
