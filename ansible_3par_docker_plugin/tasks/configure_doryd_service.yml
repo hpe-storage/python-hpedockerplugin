@@ -14,3 +14,34 @@
       daemon_reload: yes
       enabled: yes
       name: doryd.service
+
+  - name: collect facts about system services
+    service_facts:
+    register: services_state
+
+  - name: If the service failed to start, use another kubeconfig
+    ini_file:
+      path: /etc/systemd/system/doryd.service
+      section: Service
+      option: ExecStart
+      value: /usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/doryd /etc/origin/master/admin.kubeconfig  hpe.com
+    when: services_state['ansible_facts']['services']['doryd.service']['state'] == "stopped"
+
+  - name: restart doryd service, also issue daemon-reload to pick up config changes
+    systemd:
+      state: started
+      daemon_reload: yes
+      enabled: yes
+      name: doryd.service
+    when: services_state['ansible_facts']['services']['doryd.service']['state'] == "stopped"
+
+  - name: Getting the status of the service 
+    service_facts:
+    register: services_state_2
+    when: services_state['ansible_facts']['services']['doryd.service']['state'] == "stopped"
+
+  - name: Fail if the service fails to start
+    fail:
+      msg: "Failed to start doryd service"
+    when: services_state['ansible_facts']['services']['doryd.service']['state'] == "stopped" and services_state_2['ansible_facts']['services']['doryd.service']['state'] == "stopped"
+    
