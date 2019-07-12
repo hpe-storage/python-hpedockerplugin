@@ -4,21 +4,22 @@ import testtools
 from config import setupcfg
 from hpedockerplugin.hpe import hpe3par_opts as plugin_opts
 
-# import test.createshare_tester as createshare_tester
+import test.createshare_tester as createshare_tester
 import test.createvolume_tester as createvolume_tester
 import test.createreplicatedvolume_tester as createrepvolume_tester
 import test.clonevolume_tester as clonevolume_tester
 import test.createsnapshot_tester as createsnapshot_tester
-# import test.deleteshare_tester as deleteshare_tester
+import test.deleteshare_tester as deleteshare_tester
 import test.fake_3par_data as data
 import test.getvolume_tester as getvolume_tester
 import test.listvolume_tester as listvolume_tester
-# import test.mountshare_tester as mountshare_tester
+import test.mountshare_tester as mountshare_tester
 import test.mountvolume_tester as mountvolume_tester
 import test.removesnapshot_tester as removesnapshot_tester
 import test.removevolume_tester as removevolume_tester
 
 # import revertsnapshot_tester
+import test.unmountshare_tester as unmountshare_tester
 import test.unmountvolume_tester as unmountvolume_tester
 
 logger = logging.getLogger('hpedockerplugin')
@@ -796,39 +797,72 @@ class HpeDockerFCUnitTests(HpeDockerUnitTestsBase, testtools.TestCase):
 
 # TODO: Unit tests for share need more work
 # To be taken up after creating intial PR
-# class HpeDockerShareUnitTests(testtools.TestCase):
-#     def _get_real_config_file(self):
-#         return '/etc/hpedockerplugin/hpe.conf'
-#
-#     def _get_test_config_file(self):
-#         cfg_file_name = './test/config/hpe.conf'
-#         return cfg_file_name
-#
-#     def _get_configs(self, cfg_param):
-#         host_config = setupcfg.get_host_config(
-#             cfg_param, setupcfg.FILE_CONF)
-#         host_config.set_override('ssh_hosts_key_file',
-#                                  data.KNOWN_HOSTS_FILE)
-#         backend_configs = setupcfg.get_all_backend_configs(
-#             cfg_param, setupcfg.FILE_CONF, plugin_opts.hpe3par_file_opts)
-#         return {'file': (host_config, backend_configs)}
-#
-#     @property
-#     def protocol(self):
-#         return 'file'
-#
-#     @tc_banner_decorator
-#     def test_create_share_default(self):
-#         test = createshare_tester.TestCreateShareDefault()
-#         test.run_test(self)
-#
-#     @tc_banner_decorator
-#     def test_remove_regular_share(self):
-#         del_regular_share = deleteshare_tester.TestDeleteShare.Regular()
-#         test = deleteshare_tester.TestDeleteShare(del_regular_share)
-#         test.run_test(self)
-#
-#     @tc_banner_decorator
-#     def test_mount_nfs_share(self):
-#         test = mountshare_tester.TestMountNfsShare()
-#         test.run_test(self)
+class HpeDockerShareUnitTests(testtools.TestCase):
+    def _get_real_config_file(self):
+        return '/etc/hpedockerplugin/hpe.conf'
+
+    def _get_test_config_file(self):
+        cfg_file_name = './test/config/hpe.conf'
+        return cfg_file_name
+
+    def _get_configs(self, cfg_param):
+        host_config = setupcfg.get_host_config(
+            cfg_param, setupcfg.FILE_CONF)
+        host_config.set_override('ssh_hosts_key_file',
+                                 data.KNOWN_HOSTS_FILE)
+        backend_configs = setupcfg.get_all_backend_configs(
+            cfg_param, setupcfg.FILE_CONF, plugin_opts.hpe3par_file_opts)
+        return {'file': (host_config, backend_configs)}
+
+    @property
+    def protocol(self):
+        return 'file'
+
+    @tc_banner_decorator
+    def test_create_first_default_share(self):
+        test = createshare_tester.TestCreateFirstDefaultShare()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_create_second_default_share(self):
+        test = createshare_tester.TestCreateSecondDefaultShare()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_create_share_on_legacy_fpg(self):
+        test = createshare_tester.TestCreateShareOnLegacyFpg()
+        test.run_test(self)
+
+    # TODO: TC to be enabled once tester class implementation is done
+    @tc_banner_decorator
+    def test_create_first_default_share_set_quota_fails(self):
+        test = createshare_tester.TestCreateFirstDefaultShareSetQuotaFails()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_remove_regular_share(self):
+        del_regular_share = deleteshare_tester.TestDeleteShare.Regular()
+        test = deleteshare_tester.TestDeleteShare(del_regular_share)
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_remove_share_with_acl(self):
+        params = {'share_with_acl': True}
+        del_regular_share = deleteshare_tester.TestDeleteShare.Regular(params)
+        test = deleteshare_tester.TestDeleteShare(del_regular_share)
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_mount_share(self):
+        test = mountshare_tester.TestMountNfsShare()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_mount_share_with_acl(self):
+        test = mountshare_tester.TestMountNfsShareWithAcl()
+        test.run_test(self)
+
+    @tc_banner_decorator
+    def test_unmount_share(self):
+        test = unmountshare_tester.TestUnmountNfsShare()
+        test.run_test(self)

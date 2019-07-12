@@ -34,9 +34,11 @@ class SetQuotaCmd(cmd.Cmd):
 
             LOG.info("Updated quota metadata for share: %s" % share)
 
-        except exception.ShareBackendException as ex:
+        except (exception.ShareBackendException,
+                exception.HPEPluginSaveFailed) as ex:
             msg = "Set quota failed. Msg: %s" % six.text_type(ex)
             LOG.error(msg)
+            self.unexecute()
             raise exception.SetQuotaFailed(reason=msg)
 
     def unexecute(self):
@@ -52,8 +54,10 @@ class SetQuotaCmd(cmd.Cmd):
         share = self._share_etcd.get_share(self._share_name)
         if add:
             share['quota_id'] = quota_id
+            share['status'] = 'AVAILABLE'
         elif 'quota_id' in share:
             share.pop('quota_id')
+            share['status'] = 'FAILED'
         self._share_etcd.save_share(share)
         return share
 

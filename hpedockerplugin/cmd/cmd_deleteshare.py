@@ -1,11 +1,14 @@
 import copy
 import json
+import os
 import six
 from threading import Thread
+import uuid
 
 from oslo_log import log as logging
 
 from hpedockerplugin.cmd import cmd
+from hpedockerplugin import exception
 
 LOG = logging.getLogger(__name__)
 
@@ -20,6 +23,7 @@ class DeleteShareCmd(cmd.Cmd):
         self._share_info = share_info
         self._cpg_name = share_info['cpg']
         self._fpg_name = share_info['fpg']
+        self._mount_id = str(uuid.uuid4())
 
     def execute(self):
         share_name = self._share_info['name']
@@ -27,10 +31,11 @@ class DeleteShareCmd(cmd.Cmd):
         # Most likely nothing got created at the backend when share is
         # not in AVAILABLE state
         if self._share_info['status'] == 'FAILED':
-            LOG.info("Share %s not in FAILED state. Removing from ETCD..."
+            LOG.info("Share %s is in FAILED state. Removing from ETCD..."
                      % share_name)
-            self._delete_share_from_etcd(share_name)
-            return json.dumps({u"Err": ''})
+            ret_val, status = self._delete_share_from_etcd(share_name)
+            return ret_val
+
         elif self._share_info['status'] == 'CREATING':
             msg = ("Share %s is in CREATING state. Please wait for it to be "
                    "in AVAILABLE or FAILED state and then attempt remove."
@@ -38,15 +43,30 @@ class DeleteShareCmd(cmd.Cmd):
             LOG.info(msg)
             return json.dumps({"Err": msg})
 
-        self._delete_share()
-        self._delete_file_store()
+        try:
+            # A file-store of a share on which files/dirs were created cannot
+            # be deleted unless it is made empty. Deleting share contents...
+            self._del_share_contents(share_name)
+            self._delete_share()
+        except exception.ShareBackendException as ex:
+            return json.dumps({"Err": ex.msg})
 
+        ret_val, status = self._delete_share_from_etcd(share_name)
+        if not status:
+            LOG.info("Delete share %s from ETCD failed for some reason..."
+                     "Continuing with deleting filestore/fpg..."
+                     % share_name)
+
+        LOG.info("Spawning thread to allow file-store, FPG delete for share "
+                 "%s if needed..." % share_name)
         thread = Thread(target=self._continue_delete_on_thread)
         thread.start()
         return json.dumps({u"Err": ''})
 
     def _continue_delete_on_thread(self):
-
+        LOG.info("Deleting file store %s and FPG if this is the last share "
+                 "on child thread..." % self._share_info['name'])
+        self._delete_file_store()
         with self._fp_etcd.get_fpg_lock(
                 self._backend, self._cpg_name, self._fpg_name
         ):
@@ -73,7 +93,8 @@ class DeleteShareCmd(cmd.Cmd):
                                                     backend_metadata)
             except Exception as ex:
                 msg = "WARNING: Metadata for backend %s is not " \
-                      "present" % self._backend
+                      "present. Exception: %s" % \
+                      (self._backend, six.text_type(ex))
                 LOG.warning(msg)
 
     def _fpg_owned_by_docker(self):
@@ -87,30 +108,57 @@ class DeleteShareCmd(cmd.Cmd):
             LOG.info("FPG %s is NOT owned by Docker!" % self._fpg_name)
             return False
 
-    def _remove_quota(self):
-        try:
-            share_copy = copy.deepcopy(self._share_info)
-            if 'quota_id' in share_copy:
-                quota_id = share_copy.pop('quota_id')
-                self._mediator.remove_quota(quota_id)
-                self._etcd.save_share(share_copy)
-        except Exception as ex:
-            LOG.error("ERROR: Remove quota failed for %s. %s"
-                      % (share_copy['name'], six.text_type(ex)))
-
     def _delete_share(self):
+        """Deletes share from the backend
+
+        :returns: None
+
+        :raises: :class:`~hpedockerplugin.exception.ShareBackendException
+
+        """
         share_name = self._share_info['name']
         LOG.info("Start delete share %s..." % share_name)
+        if self._share_info.get('id'):
+            LOG.info("Deleting share %s from backend..." % share_name)
+            self._mediator.delete_share(self._share_info['id'])
+            LOG.info("Share %s deleted from backend" % share_name)
+
+    def _del_share_contents(self, share_name):
+        LOG.info("Deleting contents of share %s..." % share_name)
+        share_mounted = False
         try:
-            if self._share_info.get('id'):
-                LOG.info("Deleting share %s from backend..." % share_name)
-                self._mediator.delete_share(self._share_info['id'])
-                LOG.info("Share %s deleted from backend" % share_name)
-                self._delete_share_from_etcd(share_name)
-        except Exception as e:
-            msg = 'Failed to remove share %(share_name)s from backend: %(e)s'\
-                  % ({'share_name': share_name, 'e': six.text_type(e)})
+            LOG.info("Mounting share %s to delete the contents..."
+                     % share_name)
+            resp = self._file_mgr._internal_mount_share(self._share_info)
+            LOG.info("Share %s mounted successfully" % share_name)
+            share_mounted = True
+            LOG.info("Resp from mount: %s" % resp)
+            mount_dir = resp['Mountpoint']
+            cmd = 'rm -rf %s/*' % mount_dir
+            LOG.info("Executing command '%s' to delete share contents..."
+                     % cmd)
+            ret_val = os.system(cmd)
+            if ret_val == 0:
+                LOG.info("Successfully deleted contents of share %s"
+                         % share_name)
+            else:
+                LOG.error("Failed to delete contents of share %s. "
+                          "Command error code: %s" % (share_name, ret_val))
+        except Exception as ex:
+            msg = 'Failed to delete contents of share %s' % share_name
+            # Log error message but allow to continue with deletion of
+            # file-store and if required FPG. By this time the share is
+            # already deleted from ETCD and hence it is all the more
+            # important that deletion of file-store and FPG is attempted
+            # even after hitting this failure
             LOG.error(msg)
+        finally:
+            if share_mounted:
+                LOG.info("Unmounting share %s after attempting to delete "
+                         "its contents..." % share_name)
+                self._file_mgr._internal_unmount_share(self._share_info)
+                LOG.info("Unmounted share successfully %s after attempting "
+                         "to delete its contents" % share_name)
 
     def _delete_file_store(self):
         share_name = self._share_info['name']
@@ -125,14 +173,38 @@ class DeleteShareCmd(cmd.Cmd):
             LOG.error(msg)
 
     def _delete_share_from_etcd(self, share_name):
+        """Deletes share from ETCD. If delete fails, sets the share status
+           as FAILED
+
+        :returns: 1. JSON dict with or without error message based on whether
+                     operation was successful or not
+                  2. Boolean indicating if operation was successful or not
+
+        :raises: None
+
+        """
         try:
             LOG.info("Removing share entry from ETCD: %s..." % share_name)
             self._etcd.delete_share(share_name)
             LOG.info("Removed share entry from ETCD: %s" % share_name)
-        except KeyError:
-            msg = 'Warning: Failed to delete share key: %s from ' \
-                  'ETCD due to KeyError' % share_name
+            return json.dumps({'Err': ''}), True
+
+        except (exception.EtcdMetadataNotFound,
+                exception.HPEPluginEtcdException,
+                KeyError) as ex:
+            msg = "Delete share '%s' from ETCD failed: Reason: %s" \
+                  % (share_name, ex.msg)
             LOG.error(msg)
+            LOG.info("Setting FAILED state for share %s..." % share_name)
+            self._share_info['status'] = 'FAILED'
+            self._share_info['detailedStatus'] = msg
+            try:
+                self._etcd.save_share(self._share_info)
+            except exception.HPEPluginSaveFailed as ex:
+                msg = "FATAL: Failed while saving share '%s' in FAILED " \
+                      "state to ETCD. Check if ETCD is running." % share_name
+                LOG.error(msg)
+                return json.dumps({'Err': msg}), False
 
     def _delete_fpg(self):
         LOG.info("Deleting FPG %s from backend..." % self._fpg_name)

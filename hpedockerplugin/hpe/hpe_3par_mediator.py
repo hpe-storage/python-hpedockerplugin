@@ -32,33 +32,12 @@ if hpe3parclient:
 
 LOG = log.getLogger(__name__)
 MIN_CLIENT_VERSION = (4, 0, 0)
-DENY = '-'
-ALLOW = '+'
-FULL = 1
-THIN = 2
-DEDUPE = 6
-ENABLED = 1
-DISABLED = 2
-CACHE = 'cache'
-CONTINUOUS_AVAIL = 'continuous_avail'
-ACCESS_BASED_ENUM = 'access_based_enum'
-SMB_EXTRA_SPECS_MAP = {
-    CACHE: CACHE,
-    CONTINUOUS_AVAIL: 'ca',
-    ACCESS_BASED_ENUM: 'abe',
-}
-IP_ALREADY_EXISTS = 'IP address %s already exists'
-USER_ALREADY_EXISTS = '"allow" permission already exists for "%s"'
-DOES_NOT_EXIST = 'does not exist, cannot'
-LOCAL_IP = '127.0.0.1'
-LOCAL_IP_RO = '127.0.0.2'
-SUPER_SHARE = 'DOCKER_SUPER_SHARE'
-TMP_RO_SNAP_EXPORT = "Temp RO snapshot export as source for creating RW share."
 
 BAD_REQUEST = '400'
 OTHER_FAILURE_REASON = 29
 NON_EXISTENT_CPG = 15
 INV_INPUT_ILLEGAL_CHAR = 69
+TASK_STATUS_NORMAL = 1
 
 # Overriding these class variable so that minimum supported version is 3.3.1
 file_client.HPE3ParFilePersonaClient.HPE3PAR_WS_MIN_BUILD_VERSION = 30301460
@@ -99,6 +78,10 @@ class HPE3ParMediator(object):
     def no_client():
         return hpe3parclient is None
 
+    def _create_client(self):
+        return file_client.HPE3ParFilePersonaClient(
+            self._config.hpe3par_api_url)
+
     def do_setup(self, timeout=30):
 
         if self.no_client():
@@ -121,8 +104,7 @@ class HPE3ParMediator(object):
             raise exception.HPE3ParInvalidClient(message=msg)
 
         try:
-            self._client = file_client.HPE3ParFilePersonaClient(
-                self._config.hpe3par_api_url)
+            self._client = self._create_client()
         except Exception as e:
             msg = (_('Failed to connect to HPE 3PAR File Persona Client: %s') %
                    six.text_type(e))
@@ -222,6 +204,15 @@ class HPE3ParMediator(object):
                 LOG.info(msg)
                 raise exception.ShareBackendException(msg=msg)
             return body['members'][0]
+        finally:
+            self._wsapi_logout()
+
+    def get_all_vfs(self):
+        try:
+            self._wsapi_login()
+            uri = '/virtualfileservers'
+            resp, body = self._client.http.get(uri)
+            return body['members']
         finally:
             self._wsapi_logout()
 
@@ -453,9 +444,8 @@ class HPE3ParMediator(object):
             LOG.warning("Share %s not found on backend" % share_id)
             pass
         except Exception as ex:
-            msg = "mediator:delete_share - failed to remove share %s" \
-                  "at the backend. Exception: %s" % \
-                  (share_id, six.text_type(ex))
+            msg = "Failed to remove share %s at the backend. Reason: %s" \
+                  % (share_id, six.text_type(ex))
             LOG.error(msg)
             raise exception.ShareBackendException(msg=msg)
         finally:
@@ -477,32 +467,16 @@ class HPE3ParMediator(object):
                 raise loopingcall.LoopingCallDone()
 
         task_status = []
-        try:
-            self._wsapi_login()
-            timer = loopingcall.FixedIntervalLoopingCall(
-                _wait_for_task, task_id, task_status)
-            timer.start(interval=interval).wait()
 
-            if task_status[0]['status'] is not self._client.TASK_DONE:
-                msg = "ERROR: Task with id %d has failed with status %s" %\
-                      (task_id, task_status)
-                LOG.exception(msg)
-                raise exception.ShareBackendException(msg=msg)
-        finally:
-            self._wsapi_logout()
+        timer = loopingcall.FixedIntervalLoopingCall(
+            _wait_for_task, task_id, task_status)
+        timer.start(interval=interval).wait()
 
-    def _check_task_id(self, task_id):
-        if type(task_id) is list:
-            task_id = task_id[0]
-        try:
-            int(task_id)
-        except ValueError:
-            # 3PAR returned error instead of task_id
-            # Log the error message
-            msg = task_id
-            LOG.error(msg)
-            raise exception.ShareBackendException(msg)
-        return task_id
+        if task_status[0]['status'] is not self._client.TASK_DONE:
+            msg = "ERROR: Task with id %d has failed with status %s" %\
+                  (task_id, task_status)
+            LOG.exception(msg)
+            raise exception.ShareBackendException(msg=msg)
 
     def create_fpg(self, cpg, fpg_name, size=16):
         try:
@@ -518,11 +492,6 @@ class HPE3ParMediator(object):
 
             LOG.info("Create FPG Response: %s" % six.text_type(resp))
             LOG.info("Create FPG Response Body: %s" % six.text_type(body))
-            if (resp['status'] == BAD_REQUEST and
-                    body['code'] == OTHER_FAILURE_REASON and
-                    'already exists' in body['desc']):
-                LOG.error(body['desc'])
-                raise exception.FpgAlreadyExists(reason=body['desc'])
 
             task_id = body.get('taskId')
             if task_id:
@@ -530,15 +499,22 @@ class HPE3ParMediator(object):
         except hpeexceptions.HTTPBadRequest as ex:
             error_code = ex.get_code()
             LOG.error("Exception: %s" % six.text_type(ex))
-            if error_code == NON_EXISTENT_CPG:
-                LOG.error("CPG %s doesn't exist on array" % cpg)
-                raise exception.HPEDriverNonExistentCpg(cpg=cpg)
-            elif error_code == OTHER_FAILURE_REASON:
-                msg = six.text_type(ex)
-                if 'already exists' in ex.get_description():
+            if error_code == OTHER_FAILURE_REASON:
+                LOG.error(six.text_type(ex))
+                msg = ex.get_description()
+                if 'already exists' in msg or \
+                        msg.startswith('A createfpg task is already running'):
                     raise exception.FpgAlreadyExists(reason=msg)
-                else:
-                    raise exception.ShareBackendException(msg=msg)
+            raise exception.ShareBackendException(msg=ex.get_description())
+        except hpeexceptions.HTTPNotFound as ex:
+            error_code = ex.get_code()
+            LOG.error("Exception: %s" % six.text_type(ex))
+            if error_code == NON_EXISTENT_CPG:
+                msg = "Failed to create FPG %s on the backend. Reason: " \
+                      "CPG %s doesn't exist on array" % (fpg_name, cpg)
+                LOG.error(msg)
+                raise exception.ShareBackendException(msg=msg)
+            raise exception.ShareBackendException(msg=ex.get_description())
         except exception.ShareBackendException as ex:
             msg = 'Create FPG task failed: cpg=%s,fpg=%s, ex=%s'\
                   % (cpg, fpg_name, six.text_type(ex))
@@ -590,8 +566,30 @@ class HPE3ParMediator(object):
                                                    fpg, size))
             LOG.exception(msg)
             raise exception.ShareBackendException(msg=msg)
+        else:
+            self._check_vfs_status(task_id, fpg)
         finally:
             self._wsapi_logout()
+
+    def _check_vfs_status(self, task_id, fpg):
+        LOG.info("Checking status of VFS under FPG %s..." % fpg)
+        vfs = self.get_vfs(fpg)
+        overall_state = vfs['overallState']
+
+        if overall_state != TASK_STATUS_NORMAL:
+            LOG.info("Overall state of VFS is not normal")
+            task = self._client.getTask(task_id)
+            detailed_status = task['detailedStatus']
+            lines = detailed_status.split('\n')
+            error_line = ''
+            for line in lines:
+                idx = line.find('Error')
+                if idx != -1:
+                    error_line += line[idx:] + '\n'
+            if error_line:
+                raise exception.ShareBackendException(msg=error_line)
+            else:
+                raise exception.ShareBackendException(msg=detailed_status)
 
     def set_ACL(self, fMode, fUserId, fUName, fGName):
         # fsMode = "A:fdps:rwaAxdD,A:fFdps:rwaxdnNcCoy,A:fdgps:DtnNcy"
@@ -652,7 +650,7 @@ class HPE3ParMediator(object):
             if value == 'UID':
                 uid_index = index
         res_len = len(res_cmd)
-        end_index = res_len - 3
+        end_index = res_len - 2
         for line in res_cmd[2:end_index]:
             line_list = line.split(',')
             if fuserowner == line_list[uid_index]:
@@ -666,12 +664,15 @@ class HPE3ParMediator(object):
         cmd1 = ['showfsuser']
         cmd2 = ['showfsgroup']
         try:
-            LOG.info("Now will execute first cmd1")
+            LOG.info("Executing first command: %s..." % cmd1)
             cmd1.append('\r')
             res_cmd1 = self._client._run(cmd1)
+            LOG.info("Resp: %s" % res_cmd1)
             f_user_name = self._check_usr_grp_existence(fUser, res_cmd1)
+            LOG.info("Executing second command: %s..." % cmd2)
             cmd2.append('\r')
             res_cmd2 = self._client._run(cmd2)
+            LOG.info("Resp: %s" % res_cmd2)
             f_group_name = self._check_usr_grp_existence(fGroup, res_cmd2)
             return f_user_name, f_group_name
         except hpeexceptions.SSHException as ex:

@@ -1,13 +1,11 @@
 import abc
 import json
 import re
-import six
 from collections import OrderedDict
 
 from oslo_log import log as logging
 
 import hpedockerplugin.exception as exception
-from hpedockerplugin.hpe import volume
 from hpedockerplugin.hpe import share
 
 LOG = logging.getLogger(__name__)
@@ -171,16 +169,16 @@ class RequestContextBuilder(object):
                   "correct format and values to be passed."
             LOG.error(msg)
             raise exception.InvalidInput(reason=msg)
-        passed_vflag_len = len(list(type_flag_perm))
+        passed_vflag_len = len(list(type_flag_perm[1]))
         vflag = list(set(list(type_flag_perm[1])))
         if len(vflag) < passed_vflag_len:
             msg = "Duplicate characters for given flag are passed. "\
-                  "Please correct the passed flag charecters for fsMode."
+                  "Please correct the passed flag characters for fsMode."
             LOG.error(msg)
             raise exception.InvalidInput(reason=msg)
         if set(vflag) - set(valid_flag):
             msg = "Invalid flag passed for the fsMode. Please "\
-                  "pass the correct flag charecters"
+                  "pass the correct flag characters"
             LOG.error(msg)
             raise exception.InvalidInput(reason=msg)
         passed_vperm_len = len(list(type_flag_perm[2]))
@@ -191,8 +189,10 @@ class RequestContextBuilder(object):
             LOG.error(msg)
             raise exception.InvalidInput(reason=msg)
         if set(vperm) - set(valid_perm):
-            msg = "Invalid charecters for the permissions of fsMode are "\
-                  "passed. Please remove the invalid charecters."
+            msg = "Invalid characters for the permissions of fsMode are "\
+                  "passed. Please remove the invalid characters."
+            LOG.error(msg)
+            raise exception.InvalidInput(reason=msg)
         return True
 
     def _check_is_valid_acl_string(self, fsMode):
@@ -291,13 +291,27 @@ class FileRequestContextBuilder(RequestContextBuilder):
         # import pdb
         # pdb.set_trace()
         backend = self._get_str_option(options, 'backend', def_backend_name)
+
+        if backend == 'DEFAULT_BLOCK':
+            msg = 'Backend DEFAULT_BLOCK is reserved for Block ' \
+                  'operations. Cannot specify it for File operations'
+            LOG.error(msg)
+            raise exception.InvalidInput(msg)
+
         config = self._backend_configs.get(backend)
         if not config:
             raise exception.InvalidInput(
                 'ERROR: Backend %s is not configured for File Persona'
                 % backend
             )
-        cpg = self._get_str_option(options, 'cpg', config.hpe3par_cpg[0])
+        cpg = self._get_str_option(
+            options, 'cpg',
+            config.hpe3par_cpg[0] if config.hpe3par_cpg else None)
+        if not cpg:
+            raise exception.InvalidInput(
+                "ERROR: CPG is not configured in hpe.conf. Please specify"
+                "name of an existing CPG in hpe.conf and restart plugin")
+
         fpg = self._get_str_option(options, 'fpg', None)
         fsMode = self._get_str_option(options, 'fsMode', None)
         fsOwner = self._get_str_option(options, 'fsOwner', None)
@@ -306,6 +320,13 @@ class FileRequestContextBuilder(RequestContextBuilder):
 
         if fsOwner:
             self._validate_fsOwner(fsOwner)
+
+        if fsMode:
+            if fsOwner is None:
+                raise exception.InvalidInput(
+                    " ERROR: If mode bits or directory permissions"
+                    " needs to be changed  then, providing fsOwner"
+                    " is mandetory")
 
         size_gib = self._get_int_option(options, 'size', 1024)
         # Default share size or quota in MiB which is 1TiB
@@ -402,293 +423,294 @@ class FileRequestContextBuilder(RequestContextBuilder):
 
 
 # TODO: This is work in progress - can be taken up later if agreed upon
-class VolumeRequestContextBuilder(RequestContextBuilder):
-    def __init__(self, backend_configs):
-        super(VolumeRequestContextBuilder, self).__init__(backend_configs)
-
-    def _get_build_req_ctxt_map(self):
-        build_req_ctxt_map = OrderedDict()
-        build_req_ctxt_map['virtualCopyOf,scheduleName'] = \
-            self._create_snap_schedule_req_ctxt,
-        build_req_ctxt_map['virtualCopyOf,scheduleFrequency'] = \
-            self._create_snap_schedule_req_ctxt
-        build_req_ctxt_map['virtualCopyOf,snaphotPrefix'] = \
-            self._create_snap_schedule_req_ctxt
-        build_req_ctxt_map['virtualCopyOf'] = \
-            self._create_snap_req_ctxt
-        build_req_ctxt_map['cloneOf'] = \
-            self._create_clone_req_ctxt
-        build_req_ctxt_map['importVol'] = \
-            self._create_import_vol_req_ctxt
-        build_req_ctxt_map['replicationGroup'] = \
-            self._create_rcg_req_ctxt
-        build_req_ctxt_map['help'] = self._create_help_req_ctxt
-        return build_req_ctxt_map
-
-    def _default_req_ctxt_creator(self, contents):
-        return self._create_vol_create_req_ctxt(contents)
-
-    @staticmethod
-    def _validate_mutually_exclusive_ops(contents):
-        mutually_exclusive_ops = ['virtualCopyOf', 'cloneOf', 'importVol',
-                                  'replicationGroup']
-        if 'Opts' in contents and contents['Opts']:
-            received_opts = contents.get('Opts').keys()
-            diff = set(mutually_exclusive_ops) - set(received_opts)
-            if len(diff) < len(mutually_exclusive_ops) - 1:
-                mutually_exclusive_ops.sort()
-                msg = "Operations %s are mutually exclusive and cannot be " \
-                      "specified together. Please check help for usage." % \
-                      mutually_exclusive_ops
-                raise exception.InvalidInput(reason=msg)
-
-    @staticmethod
-    def _validate_opts(operation, contents, valid_opts, mandatory_opts=None):
-        if 'Opts' in contents and contents['Opts']:
-            received_opts = contents.get('Opts').keys()
-
-            if mandatory_opts:
-                diff = set(mandatory_opts) - set(received_opts)
-                if diff:
-                    # Print options in sorted manner
-                    mandatory_opts.sort()
-                    msg = "One or more mandatory options %s are missing " \
-                          "for operation %s" % (mandatory_opts, operation)
-                    raise exception.InvalidInput(reason=msg)
-
-            diff = set(received_opts) - set(valid_opts)
-            if diff:
-                diff = list(diff)
-                diff.sort()
-                msg = "Invalid option(s) %s specified for operation %s. " \
-                      "Please check help for usage." % \
-                      (diff, operation)
-                raise exception.InvalidInput(reason=msg)
-
-    def _create_vol_create_req_ctxt(self, contents):
-        valid_opts = ['compression', 'size', 'provisioning',
-                      'flash-cache', 'qos-name', 'fsOwner',
-                      'fsMode', 'mountConflictDelay', 'cpg',
-                      'snapcpg', 'backend']
-        self._validate_opts("create volume", contents, valid_opts)
-        return {'operation': 'create_volume',
-                '_vol_orchestrator': 'volume'}
-
-    def _create_clone_req_ctxt(self, contents):
-        valid_opts = ['cloneOf', 'size', 'cpg', 'snapcpg',
-                      'mountConflictDelay']
-        self._validate_opts("clone volume", contents, valid_opts)
-        return {'operation': 'clone_volume',
-                'orchestrator': 'volume'}
-
-    def _create_snap_req_ctxt(self, contents):
-        valid_opts = ['virtualCopyOf', 'retentionHours', 'expirationHours',
-                      'mountConflictDelay', 'size']
-        self._validate_opts("create snapshot", contents, valid_opts)
-        return {'operation': 'create_snapshot',
-                '_vol_orchestrator': 'volume'}
-
-    def _create_snap_schedule_req_ctxt(self, contents):
-        valid_opts = ['virtualCopyOf', 'scheduleFrequency', 'scheduleName',
-                      'snapshotPrefix', 'expHrs', 'retHrs',
-                      'mountConflictDelay', 'size']
-        mandatory_opts = ['scheduleName', 'snapshotPrefix',
-                          'scheduleFrequency']
-        self._validate_opts("create snapshot schedule", contents,
-                            valid_opts, mandatory_opts)
-        return {'operation': 'create_snapshot_schedule',
-                'orchestrator': 'volume'}
-
-    def _create_import_vol_req_ctxt(self, contents):
-        valid_opts = ['importVol', 'backend', 'mountConflictDelay']
-        self._validate_opts("import volume", contents, valid_opts)
-
-        # Replication enabled backend cannot be used for volume import
-        backend = contents['Opts'].get('backend', 'DEFAULT')
-        if backend == '':
-            backend = 'DEFAULT'
-
-        try:
-            config = self._backend_configs[backend]
-        except KeyError:
-            backend_names = list(self._backend_configs.keys())
-            backend_names.sort()
-            msg = "ERROR: Backend '%s' doesn't exist. Available " \
-                  "backends are %s. Please use " \
-                  "a valid backend name and retry." % \
-                  (backend, backend_names)
-            raise exception.InvalidInput(reason=msg)
-
-        if config.replication_device:
-            msg = "ERROR: Import volume not allowed with replication " \
-                  "enabled backend '%s'" % backend
-            raise exception.InvalidInput(reason=msg)
-
-        volname = contents['Name']
-        existing_ref = str(contents['Opts']['importVol'])
-        manage_opts = contents['Opts']
-        return {'orchestrator': 'volume',
-                'operation': 'import_volume',
-                'args': (volname,
-                         existing_ref,
-                         backend,
-                         manage_opts)}
-
-    def _create_rcg_req_ctxt(self, contents):
-        valid_opts = ['replicationGroup', 'size', 'provisioning',
-                      'backend', 'mountConflictDelay', 'compression']
-        self._validate_opts('create replicated volume', contents, valid_opts)
-
-        # It is possible that the user configured replication in hpe.conf
-        # but didn't specify any options. In that case too, this operation
-        # must fail asking for "replicationGroup" parameter
-        # Hence this validation must be done whether "Opts" is there or not
-        options = contents['Opts']
-        backend = self._get_str_option(options, 'backend', 'DEFAULT')
-        create_vol_args = self._get_create_volume_args(options)
-        rcg_name = create_vol_args['replicationGroup']
-        try:
-            self._validate_rcg_params(rcg_name, backend)
-        except exception.InvalidInput as ex:
-            return json.dumps({u"Err": ex.msg})
-
-        return {'operation': 'create_volume',
-                'orchestrator': 'volume',
-                'args': create_vol_args}
-
-    def _get_fs_owner(self, options):
-        val = self._get_str_option(options, 'fsOwner', None)
-        if val:
-            fs_owner = val.split(':')
-            if len(fs_owner) != 2:
-                msg = "Invalid value '%s' specified for fsOwner. Please " \
-                      "specify a correct value." % val
-                raise exception.InvalidInput(msg)
-            return fs_owner
-        return None
-
-    def _get_fs_mode(self, options):
-        fs_mode_str = self._get_str_option(options, 'fsMode', None)
-        if fs_mode_str:
-            try:
-                int(fs_mode_str)
-            except ValueError as ex:
-                msg = "Invalid value '%s' specified for fsMode. Please " \
-                      "specify an integer value." % fs_mode_str
-                raise exception.InvalidInput(msg)
-
-            if fs_mode_str[0] != '0':
-                msg = "Invalid value '%s' specified for fsMode. Please " \
-                      "specify an octal value." % fs_mode_str
-                raise exception.InvalidInput(msg)
-
-            for mode in fs_mode_str:
-                if int(mode) > 7:
-                    msg = "Invalid value '%s' specified for fsMode. Please " \
-                          "specify an octal value." % fs_mode_str
-                    raise exception.InvalidInput(msg)
-        return fs_mode_str
-
-    def _get_create_volume_args(self, options):
-        ret_args = dict()
-        ret_args['size'] = self._get_int_option(
-            options, 'size', volume.DEFAULT_SIZE)
-        ret_args['provisioning'] = self._get_str_option(
-            options, 'provisioning', volume.DEFAULT_PROV,
-            ['full', 'thin', 'dedup'])
-        ret_args['flash-cache'] = self._get_str_option(
-            options, 'flash-cache', volume.DEFAULT_FLASH_CACHE,
-            ['true', 'false'])
-        ret_args['qos-name'] = self._get_str_option(
-            options, 'qos-name', volume.DEFAULT_QOS)
-        ret_args['compression'] = self._get_str_option(
-            options, 'compression', volume.DEFAULT_COMPRESSION_VAL,
-            ['true', 'false'])
-        ret_args['fsOwner'] = self._get_fs_owner(options)
-        ret_args['fsMode'] = self._get_fs_mode(options)
-        ret_args['mountConflictDelay'] = self._get_int_option(
-            options, 'mountConflictDelay',
-            volume.DEFAULT_MOUNT_CONFLICT_DELAY)
-        ret_args['cpg'] = self._get_str_option(options, 'cpg', None)
-        ret_args['snapcpg'] = self._get_str_option(options, 'snapcpg', None)
-        ret_args['replicationGroup'] = self._get_str_option(
-            options, 'replicationGroup', None)
-
-        return ret_args
-
-    def _validate_rcg_params(self, rcg_name, backend_name):
-        LOG.info("Validating RCG: %s, backend name: %s..." % (rcg_name,
-                                                              backend_name))
-        hpepluginconfig = self._backend_configs[backend_name]
-        replication_device = hpepluginconfig.replication_device
-
-        LOG.info("Replication device: %s" % six.text_type(replication_device))
-
-        if rcg_name and not replication_device:
-            msg = "Request to create replicated volume cannot be fulfilled " \
-                  "without defining 'replication_device' entry defined in " \
-                  "hpe.conf for the backend '%s'. Please add it and execute " \
-                  "the request again." % backend_name
-            raise exception.InvalidInput(reason=msg)
-
-        if replication_device and not rcg_name:
-            backend_names = list(self._backend_configs.keys())
-            backend_names.sort()
-
-            msg = "'%s' is a replication enabled backend. " \
-                  "Request to create replicated volume cannot be fulfilled " \
-                  "without specifying 'replicationGroup' option in the " \
-                  "request. Please either specify 'replicationGroup' or use " \
-                  "a normal backend and execute the request again. List of " \
-                  "backends defined in hpe.conf: %s" % (backend_name,
-                                                        backend_names)
-            raise exception.InvalidInput(reason=msg)
-
-        if rcg_name and replication_device:
-
-            def _check_valid_replication_mode(mode):
-                valid_modes = ['synchronous', 'asynchronous', 'streaming']
-                if mode.lower() not in valid_modes:
-                    msg = "Unknown replication mode '%s' specified. Valid " \
-                          "values are 'synchronous | asynchronous | " \
-                          "streaming'" % mode
-                    raise exception.InvalidInput(reason=msg)
-
-            rep_mode = replication_device['replication_mode'].lower()
-            _check_valid_replication_mode(rep_mode)
-            if replication_device.get('quorum_witness_ip'):
-                if rep_mode.lower() != 'synchronous':
-                    msg = "For Peer Persistence, replication mode must be " \
-                          "synchronous"
-                    raise exception.InvalidInput(reason=msg)
-
-            sync_period = replication_device.get('sync_period')
-            if sync_period and rep_mode == 'synchronous':
-                msg = "'sync_period' can be defined only for 'asynchronous'" \
-                      " and 'streaming' replicate modes"
-                raise exception.InvalidInput(reason=msg)
-
-            if (rep_mode == 'asynchronous' or rep_mode == 'streaming')\
-                    and sync_period:
-                try:
-                    sync_period = int(sync_period)
-                except ValueError as ex:
-                    msg = "Non-integer value '%s' not allowed for " \
-                          "'sync_period'. %s" % (
-                              replication_device.sync_period, ex)
-                    raise exception.InvalidInput(reason=msg)
-                else:
-                    SYNC_PERIOD_LOW = 300
-                    SYNC_PERIOD_HIGH = 31622400
-                    if sync_period < SYNC_PERIOD_LOW or \
-                       sync_period > SYNC_PERIOD_HIGH:
-                        msg = "'sync_period' must be between 300 and " \
-                              "31622400 seconds."
-                        raise exception.InvalidInput(reason=msg)
-
-    @staticmethod
-    def _validate_name(vol_name):
-        is_valid_name = re.match("^[A-Za-z0-9]+[A-Za-z0-9_-]+$", vol_name)
-        if not is_valid_name:
-            msg = 'Invalid volume name: %s is passed.' % vol_name
-            raise exception.InvalidInput(reason=msg)
+# class VolumeRequestContextBuilder(RequestContextBuilder):
+#     def __init__(self, backend_configs):
+#         super(VolumeRequestContextBuilder, self).__init__(backend_configs)
+#
+#     def _get_build_req_ctxt_map(self):
+#         build_req_ctxt_map = OrderedDict()
+#         build_req_ctxt_map['virtualCopyOf,scheduleName'] = \
+#             self._create_snap_schedule_req_ctxt,
+#         build_req_ctxt_map['virtualCopyOf,scheduleFrequency'] = \
+#             self._create_snap_schedule_req_ctxt
+#         build_req_ctxt_map['virtualCopyOf,snaphotPrefix'] = \
+#             self._create_snap_schedule_req_ctxt
+#         build_req_ctxt_map['virtualCopyOf'] = \
+#             self._create_snap_req_ctxt
+#         build_req_ctxt_map['cloneOf'] = \
+#             self._create_clone_req_ctxt
+#         build_req_ctxt_map['importVol'] = \
+#             self._create_import_vol_req_ctxt
+#         build_req_ctxt_map['replicationGroup'] = \
+#             self._create_rcg_req_ctxt
+#         build_req_ctxt_map['help'] = self._create_help_req_ctxt
+#         return build_req_ctxt_map
+#
+#     def _default_req_ctxt_creator(self, contents):
+#         return self._create_vol_create_req_ctxt(contents)
+#
+#     @staticmethod
+#     def _validate_mutually_exclusive_ops(contents):
+#         mutually_exclusive_ops = ['virtualCopyOf', 'cloneOf', 'importVol',
+#                                   'replicationGroup']
+#         if 'Opts' in contents and contents['Opts']:
+#             received_opts = contents.get('Opts').keys()
+#             diff = set(mutually_exclusive_ops) - set(received_opts)
+#             if len(diff) < len(mutually_exclusive_ops) - 1:
+#                 mutually_exclusive_ops.sort()
+#                 msg = "Operations %s are mutually exclusive and cannot be " \
+#                       "specified together. Please check help for usage." % \
+#                       mutually_exclusive_ops
+#                 raise exception.InvalidInput(reason=msg)
+#
+#     @staticmethod
+#     def _validate_opts(operation, contents, valid_opts, mandatory_opts=None):
+#         if 'Opts' in contents and contents['Opts']:
+#             received_opts = contents.get('Opts').keys()
+#
+#             if mandatory_opts:
+#                 diff = set(mandatory_opts) - set(received_opts)
+#                 if diff:
+#                     # Print options in sorted manner
+#                     mandatory_opts.sort()
+#                     msg = "One or more mandatory options %s are missing " \
+#                           "for operation %s" % (mandatory_opts, operation)
+#                     raise exception.InvalidInput(reason=msg)
+#
+#             diff = set(received_opts) - set(valid_opts)
+#             if diff:
+#                 diff = list(diff)
+#                 diff.sort()
+#                 msg = "Invalid option(s) %s specified for operation %s. " \
+#                       "Please check help for usage." % \
+#                       (diff, operation)
+#                 raise exception.InvalidInput(reason=msg)
+#
+#     def _create_vol_create_req_ctxt(self, contents):
+#         valid_opts = ['compression', 'size', 'provisioning',
+#                       'flash-cache', 'qos-name', 'fsOwner',
+#                       'fsMode', 'mountConflictDelay', 'cpg',
+#                       'snapcpg', 'backend']
+#         self._validate_opts("create volume", contents, valid_opts)
+#         return {'operation': 'create_volume',
+#                 '_vol_orchestrator': 'volume'}
+#
+#     def _create_clone_req_ctxt(self, contents):
+#         valid_opts = ['cloneOf', 'size', 'cpg', 'snapcpg',
+#                       'mountConflictDelay']
+#         self._validate_opts("clone volume", contents, valid_opts)
+#         return {'operation': 'clone_volume',
+#                 'orchestrator': 'volume'}
+#
+#     def _create_snap_req_ctxt(self, contents):
+#         valid_opts = ['virtualCopyOf', 'retentionHours', 'expirationHours',
+#                       'mountConflictDelay', 'size']
+#         self._validate_opts("create snapshot", contents, valid_opts)
+#         return {'operation': 'create_snapshot',
+#                 '_vol_orchestrator': 'volume'}
+#
+#     def _create_snap_schedule_req_ctxt(self, contents):
+#         valid_opts = ['virtualCopyOf', 'scheduleFrequency', 'scheduleName',
+#                       'snapshotPrefix', 'expHrs', 'retHrs',
+#                       'mountConflictDelay', 'size']
+#         mandatory_opts = ['scheduleName', 'snapshotPrefix',
+#                           'scheduleFrequency']
+#         self._validate_opts("create snapshot schedule", contents,
+#                             valid_opts, mandatory_opts)
+#         return {'operation': 'create_snapshot_schedule',
+#                 'orchestrator': 'volume'}
+#
+#     def _create_import_vol_req_ctxt(self, contents):
+#         valid_opts = ['importVol', 'backend', 'mountConflictDelay']
+#         self._validate_opts("import volume", contents, valid_opts)
+#
+#         # Replication enabled backend cannot be used for volume import
+#         backend = contents['Opts'].get('backend', 'DEFAULT')
+#         if backend == '':
+#             backend = 'DEFAULT'
+#
+#         try:
+#             config = self._backend_configs[backend]
+#         except KeyError:
+#             backend_names = list(self._backend_configs.keys())
+#             backend_names.sort()
+#             msg = "ERROR: Backend '%s' doesn't exist. Available " \
+#                   "backends are %s. Please use " \
+#                   "a valid backend name and retry." % \
+#                   (backend, backend_names)
+#             raise exception.InvalidInput(reason=msg)
+#
+#         if config.replication_device:
+#             msg = "ERROR: Import volume not allowed with replication " \
+#                   "enabled backend '%s'" % backend
+#             raise exception.InvalidInput(reason=msg)
+#
+#         volname = contents['Name']
+#         existing_ref = str(contents['Opts']['importVol'])
+#         manage_opts = contents['Opts']
+#         return {'orchestrator': 'volume',
+#                 'operation': 'import_volume',
+#                 'args': (volname,
+#                          existing_ref,
+#                          backend,
+#                          manage_opts)}
+#
+#     def _create_rcg_req_ctxt(self, contents):
+#         valid_opts = ['replicationGroup', 'size', 'provisioning',
+#                       'backend', 'mountConflictDelay', 'compression']
+#         self._validate_opts('create replicated volume', contents, valid_opts)
+#
+#         # It is possible that the user configured replication in hpe.conf
+#         # but didn't specify any options. In that case too, this operation
+#         # must fail asking for "replicationGroup" parameter
+#         # Hence this validation must be done whether "Opts" is there or not
+#         options = contents['Opts']
+#         backend = self._get_str_option(options, 'backend', 'DEFAULT')
+#         create_vol_args = self._get_create_volume_args(options)
+#         rcg_name = create_vol_args['replicationGroup']
+#         try:
+#             self._validate_rcg_params(rcg_name, backend)
+#         except exception.InvalidInput as ex:
+#             return json.dumps({u"Err": ex.msg})
+#
+#         return {'operation': 'create_volume',
+#                 'orchestrator': 'volume',
+#                 'args': create_vol_args}
+#
+#     def _get_fs_owner(self, options):
+#         val = self._get_str_option(options, 'fsOwner', None)
+#         if val:
+#             fs_owner = val.split(':')
+#             if len(fs_owner) != 2:
+#                 msg = "Invalid value '%s' specified for fsOwner. Please " \
+#                       "specify a correct value." % val
+#                 raise exception.InvalidInput(msg)
+#             return fs_owner
+#         return None
+#
+#     def _get_fs_mode(self, options):
+#         fs_mode_str = self._get_str_option(options, 'fsMode', None)
+#         if fs_mode_str:
+#             try:
+#                 int(fs_mode_str)
+#             except ValueError as ex:
+#                 msg = "Invalid value '%s' specified for fsMode. Please " \
+#                       "specify an integer value." % fs_mode_str
+#                 raise exception.InvalidInput(msg)
+#
+#             if fs_mode_str[0] != '0':
+#                 msg = "Invalid value '%s' specified for fsMode. Please " \
+#                       "specify an octal value." % fs_mode_str
+#                 raise exception.InvalidInput(msg)
+#
+#             for mode in fs_mode_str:
+#                 if int(mode) > 7:
+#                     msg = "Invalid value '%s' specified for fsMode. Please"\
+#                           " specify an octal value." % fs_mode_str
+#                     raise exception.InvalidInput(msg)
+#         return fs_mode_str
+#
+#     def _get_create_volume_args(self, options):
+#         ret_args = dict()
+#         ret_args['size'] = self._get_int_option(
+#             options, 'size', volume.DEFAULT_SIZE)
+#         ret_args['provisioning'] = self._get_str_option(
+#             options, 'provisioning', volume.DEFAULT_PROV,
+#             ['full', 'thin', 'dedup'])
+#         ret_args['flash-cache'] = self._get_str_option(
+#             options, 'flash-cache', volume.DEFAULT_FLASH_CACHE,
+#             ['true', 'false'])
+#         ret_args['qos-name'] = self._get_str_option(
+#             options, 'qos-name', volume.DEFAULT_QOS)
+#         ret_args['compression'] = self._get_str_option(
+#             options, 'compression', volume.DEFAULT_COMPRESSION_VAL,
+#             ['true', 'false'])
+#         ret_args['fsOwner'] = self._get_fs_owner(options)
+#         ret_args['fsMode'] = self._get_fs_mode(options)
+#         ret_args['mountConflictDelay'] = self._get_int_option(
+#             options, 'mountConflictDelay',
+#             volume.DEFAULT_MOUNT_CONFLICT_DELAY)
+#         ret_args['cpg'] = self._get_str_option(options, 'cpg', None)
+#         ret_args['snapcpg'] = self._get_str_option(options, 'snapcpg', None)
+#         ret_args['replicationGroup'] = self._get_str_option(
+#             options, 'replicationGroup', None)
+#
+#         return ret_args
+#
+#     def _validate_rcg_params(self, rcg_name, backend_name):
+#         LOG.info("Validating RCG: %s, backend name: %s..." % (rcg_name,
+#                                                               backend_name))
+#         hpepluginconfig = self._backend_configs[backend_name]
+#         replication_device = hpepluginconfig.replication_device
+#
+#         LOG.info("Replication device: %s" % six.text_type(
+#             replication_device))
+#
+#         if rcg_name and not replication_device:
+#             msg = "Request to create replicated volume cannot be fulfilled"\
+#                   "without defining 'replication_device' entry defined in"\
+#                   "hpe.conf for the backend '%s'. Please add it and execute"\
+#                   "the request again." % backend_name
+#             raise exception.InvalidInput(reason=msg)
+#
+#         if replication_device and not rcg_name:
+#             backend_names = list(self._backend_configs.keys())
+#             backend_names.sort()
+#
+#             msg = "'%s' is a replication enabled backend. " \
+#                   "Request to create replicated volume cannot be fulfilled "\
+#                   "without specifying 'replicationGroup' option in the "\
+#                   "request. Please either specify 'replicationGroup' or use"\
+#                   "a normal backend and execute the request again. List of"\
+#                   "backends defined in hpe.conf: %s" % (backend_name,
+#                                                         backend_names)
+#             raise exception.InvalidInput(reason=msg)
+#
+#         if rcg_name and replication_device:
+#
+#             def _check_valid_replication_mode(mode):
+#                 valid_modes = ['synchronous', 'asynchronous', 'streaming']
+#                 if mode.lower() not in valid_modes:
+#                     msg = "Unknown replication mode '%s' specified. Valid "\
+#                           "values are 'synchronous | asynchronous | " \
+#                           "streaming'" % mode
+#                     raise exception.InvalidInput(reason=msg)
+#
+#             rep_mode = replication_device['replication_mode'].lower()
+#             _check_valid_replication_mode(rep_mode)
+#             if replication_device.get('quorum_witness_ip'):
+#                 if rep_mode.lower() != 'synchronous':
+#                     msg = "For Peer Persistence, replication mode must be "\
+#                           "synchronous"
+#                     raise exception.InvalidInput(reason=msg)
+#
+#             sync_period = replication_device.get('sync_period')
+#             if sync_period and rep_mode == 'synchronous':
+#                 msg = "'sync_period' can be defined only for 'asynchronous'"\
+#                       " and 'streaming' replicate modes"
+#                 raise exception.InvalidInput(reason=msg)
+#
+#             if (rep_mode == 'asynchronous' or rep_mode == 'streaming')\
+#                     and sync_period:
+#                 try:
+#                     sync_period = int(sync_period)
+#                 except ValueError as ex:
+#                     msg = "Non-integer value '%s' not allowed for " \
+#                           "'sync_period'. %s" % (
+#                               replication_device.sync_period, ex)
+#                     raise exception.InvalidInput(reason=msg)
+#                 else:
+#                     SYNC_PERIOD_LOW = 300
+#                     SYNC_PERIOD_HIGH = 31622400
+#                     if sync_period < SYNC_PERIOD_LOW or \
+#                        sync_period > SYNC_PERIOD_HIGH:
+#                         msg = "'sync_period' must be between 300 and " \
+#                               "31622400 seconds."
+#                         raise exception.InvalidInput(reason=msg)
+#
+#     @staticmethod
+#     def _validate_name(vol_name):
+#         is_valid_name = re.match("^[A-Za-z0-9]+[A-Za-z0-9_-]+$", vol_name)
+#         if not is_valid_name:
+#             msg = 'Invalid volume name: %s is passed.' % vol_name
+#             raise exception.InvalidInput(reason=msg)

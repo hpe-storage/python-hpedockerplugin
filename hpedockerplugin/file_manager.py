@@ -1,7 +1,6 @@
 import copy
 import json
 import sh
-from sh import chmod
 import six
 import os
 from threading import Thread
@@ -140,17 +139,31 @@ class FileManager(object):
     def _get_existing_fpg(self, share_args):
         cpg_name = share_args['cpg']
         fpg_name = share_args['fpg']
+
+        def _check_if_space_sufficient(backend_fpg=None):
+            LOG.info("Checking if FPG %s has enough capcity..." % fpg_name)
+            available_capacity = self._get_fpg_available_capacity(fpg_name,
+                                                                  backend_fpg)
+            share_size_in_gib = share_args['size'] / 1024
+            if available_capacity < share_size_in_gib:
+                LOG.info("FPG %s doesn't have enough capcity..." % fpg_name)
+                raise exception.FpgCapacityInsufficient(fpg=fpg_name)
+            LOG.info("FPG %s has enough capacity" % fpg_name)
+
         try:
             fpg_info = self._fp_etcd_client.get_fpg_metadata(
                 self._backend,
                 cpg_name, fpg_name
             )
+            _check_if_space_sufficient()
         except exception.EtcdMetadataNotFound:
             LOG.info("Specified FPG %s not found in ETCD. Checking "
                      "if this is a legacy FPG..." % fpg_name)
             # Assume it's a legacy FPG, try to get details
             leg_fpg = self._hpeplugin_driver.get_fpg(fpg_name)
             LOG.info("FPG %s is a legacy FPG" % fpg_name)
+
+            _check_if_space_sufficient(leg_fpg)
 
             # CPG passed can be different than actual CPG
             # used for creating legacy FPG. Override default
@@ -160,7 +173,7 @@ class FileManager(object):
                        "configured in hpe.conf that doesn't match the parent "
                        "CPG %s of the specified legacy FPG %s. Please "
                        "specify CPG as '-o cpg=%s'" %
-                       (cpg_name, fpg_name, leg_fpg['cpg'], leg_fpg['cpg']))
+                       (cpg_name, leg_fpg['cpg'], fpg_name, leg_fpg['cpg']))
                 LOG.error(msg)
                 raise exception.InvalidInput(msg)
 
@@ -184,9 +197,10 @@ class FileManager(object):
             LOG.error("Share could not be created on FPG %s" % fpg_name)
             raise exception.ShareCreationFailed(share_args['cpg'])
 
-    def _get_fpg_available_capacity(self, fpg_name):
-        LOG.info("Getting FPG %s from backend..." % fpg_name)
-        backend_fpg = self._hpeplugin_driver.get_fpg(fpg_name)
+    def _get_fpg_available_capacity(self, fpg_name, backend_fpg=None):
+        if not backend_fpg:
+            LOG.info("Getting FPG %s from backend..." % fpg_name)
+            backend_fpg = self._hpeplugin_driver.get_fpg(fpg_name)
         LOG.info("%s" % six.text_type(backend_fpg))
         LOG.info("Getting all quotas for FPG %s..." % fpg_name)
         quotas = self._hpeplugin_driver.get_quotas_for_fpg(fpg_name)
@@ -349,22 +363,23 @@ class FileManager(object):
                          (fpg_name, cpg))
                 undo_cmds.append(create_fpg_cmd)
                 return fpg_name, vfs_name
-            except (exception.FpgCreationFailed,
-                    exception.FpgAlreadyExists) as ex:
+            # Only if duplicate FPG exists, we need to retry FPG creation
+            except exception.FpgAlreadyExists as ex:
                 LOG.info("FPG %s could not be created. Error: %s" %
                          (fpg_name, six.text_type(ex)))
                 LOG.info("Retrying with new FPG name...")
                 continue
-            except exception.HPEPluginEtcdException as ex:
-                raise ex
+            # Any exception other than duplicate FPG, raise it and fail
+            # share creation process. We could have removed this except
+            # block altogether. Keeping it so that the intent is known
+            # explicitly to any reader of the code
             except Exception as ex:
-                LOG.error("Unknown exception caught while creating default "
-                          "FPG: %s" % six.text_type(ex))
+                raise ex
 
-    def _create_share_on_fpg(self, share_args, fpg_getter, fpg_creator):
+    def _create_share_on_fpg(self, share_args, fpg_getter,
+                             fpg_creator, undo_cmds):
         share_name = share_args['name']
         LOG.info("Creating share %s..." % share_name)
-        undo_cmds = []
         cpg = share_args['cpg']
 
         def __create_share_and_quota():
@@ -396,9 +411,6 @@ class FileManager(object):
                     self._backend, share_args, self._etcd
                 )
                 init_share_cmd.execute()
-                # Since we would want the share to be shown in failed status
-                # even in case of failure, cannot make this as part of undo
-                # undo_cmds.append(init_share_cmd)
 
                 fpg_gen = fpg_getter(share_args)
                 while True:
@@ -418,6 +430,8 @@ class FileManager(object):
 
                         # Set result to success so that FPG generator can stop
                         fpg_data['result'] = 'DONE'
+                        break
+
                     except exception.SetQuotaFailed:
                         fpg_data['result'] = 'IN_PROCESS'
                         self._unexecute(undo_cmds)
@@ -452,7 +466,8 @@ class FileManager(object):
                     claim_free_ip_cmd = ClaimAvailableIPCmd(
                         self._backend,
                         self.src_bkend_config,
-                        self._fp_etcd_client
+                        self._fp_etcd_client,
+                        self._hpeplugin_driver
                     )
                     ip, netmask = claim_free_ip_cmd.execute()
                     LOG.info("Acquired IP %s for VFS creation" % ip)
@@ -477,52 +492,27 @@ class FileManager(object):
 
                     __create_share_and_quota()
 
-                except exception.IPAddressPoolExhausted as ex:
-                    msg = "Create VFS failed. Msg: %s" % six.text_type(ex)
-                    LOG.error(msg)
-                    self._unexecute(undo_cmds)
-                    raise exception.VfsCreationFailed(reason=msg)
-                except exception.VfsCreationFailed as ex:
-                    msg = "Create share on new FPG failed. Msg: %s" \
+                except (exception.IPAddressPoolExhausted,
+                        exception.VfsCreationFailed,
+                        exception.FpgCreationFailed,
+                        exception.HPEDriverNonExistentCpg) as ex:
+                    msg = "Share creation on new FPG failed. Reason: %s" \
                           % six.text_type(ex)
-                    LOG.error(msg)
-                    self._unexecute(undo_cmds)
-                    raise exception.ShareCreationFailed(reason=msg)
-
-                except exception.FpgCreationFailed as ex:
-                    msg = "Create share on new FPG failed. Msg: %s" \
-                          % six.text_type(ex)
-                    LOG.error(msg)
-                    self._unexecute(undo_cmds)
-                    raise exception.ShareCreationFailed(reason=msg)
-
-                except exception.HPEDriverNonExistentCpg as ex:
-                    msg = "Non existing CPG specified/configured: %s" %\
-                          six.text_type(ex)
-                    LOG.error(msg)
-                    self._unexecute(undo_cmds)
                     raise exception.ShareCreationFailed(reason=msg)
 
                 except Exception as ex:
-                    msg = "Unknown exception caught: %s" % six.text_type(ex)
-                    LOG.error(msg)
-                    self._unexecute(undo_cmds)
+                    msg = "Unknown exception caught. Reason: %s" \
+                          % six.text_type(ex)
                     raise exception.ShareCreationFailed(reason=msg)
 
-            except exception.InvalidInput as ex:
-                msg = "Share creation failed with following exception: " \
-                      " %s" % six.text_type(ex)
-                LOG.error(msg)
-                share_args['failure_reason'] = msg
-                self._unexecute(undo_cmds)
+            except (exception.FpgCapacityInsufficient,
+                    exception.InvalidInput) as ex:
+                msg = "Share creation failed. Reason: %s" % six.text_type(ex)
                 raise exception.ShareCreationFailed(reason=msg)
 
             except Exception as ex:
-                msg = "Unknown exception occurred while using default FPG " \
-                      "for share creation: %s" % six.text_type(ex)
-                LOG.error(msg)
-                share_args['failure_reason'] = msg
-                self._unexecute(undo_cmds)
+                msg = "Unknown exception occurred while creating share " \
+                      "on new FPG. Reason: %s" % six.text_type(ex)
                 raise exception.ShareCreationFailed(reason=msg)
 
     @synchronization.synchronized_fp_share('{share_name}')
@@ -536,19 +526,29 @@ class FileManager(object):
 
         # Make copy of args as we are going to modify it
         fpg_name = share_args.get('fpg')
+        undo_cmds = []
 
-        if fpg_name:
-            self._create_share_on_fpg(
-                share_args,
-                self._get_existing_fpg,
-                self._create_fpg
-            )
-        else:
-            self._create_share_on_fpg(
-                share_args,
-                self._get_default_available_fpg,
-                self._create_default_fpg
-            )
+        try:
+            if fpg_name:
+                self._create_share_on_fpg(
+                    share_args,
+                    self._get_existing_fpg,
+                    self._create_fpg,
+                    undo_cmds
+                )
+            else:
+                self._create_share_on_fpg(
+                    share_args,
+                    self._get_default_available_fpg,
+                    self._create_default_fpg,
+                    undo_cmds
+                )
+        except exception.PluginException as ex:
+            LOG.error(ex.msg)
+            share_args['status'] = 'FAILED'
+            share_args['detailedStatus'] = ex.msg
+            self._etcd.save_share(share_args)
+            self._unexecute(undo_cmds)
 
     def remove_share(self, share_name, share):
         if 'path_info' in share:
@@ -577,26 +577,16 @@ class FileManager(object):
         return db_share_copy
 
     def get_share_details(self, share_name, db_share):
-        mountdir = ''
         devicename = ''
         if db_share['status'] == 'AVAILABLE':
-            vfs_ip = db_share['vfsIPs'][0][0]
-            share_path = "%s:/%s/%s/%s" % (vfs_ip,
-                                           db_share['fpg'],
-                                           db_share['vfs'],
-                                           db_share['name'])
+            share_path = self._get_share_path(db_share)
         else:
             share_path = None
 
+        mountdir = ''
         path_info = db_share.get('path_info')
         if path_info:
-            mountdir = '['
-            node_mnt_info = path_info.get(self._node_id)
-            if node_mnt_info:
-                for mnt_dir in node_mnt_info.values():
-                    mountdir += mnt_dir + ', '
-                mountdir += ']'
-                devicename = share_path
+            mountdir = self.get_mount_dir(share_name)
 
         db_share_copy = FileManager._rm_implementation_details(db_share)
         db_share_copy['sharePath'] = share_path
@@ -612,31 +602,18 @@ class FileManager(object):
         LOG.debug("Get share: \n%s" % str(response))
         return response
 
-    def list_shares(self):
-        db_shares = self._etcd.get_all_shares()
+    def get_share_info_for_listing(self, share_name, db_share):
+        path_info = db_share.get('path_info')
+        if path_info:
+            mount_dir = self.get_mount_dir(share_name)
+        else:
+            mount_dir = ''
 
-        if not db_shares:
-            response = json.dumps({u"Err": ''})
-            return response
-
-        share_list = []
-        for db_share in db_shares:
-            path_info = db_share.get('share_path_info')
-            if path_info is not None and 'mount_dir' in path_info:
-                mountdir = path_info['mount_dir']
-                devicename = path_info['path']
-            else:
-                mountdir = ''
-                devicename = ''
-            share = {'Name': db_share['name'],
-                     'Devicename': devicename,
-                     'size': db_share['size'],
-                     'Mountpoint': mountdir,
-                     'Status': db_share}
-            share_list.append(share)
-
-        response = json.dumps({u"Err": '', u"Volumes": share_list})
-        return response
+        share_info = {
+            'Name': share_name,
+            'Mountpoint': mount_dir,
+        }
+        return share_info
 
     @staticmethod
     def _is_share_not_mounted(share):
@@ -663,9 +640,13 @@ class FileManager(object):
         LOG.info("Updated etcd with modified node_mount_info: %s!"
                  % node_mount_info)
 
-    @staticmethod
-    def _get_mount_dir(share_name):
-        return "%s%s" % (fileutil.prefix, share_name)
+    def get_mount_dir(self, share_name):
+        if self._host_config.mount_prefix:
+            mount_prefix = self._host_config.mount_prefix
+        else:
+            mount_prefix = None
+        mnt_prefix = fileutil.mkfile_dir_for_mounting(mount_prefix)
+        return "%s%s" % (mnt_prefix, share_name)
 
     def _create_mount_dir(self, mount_dir):
         LOG.info('Creating Directory %(mount_dir)s...',
@@ -673,6 +654,61 @@ class FileManager(object):
         sh.mkdir('-p', mount_dir)
         LOG.info('Directory: %(mount_dir)s successfully created!',
                  {'mount_dir': mount_dir})
+
+    def _get_share_path(self, db_share):
+        fpg = db_share['fpg']
+        vfs = db_share['vfs']
+        file_store = db_share['name']
+        vfs_ip, netmask = db_share['vfsIPs'][0]
+        share_path = "%s:/%s/%s/%s" % (vfs_ip,
+                                       fpg,
+                                       vfs,
+                                       file_store)
+        return share_path
+
+    def _internal_mount_share(self, share):
+        share_name = share['name']
+        LOG.info("Performing internal mount for share %s..." % share_name)
+        mount_dir = self.get_mount_dir(share_name)
+        LOG.info("Mount directory for share is %s " % mount_dir)
+        share_path = self._get_share_path(share)
+        LOG.info("Share path is %s " % share_path)
+        my_ip = netutils.get_my_ipv4()
+        self._hpeplugin_driver.add_client_ip_for_share(share['id'],
+                                                       my_ip)
+        self._create_mount_dir(mount_dir)
+        LOG.info("Mounting share path %s to %s" % (share_path, mount_dir))
+        if utils.is_host_os_rhel():
+            sh.mount('-o', 'context="system_u:object_r:nfs_t:s0"',
+                     '-t', 'nfs', share_path, mount_dir)
+        else:
+            sh.mount('-t', 'nfs', share_path, mount_dir)
+        LOG.debug('Device: %(path)s successfully mounted on %(mount)s',
+                  {'path': share_path, 'mount': mount_dir})
+
+        response = {
+            u"Name": share_name,
+            u"Mountpoint": mount_dir,
+            u"Devicename": share_path
+        }
+        return response
+
+    def _internal_unmount_share(self, share):
+        share_name = share['name']
+        mount_dir = self.get_mount_dir(share_name)
+        LOG.info('Unmounting share %s from mount-dir %s...'
+                 % (share_name, mount_dir))
+        sh.umount(mount_dir)
+        LOG.info('Removing mount dir from node %s: %s...'
+                 % (mount_dir, self._node_id))
+        sh.rm('-rf', mount_dir)
+
+        # Remove my_ip from client-ip list this being last
+        # un-mount of share for this node
+        my_ip = netutils.get_my_ipv4()
+        LOG.info("Remove %s from client IP list" % my_ip)
+        self._hpeplugin_driver.remove_client_ip_for_share(
+            share['id'], my_ip)
 
     def mount_share(self, share_name, share, mount_id):
         if 'status' in share:
@@ -700,9 +736,6 @@ class FileManager(object):
         fUser = None
         fGroup = None
         fMode = None
-        fUName = None
-        fGName = None
-        is_first_call = False
         if share['fsOwner']:
             fOwner = share['fsOwner'].split(':')
             fUser = int(fOwner[0])
@@ -712,87 +745,97 @@ class FileManager(object):
                 fMode = int(share['fsMode'])
             except ValueError:
                 fMode = share['fsMode']
-        fpg = share['fpg']
-        vfs = share['vfs']
-        file_store = share['name']
-        vfs_ip, netmask = share['vfsIPs'][0]
-        # If shareDir is not specified, share is mounted at file-store
-        # level.
-        share_path = "%s:/%s/%s/%s" % (vfs_ip,
-                                       fpg,
-                                       vfs,
-                                       file_store)
-        # {
-        #   'path_info': {
-        #     node_id1: {'mnt_id1': 'mnt_dir1', 'mnt_id2': 'mnt_dir2',...},
-        #     node_id2: {'mnt_id2': 'mnt_dir2', 'mnt_id3': 'mnt_dir3',...},
-        #   }
-        # }
-        mount_dir = self._get_mount_dir(mount_id)
-        path_info = share.get('path_info')
-        if path_info:
-            node_mnt_info = path_info.get(self._node_id)
-            if node_mnt_info:
-                node_mnt_info[mount_id] = mount_dir
-            else:
-                my_ip = netutils.get_my_ipv4()
-                self._hpeplugin_driver.add_client_ip_for_share(share['id'],
-                                                               my_ip)
-                client_ips = share['clientIPs']
-                client_ips.append(my_ip)
-                # node_mnt_info not present
-                node_mnt_info = {
-                    self._node_id: {
-                        mount_id: mount_dir
-                    }
-                }
-                path_info.update(node_mnt_info)
-        else:
-            my_ip = netutils.get_my_ipv4()
-            self._hpeplugin_driver.add_client_ip_for_share(share['id'],
-                                                           my_ip)
-            client_ips = share['clientIPs']
-            client_ips.append(my_ip)
+        share_path = self._get_share_path(share)
+        LOG.info("Share path: %s " % share_path)
 
+        #   'path_info': {
+        #     node_id1: ['mnt_id1', 'mnt_id2',...],
+        #     node_id2: ['mnt_id3', 'mnt_id4',...],
+        #   }
+        mount_dir = self.get_mount_dir(share_name)
+        LOG.info("Mount directory for file is %s " % mount_dir)
+        path_info = share.get('path_info')
+
+        # ACLs need to be set only with the first mount
+        # For second mount onwards, path_info will be present in
+        # ETCD which will make acls_already_set set to True thereby
+        # avoiding redundant backend REST calls for check_user and
+        # set_ACL
+        acls_already_set = False
+        if path_info:
+            # Setting the flag to True would avoid backend REST calls
+            # to set_acl and check_user
+            acls_already_set = True
+            # Is the share mounted on this node?
+            mount_ids = path_info.get(self._node_id)
+            if mount_ids:
+                # Share is already mounted on this node
+                if mount_id not in mount_ids:
+                    # Add mount_id information and return
+                    mount_ids.append(mount_id)
+                    # path_info got modified. Save it to ETCD
+                    self._etcd.save_share(share)
+                response = json.dumps({
+                    u"Err": '',
+                    u"Name": share_name,
+                    u"Mountpoint": mount_dir,
+                    u"Devicename": share_path
+                })
+                return response
+
+        # Either this is the first mount of this share on this node
+        # Or it was mounted on a different node and now it's being
+        # mounted on this node. Add host IP to Client IP list, create
+        # mount directory, apply permissions and mount file share
+        fUName = None
+        fGName = None
+        user_grp_perm = fUser or fGroup or fMode
+        if user_grp_perm and not acls_already_set:
+            LOG.info("Inside fUser or fGroup or fMode")
+            fUName, fGName = self._hpeplugin_driver.usr_check(fUser,
+                                                              fGroup)
+            if fUName is None or fGName is None:
+                msg = ("Either user or group does not exist on 3PAR."
+                       " Please create local users and group with"
+                       " required user id and group id on 3PAR."
+                       " Refer 3PAR cli user guide to create 3PAR"
+                       " local users on 3PAR")
+                LOG.error(msg)
+                response = json.dumps({u"Err": msg, u"Name": share_name,
+                                       u"Mountpoint": mount_dir,
+                                       u"Devicename": share_path})
+                return response
+
+        my_ip = netutils.get_my_ipv4()
+        self._hpeplugin_driver.add_client_ip_for_share(share['id'],
+                                                       my_ip)
+        client_ips = share['clientIPs']
+        client_ips.append(my_ip)
+
+        if path_info:
+            path_info[self._node_id] = [mount_id]
+        else:
             # node_mnt_info not present
-            node_mnt_info = {
-                self._node_id: {
-                    mount_id: mount_dir
-                }
+            share['path_info'] = {
+                self._node_id: [mount_id]
             }
-            share['path_info'] = node_mnt_info
-            if fUser or fGroup or fMode:
-                LOG.info("Inside fUser or fGroup or fMode")
-                is_first_call = True
-                try:
-                    fUName, fGName = self._hpeplugin_driver.usr_check(fUser,
-                                                                      fGroup)
-                    if fUName is None or fGName is None:
-                        msg = ("Either user or group does not exist on 3PAR."
-                               " Please create local users and group with"
-                               " required user id and group id on 3PAR."
-                               " Refer 3PAR cli user guide to create 3PAR"
-                               " local users on 3PAR")
-                        LOG.error(msg)
-                        raise exception.UserGroupNotFoundOn3PAR(msg)
-                except exception.UserGroupNotFoundOn3PAR as ex:
-                    msg = six.text_type(ex)
-                    LOG.error(msg)
-                    response = json.dumps({u"Err": msg, u"Name": share_name,
-                                           u"Mountpoint": mount_dir,
-                                           u"Devicename": share_path})
-                    return response
 
         self._create_mount_dir(mount_dir)
         LOG.info("Mounting share path %s to %s" % (share_path, mount_dir))
-        sh.mount('-t', 'nfs', share_path, mount_dir)
+        if utils.is_host_os_rhel():
+            sh.mount('-o', 'context="system_u:object_r:nfs_t:s0"',
+                     '-t', 'nfs', share_path, mount_dir)
+        else:
+            sh.mount('-t', 'nfs', share_path, mount_dir)
         LOG.debug('Device: %(path)s successfully mounted on %(mount)s',
                   {'path': share_path, 'mount': mount_dir})
-        if is_first_call:
+
+        if user_grp_perm and not acls_already_set:
             os.chown(mount_dir, fUser, fGroup)
             try:
-                int(fMode)
-                chmod(fMode, mount_dir)
+                if fMode is not None:
+                    int(fMode)
+                    sh.chmod(fMode, mount_dir)
             except ValueError:
                 fUserId = share['id']
                 try:
@@ -825,47 +868,50 @@ class FileManager(object):
     def unmount_share(self, share_name, share, mount_id):
         # Start of volume fencing
         LOG.info('Unmounting share: %s' % share)
-        # share = {
-        #   'path_info': {
-        #     node_id1: {'mnt_id1': 'mnt_dir1', 'mnt_id2': 'mnt_dir2',...},
-        #     node_id2: {'mnt_id2': 'mnt_dir2', 'mnt_id3': 'mnt_dir3',...},
-        #   }
+
+        # 'path_info': {
+        #     node_id1: ['mnt_id1', 'mnt_id2',...],
+        #     node_id2: ['mnt_id3', 'mnt_id4',...],
         # }
         path_info = share.get('path_info')
         if path_info:
-            node_mnt_info = path_info.get(self._node_id)
-            if node_mnt_info:
-                mount_dir = node_mnt_info.get(mount_id)
-                if mount_dir:
-                    LOG.info('Unmounting share: %s...' % mount_dir)
-                    sh.umount(mount_dir)
-                    LOG.info('Removing dir: %s...' % mount_dir)
-                    sh.rm('-rf', mount_dir)
-                    LOG.info("Removing mount-id '%s' from meta-data" %
-                             mount_id)
-                    del node_mnt_info[mount_id]
-
-                # If this was the last mount of share share_name on
-                # this node, remove my_ip from client-ip list
-                if not node_mnt_info:
+            mount_ids = path_info.get(self._node_id)
+            if mount_ids and mount_id in mount_ids:
+                LOG.info("Removing mount-id '%s' from mount-id-list..."
+                         % mount_id)
+                mount_ids.remove(mount_id)
+                if not mount_ids:
+                    # This is last un-mount being done on this node
                     del path_info[self._node_id]
+                    mount_dir = self.get_mount_dir(share_name)
+                    LOG.info('Unmounting share %s from mount-dir %s...'
+                             % (share_name, mount_dir))
+                    sh.umount(mount_dir)
+                    LOG.info('Removing mount dir from node %s: %s...'
+                             % (mount_dir, self._node_id))
+                    sh.rm('-rf', mount_dir)
+
+                    # Remove my_ip from client-ip list this being last
+                    # un-mount of share for this node
                     my_ip = netutils.get_my_ipv4()
                     LOG.info("Remove %s from client IP list" % my_ip)
                     client_ips = share['clientIPs']
                     client_ips.remove(my_ip)
                     self._hpeplugin_driver.remove_client_ip_for_share(
                         share['id'], my_ip)
-                    # If this is the last node from where share is being
-                    # unmounted, remove the path_info from share metadata
+
+                    # If no mount remains, delete path_info from share
                     if not path_info:
                         del share['path_info']
-                LOG.info('Share unmounted. Updating ETCD: %s' % share)
+
                 self._etcd.save_share(share)
-                LOG.info('Unmount DONE for share: %s, %s' %
+                LOG.info('Unmount completed for share: %s, %s' %
                          (share_name, mount_id))
             else:
-                LOG.error("ERROR: Node mount information not found in ETCD")
+                LOG.error("ERROR: Mount-ID %s not found in ETCD for node %s"
+                          % (mount_id, self._node_id))
         else:
-            LOG.error("ERROR: Path info missing from ETCD")
+            LOG.error("ERROR: Meta-data indicates the share %s is not "
+                      "mounted on any node" % share_name)
         response = json.dumps({u"Err": ''})
         return response

@@ -31,11 +31,10 @@ class CreateVfsCmd(cmd.Cmd):
             LOG.info("create_vfs result: %s" % result)
 
         except exception.ShareBackendException as ex:
-            msg = "Create VFS failed. Msg: %s" % six.text_type(ex)
+            msg = "Create VFS failed. Reason: %s" % six.text_type(ex)
             LOG.error(msg)
-            cmd.unexecute()
             # TODO: Add code to undo VFS creation at the backend
-            self._mediator.remove_vfs(self._fpg_name, self._vfs_name)
+            # self._mediator.remove_vfs(self._fpg_name, self._vfs_name)
             raise exception.VfsCreationFailed(reason=msg)
 
     def unexecute(self):

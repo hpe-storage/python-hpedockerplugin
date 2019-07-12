@@ -113,11 +113,13 @@ class HpeDockerUnitTestExecutor(object):
                 time.sleep(1)
 
         try:
-            resp = getattr(_api, plugin_api)(req_body)
-            resp = json.loads(resp)
+            # Plugin initialization UTs will return empty plugin_api string
+            if plugin_api:
+                resp = getattr(_api, plugin_api)(req_body)
+                resp = json.loads(resp)
 
-            # Allow child class to validate response
-            self.check_response(resp)
+                # Allow child class to validate response
+                self.check_response(resp)
         except Exception as ex:
             # self.handle_exception(ex)
             # Plugin will never throw exception. This exception is coming

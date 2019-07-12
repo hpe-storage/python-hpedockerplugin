@@ -119,8 +119,11 @@ class HpeEtcdClient(object):
         except etcd.EtcdKeyNotFound:
             msg = "Key to delete not found ETCD: [key=%s]" % etcd_key
             LOG.info(msg)
+            raise exception.EtcdMetadataNotFound(msg=msg)
         except Exception as ex:
-            LOG.info("Unknown Error: %s" % six.text_type(ex))
+            msg = "Unknown error encountered: %s" % six.text_type(ex)
+            LOG.info(msg)
+            raise exception.HPEPluginEtcdException(reason=msg)
 
     def get_object(self, etcd_key):
         try:
@@ -275,81 +278,81 @@ class HpeShareEtcdClient(object):
 
 
 # TODO: Eventually this will take over and EtcdUtil will be phased out
-class HpeVolumeEtcdClient(object):
-
-    def __init__(self, host, port, client_cert, client_key):
-        self._client = HpeEtcdClient(host, port,
-                                     client_cert, client_key)
-        self._client.make_root(VOLUMEROOT)
-        self._root = VOLUMEROOT + '/'
-
-        self._client.make_root(BACKENDROOT)
-        self.backendroot = BACKENDROOT + '/'
-
-    def save_vol(self, vol):
-        etcd_key = self._root + vol['id']
-        self._client.save_object(etcd_key, vol)
-
-    def update_vol(self, volid, key, val):
-        etcd_key = self._root + volid
-        self._client.update_object(etcd_key, key, val)
-
-    def delete_vol(self, vol):
-        etcd_key = self._root + vol['id']
-        self._client.delete_object(etcd_key)
-
-    def get_vol_byname(self, volname):
-        volumes = self._client.get_objects(self._root)
-        LOG.info(_LI('Get volbyname: volname is %s'), volname)
-
-        for child in volumes.children:
-            if child.key != VOLUMEROOT:
-                volmember = json.loads(child.value)
-                vol = volmember['display_name']
-                if vol.startswith(volname, 0, len(volname)):
-                    if volmember['display_name'] == volname:
-                        return volmember
-                elif volmember['name'] == volname:
-                    return volmember
-        return None
-
-    def get_vol_by_id(self, volid):
-        etcd_key = self._root + volid
-        return self._client.get_object(etcd_key)
-
-    def get_all_vols(self):
-        return self._client.get_objects(VOLUMEROOT)
-
-    def get_vol_path_info(self, volname):
-        vol = self.get_vol_byname(volname)
-        if vol:
-            if 'path_info' in vol and vol['path_info'] is not None:
-                path_info = json.loads(vol['path_info'])
-                return path_info
-            if 'mount_path_dict' in vol:
-                return vol['mount_path_dict']
-        return None
-
-    def get_path_info_from_vol(self, vol):
-        if vol:
-            if 'path_info' in vol and vol['path_info'] is not None:
-                return json.loads(vol['path_info'])
-            if 'share_path_info' in vol:
-                return vol['share_path_info']
-        return None
-
-    def get_lock(self, lock_type):
-        # By default this is volume lock-root
-        lockroot_map = {'VOL': LOCKROOT,
-                        'RCG': RCG_LOCKROOT}
-        lock_root = lockroot_map.get(lock_type)
-        if lock_root:
-            return EtcdLock(lock_root + '/', self._client.client)
-        raise exception.EtcdInvalidLockType(type=lock_type)
-
-    def get_backend_key(self, backend):
-        passphrase = self.backendroot + backend
-        return self._client.get_value(passphrase)
+# class HpeVolumeEtcdClient(object):
+#
+#     def __init__(self, host, port, client_cert, client_key):
+#         self._client = HpeEtcdClient(host, port,
+#                                      client_cert, client_key)
+#         self._client.make_root(VOLUMEROOT)
+#         self._root = VOLUMEROOT + '/'
+#
+#         self._client.make_root(BACKENDROOT)
+#         self.backendroot = BACKENDROOT + '/'
+#
+#     def save_vol(self, vol):
+#         etcd_key = self._root + vol['id']
+#         self._client.save_object(etcd_key, vol)
+#
+#     def update_vol(self, volid, key, val):
+#         etcd_key = self._root + volid
+#         self._client.update_object(etcd_key, key, val)
+#
+#     def delete_vol(self, vol):
+#         etcd_key = self._root + vol['id']
+#         self._client.delete_object(etcd_key)
+#
+#     def get_vol_byname(self, volname):
+#         volumes = self._client.get_objects(self._root)
+#         LOG.info(_LI('Get volbyname: volname is %s'), volname)
+#
+#         for child in volumes.children:
+#             if child.key != VOLUMEROOT:
+#                 volmember = json.loads(child.value)
+#                 vol = volmember['display_name']
+#                 if vol.startswith(volname, 0, len(volname)):
+#                     if volmember['display_name'] == volname:
+#                         return volmember
+#                 elif volmember['name'] == volname:
+#                     return volmember
+#         return None
+#
+#     def get_vol_by_id(self, volid):
+#         etcd_key = self._root + volid
+#         return self._client.get_object(etcd_key)
+#
+#     def get_all_vols(self):
+#         return self._client.get_objects(VOLUMEROOT)
+#
+#     def get_vol_path_info(self, volname):
+#         vol = self.get_vol_byname(volname)
+#         if vol:
+#             if 'path_info' in vol and vol['path_info'] is not None:
+#                 path_info = json.loads(vol['path_info'])
+#                 return path_info
+#             if 'mount_path_dict' in vol:
+#                 return vol['mount_path_dict']
+#         return None
+#
+#     def get_path_info_from_vol(self, vol):
+#         if vol:
+#             if 'path_info' in vol and vol['path_info'] is not None:
+#                 return json.loads(vol['path_info'])
+#             if 'share_path_info' in vol:
+#                 return vol['share_path_info']
+#         return None
+#
+#     def get_lock(self, lock_type):
+#         # By default this is volume lock-root
+#         lockroot_map = {'VOL': LOCKROOT,
+#                         'RCG': RCG_LOCKROOT}
+#         lock_root = lockroot_map.get(lock_type)
+#         if lock_root:
+#             return EtcdLock(lock_root + '/', self._client.client)
+#         raise exception.EtcdInvalidLockType(type=lock_type)
+#
+#     def get_backend_key(self, backend):
+#         passphrase = self.backendroot + backend
+#         return self._client.get_value(passphrase)
 
 
 class EtcdUtil(object):

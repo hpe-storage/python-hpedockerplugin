@@ -190,6 +190,11 @@ class HPEPluginMountException(PluginException):
     message = _("HPE Docker Volume Plugin Mount Failed: %(reason)s")
 
 
+class HPEPluginCheckMountException(PluginException):
+    message = _("HPE Docker Volume Plugin Check if Mount already exists"
+                " on host Failed: %(reason)s")
+
+
 class HPEPluginUMountException(PluginException):
     message = _("HPE Docker Volume Plugin Unmount Failed: %(reason)s")
 
@@ -403,7 +408,7 @@ class EtcdUnknownException(PluginException):
 
 
 class IPAddressPoolExhausted(PluginException):
-    message = _("IP adderss pool exhausted")
+    message = _("IP address pool exhausted")
 
 
 class VfsCreationFailed(PluginException):
@@ -432,3 +437,7 @@ class SetQuotaFailed(PluginException):
 
 class HPEDriverNonExistentCpg(HPEDriverException):
     message = "CPG %(cpg)s does not exist"
+
+
+class FpgCapacityInsufficient(PluginException):
+    message = _("FPG %(fpg)s does not have enough capacity")

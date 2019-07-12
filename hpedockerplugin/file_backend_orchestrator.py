@@ -17,13 +17,18 @@ class FileBackendOrchestrator(Orchestrator):
             host_config, backend_configs, def_backend_name)
 
     @staticmethod
-    def _initialize_orchestrator(host_config):
-        FileBackendOrchestrator.fp_etcd_client = \
-            util.HpeFilePersonaEtcdClient(
-                host_config.host_etcd_ip_address,
-                host_config.host_etcd_port_number,
-                host_config.host_etcd_client_cert,
-                host_config.host_etcd_client_key)
+    def _get_fp_etcd_client(host_config):
+        return util.HpeFilePersonaEtcdClient(
+            host_config.host_etcd_ip_address,
+            host_config.host_etcd_port_number,
+            host_config.host_etcd_client_cert,
+            host_config.host_etcd_client_key
+        )
+
+    def _initialize_orchestrator(self, host_config):
+        FileBackendOrchestrator.fp_etcd_client = self._get_fp_etcd_client(
+            host_config
+        )
 
     # Implementation of abstract function from base class
     def get_manager(self, host_config, config, etcd_client,
@@ -104,30 +109,24 @@ class FileBackendOrchestrator(Orchestrator):
         return self._execute_request('unmount_share', share_name,
                                      obj, mount_id)
 
-    # def list_objects(self):
-    #     return self._manager.list_shares()
-
     def get_object_details(self, obj):
         share_name = obj['name']
         return self._execute_request('get_share_details', share_name, obj)
 
     def list_objects(self):
-        db_shares = self._etcd_client.get_all_shares()
-
         share_list = []
-        for share_info in db_shares:
-            path_info = share_info.get('share_path_info')
-            if path_info is not None and 'mount_dir' in path_info:
-                mountdir = path_info['mount_dir']
-            else:
-                mountdir = ''
-            share = {'Name': share_info['name'],
-                     'Mountpoint': mountdir}
-            share_list.append(share)
+        db_shares = self._etcd_client.get_all_shares()
+        for db_share in db_shares:
+            share_info = self._execute_request('get_share_info_for_listing',
+                                               db_share['name'],
+                                               db_share)
+            share_list.append(share_info)
         return share_list
 
     def get_path(self, obj):
-        share_name = obj['name']
-        mount_dir = '/opt/hpe/data/hpedocker-%s' % share_name
+        mount_dir = ''
+        if 'path_info' in obj:
+            share_name = obj['name']
+            mount_dir = self._execute_request('get_mount_dir', share_name)
         response = json.dumps({u"Err": '', u"Mountpoint": mount_dir})
         return response
