@@ -38,16 +38,13 @@ $ vi /etc/multipath.conf
 >Copy the following into `/etc/multipath.conf`
 
 ```
-defaults
-{
+defaults {
     polling_interval 10
     max_fds 8192
 }
 
-devices
-{
-    device
-	{
+devices {
+    device {
         vendor                  "3PARdata"
         product                 "VV"
         no_path_retry           18
