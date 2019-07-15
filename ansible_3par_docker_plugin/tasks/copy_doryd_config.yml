@@ -23,25 +23,25 @@
     stat:
       path: /etc/kubernetes/admin.conf
     register: admin_stat_result
-    when: inventory_hostname in groups['masters'][0]
+    when: inventory_hostname in groups['masters']
 
   - fail:
       msg: "The config file does not exist either at /root/.kube/config or /etc/kubernetes/admin.conf"
-    when: inventory_hostname in groups['masters'][0] and config_stat_result.stat.exists == False and admin_stat_result.stat.exists == False
+    when: inventory_hostname in groups['masters'] and config_stat_result.stat.exists == False and admin_stat_result.stat.exists == False
 
   - name: Copy over the kube config file into /tmp
     fetch:
       src: /root/.kube/config
       dest: /tmp/config
       flat: yes
-    when: inventory_hostname in groups['masters'][0] and config_stat_result.stat.exists
+    when: inventory_hostname in groups['masters'] and config_stat_result.stat.exists
 
   - name: Copy over the admin.conf file into /tmp
     fetch:
       src:  /etc/kubernetes/admin.conf
       dest: /tmp/config
       flat: yes
-    when: inventory_hostname in groups['masters'][0] and admin_stat_result.stat.exists
+    when: inventory_hostname in groups['masters'] and admin_stat_result.stat.exists
 
   - name: Verify /etc/kubernetes/admin.conf exists
     copy:
