@@ -233,9 +233,9 @@ $ docker volume create -d hpe --name sample_vol -o size=
 
 10. Install the HPE 3PAR FlexVolume driver:
 ```
-$ wget https://github.com/hpe-storage/python-hpedockerplugin/raw/master/dory_installer
-$ chmod u+x ./dory_installer
-$ sudo ./dory_installer
+$ wget https://github.com/hpe-storage/python-hpedockerplugin/raw/master/dory_installer_v31
+$ chmod u+x ./dory_installer_v31
+$ sudo ./dory_installer_v31
 ```
 
 11. Confirm HPE 3PAR FlexVolume driver installed correctly:
@@ -249,7 +249,7 @@ $ ls -l /usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/
 12. Run the following command to start the HPE 3PAR FlexVolume dynamic provisioner:
 
 ```
-$ sudo /usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/doryd /etc/kubernetes/admin.conf hpe.
+$ sudo /usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/doryd /etc/kubernetes/admin.conf hpe.com
 
 ```
 >**NOTE:** If you see the following error:

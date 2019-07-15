@@ -103,8 +103,8 @@ $ multipath -t > /etc/multipath.conf
 3. Enable the iscsid and multipathd services
 
 ```
-$ systemctl enable multipathd
-$ systemctl start multipathd
+$ systemctl enable multipathd iscsid
+$ systemctl start multipathd iscsid
 ```
 
 Now the systems are ready to setup the HPE 3PAR Volume Plug-in for Docker.
