@@ -30,7 +30,7 @@ class TestGetVolumeWithQos(GetVolumeUnitTest):
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
-        mock_etcd.get_vol_byname.return_value = data.volume_qos
+        mock_etcd.get_vol_byname.return_value = copy.deepcopy(data.volume_qos)
         mock_etcd.get_vol_path_info.return_value = None
 
         mock_3parclient = self.mock_objects['mock_3parclient']
@@ -91,7 +91,7 @@ class TestGetVolumeWithGetQoSFails(GetVolumeUnitTest):
 
     def setup_mock_objects(self):
         mock_etcd = self.mock_objects['mock_etcd']
-        mock_etcd.get_vol_byname.return_value = data.volume_qos
+        mock_etcd.get_vol_byname.return_value = copy.deepcopy(data.volume_qos)
         mock_etcd.get_vol_path_info.return_value = None
 
         mock_3parclient = self.mock_objects['mock_3parclient']
