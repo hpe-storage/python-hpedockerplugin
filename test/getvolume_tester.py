@@ -98,6 +98,7 @@ class TestGetVolumeWithGetQoSFails(GetVolumeUnitTest):
         mock_3parclient.queryQoSRule.side_effect = [
             exceptions.HTTPNotFound("QoS vvk_vvset not found")
         ]
+        mock_3parclient.findVolumeSet.return_value = None
 
     def check_response(self, resp):
         expected = {
@@ -154,6 +155,8 @@ class TestGetRcgVolume(GetVolumeUnitTest):
         mock_3parclient = self.mock_objects['mock_3parclient']
         mock_3parclient.getRemoteCopyGroup.return_value = \
             data.normal_rcg['primary_3par_rcg']
+
+        mock_3parclient.findVolumeSet.return_value = None
 
     def check_response(self, resp):
         expected = {
@@ -214,6 +217,7 @@ class TestGetRcgVolumeFails(GetVolumeUnitTest):
         mock_3parclient.getRemoteCopyGroup.side_effect = [
             exceptions.HTTPNotFound("RCG %s not found" % data.RCG_NAME)
         ]
+        mock_3parclient.findVolumeSet.return_value = None
 
     def check_response(self, resp):
         expected = {
@@ -265,6 +269,8 @@ class TestCloneVolume(GetVolumeUnitTest):
         mock_etcd = self.mock_objects['mock_etcd']
         mock_etcd.get_vol_byname.return_value = data.volume_dedup
         mock_etcd.get_vol_path_info.return_value = None
+        mock_3parclient = self.mock_objects['mock_3parclient']
+        mock_3parclient.findVolumeSet.return_value = None
 
     def check_response(self, resp):
         expected = {
