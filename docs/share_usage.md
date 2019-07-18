@@ -1,8 +1,8 @@
 
 # File share usage guide
 
-The HPE 3PAR file share feature allows user to manage NFS file shares on 3PAR 
-arrays through Docker interface. 
+The HPE 3PAR file share feature allows user to manage NFS file shares 
+on 3PAR arrays through Docker interface. 
 
 ## Prerequisites
 1. HPE 3PAR OS version must be 3.3.1 (MU3)
@@ -392,12 +392,13 @@ gives the storage admin control over the types and characteristics of
 the volumes that can be provisioned within the Kubernetes/OpenShift 
 environment. For example, the storage admin can create multiple 
 **StorageClass** profiles that have size restrictions, if they are 
-enabled with ACLs, if a CPG other than the configured one needs to be used etc.
+enabled with ACLs, if a CPG other than the configured one needs to be 
+used etc.
 
 ### StorageClass Example<a name="sc"></a>
 
 The following creates a **StorageClass "sc1"** that provisions a 
-default file sharewith the help of HPE 3PAR Docker Volume Plugin.
+default file share with the help of HPE 3PAR Docker Volume Plugin.
 
 **Note:** In order to use file share feature, it is mandatory to specify
 'filePersona' option with empty string as value.
@@ -420,14 +421,16 @@ EOF
 | StorageClass Options | Type    | Parameters                                 | Example                          |
 |----------------------|---------|--------------------------------------------|----------------------------------|
 | size                 | integer | Size of share in GiB                       | size: "10"                       |
-| cpg                  | String  | Name of the CPG                                   | cpg: SomeCpg             |
+| cpg                  | String  | Name of the CPG                            | cpg: SomeCpg             |
 | fpg                  | String  | Existing FPG name including legacy FPG     | fpg: SomeFpg           |
-| fsMode               | String | Unix style permissions or ACL string                                | fsMode: "A:fd:rwa,A:g:rwaxdnNcCoy,A:fdS:DtnNcy"              |
+| fsMode               | String | Unix style permissions or ACL string        | fsMode: "A:fd:rwa,A:g:rwaxdnNcCoy,A:fdS:DtnNcy" |
 | fsOwner              | String | User Id and Group Id that should own the mounted directory      | fsOwner: "1000:1000"         
 
 ### Persistent Volume Claim Example<a name="pvc"></a>
 
-Now let’s create a claim **PersistentVolumeClaim** (**PVC**). Here we specify the **PVC** name **pvc1** and reference the **StorageClass "sc1"** that we created in the previous step.
+Now let’s create a claim **PersistentVolumeClaim** (**PVC**). Here we 
+specify the **PVC** name as **pvc1** and reference the **StorageClass 
+"sc1"** that was created in the previous step.
 
 ```yaml
 $ sudo kubectl create -f - << EOF
@@ -446,7 +449,10 @@ spec:
 EOF
 ```
 
-At this point, after creating the **SC** and **PVC** definitions, the volume hasn’t been created yet. The actual volume gets created on-the-fly during the pod deployment and volume mount phase.
+At this point, after creating the **SC** and **PVC** definitions, the 
+NFS volume is in the process of creation. User must inspect the NFS volume
+and wait till it moves to AVAILABLE state. At this time, user can create
+Pod as mentioned below.
 
 ### Pod Example<a name="pod"></a>
 
@@ -455,13 +461,18 @@ So, let’s create a **pod "pod1"** using the **nginx** container along with som
 ```yaml
 $ sudo kubectl create -f - << EOF
 ---
-kind: Pod   
+kind: Pod
 apiVersion: v1
 metadata:
   name: pod1
 spec:
   containers:
   - name: nginx
+    securityContext:
+      privileged: true
+      capabilities:
+        add: ["SYS_ADMIN"]
+      allowPrivilegeEscalation: true
     image: nginx
     volumeMounts:
     - name: export
@@ -474,38 +485,44 @@ spec:
 EOF
 ```
 
-When the pod gets created and a mount request is made, the volume is now available and can be seen using the following command:
+When the pod gets created and a mount request is made, the volume is 
+now available and can be seen using the following command:
 
 ```
 $ docker volume ls
 DRIVER   VOLUME NAME
 hpe      export
 ```
-On the Kubernetes/OpenShift side, it should now look something like this:
+On the Kubernetes/OpenShift side, it should now look something like 
+this:
 ```
 $ kubectl get pv,pvc,pod -o wide
 NAME       CAPACITY   ACCESSMODES   RECLAIMPOLICY   STATUS    CLAIM            STORAGECLASS   REASON   AGE
-pv/pv1     20Gi       RWO           Retain          Bound     default/pvc1                             11m
+pv/pv1     20Gi       RWX           Retain          Bound     default/pvc1                             11m
 
 NAME         STATUS    VOLUME    CAPACITY   ACCESSMODES   STORAGECLASS   AGE
-pvc/pvc1     Bound     pv100     20Gi       RWO                          11m
+pvc/pvc1     Bound     pv100     20Gi       RWX                          11m
 
 NAME                          READY     STATUS    RESTARTS   AGE       IP             NODE
 po/pod1                       1/1       Running   0          11m       10.128.1.53    cld6b16
 ```
 
-**Static provisioning** is a feature that is native to Kubernetes and that allows cluster admins to make existing storage devices available to a cluster. As a cluster admin, you must know the details of the storage device, its supported configurations, and mount options.
-
-To make existing storage available to a cluster user, you must manually create the storage device, a PV,PVC and POD.
-
-Below is an example yaml specification to create Persistent Volumes using the HPE 3PAR FlexVolume driver. 
+**Static provisioning** is a feature that is native to Kubernetes and 
+that allows cluster admins to make existing storage devices available 
+to a cluster. As a cluster admin, you must know the details of the 
+storage device, its supported configurations, and mount options.
+To make existing storage available to a cluster user, you must manually 
+create the storage device, a PV,PVC and POD.
+Below is an example yaml specification to create Persistent Volumes 
+using the HPE 3PAR FlexVolume driver. 
 
 ```
 Note: If you have OpenShift installed, kubectl create and oc create commands can be used interchangeably when creating PVs, PVCs, and PODs.
 ```
 
 Persistent volume Example
-The following creates a Persistent volume "pv-first" with the help of HPE 3PAR Docker Volume Plugin.
+The following creates a Persistent volume "pv-first" with the help of 
+HPE 3PAR Docker Volume Plugin.
 
 ```yaml
 $ sudo kubectl create -f - << EOF
@@ -560,6 +577,11 @@ metadata:
 spec:
   containers:
   - name: minio
+    securityContext:
+      privileged: true
+      capabilities:
+        add: ["SYS_ADMIN"]
+      allowPrivilegeEscalation: true
     image: minio/minio:latest
     args:
     - server
@@ -580,10 +602,15 @@ spec:
         claimName: pvc-first
 EOF
 ```
-Now the **pod** can be deleted to unmount the Docker volume. Deleting a **Docker volume** does not require manual clean-up because the dynamic provisioner provides automatic clean-up. You can delete the **PersistentVolumeClaim** and see the **PersistentVolume** and **Docker volume** automatically deleted.
+Now the **pod** can be deleted to unmount the Docker volume. Deleting 
+a **Docker volume** does not require manual clean-up because the dynamic 
+provisioner provides automatic clean-up. You can delete the 
+**PersistentVolumeClaim** and see the **PersistentVolume** and 
+**Docker volume** automatically deleted.
 
 
-Congratulations, you have completed all validation steps and have a working **Kubernetes/OpenShift** environment.
+Congratulations, you have completed all validation steps and have a 
+working **Kubernetes/OpenShift** environment.
 
 ### Restarting the Containerized plugin<a name="restart"></a>
 
@@ -600,12 +627,25 @@ $ docker start <container_id_of_plugin>
 ```
 
 ## Limitations / Known Issues
-1. All the operations must be performed sequentially. E.g. concurrent creation 
+1. There can be a maximum of 256 NFS volumes that can be created using 
+   Docker volume plugin due to the limit imposed by 3PAR
+2. All the operations must be performed sequentially. E.g. concurrent creation 
    of multiple shares can lead to ETCD lock failures.
-2. When block related configuration parameters are used inadvertently in file 
+3. When block related configuration parameters are used inadvertently in file 
    driver configuration or vice-versa, it does not result in any error - the
    plugin simply ignores it. Eg: snapcpg, a block configuration parameter, 
    when used in file driver configuration, it is ignored.
-3. When two backend sections are identically defined, even then each backend 
+4. When two backend sections are identically defined, even then each backend 
    is treated differently and results in having their individual default FPGs
    when default share creation is done using both the backends.
+5. While using dynamic provisioning with Kubernetes, after creating SC
+   and PVC, it is recommended that the user inspects the NFS volume for
+   it to become AVAILABLE. It's only after this, POD creation should be
+   initiated. Otherwise, POD describe may show warning messages indicating
+   that mount has failed.
+6. While using static provisioning with Kubernetes, actual NFS volume 
+   does not get created on 3PAR immediately after creating PV and PVC.
+   It is when the user initiates POD creation that the NFS volume
+   creation happens at the backend. During this creation process, the
+   NFS volume is in CREATING state and hence there is a delay before
+   POD moves to running state. Describing the POD would reveal this 
