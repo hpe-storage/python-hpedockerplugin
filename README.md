@@ -106,6 +106,6 @@ $ showsched
 
 - after doing scsi rescan if the symlinks for the device are not populated in /dev/disk/by-path, Plugin will not function correctly during mount operation.
 
-- For volume uppersize limiation, please do refer 3PAR's documentation.
+- For volume upper size limitation, please do refer 3PAR's documentation.
 
 - The configuration parameter **mount_prefix**, is applicable for containerized plugin only. If used with the managed plugin, mount operation fails.
