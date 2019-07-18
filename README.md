@@ -108,3 +108,4 @@ $ showsched
 
 - For volume uppersize limiation, please do refer 3PAR's documentation.
 
+- The configuration parameter **mount_prefix**, is applicable for containerized plugin only. If used with the managed plugin, mount operation fails.
