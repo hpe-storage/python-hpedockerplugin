@@ -74,6 +74,7 @@ COPY ./patch_os_bricks/linuxscsi.py /usr/lib/python3.6/site-packages/os_brick-1.
 COPY ./patch_os_bricks/rootwrap.py /usr/lib/python3.6/site-packages/os_brick-1.13.1-py3.6.egg/os_brick/privileged/rootwrap.py
 COPY ./oslo/comm.py /usr/lib/python3.6/site-packages/oslo.privsep-1.29.0-py3.6.egg/oslo_privsep/comm.py
 COPY ./patch_os_bricks/compat.py /usr/lib/python3.6/site-packages/Twisted-18.7.0rc1-py3.6-linux-x86_64.egg/twisted/python/compat.py
+COPY ./patch_os_bricks/fibre_channel.py /usr/lib/python3.6/site-packages/os_brick-1.13.1-py3.6.egg/os_brick/initiator/connectors/fibre_channel.py
 
 # This line needs to be removed when formal python-3parclient next version is released
 COPY ./patch_3par_client/python_3parclient-4.2.9-py3.5.egg /usr/lib/python3.6/site-packages/python_3parclient-4.2.9-py3.6.egg
