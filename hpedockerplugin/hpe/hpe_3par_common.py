@@ -827,8 +827,8 @@ class HPE3PARCommon(object):
                 extras['snapCPG'] = cpg
                 volume['snap_cpg'] = cpg
 
-            # Only set the dedup option if the backend supports it.
-        if self.API_VERSION >= DEDUP_API_VERSION:
+        # Only set the dedup option if the backend supports it.
+        if self.API_VERSION >= DEDUP_API_VERSION and tdvv:
             extras['tdvv'] = tdvv
 
         capacity = self._capacity_from_size(volume['size'])
