@@ -871,6 +871,21 @@ class HPE3PARCommon(object):
                 message=msg)
         except hpeexceptions.HTTPBadRequest as ex:
             # LOG.error("Exception: %s", ex)
+            msg = "For Deco volumes both '%s' and 'compression' " \
+                  "must be specified"
+            if (msg % 'tdvv') in ex.get_description():
+                msg = msg % 'dedup'
+                raise exception.HPEDriverInvalidInput(reason=msg)
+            msg = "Either tpvv must be True OR %s and compression " \
+                  "must be True. Both cannot be False."
+            if (msg % 'tdvv') in ex.get_description():
+                msg = "For thin volumes, 'provisioning' must be set as " \
+                      "'thin'. And for deco volumes, 'provisioning' must " \
+                      "be set as 'dedup' along with 'compression' set as " \
+                      "true. If any of these conditions for a given type " \
+                      "of volume is not met, volume creation will fail"
+                raise exception.HPEDriverInvalidInput(reason=msg)
+
             raise exception.HPEDriverInvalidInput(reason=ex.get_description())
         # except exception.InvalidInput as ex:
         #     LOG.error("Exception: %s", ex)
@@ -1367,7 +1382,7 @@ class HPE3PARCommon(object):
         if snap_cpg is not None:
             optional['snapCPG'] = snap_cpg
 
-        if self.API_VERSION >= DEDUP_API_VERSION:
+        if self.API_VERSION >= DEDUP_API_VERSION and tdvv:
             optional['tdvv'] = tdvv
 
         if (compression is not None and
