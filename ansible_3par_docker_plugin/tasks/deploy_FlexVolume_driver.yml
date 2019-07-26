@@ -1,16 +1,23 @@
 ---
+  - name: load plugin settings
+    include_vars: 'properties/plugin_configuration_properties.yml'
+
+  - name: Initialize dory installer variable
+    set_fact:
+      dory_installer_version: "{{ INVENTORY['DEFAULT']['dory_installer_version'] }}"
+
   - name: Download dory installer
     get_url:
-      url: https://github.com/hpe-storage/python-hpedockerplugin/raw/master/dory_installer_v31
+      url: https://github.com/hpe-storage/python-hpedockerplugin/raw/master/{{dory_installer_version}}
       dest: /tmp 
       mode: 0755
 
   - name: Install dory, doryd
     shell: >-
-      yes yes | /tmp/dory_installer_v31
+      yes yes | /tmp/{{dory_installer_version}}
 
   - name: Remove the dory installer
     file:
-      path: /tmp/dory_installer_v31
+      path: /tmp/{{dory_installer_version}}
       state: absent
 
