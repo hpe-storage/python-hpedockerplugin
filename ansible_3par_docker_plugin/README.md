@@ -54,11 +54,13 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
       | ```hpe3par_iscsi_ips```  | No  | No default value | Comma separated iscsi IPs. If not provided, all iscsi IPs will be read from the array and populated in hpe.conf |
       | ```vlan_tag```  | No  | False | Populates the iscsi_ips which are vlan tagged, only applicable if ```hpe3par_iscsi_ips``` is not specified |
       | ```replication_device```  | No  | No default value | Replication backend properties |
-      | ```hpe3par_server_ip_pool```  | Yes  | No default value | This parameter is specific to fileshare.It can be specified as a mix of range of IPs and individual IPs delimited by comma. Each range or individual IP must be followed by the corresponding subnet mask delimited by semi-colon E.g.: IP-Range:Subnet-Mask,Individual-IP:SubnetMask|
-      | ```hpe3par_default_fpg_size```  | No  | No default value | This parameter is specific to fileshare.Default fpg size, It must be in the range 1TiB to 64TiB. If not specified here, it defaults to 16TiB |
+      | ```hpe3par_server_ip_pool```  | Yes  | No default value | This parameter is specific to fileshare. It can be specified as a mix of range of IPs and individual IPs delimited by comma. Each range or individual IP must be followed by the corresponding subnet mask delimited by semi-colon E.g.: IP-Range:Subnet-Mask,Individual-IP:SubnetMask|
+      | ```hpe3par_default_fpg_size```  | No  | No default value | This parameter is specific to fileshare. Default fpg size, It must be in the range 1TiB to 64TiB. If not specified here, it defaults to 16TiB |
 
   - Adding multiple backends in [plugin configuration properties - sample](/ansible_3par_docker_plugin/properties/plugin_configuration_properties_sample.yml)
     Below is the table of all possible default configurations along with the installer plugin behavior column for each combination:
+    BLOCK points to the hpedockerplugin_driver, hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver OR hpedockerplugin.hpe.hpe_3par_fc.HPE3PARFCDriver
+    FILE points to the hpedockerplugin_driver, hpedockerplugin.hpe.hpe_3par_file.HPE3PARFileDriver
 
       |DEFAULT | DEFAULT_BLOCK | DEFAULT_FILE | INSTALLER BEHAVIOR        |
       |--------|---------------|--------------|-----------------|
