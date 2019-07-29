@@ -405,33 +405,7 @@ class VolumeManager(object):
                   'cannot be imported'
             raise exception.InvalidInput(reason=msg)
 
-        vvset_detail = self._hpeplugin_driver.get_vvset_from_volume(
-            existing_ref_details['name'])
-        if vvset_detail is not None:
-            vvset_name = vvset_detail.get('name')
-            LOG.info('vvset_name: %(vvset)s' % {'vvset': vvset_name})
-
-            # check and set the flash-cache if exists
-            if(vvset_detail.get('flashCachePolicy') is not None and
-               vvset_detail.get('flashCachePolicy') == 1):
-                vol['flash_cache'] = True
-
-            try:
-                self._hpeplugin_driver.get_qos_detail(vvset_name)
-                LOG.info('Volume:%(existing_ref)s is in vvset_name:'
-                         '%(vvset_name)s associated with QOS'
-                         % {'existing_ref': existing_ref,
-                            'vvset_name': vvset_name})
-                vol["qos_name"] = vvset_name
-            except Exception as ex:
-                msg = (_(
-                    'volume is in vvset:%(vvset_name)s and not associated with'
-                    ' QOS error:%(ex)s') % {
-                        'vvset_name': vvset_name,
-                        'ex': six.text_type(ex)})
-                LOG.error(msg)
-                if not vol['flash_cache']:
-                    return json.dumps({u"Err": six.text_type(msg)})
+        self._set_qos_and_flash_cache_info(existing_ref_details['name'], vol)
 
         # since we have only 'importVol' option for importing,
         # both volume and snapshot
@@ -1116,9 +1090,8 @@ class VolumeManager(object):
                     ss_list_to_show.append(snapshot)
                 volume['Status'].update({'Snapshots': ss_list_to_show})
 
-            # TODO: Fix for issue #428. To be included later after testing
-            # backend_vol_name = utils.get_3par_vol_name(volinfo['id'])
-            # self._set_qos_and_flash_cache_info(backend_vol_name, volinfo)
+            backend_vol_name = utils.get_3par_vol_name(volinfo['id'])
+            self._set_qos_and_flash_cache_info(backend_vol_name, volinfo)
 
             qos_name = volinfo.get('qos_name')
             if qos_name is not None:

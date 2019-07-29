@@ -34,6 +34,7 @@ class TestCloneDefault(CloneVolumeUnitTest):
         mock_3parclient.copyVolume.return_value = {'taskid': data.TASK_ID}
         mock_3parclient.isOnlinePhysicalCopy.return_value = False
         mock_3parclient.getCPG.return_value = {}
+        mock_3parclient.findVolumeSet.return_value = None
 
 
 class TestCloneDefaultEtcdSaveFails(CloneVolumeUnitTest):
@@ -251,6 +252,7 @@ class TestCloneWithQOS(CloneVolumeUnitTest):
         mock_3parclient.copyVolume.return_value = {'taskid': data.TASK_ID}
         mock_3parclient.isOnlinePhysicalCopy.return_value = False
         mock_3parclient.getCPG.return_value = {}
+        mock_3parclient.findVolumeSet.return_value = None
 
 
 # Online copy with flash cache - add to vvset fails
