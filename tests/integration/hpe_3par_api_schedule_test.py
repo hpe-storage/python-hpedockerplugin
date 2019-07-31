@@ -144,3 +144,235 @@ class ScheduleTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
 
         self.hpe_volume_not_created(volume_name)
         self.hpe_volume_not_created(snapshot_name)
+	
+    def test_create_schedule_without_virtualCopyOf_parameter(self):
+
+        '''
+           This is a create schedule negative testcase with all required parameters passed.
+
+           Steps:
+           1. Create a snapshot, without passing 'virtualCopyOf' parameter.
+           2. Verify resp of exception and assert.
+           3. Verify if snapshot volume is not present on 3PAR array.
+        '''
+
+        volume_name = helpers.random_name()
+        snapshot_name = helpers.random_name()
+        try:
+            snapshot = self.hpe_create_volume(snapshot_name, driver=HPE3PAR, scheduleFrequency="10 2 * * *",
+                                 scheduleName="dailyOnceSchedule", snapshotPrefix="pqr",expHrs="5", retHrs="3")
+        except Exception as ex:
+            resp = str(ex)
+            self.assertIn("Invalid input received:", resp)
+        self.hpe_volume_not_created(snapshot_name)
+
+
+    def test_validation_of_scheduleFrequency(self):
+        '''
+           This is a create schedule negative testcase with invalid value in scheduleFrequency parameters passed.
+
+           Steps:
+           1. Create a source volume with provisioning='thin'.
+           2. Create a snapshot for the above created source volume, with invalid 'scheduleFrequency' parameter.
+           3. Verify resp of exception and assert.
+           4. Verify if snapshot volume is not present on 3PAR array.
+           5. Delete created source volume.
+           6. Verify the source volume is deleted.
+        '''
+        volume_name = helpers.random_name()
+        snapshot_name = helpers.random_name()
+        self.tmp_volumes.append(volume_name)
+        volume = self.hpe_create_volume(volume_name, driver=HPE3PAR, size=THIN_SIZE, provisioning='thin')
+        self.hpe_inspect_volume(volume, size=int(THIN_SIZE), provisioning='thin')
+        self.hpe_verify_volume_created(volume_name, driver=HPE3PAR, size=THIN_SIZE, provisioning='thin')
+        try:
+            snapshot = self.hpe_create_volume(snapshot_name, driver=HPE3PAR, virtualCopyOf=volume['Name'],
+                       scheduleFrequency="x x x x x", scheduleName="dailyOnceSchedule", snapshotPrefix="pqr",
+                       expHrs="5", retHrs="3")
+        except Exception as ex:
+            resp = str(ex)
+            self.assertIn("Invalid character \"x\" in schedule", resp)
+        self.hpe_volume_not_created(snapshot_name)
+        self.hpe_delete_volume(volume)
+        self.hpe_verify_volume_deleted(volume_name)
+
+
+    def test_validation_of_scheduleName(self):
+        '''
+           This is a create schedule negative testcase with null value in scheduleName parameters passed.
+
+           Steps:
+           1. Create a source volume with provisioning='thin'.
+           2. Create a snapshot for the above created source volume, with null 'scheduleName' parameter.
+           3. Verify resp of exception and assert.
+           4. Verify if snapshot volume is not present on 3PAR array.
+           5. Delete created source volume.
+           6. Verify the source volume is deleted.
+        '''
+        volume_name = helpers.random_name()
+        snapshot_name = helpers.random_name()
+        self.tmp_volumes.append(volume_name)
+        volume = self.hpe_create_volume(volume_name, driver=HPE3PAR, size=THIN_SIZE, provisioning='thin')
+        self.hpe_verify_volume_created(volume_name, driver=HPE3PAR, size=THIN_SIZE, provisioning='thin')
+        self.hpe_inspect_volume(volume, size=int(THIN_SIZE), provisioning='thin')
+        try:
+            snapshot = self.hpe_create_volume(snapshot_name, driver=HPE3PAR, virtualCopyOf=volume['Name'],
+                                     scheduleFrequency="10 2 * * *", snapshotPrefix="pqr", scheduleName="")
+        except Exception as ex:
+            resp = str(ex)
+            self.assertIn("Please make sure that valid schedule name is passed", resp)
+        self.hpe_volume_not_created(snapshot_name)
+        self.hpe_delete_volume(volume)
+        self.hpe_verify_volume_deleted(volume_name)
+
+
+    def test_validation_of_schedulePrefix(self):
+        '''
+           This is a create schedule negative testcase with max value in schedulePrefix parameters passed.
+
+           Steps:
+           1. Create a source volume with provisioning='thin'.
+           2. Create a snapshot for the above created source volume, with max limit of 'schedulePrefix' parameter.
+           3. Verify resp of exception and assert.
+           4. Verify if snapshot volume is not present on 3PAR array.
+           5. Delete created source volume.
+           6. Verify the source volume is deleted.
+        '''
+        volume_name = helpers.random_name()
+        snapshot_name = helpers.random_name()
+        self.tmp_volumes.append(volume_name)
+        volume = self.hpe_create_volume(volume_name, driver=HPE3PAR, size=THIN_SIZE, provisioning='thin')
+        self.hpe_verify_volume_created(volume_name, driver=HPE3PAR, size=THIN_SIZE, provisioning='thin')
+        self.hpe_inspect_volume(volume, size=int(THIN_SIZE), provisioning='thin')
+        try:
+            snapshot = self.hpe_create_volume(snapshot_name, driver=HPE3PAR, virtualCopyOf=volume['Name'],
+                                              scheduleFrequency="10 2 * * *", scheduleName="dailyOnceSchedule",
+                                              snapshotPrefix="pqr-new-schedule")
+        except Exception as ex:
+            resp = str(ex)
+            self.assertIn(" snapshotPrefix with max length of 15 characters", resp)
+        self.hpe_volume_not_created(snapshot_name)
+        self.hpe_delete_volume(volume)
+        self.hpe_verify_volume_deleted(volume_name)
+
+
+    def test_validation_of_expirationHours(self):
+        '''
+           This is a create schedule negative testcase with expirationHours parameter, instead of expHrs.
+
+           Steps:
+           1. Create a source volume with provisioning='thin'.
+           2. Create a snapshot for the above created source volume, with invalid option 'expirationHours' parameter.
+           3. Verify resp of exception and assert.
+           4. Verify if snapshot volume is not present on 3PAR array.
+           5. Delete created source volume.
+           6. Verify the source volume is deleted.
+        '''
+
+        volume_name = helpers.random_name()
+        snapshot_name = helpers.random_name()
+        self.tmp_volumes.append(volume_name)
+        volume = self.hpe_create_volume(volume_name, driver=HPE3PAR, size=THIN_SIZE, provisioning='thin')
+        self.hpe_verify_volume_created(volume_name, driver=HPE3PAR, size=THIN_SIZE, provisioning='thin')
+        self.hpe_inspect_volume(volume, size=int(THIN_SIZE), provisioning='thin')
+        try:
+            snapshot = self.hpe_create_volume(snapshot_name, driver=HPE3PAR, virtualCopyOf=volume['Name'],
+                                     scheduleFrequency="10 2 * * *", snapshotPrefix="pqr", scheduleName="dailyOnceSchedule",
+                                     expHrs="5", retHrs="3", expirationHours="1")
+        except Exception as ex:
+            resp = str(ex)
+            self.assertIn("Invalid input received:", resp)
+        self.hpe_volume_not_created(snapshot_name)
+        self.hpe_delete_volume(volume)
+        self.hpe_verify_volume_deleted(volume_name)
+
+
+    def test_validation_of_retensionHours(self):
+        '''
+           This is a create schedule negative testcase with retensionHours parameter, instead of retHrs.
+
+           Steps:
+           1. Create a source volume with provisioning='thin'.
+           2. Create a snapshot for the above created source volume, with invalid option 'retensionHours' parameter.
+           3. Verify resp of exception and assert.
+           4. Verify if snapshot volume is not present on 3PAR array.
+           5. Delete created source volume.
+           6. Verify the source volume is deleted.
+        '''
+        volume_name = helpers.random_name()
+        snapshot_name = helpers.random_name()
+        self.tmp_volumes.append(volume_name)
+        volume = self.hpe_create_volume(volume_name, driver=HPE3PAR, size=THIN_SIZE, provisioning='thin')
+        self.hpe_verify_volume_created(volume_name, driver=HPE3PAR, size=THIN_SIZE, provisioning='thin')
+        self.hpe_inspect_volume(volume, size=int(THIN_SIZE), provisioning='thin')
+        try:
+            snapshot = self.hpe_create_volume(snapshot_name, driver=HPE3PAR, virtualCopyOf=volume['Name'],
+                                     scheduleFrequency="10 2 * * *", snapshotPrefix="pqr", scheduleName="dailyOnceSchedule",
+                                     expHrs="5", retHrs="3", retensionHours="1")
+        except Exception as ex:
+            resp = str(ex)
+            self.assertIn("Invalid input received:", resp)
+        self.hpe_volume_not_created(snapshot_name)
+        self.hpe_delete_volume(volume)
+        self.hpe_verify_volume_deleted(volume_name)
+
+
+    def test_verify_scheduleName_length(self):
+        '''
+           This is a create schedule negative testcase with max limit of scheduleName length.
+
+           Steps:
+           1. Create a source volume with provisioning='thin'.
+           2. Create a snapshot for the above created source volume, with max limit of 'scheduleName' parameter.
+           3. Verify resp of exception and assert.
+           4. Verify if snapshot volume is not present on 3PAR array.
+           5. Delete created source volume.
+           6. Verify the source volume is deleted.
+        '''
+        volume_name = helpers.random_name()
+        snapshot_name = helpers.random_name()
+        self.tmp_volumes.append(volume_name)
+        volume = self.hpe_create_volume(volume_name, driver=HPE3PAR, size=THIN_SIZE, provisioning='thin')
+        self.hpe_verify_volume_created(volume_name, driver=HPE3PAR, size=THIN_SIZE, provisioning='thin')
+        self.hpe_inspect_volume(volume, size=int(THIN_SIZE), provisioning='thin')
+        try:
+            snapshot = self.hpe_create_volume(snapshot_name, driver=HPE3PAR, virtualCopyOf=volume['Name'],
+                                     scheduleFrequency="10 2 * * *", snapshotPrefix="pqr",
+                                     scheduleName="THIS-IS-THIRTY-ONE-CHAR-VALIDATION",
+                                     expHrs="5", retHrs="3")
+        except Exception as ex:
+            resp = str(ex)
+            self.assertIn("Please provide a schedlueName with max 31 characters", resp)
+        self.hpe_volume_not_created(snapshot_name)
+        self.hpe_delete_volume(volume)
+        self.hpe_verify_volume_deleted(volume_name)
+
+	
+    def test_validation_of_expHrs(self):
+        '''
+           This is a create schedule negative testcase with less value of expHrs than retHrs.
+
+           Steps:
+           1. Create a source volume with provisioning='thin'.
+           2. Create a snapshot for the above created source volume, less value of expHrs than retHrs.
+           3. Verify resp of exception and assert.
+           4. Verify if snapshot volume is not present on 3PAR array.
+           5. Delete created source volume.
+           6. Verify the source volume is deleted.
+        '''
+        volume_name = helpers.random_name()
+        snapshot_name = helpers.random_name()
+        self.tmp_volumes.append(volume_name)
+        volume = self.hpe_create_volume(volume_name, driver=HPE3PAR, size=THIN_SIZE, provisioning='thin')
+        self.hpe_verify_volume_created(volume_name, driver=HPE3PAR, size=THIN_SIZE, provisioning='thin')
+        self.hpe_inspect_volume(volume, size=int(THIN_SIZE), provisioning='thin')
+        try:
+            snapshot = self.hpe_create_volume(snapshot_name, driver=HPE3PAR, virtualCopyOf=volume['Name'],
+                                     scheduleFrequency="10 2 * * *", snapshotPrefix="pqr", scheduleName="dailyOnceSchedule",
+                                     expHrs="2", retHrs="3")
+        except Exception as ex:
+            resp = str(ex)
+            self.assertIn("expiration hours cannot be greater than retention hours", resp)
+        self.hpe_volume_not_created(snapshot_name)
+        self.hpe_delete_volume(volume)
+        self.hpe_verify_volume_deleted(volume_name)
