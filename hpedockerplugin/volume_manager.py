@@ -333,9 +333,11 @@ class VolumeManager(object):
             LOG.info('vvset_name: %(vvset)s' % {'vvset': vvset_name})
 
             # check and set the flash-cache if exists
-            if (vvset_detail.get('flashCachePolicy') is not None and
-                    vvset_detail.get('flashCachePolicy') == 1):
-                vol['flash_cache'] = True
+            flash_cache_pol = vvset_detail.get('flashCachePolicy')
+            if flash_cache_pol is not None:
+                vol['flash_cache'] = (flash_cache_pol == 1)
+            else:
+                vol['flash_cache'] = None
 
     def _set_qos_info(self, vol, vvset_name):
         LOG.info("Getting QOS info by vv-set-name '%s' for volume'%s'..."
@@ -1107,9 +1109,13 @@ class VolumeManager(object):
                     msg += ' %s' % six.text_type(ex)
                     LOG.error(msg)
 
+            flash_cache = volinfo.get('flash_cache')
+            if flash_cache is not None:
+                flash_cache = 'true' if flash_cache else 'false'
+
             vol_detail = {}
             vol_detail['size'] = volinfo.get('size')
-            vol_detail['flash_cache'] = volinfo.get('flash_cache')
+            vol_detail['flash_cache'] = flash_cache
             vol_detail['compression'] = volinfo.get('compression')
             vol_detail['provisioning'] = volinfo.get('provisioning')
             vol_detail['fsOwner'] = volinfo.get('fsOwner')
