@@ -1,0 +1,163 @@
+---
+  - name: Force fail if DEFAULT backend is not present
+    fail:
+      msg: "The plugin properties file does not have the [DEFAULT] back end"
+    when: INVENTORY['DEFAULT'] is not defined
+
+  - name: Initialize the flag for mixed configuration
+    set_fact:
+      set_mixed: 'false'  
+ 
+  - name: Initialize an empty list for backend drivers
+    set_fact:
+      my_driver_list: []
+  
+  - name: Save driver for each backend in the list 
+    set_fact:
+      my_driver_list:  "{{my_driver_list +[INVENTORY[item]['hpedockerplugin_driver']]}}"
+    with_items:
+      - "{{ INVENTORY.keys()}}"
+    register: my_driver_list  
+    
+  - name: Initialize valid driver list
+    set_fact: 
+      default_drivers:
+      - hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver
+      - hpedockerplugin.hpe.hpe_3par_fc.HPE3PARFCDriver
+      - hpedockerplugin.hpe.hpe_3par_file.HPE3PARFileDriver
+  
+  - name: Fail when backend drivers are incorrect or mispelled 
+    fail:
+      msg: "Driver {{item}} is incorrect"
+    with_items:
+      - "{{my_driver_list}}"
+    when: item not in default_drivers
+     
+  - name: Setting set_mixed flag to true if ISCSI/FC and FileDriver are present
+    set_fact:
+      set_mixed: 'true' 
+    when: >-
+      ('hpedockerplugin.hpe.hpe_3par_file.HPE3PARFileDriver'  in  my_driver_list and 'hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver' in my_driver_list) or 
+      ('hpedockerplugin.hpe.hpe_3par_file.HPE3PARFileDriver'  in  my_driver_list and 'hpedockerplugin.hpe.hpe_3par_fc.HPE3PARFCDriver' in  my_driver_list )    
+     
+  - name: Fail when DEFAULT_FILE and DEFAULT_BLOCK backend is defined with single configuration 
+    fail:
+      msg: "DEFAULT_FILE and DEFAULT_BLOCK backends should not be present in single configuration"
+    with_items:
+      - "{{ INVENTORY.keys()}}" 
+    when: >-
+      set_mixed == false and 
+      (INVENTORY['DEFAULT_FILE'] is defined or INVENTORY['DEFAULT_BLOCK'] is defined)
+
+  - name: Fail when DEFAULT and DEFAULT_FILE backend is defined with file driver
+    fail:
+      msg: "DEFAULT_FILE backend should not be present when DEFAULT backend has filedriver"
+    with_items:
+      - "{{ INVENTORY.keys()}}" 
+    when: >-
+      set_mixed == true and 
+      INVENTORY['DEFAULT']['hpedockerplugin_driver'] == 'hpedockerplugin.hpe.hpe_3par_file.HPE3PARFileDriver' and 
+      INVENTORY['DEFAULT_FILE'] is defined
+
+  - name: Fail when DEFAULT and DEFAULT_BLOCK backend is defined with block driver
+    fail:
+      msg: "DEFAULT_BLOCK backend should not be present when DEFAULT backend has blockdriver"
+    with_items:
+      - "{{ INVENTORY.keys()}}" 
+    when: >-
+      set_mixed == true and 
+      (INVENTORY['DEFAULT']['hpedockerplugin_driver'] == 'hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver' or 
+      INVENTORY['DEFAULT']['hpedockerplugin_driver']  == 'hpedockerplugin.hpe.hpe_3par_fc.HPE3PARFCDriver')
+      and INVENTORY['DEFAULT_BLOCK'] is defined
+    
+  - name: Fail when DEFAULT backend driver is block and DEFAULT_FILE backend is not present in mixed configuration
+    fail :
+      msg: "DEFAULT_FILE backend is not present in mixed configuration"
+    with_items:
+      - "{{ INVENTORY.keys()}}"  
+    when:  >-
+      set_mixed ==true and 
+      (INVENTORY['DEFAULT']['hpedockerplugin_driver'] == 'hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver' or INVENTORY['DEFAULT']['hpedockerplugin_driver'] == 'hpedockerplugin.hpe.hpe_3par_fc.HPE3PARFCDriver') and 
+      INVENTORY['DEFAULT_FILE'] is not defined
+      
+  - name: Fail when DEFAULT backend driver is FileDriver and DEFAULT_BLOCK backend is not present in mixed configuration
+    fail :
+      msg: "DEFAULT_BLOCK backend is not present in mixed configuration"
+    with_items:
+      - "{{ INVENTORY.keys()}}"  
+    when:  >-
+      set_mixed ==true and INVENTORY['DEFAULT']['hpedockerplugin_driver'] == 'hpedockerplugin.hpe.hpe_3par_file.HPE3PARFileDriver'
+      and INVENTORY['DEFAULT_BLOCK'] is not defined  
+      
+  
+  - name: Fail when file driver is not present in DEFAULT_FILE backend 
+    fail :
+      msg: "DEFAULT_FILE backend driver is incorrect in mixed configuration"
+    with_items:
+      - "{{ INVENTORY.keys()}}"  
+    when:  >-
+      set_mixed ==true and INVENTORY['DEFAULT_FILE'] is defined and INVENTORY['DEFAULT_FILE']['hpedockerplugin_driver'] != 'hpedockerplugin.hpe.hpe_3par_file.HPE3PARFileDriver' 
+
+  - name: Fail when block driver for FC/ISCSI is not present in DEFAULT_BLOCK backend
+    fail :
+      msg: "DEFAULT_BLOCK backend driver is incorrect in mixed configuration"
+    with_items:
+      - "{{ INVENTORY.keys()}}"  
+    when:  >-
+      set_mixed ==true and INVENTORY['DEFAULT_BLOCK'] is defined and
+      (INVENTORY['DEFAULT_BLOCK']['hpedockerplugin_driver'] != 'hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver' and INVENTORY['DEFAULT_BLOCK']['hpedockerplugin_driver'] != 'hpedockerplugin.hpe.hpe_3par_fc.HPE3PARFCDriver')  
+
+  - name: Check if pip exists
+    command: which pip
+    register: pip_result
+    failed_when: pip_result.rc != 0 and pip_result.rc != 1
+
+  - name: download get-pip.py
+    get_url:
+      url: https://bootstrap.pypa.io/get-pip.py
+      dest: /tmp
+    when: pip_result.rc != 0
+
+  - name: install pip
+    command: "python /tmp/get-pip.py"
+    become: yes
+    when: pip_result.rc != 0
+
+  - name: delete get-pip.py
+    file:
+      state: absent
+      path: /tmp/get-pip.py
+    when: pip_result.rc != 0
+
+  - name: delete requests library
+    shell: rm -rf /usr/lib/python2.7/site-packages/requests*
+    become: yes
+
+  - name: uninstall docker-py if ansible version >= 2.6
+    pip:
+      name: docker-py
+      state: absent
+    become: yes
+    when: (ansible_version.major == 2 and ansible_version.minor >= 6) or ansible_version.major > 2
+
+  - name: install docker if ansible version >= 2.6
+    pip:
+      name: docker
+      state: present
+    become: yes
+    when: (ansible_version.major == 2 and ansible_version.minor >= 6) or ansible_version.major > 2
+
+  - name: uninstall docker if ansible version < 2.6
+    pip:
+      name: docker
+      state: absent
+    become: yes
+    when: ansible_version.major == 2 and ansible_version.minor < 6
+
+  - name: install docker-py if ansible version < 2.6
+    pip:
+      name: docker-py
+      state: present
+    become: yes
+    when: ansible_version.major == 2 and ansible_version.minor < 6
+

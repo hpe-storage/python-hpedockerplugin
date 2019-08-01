@@ -1,8 +1,11 @@
-# Quick Start Guide to installing the HPE 3PAR Volume Plug-in for Docker
+# Deployment methods for HPE 3PAR Volume Plugin-in 
 
+## HPE 3PAR Docker volume Plugin can be deployed in following methods: 
+
+* [Ansible playbook to deploy the HPE 3PAR Volume Plug-in for Docker (RECOMMENDED)](/ansible_3par_docker_plugin)
 * [Quick Start Guide for Standalone Docker environments](#docker)
 * [Quick Start Guide for Kubernetes/OpenShift environments](#k8)
-* [Usage](#usage)
+
 
 ---
 
@@ -15,22 +18,6 @@
 Steps for Deploying the Managed Plugin (HPE 3PAR Volume Plug-in for Docker) in a Standalone Docker environment
 
 ### **Prerequisite packages to be installed on host OS:**
-
-#### Ubuntu 16.04 or later:
-
-
-1. Install the iSCSI (optional if you aren't using iSCSI) and Multipath packages
-```
-$ sudo apt-get install -y open-iscsi multipath-tools
-```
-
-2. Enable the **iscsid** and **multipathd** services
-```
-$ systemctl daemon-reload
-$ systemctl restart open-iscsi multipath-tools docker
-```
-
-
 
 #### RHEL/CentOS 7.3 or later:
 
@@ -49,16 +36,13 @@ $ vi /etc/multipath.conf
 >Copy the following into `/etc/multipath.conf`
 
 ```
-defaults
-{
+defaults {
     polling_interval 10
     max_fds 8192
 }
 
-devices
-{
-    device
-	{
+devices {
+    device {
         vendor                  "3PARdata"
         product                 "VV"
         no_path_retry           18
@@ -99,6 +83,27 @@ $ systemctl daemon-reload
 $ systemctl restart docker.service
 ```
 
+#### SLES12 SP3 or later:
+
+1. Rebuild the initrd, otherwise the system may not boot anymore
+
+```
+$ dracut --force --add multipath
+```
+
+2. Configure `/etc/multipath.conf`
+
+```
+$ multipath -t > /etc/multipath.conf
+```
+
+3. Enable the iscsid and multipathd services
+
+```
+$ systemctl enable multipathd iscsid
+$ systemctl start multipathd iscsid
+```
+
 Now the systems are ready to setup the HPE 3PAR Volume Plug-in for Docker.
 
 
@@ -122,14 +127,14 @@ sudo docker run -d -v /usr/share/ca-certificates/:/etc/ssl/certs -p 4001:4001 \
 -name etcd0 \
 -advertise-client-urls http://${HostIP}:2379,http://${HostIP}:4001 \
 -listen-client-urls http://0.0.0.0:2379,http://0.0.0.0:4001 \
--initial-advertise-peer-urls http://${HostIP}:23800 \
+-initial-advertise-peer-urls http://${HostIP}:2380 \
 -listen-peer-urls http://0.0.0.0:2380 \
 -initial-cluster-token etcd-cluster-1 \
 -initial-cluster etcd0=http://${HostIP}:2380 \
 -initial-cluster-state new
 ```
 
-### HPE 3PAR Volume Managed Plug-in config
+### HPE 3PAR Volume `Managed Plug-in` config
 
 1. Add HPE 3PAR into `~/.ssh/known_hosts`
 
@@ -165,15 +170,6 @@ Before enabling the plugin, validate the following:
 
 3. Run the following commands to install the plugin:
 
-**Ubuntu**
-
->version=2.1
-
-```
-$ docker plugin install store/hpestorage/hpedockervolumeplugin:<version>  --disable --alias hpe
-$ docker plugin set hpe certs.source=/tmp
-$ docker plugin enable hpe
-```
 
 **RHEL/CentOS**
 
@@ -199,7 +195,7 @@ There are two methods for installing the HPE 3PAR Volume Plug-in for Docker for 
 1. [Ansible playbook to deploy the HPE 3PAR Volume Plug-in for Docker (**RECOMMENDED**)](/ansible_3par_docker_plugin/README.md)
 
 
-2. [Manual install HPE 3PAR Volume Plug-in for Docker](/docs/manual_install_guide_hpe_3par_plugin_with_openshift_kubernetes.md)
+2. [Install Guide for HPE 3PAR Volume Plug-in for Docker](/docs/manual_install_guide_hpe_3par_plugin_with_openshift_kubernetes.md)
 
 
 ## Usage <a name="usage"></a>

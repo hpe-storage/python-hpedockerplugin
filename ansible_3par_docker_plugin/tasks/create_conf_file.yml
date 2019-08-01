@@ -1,0 +1,376 @@
+---
+  - name: Stop docker container
+    docker_container:
+      name: plugin_container
+      image: "{{ INVENTORY['DEFAULT']['volume_plugin'] }}"
+      state: stopped
+
+  - name: remove the existing configuration file
+    file:
+      path: /etc/hpedockerplugin/hpe.conf
+      state: absent
+
+  - name: Populate the etcd cluster IP in hpe.conf
+    ini_file:
+      path: /etc/hpedockerplugin/hpe.conf
+      section: "{{ item }}"
+      option: 'host_etcd_ip_address'
+      value: "{{ (':' + etcd_client_port_1 | string + ',').join(groups['etcd']) + ':' +  etcd_client_port_1 | string }}"
+      no_extra_spaces: true
+    with_items:
+      - "{{ INVENTORY.keys()}}"
+    become: yes
+    when: groups['etcd'] is defined and groups['etcd'] | length > 1
+
+  - name: Populate the etcd IP in hpe.conf
+    ini_file:
+      path: /etc/hpedockerplugin/hpe.conf
+      section: "{{ item }}"
+      option: 'host_etcd_ip_address'
+      value: "{{ groups['etcd'][0] }}"
+      no_extra_spaces: true
+    with_items:
+      - "{{ INVENTORY.keys()}}"
+    become: yes
+    when: groups['etcd'] is defined and groups['etcd'] | length == 1
+
+  - name: Populate the etcd IP in hpe.conf
+    ini_file:
+      path: /etc/hpedockerplugin/hpe.conf
+      section: "{{ item }}"
+      option: 'host_etcd_ip_address'
+      value: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+      no_extra_spaces: true
+    with_items:
+      - "{{ INVENTORY.keys()}}"
+    become: yes
+    when: groups['etcd'] is not defined
+
+  - name: get the iscsi ports
+    local_action: >-
+      shell /usr/bin/sshpass -p {{ INVENTORY[item]['hpe3par_password'] }} ssh -oStrictHostKeyChecking=no {{ INVENTORY[item]['hpe3par_username'] }}@{{ INVENTORY[item]['hpe3par_ip'] }} "showport -iscsi" | grep ready | awk '{print $3}'
+    with_items: "{{ INVENTORY.keys() }}"
+    register: primary_iscsi_ports
+    when: >-
+      INVENTORY[item]['hpe3par_iscsi_ips'] is not defined and INVENTORY[item]['hpedockerplugin_driver'] == 'hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver' and 
+      not (INVENTORY[item]['vlan_tag'] is defined and INVENTORY[item]['vlan_tag'])
+    no_log: True
+
+  - name: get the iscsi ports (vlan tagged)
+    local_action: >-
+      shell /usr/bin/sshpass -p {{ INVENTORY[item]['hpe3par_password'] }} ssh -oStrictHostKeyChecking=no {{ INVENTORY[item]['hpe3par_username'] }}@{{ INVENTORY[item]['hpe3par_ip'] }} "showport -iscsivlans" | grep -v '-' | awk '{print $3}' | sed -n '1!p'
+    with_items: "{{ INVENTORY.keys() }}"
+    register: primary_iscsi_ports_vlan
+    when: >-
+      INVENTORY[item]['hpe3par_iscsi_ips'] is not defined and 
+      INVENTORY[item]['hpedockerplugin_driver'] == 'hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver' and
+      INVENTORY[item]['vlan_tag'] is defined and INVENTORY[item]['vlan_tag']
+    no_log: True
+
+  - name: Creates HPE Docker plugin directory
+    file:
+      path: /etc/hpedockerplugin
+      state: directory
+      mode: 0644
+      recurse: yes
+    become: yes
+
+  - name: Populate file persona mandatory parameters in hpe.conf
+    ini_file:
+      path: /etc/hpedockerplugin/hpe.conf
+      section: "{{ item[0] }}"
+      option: "{{ item[1]['option'] }}"
+      value: "{{ INVENTORY[item[0]][item[1].value]}}"
+      no_extra_spaces: true
+    with_nested:
+      - "{{ INVENTORY.keys()}}"
+      - [
+         { option: 'hpe3par_server_ip_pool', value: 'hpe3par_server_ip_pool' }
+        ]
+    become: yes
+    when: >-
+      INVENTORY[item[0]]['hpedockerplugin_driver'] == 'hpedockerplugin.hpe.hpe_3par_file.HPE3PARFileDriver'
+
+
+  - name: Populate file persona optional parameters in hpe.conf
+    ini_file:
+      path: /etc/hpedockerplugin/hpe.conf
+      section: "{{ item[0] }}"
+      option: "{{ item[1]['option'] }}"
+      value: "{{ INVENTORY[item[0]][item[1].value] | default(None)}}"
+      no_extra_spaces: true
+    with_nested:
+      - "{{ INVENTORY.keys()}}"
+      - [{ option: 'hpe3par_default_fpg_size', value: 'hpe3par_default_fpg_size' }
+        ]
+    become: yes
+    when: >-
+      item.1.value in INVENTORY[item.0].keys() and
+      INVENTORY[item[0]]['hpedockerplugin_driver'] == 'hpedockerplugin.hpe.hpe_3par_file.HPE3PARFileDriver'
+  
+  - name: Populate mandatory parameters in hpe.conf
+    ini_file:
+      path: /etc/hpedockerplugin/hpe.conf
+      section: "{{ item[0] }}"
+      option: "{{ item[1]['option'] }}"
+      value: "{{ INVENTORY[item[0]][item[1].value]}}"
+      no_extra_spaces: true
+    with_nested:
+      - "{{ INVENTORY.keys()}}"
+      - [
+         { option: 'hpe3par_username', value: 'hpe3par_username' },
+         { option: 'hpe3par_password', value: 'hpe3par_password' },
+         { option: 'hpe3par_cpg', value: 'hpe3par_cpg' },
+         { option: 'hpedockerplugin_driver', value: 'hpedockerplugin_driver' }
+        ]
+    become: yes
+
+  - name: Populate etcd port parameter in hpe.conf
+    ini_file:
+      path: /etc/hpedockerplugin/hpe.conf
+      section: "{{ item }}"
+      option: host_etcd_port_number
+      value: "{{ etcd_client_port_1 }}"
+      no_extra_spaces: true
+    with_items:
+      - "{{ INVENTORY.keys()}}"
+    become: yes
+
+  - name: Populate SSH host key parameters in hpe.conf
+    ini_file:
+      path: /etc/hpedockerplugin/hpe.conf
+      section: "{{ item }}"
+      option: ssh_hosts_key_file
+      value: "{{ INVENTORY[item]['ssh_hosts_key_file'] | default('/root/.ssh/known_hosts')}}"
+      no_extra_spaces: true
+    with_items:
+      - "{{ INVENTORY.keys()}}"
+    become: yes
+
+  - name: Populate optional parameters in hpe.conf
+    ini_file:
+      path: /etc/hpedockerplugin/hpe.conf
+      section: "{{ item[0] }}"
+      option: "{{ item[1]['option'] }}"
+      value: "{{ INVENTORY[item[0]][item[1].value] | default(None)}}"
+      no_extra_spaces: true
+    with_nested:
+      - "{{ INVENTORY.keys()}}"
+      - [{ option: 'logging', value: 'logging' },
+         { option: 'hpe3par_debug', value: 'hpe3par_debug' },
+         { option: 'suppress_requests_ssl_warning', value: 'suppress_requests_ssl_warning' },
+         { option: 'hpe3par_snapcpg', value: 'hpe3par_snapcpg' },
+         { option: 'hpe3par_iscsi_chap_enabled', value: 'hpe3par_iscsi_chap_enabled' },
+         { option: 'use_multipath', value: 'use_multipath' },
+         { option: 'enforce_multipath', value: 'enforce_multipath' },
+         { option: 'san_ip', value: 'hpe3par_ip' },
+         { option: 'san_login', value: 'hpe3par_username' },
+         { option: 'san_password', value: 'hpe3par_password' },
+         { option: 'backend_id', value: 'backend_id' }
+        ]
+    become: yes
+    when:  item.1.value in INVENTORY[item.0].keys()
+
+  - name: Populate optional parameters in hpe.conf
+    ini_file:
+      path: /etc/hpedockerplugin/hpe.conf
+      section: DEFAULT
+      option: mount_prefix
+      value: "{{ INVENTORY['DEFAULT']['mount_prefix'] }}"
+      no_extra_spaces: true
+    when: INVENTORY['DEFAULT']['mount_prefix'] is defined
+
+  - name: Populate WSAPI URL in hpe.conf
+    ini_file:
+      path: /etc/hpedockerplugin/hpe.conf
+      section: "{{ item[0] }}"
+      option: "{{ item[1]['option'] }}"
+      value: "{{ 'https://' + INVENTORY[item[0]][item[1].value] + ':8080/api/v1' }}"
+      no_extra_spaces: true
+    with_nested:
+      - "{{ INVENTORY.keys()}}"
+      - [{ option: 'hpe3par_api_url', value: 'hpe3par_ip' }]
+    become: yes
+
+  - name: Populate iscsi IPs in hpe.conf
+    ini_file:
+      path: /etc/hpedockerplugin/hpe.conf
+      section: "{{ item['item'] }}"
+      option: 'hpe3par_iscsi_ips'
+      value: "{{ ','.join(item['stdout_lines']) }}"
+      no_extra_spaces: true
+    with_items:
+      - "{{ primary_iscsi_ports.results }}"
+    become: yes
+    when: >-
+      INVENTORY[item['item']]['hpe3par_iscsi_ips'] is not defined and 
+      INVENTORY[item['item']]['hpedockerplugin_driver'] == 'hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver' and 
+      not (INVENTORY[item['item']]['vlan_tag'] is defined and INVENTORY[item['item']]['vlan_tag'])
+    no_log: True
+
+  - name: Populate iscsi IPs in hpe.conf (vlan tagged)
+    ini_file:
+      path: /etc/hpedockerplugin/hpe.conf
+      section: "{{ item['item'] }}"
+      option: 'hpe3par_iscsi_ips'
+      value: "{{ ','.join(item['stdout_lines']) }}"
+      no_extra_spaces: true
+    with_items:
+      - "{{ primary_iscsi_ports_vlan.results }}"
+    become: yes
+    when: >-
+      INVENTORY[item['item']]['hpe3par_iscsi_ips'] is not defined and
+      INVENTORY[item['item']]['hpedockerplugin_driver'] == 'hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver' and
+      INVENTORY[item['item']]['vlan_tag'] is defined and INVENTORY[item['item']]['vlan_tag']
+    no_log: True
+
+  - name: Populate iscsi IPs in hpe.conf
+    ini_file:
+      path: /etc/hpedockerplugin/hpe.conf
+      section: "{{ item }}"
+      option: 'hpe3par_iscsi_ips'
+      value: "{{ INVENTORY[item]['hpe3par_iscsi_ips'] }}"
+      no_extra_spaces: true
+    with_items:
+      - "{{ INVENTORY.keys()}}"
+    when: INVENTORY[item]['hpe3par_iscsi_ips'] is defined
+
+  - name: Get the encrypted passwords
+    shell: >-
+      hpe3parencryptor --backend {{ item[0] }} -a {{INVENTORY[item[0]]['encryptor_key']}} "{{ INVENTORY[item[0]][(item[1].value)] }}"
+    register: passwords
+    with_nested:
+      - "{{ INVENTORY.keys()}}"
+      - [
+         { option: 'hpe3par_password', value: 'hpe3par_password' },
+         { option: 'san_password', value: 'hpe3par_password' }
+        ]
+    when: INVENTORY[item[0]]['encryptor_key'] is defined
+
+  - name: Populate the encrypted passwords in hpe.conf
+    ini_file:
+      path: /etc/hpedockerplugin/hpe.conf
+      section: "{{ passwords['results'][item | int]['item'][0] }}"
+      option:  "{{ passwords['results'][item | int]['item'][1]['option'] }}"
+      value: "{{ passwords['results'][item | int]['stdout'].split('password: ')[1] }} "
+      no_extra_spaces: true
+    with_items:
+      - "{{ lookup('sequence','start=0 end='+((INVENTORY.keys() | count)*2 -1) |string,wantlist=True) }}"
+    become: yes
+    when:  passwords['results'][item | int]['stdout'] is defined
+
+  - name: get the iscsi ports of replication device
+    local_action: >-
+      shell /usr/bin/sshpass -p {{ INVENTORY[item]['replication_device']['hpe3par_password'] }} ssh -oStrictHostKeyChecking=no {{ INVENTORY[item]['replication_device']['hpe3par_username'] }}@{{ INVENTORY[item]['replication_device']['hpe3par_ip'] }} "showport -iscsi" | grep ready | awk '{print $3}'
+    with_items: "{{ INVENTORY.keys() }}"
+    register: secondary_iscsi_ports
+    when: >-
+      INVENTORY[item]['hpedockerplugin_driver'] == 'hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver' and
+      INVENTORY[item]['replication_device'] is defined and 
+      INVENTORY[item]['replication_device']['hpe3par_iscsi_ips'] is not defined and 
+      not (INVENTORY[item]['replication_device']['vlan_tag'] is defined and 
+      INVENTORY[item]['replication_device']['vlan_tag'])
+    no_log: True
+
+  - name: get the iscsi ports of replication device (vlan tagged)
+    local_action: >-
+      shell /usr/bin/sshpass -p {{ INVENTORY[item]['replication_device']['hpe3par_password'] }} ssh -oStrictHostKeyChecking=no {{ INVENTORY[item]['replication_device']['hpe3par_username'] }}@{{ INVENTORY[item]['replication_device']['hpe3par_ip'] }} "showport -iscsivlans" | grep -v '-' | awk '{print $3}' | sed -n '1!p'
+    with_items: "{{ INVENTORY.keys() }}"
+    register: secondary_iscsi_ports_vlan
+    when: >-
+      INVENTORY[item]['hpedockerplugin_driver'] == 'hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver' and
+      INVENTORY[item]['replication_device'] is defined and
+      INVENTORY[item]['replication_device']['hpe3par_iscsi_ips'] is not defined and
+      INVENTORY[item]['replication_device']['vlan_tag'] is defined and
+      INVENTORY[item]['replication_device']['vlan_tag']
+    no_log: True
+
+  - name: Set the replication device information
+    set_fact:
+      backend_id: "backend_id:{{ INVENTORY[item]['replication_device']['backend_id'] }}"
+      replication_mode: "replication_mode:{{ INVENTORY[item]['replication_device']['replication_mode'] }}"
+      cpg_map: "cpg_map:{{ INVENTORY[item]['replication_device']['cpg_map'] }}"
+      snap_cpg_map: "snap_cpg_map:{{ INVENTORY[item]['replication_device']['snap_cpg_map'] }}"
+      hpe3par_username: "hpe3par_username:{{ INVENTORY[item]['replication_device']['hpe3par_username'] }}"
+      hpe3par_api_url: "hpe3par_api_url: https://{{ INVENTORY[item]['replication_device']['hpe3par_ip'] }}:8080/api/v1"
+      san_ip: "san_ip: {{ INVENTORY[item]['replication_device']['hpe3par_ip'] }}"
+      san_login: "san_login: {{ INVENTORY[item]['replication_device']['hpe3par_username'] }}"
+    with_items: "{{ INVENTORY.keys() }}"
+    register: replication_device
+    when: INVENTORY[item]['replication_device'] is defined
+    
+  - name: Get the encrypted passwords for replication device
+    shell: >-
+      hpe3parencryptor --backend {{ item }} -a {{INVENTORY[item]['encryptor_key']}} "{{ INVENTORY[item]['replication_device']['hpe3par_password'] }}"
+    register: replication_device_passwords
+    with_items:
+      - "{{ INVENTORY.keys()}}"
+    when: >-
+      INVENTORY[item]['encryptor_key'] is defined and
+      INVENTORY[item]['replication_device'] is defined
+
+  - name: Set the mandatory replication device values
+    set_fact: >-
+      {{ replication_device['results'][item | int]['ansible_facts']['backend_id'] }},
+      {{ replication_device['results'][item | int]['ansible_facts']['replication_mode'] }},
+      {{ replication_device['results'][item | int]['ansible_facts']['cpg_map'] }},
+      {{ replication_device['results'][item | int]['ansible_facts']['snap_cpg_map'] }},
+      {{ replication_device['results'][item | int]['ansible_facts']['hpe3par_username'] }},
+      hpe3par_password:
+      {{  replication_device_passwords['results'][item | int]['stdout'].split('password: ')[1]
+      if 
+      INVENTORY[replication_device['results'][item | int]['item']]['encryptor_key'] is defined
+      else
+      INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['hpe3par_password'] }},
+      {{ replication_device['results'][item | int]['ansible_facts']['hpe3par_api_url'] }},
+      {{ replication_device['results'][item | int]['ansible_facts']['san_ip'] }},
+      {{ replication_device['results'][item | int]['ansible_facts']['san_login'] }},
+      san_password: {{  replication_device_passwords['results'][item | int]['stdout'].split('password: ')[1]
+      if
+      INVENTORY[replication_device['results'][item | int]['item']]['encryptor_key'] is defined 
+      else 
+      INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['hpe3par_password'] }}
+    with_items: "{{ lookup('sequence', 'start=0 end='+((replication_device['results'] | length)-1) |string, wantlist=True) }}"
+    register: mandatory_replication_device_values
+    when: INVENTORY[replication_device['results'][item | int]['item']]['replication_device'] is defined
+
+  - name: Populate the replication device information (ISCSI Driver)
+    ini_file:
+      path: /etc/hpedockerplugin/hpe.conf
+      section: "{{ replication_device['results'][item | int]['item'] }}"
+      option: replication_device
+      value: >-
+        {{ mandatory_replication_device_values['results'][item | int]['ansible_facts']['_raw_params'] }},
+        hpe3par_iscsi_ips:
+        {{ ';'.join(INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['hpe3par_iscsi_ips'].split(','))
+        if 
+        INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['hpe3par_iscsi_ips'] is defined
+        else
+        (
+        ';'.join(secondary_iscsi_ports_vlan['results'][item | int]['stdout_lines'])
+        if
+        INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['vlan_tag'] is defined and
+        INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['vlan_tag']
+        else
+        ';'.join(secondary_iscsi_ports['results'][item | int]['stdout_lines'])
+        )
+        }}{{', quorum_witness_ip: ' + INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['quorum_witness_ip'] if INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['quorum_witness_ip'] is defined else ''}}
+      no_extra_spaces: true
+    with_items: "{{ lookup('sequence', 'start=0 end='+((replication_device['results'] | length)-1) |string, wantlist=True) }}"
+    when: >-
+      INVENTORY[replication_device['results'][item | int]['item']]['replication_device'] is defined and
+      INVENTORY[replication_device['results'][item | int]['item']]['hpedockerplugin_driver'] == 'hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver'
+
+  - name: Populate the replication device information (FC Driver)
+    ini_file:
+      path: /etc/hpedockerplugin/hpe.conf
+      section: "{{ replication_device['results'][item | int]['item'] }}"
+      option: replication_device
+      value: >-
+        {{ mandatory_replication_device_values['results'][item | int]['ansible_facts']['_raw_params'] }}{{', quorum_witness_ip: ' + INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['quorum_witness_ip'] if INVENTORY[replication_device['results'][item | int]['item']]['replication_device']['quorum_witness_ip'] is defined else ''}}
+      no_extra_spaces: true
+    with_items: "{{ lookup('sequence', 'start=0 end='+((replication_device['results'] | length)-1) |string, wantlist=True) }}"
+    when: >-
+      INVENTORY[replication_device['results'][item | int]['item']]['replication_device'] is defined and
+      INVENTORY[replication_device['results'][item | int]['item']]['hpedockerplugin_driver'] == 'hpedockerplugin.hpe.hpe_3par_fc.HPE3PARFCDriver'
+

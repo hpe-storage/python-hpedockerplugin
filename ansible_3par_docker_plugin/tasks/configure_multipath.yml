@@ -1,9 +1,8 @@
 ---
   - name: install multipath dependencies
-    yum: pkg={{ item }} state=installed
-    with_items:
-      - iscsi-initiator-utils
-      - device-mapper-multipath
+    yum: 
+      pkg: iscsi-initiator-utils,device-mapper-multipath 
+      state: installed
 
   - name: configure multipath.conf
     copy:

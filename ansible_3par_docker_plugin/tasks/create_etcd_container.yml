@@ -2,23 +2,33 @@
   - name: load etcd settings
     include_vars: '../properties/etcd_cluster_properties.yml'
 
+  - name: Initialize the etcd cluster var
+    set_fact:
+      etcd_initial_cluster: ''
+
+  - name: Create the etcd cluster var
+    set_fact:
+      etcd_initial_cluster: "{{ etcd_initial_cluster }},{{ hostvars[groups['etcd'][item | int]]['ansible_default_ipv4']['address'] }}={{ etcd_url_scheme }}://{{ hostvars[groups['etcd'][item | int]]['ansible_default_ipv4']['address'] }}:{{ etcd_peer_port }}"
+    with_items: "{{ lookup('sequence','start=0 end='+((groups['etcd'] | count) -1) |string,wantlist=True) }}"
+
   - name: run etcd container
     docker_container:
-      name: etcd
+      name: etcd_hpe
       image: "{{ etcd_image }}"
       state: started
       detach: true
+      pull: yes
       ports:
-        - "23800:23800"
-        - "23790:23790"
-        - "40010:40010"
+        - "{{ etcd_peer_port }}:{{ etcd_peer_port }}"
+        - "{{ etcd_client_port_1 }}:{{ etcd_client_port_1 }}"
+        - "{{ etcd_client_port_2 }}:{{ etcd_client_port_2 }}"
       env:
         ETCD_NAME: "{{ etcd_name }}"
         ETCD_ADVERTISE_CLIENT_URLS: "{{ etcd_advertise_client_url_1 }},{{ etcd_advertise_client_url_2 }}"
         ETCD_LISTEN_CLIENT_URLS: "{{ etcd_listen_client_url_1 }},{{ etcd_listen_client_url_2 }}"
         ETCD_INITIAL_ADVERTISE_PEER_URLS: "{{ etcd_initial_advertise_peer_urls }}"
         ETCD_LISTEN_PEER_URLS: "{{ etcd_listen_peer_urls }}"
-        ETCD_INITIAL_CLUSTER: "{{ etcd_initial_cluster }}"
+        ETCD_INITIAL_CLUSTER: "{{ etcd_initial_cluster[1:] }}" 
         ETCD_INITIAL_CLUSTER_TOKEN: "{{ etcd_initial_cluster_token }}"
         ETCD_INITIAL_CLUSTER_STATE: "{{ etcd_initial_cluster_state }}"
       restart_policy: always

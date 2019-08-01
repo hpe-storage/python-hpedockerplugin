@@ -1,11 +1,15 @@
 ---
 - name: Uninstall HPE 3PAR Volume Driver for Kubernetes/OpenShift
-  hosts: all
+  hosts: masters,workers,etcd
   become: root
 
   tasks:
-    - name: Remove etcd and 3PAR Volume Plugin containers from Docker
+    - name: load plugin settings
+      include_vars: '../properties/plugin_configuration_properties.yml'
+
+    - name: Remove 3PAR Volume Plugin container from Docker
       include: remove_3par_docker_container.yml
+      ignore_errors: yes
 
     - name: Reset multipath
       include: remove_multipath.yml
@@ -19,7 +23,7 @@
       include: remove_doryd_service.yml
 
 - name: Uninstall HPE 3PAR Volume Driver for Kubernetes/OpenShift
-  hosts: all
+  hosts: masters,workers,etcd
   become: root
 
   tasks:

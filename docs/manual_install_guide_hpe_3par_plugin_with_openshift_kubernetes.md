@@ -1,4 +1,4 @@
-## Manual Install Guide for Integration of HPE 3PAR Containerized Plugin with RedHat OpenShift / Kubernetes (ADVANCED)
+## Install Guide for Integration of HPE 3PAR Containerized Plugin with RedHat OpenShift / Kubernetes (ADVANCED)
 
 * [Introduction](#introduction)
 * [Before you begin](#before)
@@ -10,7 +10,7 @@
 ---
 
 ### Introduction <a name="introduction"></a>
-This document details the installation steps in order to get up and running quickly with the HPE 3PAR Volume Plug-in for Docker within a Kubernetes 1.7/Openshift 3.7 environment.
+This document details the installation steps in order to get up and running quickly with the HPE 3PAR Volume Plug-in for Docker within a Kubernetes /Openshift environment.
 
 **We highly recommend to use the Ansible playbooks that simplify and automate the install process before using the manual install process.**
 [/ansible_3par_docker_plugin/README.md](/ansible_3par_docker_plugin/README.md)
@@ -24,24 +24,18 @@ This document details the installation steps in order to get up and running quic
 
   * OpenShift https://docs.openshift.org/3.7/install_config/install/planning.html
 
-## Support Matrix for Kubernetes and Openshift 3.7 <a name="support"></a>
+## SPOCK for HPE 3PAR Volume Plugin for Docker
 
-| Platforms                                               | Support for Containerized Plugin | Docker Engine Version | HPE 3PAR OS version              |
-|---------------------------------------------------------|----------------------------------|-----------------------|----------------------------------|
-| Kubernetes 1.6.13                                       | Yes                              | 1.12.6                | 3.2.2 MU6+ P107 & 3.3.1 MU1, MU2 |
-| Kubernetes 1.7.6                                        | Yes                              | 1.12.6                | 3.2.2 MU6+ P107 & 3.3.1 MU1, MU2 |
-| Kubernetes 1.8.9                                        | Yes                              | 17.06                 | 3.2.2 MU6+ P107 & 3.3.1 MU1, MU2 |
-| Kubernetes 1.10.3                                       | Yes                              | 17.03                 | 3.2.2 MU6+ P107 & 3.3.1 MU1, MU2 |
-| OpenShift 3.7 RPM based installation (Kubernetes 1.7.6) | Yes                              | 1.12.6                | 3.2.2 MU6+ P107 & 3.3.1 MU1, MU2   |
+* [Support Matrix for Kubernetes and Openshift](https://spock.corp.int.hpe.com/spock/utility/document.aspx?docurl=Shared%20Documents/hw/3par/3par_volume_plugin_for_docker.pdf)
 
 **NOTE**
-  * Managed Plugin is not supported for Kubernetes or Openshift 3.7
+  * Managed Plugin is not supported for Kubernetes or Openshift 
 
-  * The install of OpenShift for this paper was done on RHEL 7.4. Other versions of Linux may not be supported.
+  * The install of OpenShift for this paper was done on RHEL 7.x. Other versions of Linux may not be supported.
 
 ## Deploying the HPE 3PAR Volume Plug-in in Kubernetes/OpenShift <a name="deploying"></a>
 
-Below is the order and steps that will be followed to deploy the **HPE 3PAR Volume Plug-in for Docker (Containerized Plug-in) within a Kubernetes 1.7/OpenShift 3.7** environment.
+Below is the order and steps that will be followed to deploy the **HPE 3PAR Volume Plug-in for Docker (Containerized Plug-in) within a Kubernetes /OpenShift ** environment.
 
 Let's get started.
 
@@ -102,16 +96,13 @@ $ vi /etc/multipath.conf
 >Copy the following into /etc/multipath.conf
 
 ```
-defaults
-{
+defaults {
     polling_interval 10
     max_fds 8192
 }
 
-devices
-{
-    device
-	{
+devices {
+    device {
         vendor                  "3PARdata"
         product                 "VV"
         no_path_retry           18
@@ -171,7 +162,7 @@ $ vi hpe.conf
 >
 >[/docs/config_examples/hpe.conf.sample.3parFC](/docs/config_examples/hpe.conf.sample.3parFC)
 
-7. Use Docker Compose to deploy the HPE 3PAR Volume Plug-In for Docker (Containerized Plug-in) from the pre-built image available on Docker Hub:
+7. Use Docker Compose to deploy the HPE 3PAR Volume Plug-In for Docker `Containerized Plug-in` from the pre-built image available on Docker Hub:
 
 ```
 $ cd ~
@@ -239,9 +230,9 @@ $ docker volume create -d hpe --name sample_vol -o size=
 
 10. Install the HPE 3PAR FlexVolume driver:
 ```
-$ wget https://github.com/hpe-storage/python-hpedockerplugin/raw/master/dory_installer
-$ chmod u+x ./dory_installer
-$ sudo ./dory_installer
+$ wget https://github.com/hpe-storage/python-hpedockerplugin/raw/master/dory_installer_v32
+$ chmod u+x ./dory_installer_v32
+$ sudo ./dory_installer_v32
 ```
 
 11. Confirm HPE 3PAR FlexVolume driver installed correctly:
@@ -255,7 +246,7 @@ $ ls -l /usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/
 12. Run the following command to start the HPE 3PAR FlexVolume dynamic provisioner:
 
 ```
-$ sudo /usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/doryd /etc/kubernetes/admin.conf hpe.
+$ sudo /usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/doryd /etc/kubernetes/admin.conf hpe.com
 
 ```
 >**NOTE:** If you see the following error:
