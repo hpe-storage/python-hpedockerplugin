@@ -1,6 +1,7 @@
 ## HPE 3PAR Volume Plugin for Docker
 
 HPE Docker Volume Plugin is an open source project that provides persistent storage and features for your containerized applications using HPE 3PAR StoreServ Storage arrays.
+It supports both block and file (NFS shares) based features.
 
 The HPE Docker Volume Plugin supports popular container platforms like Docker, Kubernetes, OpenShift 
 
@@ -44,10 +45,15 @@ Here is an example of the HPE Docker Volume plugin being used in an OpenShift en
   * snapshot schedule
   * file system permissions and ownership
   * multiple backends
+  * file share [CRD operations]
 
-## Usage
+## Block operations usage
 
-See the [usage guide](/docs/usage.md) for details on the supported operations and usage of the plugin.
+See the [block operations usage guide](/docs/usage.md) for details on the supported operations and usage of the plugin.
+
+## File share operations usage
+
+See the [file share operations usage guide](/docs/share_usage.md) for details on the supported operations and usage of the plugin.
 
 ## Troubleshooting
 
@@ -100,5 +106,6 @@ $ showsched
 
 - after doing scsi rescan if the symlinks for the device are not populated in /dev/disk/by-path, Plugin will not function correctly during mount operation.
 
-- For volume uppersize limiation, please do refer 3PAR's documentation.
+- For volume upper size limitation, please do refer 3PAR's documentation.
 
+- The configuration parameter **mount_prefix**, is applicable for containerized plugin only. If used with the managed plugin, mount operation fails.
