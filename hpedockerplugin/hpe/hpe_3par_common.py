@@ -648,7 +648,8 @@ class HPE3PARCommon(object):
                   'valid_licenses': valid_licenses})
         if valid_licenses:
             for license in valid_licenses:
-                if license_to_check in license.get('name'):
+                if license_to_check in license.get('name') or \
+                        'Golden License' in license.get('name'):
                     return True
             LOG.debug(("'%(capability)s' requires a '%(license)s' "
                        "license which is not installed.") %
