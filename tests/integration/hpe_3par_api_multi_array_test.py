@@ -482,7 +482,7 @@ class MultiArrayTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
                                        cloneOf=volume_name)
 
         self.hpe_inspect_volume(clone, size=1, provisioning='full',
-                                flash_cache=True)
+                                flash_cache='true')
         self.hpe_verify_volume_created(clone_name,size='1',provisioning='full',
                                        clone=True,backend='backend2')
         self.hpe_delete_volume(clone)
