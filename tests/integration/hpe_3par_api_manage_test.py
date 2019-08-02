@@ -60,13 +60,20 @@ class ManageVolumeTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
     def tearDownClass(cls):
 
         delete_vol = ["python_snap_5", "python_vol_1","python_vol_2","python_vol_3", "python_vol_4","python_vol_5","python_vol_6","python_vol_7","python_vol_8","python_vol_9"]
-
+        delete_vvset = ["python_vvset_3", "python_vvset_4", "python_vvset_8", "python_vvset_9"]
+        
         for vol_name in delete_vol:
             try:
                 hpe_3par_cli.deleteVolume(vol_name)
             except:
                 pass
 
+        for vvset_name in delete_vvset:
+            try:
+                hpe_3par_cli.deleteVolumeSet(vvset_name)
+            except:
+                pass
+            
         hpe_3par_cli.logout()
 #        pass
 
@@ -345,7 +352,7 @@ class ManageVolumeTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
                                        cloneOf=volume_name)
 
         self.hpe_inspect_volume(clone, size=1,
-                                provisioning='full', flash_cache=True)
+                                provisioning='full', flash_cache='true')
         self.hpe_verify_volume_created(clone_name, size='1',
                                        provisioning='full', clone=True)
         self.hpe_delete_volume(clone)
@@ -390,7 +397,7 @@ class ManageVolumeTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
         volume = self.hpe_create_volume(volume_name, driver=HPE3PAR,
                                 importVol=vol_name)
         self.hpe_verify_volume_created(volume_name,provisioning='full',importVol=volume_name, flash_cache='true', vvs_name=vvset_name, qos='true', size=1)
-        self.hpe_inspect_volume(volume, size=1, provisioning='full', importVol=vol_name, flash_cache=True,
+        self.hpe_inspect_volume(volume, size=1, provisioning='full', importVol=vol_name, flash_cache='true',
                                 maxIOPS='1000 IOs/sec', minIOPS='300 IOs/sec', priority='Normal',vvset_name=vvset_name)
 
         hpe_3par_cli.deleteVolumeSet(vvset_name)
