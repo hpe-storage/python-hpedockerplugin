@@ -181,6 +181,7 @@ class ManageVolumeTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
 
     def test_manage_volume_which_is_in_vvset_with_qos(self):
 
+        urllib3.disable_warnings()
         vol_name = "python_vol_3"
         vvset_name = "python_vvset_3"
         sizeMiB = 1024
@@ -205,6 +206,7 @@ class ManageVolumeTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
 
     def test_manage_volume_which_is_in_vvset_without_qos(self):
 
+        urllib3.disable_warnings()
         vol_name = "python_vol_4"
         vvset_name = "python_vvset_4"
         sizeMiB = 1024
