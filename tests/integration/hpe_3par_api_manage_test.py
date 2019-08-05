@@ -61,12 +61,6 @@ class ManageVolumeTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
 
         delete_vol = ["python_snap_5", "python_vol_1","python_vol_2","python_vol_3", "python_vol_4","python_vol_5","python_vol_6","python_vol_7","python_vol_8","python_vol_9"]
         delete_vvset = ["python_vvset_3", "python_vvset_4", "python_vvset_8", "python_vvset_9"]
-        
-        for vol_name in delete_vol:
-            try:
-                hpe_3par_cli.deleteVolume(vol_name)
-            except:
-                pass
 
         for vvset_name in delete_vvset:
             try:
@@ -74,6 +68,12 @@ class ManageVolumeTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
             except:
                 pass
             
+        for vol_name in delete_vol:
+            try:
+                hpe_3par_cli.deleteVolume(vol_name)
+            except:
+                pass
+        
         hpe_3par_cli.logout()
 #        pass
 
