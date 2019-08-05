@@ -157,6 +157,8 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
                         self.assertEqual(inspect_volume['Status']['volume_detail'][option], 100)
                     elif option == 'provisioning':
                         self.assertEqual(inspect_volume['Status']['volume_detail'][option], 'thin')
+                    elif option == 'flash_cache':
+                        self.assertEqual(inspect_volume['Status']['volume_detail'][option], 'false')
                     elif option == 'mountConflictDelay':
                         self.assertEqual(inspect_volume['Status']['volume_detail'][option], 30)
                     elif option == 'backend':
