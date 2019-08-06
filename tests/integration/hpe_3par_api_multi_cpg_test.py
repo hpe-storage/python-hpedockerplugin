@@ -315,8 +315,8 @@ class MultiCpgTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
         volume = self.hpe_create_volume(volume_name, driver=HPE3PAR,
                                 cpg=MULTI_CPG, qos_name=vvset_name)
         self.hpe_verify_volume_created(volume_name,provisioning='thin',cpg=MULTI_CPG,qos='true', vvs_name=vvset_name)
-        self.hpe_inspect_volume(volume, provisioning='thin', cpg=MULTI_CPG, enabled=True,
-                                maxIOPS='1000 IOs/sec', minIOPS='300 IOs/sec', priority='Normal',vvset_name=vvset_name)
+        self.hpe_inspect_volume(volume, provisioning='thin', cpg=MULTI_CPG, enabled=True, flash_cache='false',
+                                maxIOPS='1000 IOs/sec', minIOPS='300 IOs/sec', priority='Normal',vvset_name=vvset_name,)
 
         hpe_3par_cli.deleteVolumeSet(vvset_name)
 
