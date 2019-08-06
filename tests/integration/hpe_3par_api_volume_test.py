@@ -753,7 +753,7 @@ class VolumesTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
         self.hpe_create_verify_vvs_with_qos(vvs_name=vvset_name)
         volume = self.hpe_create_volume(volume_name, driver=HPE3PAR, qos_name=vvset_name)
         self.hpe_verify_volume_created(volume_name, vvset_name)
-        self.hpe_inspect_volume(volume)
+        self.hpe_inspect_volume(volume, flash_cache='false')
         self.hpe_delete_volume(volume)
         self.hpe_verify_volume_deleted(volume_name)
         self.hpe_remove_vvs_qos(vvs_name=vvset_name)
