@@ -200,7 +200,8 @@ class ManageVolumeTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
                                 importVol=vol_name)
         self.hpe_verify_volume_created(volume_name,provisioning='full',importVol=volume_name, size=1)
         self.hpe_inspect_volume(volume, size=1, provisioning='full', importVol=vol_name, enabled=True,
-                                maxIOPS='1000 IOs/sec', minIOPS='300 IOs/sec', priority='Normal',vvset_name=vvset_name)
+                                maxIOPS='1000 IOs/sec', minIOPS='300 IOs/sec', priority='Normal',vvset_name=vvset_name,
+                                flash_cache='false')
 
         hpe_3par_cli.deleteVolumeSet(vvset_name)
 
