@@ -542,7 +542,7 @@ class MultiArrayTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
         self.hpe_inspect_volume(volume,provisioning='full',size=1,enabled=True,
                                 importVol=vol_name, backend='backend2',
                                 maxIOPS='1000 IOs/sec', minIOPS='300 IOs/sec',
-                                priority='Normal',vvset_name=vvset_name)
+                                priority='Normal',vvset_name=vvset_name,flash_cache='false')
 
         snapshot = self.hpe_create_snapshot(snapshot_name, driver=HPE3PAR,
                                             virtualCopyOf=volume_name)
@@ -554,7 +554,7 @@ class MultiArrayTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
 
         clone = self.hpe_create_volume(clone_name, driver=HPE3PAR,
                                       cloneOf=volume_name)
-        self.hpe_inspect_volume(clone, provisioning='full', size=1)
+        self.hpe_inspect_volume(clone, provisioning='full', size=1, flash_cache='false')
         self.hpe_verify_volume_created(clone_name, clone=True, size=1,
                                        provisioning='full', backend="backend2")
 
