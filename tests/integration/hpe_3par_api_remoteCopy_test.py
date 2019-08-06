@@ -104,8 +104,9 @@ class RemoteCopyTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
         # Create volume with -o replicationGroup option.
         volume = self.hpe_create_volume(volume_name, driver=HPE3PAR, replicationGroup='testRCG1', backend='ActivePassiveRepBackend')
         
-        #Inspect replication group and volume details
-        self.hpe_inspect_volume(volume, replicationGroup='testRCG1')
+        #Inspect replication group and volume details.
+        #Passing flash-cache because RCG create and use vvset internally and set default value of flash-cache as false.
+        self.hpe_inspect_volume(volume, replicationGroup='testRCG1', flash_cache='false')
 
 
         #Create contianer, mount volume and write data to file 
