@@ -227,14 +227,20 @@ class HPE3ParVolumePluginTest(BaseAPIIntegrationTest):
             show_vfs = hpe3par_cli._run(['showvfs', '-d', '-vfs', fileshare_info[1]['vfs']])
             self.assertEqual(inspect_volume['Status']['vfsIPs'][0][0], show_vfs[(-2)].split(',')[1])
             self.assertEqual(inspect_volume['Status']['vfsIPs'][0][1], show_vfs[(-2)].split(',')[2])
-            show_fsize = hpe3par_cli._run(['showfsquota', '-fpg', fileshare_info[1]['fpg']])
-            size_unit = (inspect_volume['Status']['size']).split(" ")[1]
-            if size_unit == "GiB":
-                self.assertEqual(int(inspect_volume['Status']['size'].split(" ")[0]), int(show_fsize[2].split(",")[-2])/1024)
-            if size_unit == "TiB":
-                size_in_GiB = int(show_fsize[2].split(",")[-2])/1024
-                self.assertEqual(int(inspect_volume['Status']['size'].split(" ")[0]), size_in_GiB/1024)
-
+            quotas = hpe3par_cli._run(['showfsquota', '-fpg', fileshare_info[1]['fpg']])
+            quota_found = False
+            for show_fsize in quotas:
+                if show_fsize.startswith(volume['Name']):
+                    quota_found = True
+                    size_unit = (inspect_volume['Status']['size']).split(" ")[1]
+                    if size_unit == "GiB":
+                        self.assertEqual(int(inspect_volume['Status']['size'].split(" ")[0]), int(show_fsize.split(",")[-2])/1024)
+                    if size_unit == "TiB":
+                        size_in_GiB = int(show_fsize.split(",")[-2])/1024
+                        self.assertEqual(int(inspect_volume['Status']['size'].split(" ")[0]), size_in_GiB/1024)
+                    break
+            self.assertEqual(quota_found, True)
+            
             #Assert client IP's of share after share mount.
             if 'mount' in kwargs:
 
