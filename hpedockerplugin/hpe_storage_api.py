@@ -371,7 +371,7 @@ class VolumePlugin(object):
                             _('create volume failed, error is:'
                               'passed compression parameter'
                               ' do not have a valid value. '
-                              'Valid vaues are: %(valid)s') % {
+                              'Valid values are: %(valid)s') % {
                                 'valid': valid_bool_opts}
                         LOG.error(msg)
                         return json.dumps({u'Err': six.text_type(msg)})
@@ -385,7 +385,7 @@ class VolumePlugin(object):
                             _('create volume failed, error is:'
                               'passed flash-cache parameter'
                               ' do not have a valid value. '
-                              'Valid vaues are: %(valid)s') % {
+                              'Valid values are: %(valid)s') % {
                                 'valid': valid_bool_opts}
                         LOG.error(msg)
                         return json.dumps({u'Err': six.text_type(msg)})

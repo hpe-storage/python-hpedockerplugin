@@ -648,7 +648,8 @@ class HPE3PARCommon(object):
                   'valid_licenses': valid_licenses})
         if valid_licenses:
             for license in valid_licenses:
-                if license_to_check in license.get('name'):
+                if license_to_check in license.get('name') or \
+                        'Golden License' in license.get('name'):
                     return True
             LOG.debug(("'%(capability)s' requires a '%(license)s' "
                        "license which is not installed.") %
@@ -827,8 +828,8 @@ class HPE3PARCommon(object):
                 extras['snapCPG'] = cpg
                 volume['snap_cpg'] = cpg
 
-            # Only set the dedup option if the backend supports it.
-        if self.API_VERSION >= DEDUP_API_VERSION:
+        # Only set the dedup option if the backend supports it.
+        if self.API_VERSION >= DEDUP_API_VERSION and tdvv:
             extras['tdvv'] = tdvv
 
         capacity = self._capacity_from_size(volume['size'])
@@ -871,6 +872,26 @@ class HPE3PARCommon(object):
                 message=msg)
         except hpeexceptions.HTTPBadRequest as ex:
             # LOG.error("Exception: %s", ex)
+            msg = "For compressed and deduplicated volumes both " \
+                  "'compression' and '%s' must be specified as true"
+            if (msg % 'tdvv') in ex.get_description():
+                # Replace tdvv with dedup
+                msg = "For deduplicated and compressed volume, " \
+                      "provisioning must be specified as 'dedup' " \
+                      "and 'compression' must be specified as true"
+                raise exception.HPEDriverInvalidInput(reason=msg)
+            msg = "Either tpvv must be true OR for compressed and " \
+                  "deduplicated volumes both 'compression' and 'tdvv' " \
+                  "must be specified as true"
+            if msg in ex.get_description():
+                msg = "For thin volume, 'provisioning' must be specified " \
+                      "as 'thin'. And for deduplicated and compressed " \
+                      "volume, 'provisioning' must be specified as 'dedup' " \
+                      "and 'compression' must be specified to true. If any of " \
+                      "these conditions for a given type of volume is not met, " \
+                      "volume creation will fail"
+                raise exception.HPEDriverInvalidInput(reason=msg)
+
             raise exception.HPEDriverInvalidInput(reason=ex.get_description())
         # except exception.InvalidInput as ex:
         #     LOG.error("Exception: %s", ex)
@@ -1367,7 +1388,7 @@ class HPE3PARCommon(object):
         if snap_cpg is not None:
             optional['snapCPG'] = snap_cpg
 
-        if self.API_VERSION >= DEDUP_API_VERSION:
+        if self.API_VERSION >= DEDUP_API_VERSION and tdvv:
             optional['tdvv'] = tdvv
 
         if (compression is not None and
