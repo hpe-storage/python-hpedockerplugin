@@ -55,7 +55,7 @@ class TestGetVolumeWithQos(GetVolumeUnitTest):
                         u'3par_vol_name': data.VOLUME_3PAR_NAME,
                         u'backend': 'DEFAULT',
                         u'compression': None,
-                        u'flash_cache': None,
+                        u'flash_cache': 'false',
                         u'fsMode': None,
                         u'fsOwner': None,
                         u'provisioning': u'thin',
