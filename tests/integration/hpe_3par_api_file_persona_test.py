@@ -143,7 +143,8 @@ class FilePersonaTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
         self.tmp_volumes.append(volume_name)
 
         # Create file share with -o fpg -o cpg option.
-        volume = self.hpe_create_volume(volume_name, driver=HPE3PAR, filePersona="", fpg="Test_Fpg_2", cpg='FC_r6')
+        #Changed fpg name, since it was using different cpg for new fpg creation.
+        volume = self.hpe_create_volume(volume_name, driver=HPE3PAR, filePersona="", fpg="New_Test_Fpg_2", cpg='FC_r6')
         fileshareinfo = self.hpe_inspect_share(volume)
         fileshare_id = fileshareinfo[1]['id']
         self.hpe_verify_share_created(volume_name, fileshare_id)
