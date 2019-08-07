@@ -887,9 +887,10 @@ class HPE3PARCommon(object):
                 msg = "For thin volume, 'provisioning' must be specified " \
                       "as 'thin'. And for deduplicated and compressed " \
                       "volume, 'provisioning' must be specified as 'dedup' " \
-                      "and 'compression' must be specified to true. If any of " \
-                      "these conditions for a given type of volume is not met, " \
-                      "volume creation will fail"
+                      "and 'compression' must be specified to true. " \
+                      "If any of " \
+                      "these conditions for a given type of volume" \
+                      "is not met volume creation will fail"
                 raise exception.HPEDriverInvalidInput(reason=msg)
 
             raise exception.HPEDriverInvalidInput(reason=ex.get_description())
