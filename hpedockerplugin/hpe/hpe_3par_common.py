@@ -872,19 +872,24 @@ class HPE3PARCommon(object):
                 message=msg)
         except hpeexceptions.HTTPBadRequest as ex:
             # LOG.error("Exception: %s", ex)
-            msg = "For Deco volumes both '%s' and 'compression' " \
-                  "must be specified"
+            msg = "For compressed and deduplicated volumes both " \
+                  "'compression' and '%s' must be specified as true"
             if (msg % 'tdvv') in ex.get_description():
-                msg = msg % 'dedup'
+                # Replace tdvv with dedup
+                msg = "For deduplicated and compressed volume, " \
+                      "provisioning must be specified as 'dedup' " \
+                      "and 'compression' must be specified as true"
                 raise exception.HPEDriverInvalidInput(reason=msg)
-            msg = "Either tpvv must be True OR %s and compression " \
-                  "must be True. Both cannot be False."
-            if (msg % 'tdvv') in ex.get_description():
-                msg = "For thin volumes, 'provisioning' must be set as " \
-                      "'thin'. And for deco volumes, 'provisioning' must " \
-                      "be set as 'dedup' along with 'compression' set as " \
-                      "true. If any of these conditions for a given type " \
-                      "of volume is not met, volume creation will fail"
+            msg = "Either tpvv must be true OR for compressed and " \
+                  "deduplicated volumes both 'compression' and 'tdvv' " \
+                  "must be specified as true"
+            if msg in ex.get_description():
+                msg = "For thin volume, 'provisioning' must be specified " \
+                      "as 'thin'. And for deduplicated and compressed " \
+                      "volume, 'provisioning' must be specified as 'dedup' " \
+                      "and 'compression' must be specified to true. If any of " \
+                      "these conditions for a given type of volume is not met, " \
+                      "volume creation will fail"
                 raise exception.HPEDriverInvalidInput(reason=msg)
 
             raise exception.HPEDriverInvalidInput(reason=ex.get_description())
