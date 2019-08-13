@@ -100,8 +100,12 @@ def mount_dir(src, tgt):
         mount("-t", "ext4", src, tgt)
     except Exception as ex:
         msg = (_('exception is : %s'), six.text_type(ex))
-        LOG.error(msg)
-        raise exception.HPEPluginMountException(reason=msg)
+        if 'already mounted' in msg:
+            LOG.info('%s is already in mounted on %s' % (src, tgt))
+            pass
+        else:
+            LOG.error(msg)
+            raise exception.HPEPluginMountException(reason=msg)
     return True
 
 

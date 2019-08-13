@@ -32,6 +32,7 @@ import uuid
 import hpedockerplugin.etcdutil as util
 import threading
 import hpedockerplugin.backend_async_initializer as async_initializer
+from twisted.internet import threads
 
 LOG = logging.getLogger(__name__)
 
@@ -160,8 +161,17 @@ class Orchestrator(object):
 
     def _execute_request(self, request, volname, *args, **kwargs):
         backend = self.get_volume_backend_details(volname)
-        return self.__execute_request(
-            backend, request, volname, *args, **kwargs)
+        d = threads.deferToThread(self.__execute_request,
+                                  backend,
+                                  request,
+                                  volname,
+                                  *args,
+                                  **kwargs)
+        d.addCallback(self.callback_func)
+        return d
+
+    def callback_func(self, response):
+        return response
 
     def volumedriver_remove(self, volname):
         ret_val = self._execute_request('remove_volume', volname)
