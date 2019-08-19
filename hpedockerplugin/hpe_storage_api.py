@@ -102,7 +102,7 @@ class VolumePlugin(object):
 
         return self.orchestrator.volumedriver_remove(volname)
 
-    @on_exception(expo, (RateLimitException, exception.HPEPluginLockFailed), max_tries=8)
+    @on_exception(expo, RateLimitException, max_tries=8)
     @limits(calls=25, period=30)
     @app.route("/VolumeDriver.Unmount", methods=["POST"])
     def volumedriver_unmount(self, name):
@@ -653,7 +653,7 @@ class VolumePlugin(object):
         LOG.info(' Schedule Name auto generated is %s' % scheduleNameGenerated)
         return scheduleNameGenerated
 
-    @on_exception(expo, (RateLimitException, exception.HPEPluginLockFailed), max_tries=8)
+    @on_exception(expo, RateLimitException, max_tries=8)
     @limits(calls=25, period=30)
     @app.route("/VolumeDriver.Mount", methods=["POST"])
     def volumedriver_mount(self, name):
