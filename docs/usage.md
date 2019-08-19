@@ -283,16 +283,47 @@ https://kubernetes.io/docs/tasks/configure-pod-container/configure-persistent-vo
 To get started, in an OpenShift environment, we need to relax the security of your cluster, so pods are allowed to 
 use the **hostPath** volume plugin without granting everyone access to the privileged **SCC**:
 
-1. Edit the restricted SCC:
+1. Create new SCC to allow hostpath:
 ```
-$ oc edit scc restricted
+$ oc create -f - << EOF
+---
+allowHostDirVolumePlugin: true
+allowHostIPC: false
+allowHostNetwork: false
+allowHostPID: false
+allowHostPorts: false
+allowPrivilegeEscalation: true
+allowPrivilegedContainer: false
+allowedCapabilities: null
+apiVersion: security.openshift.io/v1
+defaultAddCapabilities: null
+fsGroup:
+  type: MustRunAs
+groups:
+- system:authenticated
+kind: SecurityContextConstraints
+metadata:
+  name: hostpath
+priority: null
+readOnlyRootFilesystem: false
+requiredDropCapabilities:
+- KILL
+- MKNOD
+- SETUID
+- SETGID
+runAsUser:
+  type: MustRunAsRange
+seLinuxContext:
+  type: MustRunAs
+supplementalGroups:
+  type: RunAsAny
+users: []
+volumes:
+- hostPath
+EOF
 ```
 
-2. Add `allowHostDirVolumePlugin: true`
-
-3. Save the changes
-
-4. Restart node service (master node).
+2. Restart node service (master node).
 ```
 $ sudo systemctl restart origin-node.service
 ```
