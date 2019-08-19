@@ -848,9 +848,9 @@ class HPE3PARCommon(object):
                 extras['compression'] = compression
             else:
                 err = (_("To create compression enabled volume, size of "
-                         "the volume should be atleast 16GB. Fully "
-                         "provisioned volume can not be compressed. "
-                         "Please re enter requested volume size or "
+                         "the volume should be at least 16GB. Fully "
+                         "provisioned volume cannot be compressed. "
+                         "Please re-enter requested volume size or "
                          "provisioning type. "))
                 # LOG.error(err)
                 raise exception.HPEDriverInvalidSizeForCompressedVolume(
@@ -887,10 +887,10 @@ class HPE3PARCommon(object):
                 msg = "For thin volume, 'provisioning' must be specified " \
                       "as 'thin'. And for deduplicated and compressed " \
                       "volume, 'provisioning' must be specified as 'dedup' " \
-                      "and 'compression' must be specified to true. " \
+                      "and 'compression' must be specified as true. " \
                       "If any of " \
-                      "these conditions for a given type of volume" \
-                      "is not met volume creation will fail"
+                      "these conditions for a given type of volume " \
+                      "is not met volume creation will fail."
                 raise exception.HPEDriverInvalidInput(reason=msg)
 
             raise exception.HPEDriverInvalidInput(reason=ex.get_description())

@@ -709,7 +709,7 @@ class VolumePlugin(object):
                     if exphrs is not None:
                         if rethrs > exphrs:
                             msg = ('create schedule failed, error is: '
-                                   'expiration hours cannot be greater than '
+                                   'expiration hours must be greater than '
                                    'retention hours')
                             LOG.error(msg)
                             response = json.dumps({'Err': msg})
@@ -746,7 +746,7 @@ class VolumePlugin(object):
                 schedNameLength = len(schedName)
                 snapPrefixLength = len(snapPrefix)
                 if schedNameLength > 31 or snapPrefixLength > 15:
-                    msg = ('Please provide a schedlueName with max 31 '
+                    msg = ('Please provide a scheduleName with max 31 '
                            'characters and snapshotPrefix with max '
                            'length of 15 characters')
                     LOG.error(msg)

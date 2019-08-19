@@ -119,9 +119,10 @@ class VolumeManager(object):
                         "Failed to initialize driver - cpg_map not defined for"
                         "replication device")
 
-                self.tgt_bkend_config.hpe3par_snapcpg = \
-                    self._extract_remote_cpgs(
-                        self.tgt_bkend_config.snap_cpg_map)
+                if self.tgt_bkend_config.snap_cpg_map:
+                    self.tgt_bkend_config.hpe3par_snapcpg = \
+                        self._extract_remote_cpgs(
+                            self.tgt_bkend_config.snap_cpg_map)
                 if not self.tgt_bkend_config.hpe3par_snapcpg:
                     self.tgt_bkend_config.hpe3par_snapcpg = \
                         self.tgt_bkend_config.hpe3par_cpg
