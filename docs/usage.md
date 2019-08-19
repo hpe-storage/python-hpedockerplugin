@@ -357,7 +357,7 @@ EOF
 | StorageClass Options | Type    | Parameters                                 | Example                          |
 |----------------------|---------|--------------------------------------------|----------------------------------|
 | size                 | integer | -                                          | size: "10"                       |
-| provisioning         | String  | thin, thick                                | provisioning: "thin"             |
+| provisioning         | String  | thin, full                                 | provisioning: "thin"             |
 | flash-cache          | String  | true, false                                | flash-cache: "true"              |
 | compression          | boolean | true, false                                | compression: "true"              |
 | MountConflictDelay   | integer | -                                          | MountConflictDelay: "30"         |
@@ -368,6 +368,10 @@ EOF
 | retentionHours       | integer | option of virtualCopyOf                    | retentionHours: "10"             |
 | accessModes          | String  | ReadWriteOnce                              | accessModes: <br> &nbsp;&nbsp;  - ReadWriteOnce    |
 | replicationGroup     | String  | 3PAR RCG name                              | replicationGroup: "Test-RCG"     |
+| cpg                  | String  | 3PAR CPG name                              | cpg: 'SSD_r6'                    |
+| snapcpg              | String  | 3PAR snapCPG name                          | cpg: 'FC_r6'                     |
+| backend              | String  | 3PAR name which defined in hpe.conf        | bankend: '3PAR1'                 |
+| fsOwner              | String  | User ID and Group ID                       | fsOwner: '1001:1001'             |
 
 
 ### Persistent Volume Claim Example<a name="pvc"></a>
