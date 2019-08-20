@@ -17,7 +17,7 @@ def __synchronized(lock_type, lock_name, f, *a, **k):
     self = call_args['self']
     lock = self._etcd.get_lock(lock_type)
     try_num = 0
-    while try_num <= 6:
+    while try_num <= 20:
         try:
             LOG.info('RETRY : Lock acquire call %s ' % str(try_num))
             lock.try_lock_name(lck_name)
@@ -31,11 +31,11 @@ def __synchronized(lock_type, lock_name, f, *a, **k):
                           {'caller': f.__name__,
                            'name': lck_name})
             try_num = try_num + 1
-            if try_num < 6:
-                if call_args['f_name'] == "mount_volume" \
+            if try_num < 20:
+                if call_args['f_name'] == "_synchronized_mount_volume" \
                         or call_args['f_name'] == "unmount_volume":
                     LOG.info('RETRY : sleep on retry num : %s' % str(try_num))
-                    time.sleep(30)
+                    time.sleep(15)
                     continue
             response = json.dumps({u"Err": ''})
             return response

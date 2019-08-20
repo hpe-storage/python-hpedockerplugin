@@ -1291,8 +1291,279 @@ class VolumeManager(object):
             self._primary_driver.force_remove_volume_vlun(bkend_vol_name)
             LOG.info("VLUNs forcefully removed from remote backend!")
 
-    @synchronization.synchronized_volume('{volname}')
     def mount_volume(self, volname, vol_mount, mount_id):
+        vol = self._etcd.get_vol_byname(volname)
+        if vol is None:
+            msg = (_LE('Volume mount name not found %s'), volname)
+            LOG.error(msg)
+            raise exception.HPEPluginMountException(reason=msg)
+
+        node_mount_info = vol.get('node_mount_info')
+        if node_mount_info and not \
+                self._is_vol_mounted_on_this_node(node_mount_info, vol):
+            # Volume mounted on different node
+            LOG.info("Volume mounted on a different node. Waiting for "
+                     "other node to gracefully unmount the volume...")
+            self._wait_for_graceful_vol_unmount(vol)
+
+        # Grab lock on volume name and continue with mount
+        return self._synchronized_mount_volume(volname, vol_mount, mount_id)
+
+    @synchronization.synchronized_volume('{volname}')
+    def _synchronized_mount_volume(self, volname, vol_mount, mount_id):
+        # Check for volume's existence once again after lock has been
+        # acquired. This is just to ensure another thread didn't delete
+        # the volume before reaching this point in mount-volume flow
+        vol = self._etcd.get_vol_byname(volname)
+        if vol is None:
+            msg = (_LE('Volume mount name not found %s'), volname)
+            LOG.error(msg)
+            raise exception.HPEPluginMountException(reason=msg)
+
+        undo_steps = []
+        volid = vol['id']
+
+        # Update volume metadata with the fields that may not be
+        # there due to the fact that this volume might have been
+        # created using an older version of plugin
+        is_snap = False
+        if 'is_snap' not in vol:
+            vol['is_snap'] = volume.DEFAULT_TO_SNAP_TYPE
+            self._etcd.update_vol(volid, 'is_snap', is_snap)
+        elif vol['is_snap']:
+            is_snap = vol['is_snap']
+            vol['fsOwner'] = vol['snap_metadata'].get('fsOwner')
+            vol['fsMode'] = vol['snap_metadata'].get('fsMode')
+
+        if 'mount_conflict_delay' not in vol:
+            m_conf_delay = volume.DEFAULT_MOUNT_CONFLICT_DELAY
+            vol['mount_conflict_delay'] = m_conf_delay
+            self._etcd.update_vol(volid, 'mount_conflict_delay',
+                                  m_conf_delay)
+        # Initialize node-mount-info if volume is being mounted
+        # for the first time
+        if self._is_vol_not_mounted(vol):
+            LOG.info("Initializing node_mount_info... adding first "
+                     "mount ID %s" % mount_id)
+            node_mount_info = {self._node_id: [mount_id]}
+            vol['node_mount_info'] = node_mount_info
+        else:
+            # Volume is in mounted state - Volume fencing logic begins here
+            node_mount_info = vol['node_mount_info']
+
+            # If mounted on this node itself then just append mount-id
+            if self._is_vol_mounted_on_this_node(node_mount_info, vol):
+                self._update_mount_id_list(vol, mount_id)
+                return self._get_success_response(vol)
+            else:
+                # Volume mounted on different node
+                LOG.info("Volume not gracefully unmounted by other node")
+                LOG.info("%s" % vol)
+                self._force_remove_vlun(vol, is_snap)
+
+                # Since VLUNs exported to previous node were forcefully
+                # removed, cache the connection information so that it
+                # can be used later when user tries to un-mount volume
+                # from the previous node
+                if 'path_info' in vol:
+                    path_info = vol['path_info']
+                    old_node_id = list(node_mount_info.keys())[0]
+                    old_path_info = vol.get('old_path_info', [])
+                    old_path_info.append((old_node_id, path_info))
+                    self._etcd.update_vol(volid, 'old_path_info',
+                                          old_path_info)
+
+                node_mount_info = {self._node_id: [mount_id]}
+                LOG.info("New node_mount_info set: %s" % node_mount_info)
+
+        root_helper = 'sudo'
+        connector_info = connector.get_connector_properties(
+            root_helper, self._my_ip, multipath=self._use_multipath,
+            enforce_multipath=self._enforce_multipath)
+
+        def _mount_volume(driver):
+            LOG.info("Entered _mount_volume")
+            try:
+                # Call driver to initialize the connection
+                driver.create_export(vol, connector_info, is_snap)
+                connection_info = \
+                    driver.initialize_connection(
+                        vol, connector_info, is_snap)
+                LOG.debug("Initialized Connection Successful!")
+                LOG.debug('connection_info: %(connection_info)s, '
+                          'was successfully retrieved',
+                          {'connection_info': json.dumps(connection_info)})
+
+                undo_steps.append(
+                    {'undo_func': driver.terminate_connection,
+                     'params': (vol, connector_info, is_snap),
+                     'msg': 'Terminating connection to volume: %s...'
+                            % volname})
+            except Exception as ex:
+                msg = (_('Initialize Connection Failed: '
+                         'connection info retrieval failed, error is: '),
+                       six.text_type(ex))
+                LOG.error(msg)
+                self._rollback(undo_steps)
+                raise exception.HPEPluginMountException(reason=msg)
+
+            # Call OS Brick to connect volume
+            try:
+                LOG.debug("OS Brick Connector Connecting Volume...")
+                device_info = self._connector.connect_volume(
+                    connection_info['data'])
+
+                undo_steps.append(
+                    {'undo_func': self._connector.disconnect_volume,
+                     'params': (connection_info['data'], None),
+                     'msg': 'Undoing connection to volume: %s...' % volname})
+            except Exception as ex:
+                msg = (_('OS Brick connect volume failed, error is: '),
+                       six.text_type(ex))
+                LOG.error(msg)
+                self._rollback(undo_steps)
+                raise exception.HPEPluginMountException(reason=msg)
+            return device_info, connection_info
+
+        pri_connection_info = None
+        sec_connection_info = None
+        # Check if replication is configured and volume is
+        # populated with the RCG
+        if (self.tgt_bkend_config and 'rcg_info' in vol and
+                vol['rcg_info'] is not None):
+            LOG.info("This is a replication setup")
+            # Check if this is Active/Passive based replication
+            if self.tgt_bkend_config.quorum_witness_ip:
+                LOG.info("Peer Persistence has been configured")
+                # This is Peer Persistence setup
+                LOG.info("Mounting volume on primary array...")
+                device_info, pri_connection_info = _mount_volume(
+                    self._primary_driver)
+                LOG.info("Volume successfully mounted on primary array!"
+                         "pri_connection_info: %s" % pri_connection_info)
+                LOG.info("Mounting volume on secondary array...")
+                sec_device_info, sec_connection_info = _mount_volume(
+                    self._remote_driver)
+                LOG.info("Volume successfully mounted on secondary array!"
+                         "sec_connection_info: %s" % sec_connection_info)
+            else:
+                # In case failover/failback has happened at the backend, while
+                # mounting the volume, the plugin needs to figure out the
+                # target array
+                LOG.info("Active/Passive replication has been configured")
+                driver = self._get_target_driver(vol['rcg_info'])
+                device_info, pri_connection_info = _mount_volume(driver)
+                LOG.info("Volume successfully mounted on active array!"
+                         "active_connection_info: %s" % pri_connection_info)
+        else:
+            # hpeplugin_driver will always point to the currently active array
+            # Post-failover, it will point to secondary_driver
+            LOG.info("Single array setup has been configured")
+            device_info, pri_connection_info = _mount_volume(
+                self._hpeplugin_driver)
+            LOG.info("Volume successfully mounted on the array!"
+                     "pri_connection_info: %s" % pri_connection_info)
+
+        # Make sure the path exists
+        path = FilePath(device_info['path']).realpath()
+        if path.exists is False:
+            msg = (_('path: %s,  does not exist'), path)
+            LOG.error(msg)
+            self._rollback(undo_steps)
+            raise exception.HPEPluginMountException(reason=msg)
+
+        LOG.debug('path for volume: %(name)s, was successfully created: '
+                  '%(device)s realpath is: %(realpath)s',
+                  {'name': volname, 'device': device_info['path'],
+                   'realpath': path.path})
+
+        # Create filesystem on the new device
+        if fileutil.has_filesystem(path.path) is False:
+            fileutil.create_filesystem(path.path)
+            LOG.debug('filesystem successfully created on : %(path)s',
+                      {'path': path.path})
+
+        # Determine if we need to mount the volume
+        if vol_mount == volume.DEFAULT_MOUNT_VOLUME:
+            # mkdir for mounting the filesystem
+            if self._host_config.mount_prefix:
+                mount_prefix = self._host_config.mount_prefix
+            else:
+                mount_prefix = None
+            mount_dir = fileutil.mkdir_for_mounting(device_info['path'],
+                                                    mount_prefix)
+            LOG.debug('Directory: %(mount_dir)s, '
+                      'successfully created to mount: '
+                      '%(mount)s',
+                      {'mount_dir': mount_dir, 'mount': device_info['path']})
+
+            undo_steps.append(
+                {'undo_func': fileutil.remove_dir,
+                 'params': mount_dir,
+                 'msg': 'Removing mount directory: %s...' % mount_dir})
+
+            # mount the directory
+            fileutil.mount_dir(path.path, mount_dir)
+            LOG.debug('Device: %(path)s successfully mounted on %(mount)s',
+                      {'path': path.path, 'mount': mount_dir})
+
+            undo_steps.append(
+                {'undo_func': fileutil.umount_dir,
+                 'params': mount_dir,
+                 'msg': 'Unmounting directory: %s...' % mount_dir})
+
+            # TODO: find out how to invoke mkfs so that it creates the
+            # filesystem without the lost+found directory
+            # KLUDGE!!!!!
+            lostfound = mount_dir + '/lost+found'
+            lfdir = FilePath(lostfound)
+            if lfdir.exists and fileutil.remove_dir(lostfound):
+                LOG.debug('Successfully removed : '
+                          '%(lost)s from mount: %(mount)s',
+                          {'lost': lostfound, 'mount': mount_dir})
+        else:
+            mount_dir = ''
+
+        try:
+            if 'fsOwner' in vol and vol['fsOwner']:
+                fs_owner = vol['fsOwner'].split(":")
+                uid = int(fs_owner[0])
+                gid = int(fs_owner[1])
+                os.chown(mount_dir, uid, gid)
+
+            if 'fsMode' in vol and vol['fsMode']:
+                mode = str(vol['fsMode'])
+                chmod(mode, mount_dir)
+
+            path_info = {}
+            path_info['name'] = volname
+            path_info['path'] = path.path
+            path_info['device_info'] = device_info
+            path_info['connection_info'] = pri_connection_info
+            path_info['mount_dir'] = mount_dir
+            if sec_connection_info:
+                path_info['remote_connection_info'] = sec_connection_info
+
+            LOG.info("Updating node_mount_info in etcd with mount_id %s..."
+                     % mount_id)
+            self._etcd.update_vol(volid,
+                                  'node_mount_info',
+                                  node_mount_info)
+            LOG.info("node_mount_info updated successfully in etcd with "
+                     "mount_id %s" % mount_id)
+            self._etcd.update_vol(volid, 'path_info', json.dumps(path_info))
+
+            response = json.dumps({u"Err": '', u"Name": volname,
+                                   u"Mountpoint": mount_dir,
+                                   u"Devicename": path.path})
+        except Exception as ex:
+            self._rollback(undo_steps)
+            response = json.dumps({"Err": '%s' % six.text_type(ex)})
+
+        return response
+
+    @synchronization.synchronized_volume('{volname}')
+    def mount_volume_old(self, volname, vol_mount, mount_id):
         vol = self._etcd.get_vol_byname(volname)
         if vol is None:
             msg = (_LE('Volume mount name not found %s'), volname)
