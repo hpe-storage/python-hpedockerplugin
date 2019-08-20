@@ -229,7 +229,7 @@ class TestCreateSnpSchedInvPrefxLen(CreateSnapshotUnitTest):
                          "retHrs": '2'}}
 
     def check_response(self, resp):
-        expected = 'Please provide a schedlueName with max 31 characters '\
+        expected = 'Please provide a scheduleName with max 31 characters '\
                    'and snapshotPrefix with max length of 15 characters'
         self._test_case.assertEqual(resp, {u"Err": expected})
 
@@ -283,7 +283,7 @@ class TestCreateSnpSchedRetExpNeg(CreateSnapshotUnitTest):
 
     def check_response(self, resp):
         expected = 'create schedule failed, error is: expiration hours '\
-                   'cannot be greater than retention hours'
+                   'must be greater than retention hours'
         self._test_case.assertEqual(resp, {u"Err": expected})
 
 
