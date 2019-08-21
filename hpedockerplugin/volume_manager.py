@@ -1194,7 +1194,7 @@ class VolumeManager(object):
     def _is_first_mount(node_mount_info):
         return (len(node_mount_info) == 0)
 
-    def _is_vol_mounted_on_this_node(self, node_mount_info):
+    def _is_vol_mounted_on_this_node(self, node_mount_info, vol):
         return self._node_id in node_mount_info
 
     def _update_mount_id_list(self, vol, mount_id):
