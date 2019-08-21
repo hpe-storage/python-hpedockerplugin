@@ -1598,7 +1598,7 @@ class VolumeManager(object):
             node_mount_info = vol['node_mount_info']
 
             # If mounted on this node itself then just append mount-id
-            if self._is_vol_mounted_on_this_node(node_mount_info):
+            if self._is_vol_mounted_on_this_node(node_mount_info, vol):
                 self._update_mount_id_list(vol, mount_id)
                 return self._get_success_response(vol)
             else:
