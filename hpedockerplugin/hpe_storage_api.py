@@ -357,24 +357,33 @@ class VolumePlugin(object):
             if ('size' in contents['Opts'] and
                     contents['Opts']['size'] != ""):
                 vol_size = int(contents['Opts']['size'])
+            if vol_size == 0:
+                msg = ("Please enter the valid integer value for size parameter")
+                LOG.error(msg)
+                return json.dumps({u'Err': six.text_type(msg)})
 
             if ('provisioning' in contents['Opts'] and
                     contents['Opts']['provisioning'] != ""):
                 vol_prov = str(contents['Opts']['provisioning'])
 
-            if ('compression' in contents['Opts'] and
-                    contents['Opts']['compression'] != ""):
-                compression_val = str(contents['Opts']['compression'])
+            if 'compression' in contents['Opts']:
+                compression_val = str(contents['Opts'].get('compression'))
                 if compression_val is not None:
                     if compression_val.lower() not in valid_bool_opts:
                         msg = \
-                            _('create volume failed, error is:'
+                            _('create volume failed, error is: '
                               'passed compression parameter'
-                              ' do not have a valid value. '
+                              ' does not have a valid value. '
                               'Valid values are: %(valid)s') % {
                                 'valid': valid_bool_opts}
                         LOG.error(msg)
                         return json.dumps({u'Err': six.text_type(msg)})
+                else:
+                    msg = ('parameter compression passed without a value. '
+                           'Valid values are: %(valid)s') % {
+                                'valid': valid_bool_opts}
+                    LOG.error(msg)
+                    return json.dumps({u'Err': six.text_type(msg)})
 
             if ('flash-cache' in contents['Opts'] and
                     contents['Opts']['flash-cache'] != ""):
