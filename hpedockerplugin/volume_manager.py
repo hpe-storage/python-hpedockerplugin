@@ -1096,7 +1096,7 @@ class VolumeManager(object):
             self._set_qos_and_flash_cache_info(backend_vol_name, volinfo)
 
             qos_name = volinfo.get('qos_name')
-            if qos_name is not None:
+            if qos_name is not None and "ERROR" not in qos_name:
                 try:
                     qos_detail = self._hpeplugin_driver.get_qos_detail(
                         qos_name)
@@ -1108,6 +1108,8 @@ class VolumeManager(object):
                     volume['Status'].update({'qos_detail': msg})
                     msg += ' %s' % six.text_type(ex)
                     LOG.error(msg)
+            else:
+                volume['Status'].update({'qos_detail': qos_name})
 
             flash_cache = volinfo.get('flash_cache')
             if flash_cache is not None:
