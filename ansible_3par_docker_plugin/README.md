@@ -37,6 +37,7 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
       | ```hpe3par_ip```  | Yes  | No default value | IP address of 3PAR array |
       | ```hpe3par_username```  | Yes  | No default value | 3PAR username |
       | ```hpe3par_password```  | Yes  | No default value | 3PAR password |
+      | ```hpe3par_port```  | Yes  | 8080 | 3PAR HTTP_PORT port |
       | ```hpe3par_cpg```  | Yes  | No default value | Primary user CPG |
       | ```volume_plugin```  | Yes  | No default value | Name of the docker volume image (only required with DEFAULT backend) |
       | ```encryptor_key```  | No  | No default value | Encryption key string for 3PAR password |
