@@ -284,8 +284,8 @@ class VolumeManager(object):
             endd = datetime.datetime.strptime(enddate, date_format)
 
             diff = endd - startt
-            diff_hour = diff.seconds / 3600
-            return diff_hour
+            diff_hour = diff.total_seconds() / 3600
+            return round(diff_hour)
 
         except Exception as ex:
             msg = (_(
