@@ -54,7 +54,30 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
       | ```hpe3par_iscsi_ips```  | No  | No default value | Comma separated iscsi IPs. If not provided, all iscsi IPs will be read from the array and populated in hpe.conf |
       | ```vlan_tag```  | No  | False | Populates the iscsi_ips which are vlan tagged, only applicable if ```hpe3par_iscsi_ips``` is not specified |
       | ```replication_device```  | No  | No default value | Replication backend properties |
-      
+      | ```dory_installer_version```  | No  | dory_installer_v32 | Required for Openshift/Kubernetes setup. Dory installer version, supported versions are dory_installer_v31, dory_installer_v32 |
+      | ```hpe3par_server_ip_pool```  | Yes  | No default value | This parameter is specific to fileshare. It can be specified as a mix of range of IPs and individual IPs delimited by comma. Each range or individual IP must be followed by the corresponding subnet mask delimited by semi-colon E.g.: IP-Range:Subnet-Mask,Individual-IP:SubnetMask|
+      | ```hpe3par_default_fpg_size```  | No  | No default value | This parameter is specific to fileshare. Default fpg size, It must be in the range 1TiB to 64TiB. If not specified here, it defaults to 16TiB |
+
+  - Adding multiple backends in [plugin configuration properties - sample](/ansible_3par_docker_plugin/properties/plugin_configuration_properties_sample.yml)
+    Below is the table of all possible default configurations along with the installer plugin behavior column for each combination:
+    BLOCK points to the hpedockerplugin_driver, hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver OR hpedockerplugin.hpe.hpe_3par_fc.HPE3PARFCDriver
+    FILE points to the hpedockerplugin_driver, hpedockerplugin.hpe.hpe_3par_file.HPE3PARFileDriver
+
+      |DEFAULT | DEFAULT_BLOCK | DEFAULT_FILE | INSTALLER BEHAVIOR        |
+      |--------|---------------|--------------|-----------------|
+      |BLOCK   |--             |--            | Plugin successfully installs.|
+      |FILE    |--             |--            | Plugin successfully installs.|
+      |--      |BLOCK |-- |DEFAULT backend is mandatory.Plugin installation fails in this case.|
+      |--      |-- |FILE |DEFAULT backend is mandatory.Plugin installation fails in this case.|
+      |BLOCK   |-- |FILE |Plugin successfully installs.|
+      |FILE    |BLOCK |-- |Plugin successfully installs.|
+      |BLOCK   |BLOCK |FILE |When we have DEFAULT backend with Block driver, then there should not be any DEFAULT_BLOCK backend in multibackend configuration.Plugin installation fails in this case.|
+      |FILE    |BLOCK |FILE |When we have DEFAULT backend with File driver, then there should not be any DEFAULT_FILE backend in multibackend configuration.Plugin installation fails in this case.|
+      |BLOCK   |FILE |--  |DEFAULT_BLOCK is not allowed to be configured for File driver. Plugin installation fails in this case.|
+      |FILE   |-- |BLOCK  |DEFAULT_FILE is not allowed to be configured for Block driver. Plugin installation fails in this case.|
+      |BLOCK   |BLOCK |-- |When we have DEFAULT backend with Block driver, then there should not be any DEFAULT_BLOCK backend in single backend configuration.Plugin installation fails in this case.|
+      |FILE    |-- |FILE |When we have DEFAULT backend with File driver, then there should not be any DEFAULT_FILE backend in single backend configuration.Plugin installation fails in this case.|
+
   - The Etcd ports can be modified in [etcd cluster properties](/ansible_3par_docker_plugin/properties/etcd_cluster_properties.yml) as follows:
   
       | Property  | Mandatory | Default Value |

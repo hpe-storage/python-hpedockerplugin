@@ -13,6 +13,9 @@ INVENTORY:
 
     # Plugin version - Required only in DEFAULT backend
     volume_plugin: hpestorage/legacyvolumeplugin:3.0
+    # Dory installer version - Required for Openshift/Kubernetes setup
+    # Supported versions are dory_installer_v31, dory_installer_v32
+    dory_installer_version: dory_installer_v32
 
 #Optional Parameters------------------------------------------------------------------------------------
 
