@@ -120,12 +120,12 @@ class EtcdUtil(object):
         self.client.delete(volkey)
         LOG.info(_LI('Deleted key: %s from etcd'), volkey)
 
-    def get_lock(self, lock_type):
+    def get_lock(self, lock_type, lock_name):
         # By default this is volume lock-root
         lock_root = LOCKROOT
         if lock_type == 'RCG':
             lock_root = RCG_LOCKROOT
-        return EtcdLock(lock_root + '/', self.client)
+        return EtcdLock(lock_root + '/', self.client, name=lock_name)
 
     def get_vol_byname(self, volname):
         volumes = self.client.read(self.volumeroot, recursive=True)
@@ -177,29 +177,28 @@ class EtcdUtil(object):
 
 
 class EtcdLock(object):
-    def __init__(self, lock_root, client):
+    def __init__(self, lock_root, client, name):
         self._lock_root = lock_root
         self._client = client
+        self._name = name
+        self._lock = etcd.Lock(client, name)
 
-    def try_lock_name(self, name):
-        try:
-            LOG.debug("Try locking name %s", name)
-            self._client.write(self._lock_root + name, name,
-                               prevExist=False)
-            LOG.debug("Name is locked : %s", name)
-        except Exception as ex:
-            msg = 'Name: %(name)s is already locked' % {'name': name}
-            LOG.exception(msg)
-            LOG.exception(ex)
-            raise exception.HPEPluginLockFailed(obj=name)
+    def try_lock_name(self):
+        LOG.debug("Try locking name %s", self._name)
+        self._lock.acquire(lock_ttl=300, timeout=300)
+        if self._lock.is_acquired:
+            LOG.debug("Name is locked : %s", self._name)
+        else:
+            msg = 'Failed to acquire lock: %(name)s' % {'name': self._name}
+            LOG.error(msg)
+            raise exception.HPEPluginLockFailed(obj=self._name)
 
-    def try_unlock_name(self, name):
-        try:
-            LOG.debug("Try unlocking name %s", name)
-            self._client.delete(self._lock_root + name)
-            LOG.debug("Name is unlocked : %s", name)
-        except Exception as ex:
-            msg = 'Name: %(name)s unlock failed' % {'name': name}
-            LOG.exception(msg)
-            LOG.exception(ex)
-            raise exception.HPEPluginUnlockFailed(obj=name)
+    def try_unlock_name(self):
+        LOG.debug("Try unlocking name %s", self._name)
+        self._lock.release()
+        if not self._lock.is_acquired:
+            LOG.debug("Name is unlocked : %s", self._name)
+        else:
+            msg = 'Failed to release lock: %(name)s' % {'name': self._name}
+            LOG.error(msg)
+            raise exception.HPEPluginUnlockFailed(obj=self._name)
