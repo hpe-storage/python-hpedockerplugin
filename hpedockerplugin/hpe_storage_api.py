@@ -358,7 +358,8 @@ class VolumePlugin(object):
                     contents['Opts']['size'] != ""):
                 vol_size = int(contents['Opts']['size'])
             if vol_size == 0:
-                msg = ("Please enter the valid integer value for size parameter")
+                msg = ("Please enter the valid integer value for size \
+                       parameter")
                 LOG.error(msg)
                 return json.dumps({u'Err': six.text_type(msg)})
 
@@ -379,9 +380,10 @@ class VolumePlugin(object):
                         LOG.error(msg)
                         return json.dumps({u'Err': six.text_type(msg)})
                 else:
-                    msg = ('parameter compression passed without a value. '
-                           'Valid values are: %(valid)s') % {
-                                'valid': valid_bool_opts}
+                    msg = \
+                        _('parameter compression passed without a value. '
+                          'Valid values are: %(valid)s') % {
+                            'valid': valid_bool_opts}
                     LOG.error(msg)
                     return json.dumps({u'Err': six.text_type(msg)})
 
