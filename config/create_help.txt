@@ -123,7 +123,7 @@ Create Snapshot Schedule:
                                 3. To create snapshot every quarter, specify x as "0 * * 3,6,9,12 *"
                                 4. To create snapshot on Monday, Wednesday and Friday, specify x as "0 * * * 1,3,5"
 -o scheduleName=x               This option is mandatory. x is a string which indicates name for the schedule on 3PAR/PRIMERA.
-                                Note: When this parameter is passed with string 'auto’, then the scheduleName is
+                                Note: When this parameter is passed with string 'auto', then the scheduleName is
                                 auto generated with a timestamp. This is to support Kubernetes environment where 
                                 this parameter can be used as a storage class option.
 -o snapshotPrefix=x             This option is mandatory. x is prefix string for the scheduled snapshots which will get created on 3PAR/PRIMERA.
