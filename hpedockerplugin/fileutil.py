@@ -160,7 +160,8 @@ def check_if_mounted(src, tgt):
         # using regular expression with the paths.
         # _ok_code=[0,1] is used because grep returns an ErrorCode_1
         # if it cannot find any matches on the pattern.
-        mountpoint = grep(grep(mount("-l"), "-E", src, _ok_code=[0, 1]), "-E",
+        mapper_entry = find_mapper_entry(src)
+        mountpoint = grep(grep(mount("-l"), "-E", mapper_entry, _ok_code=[0, 1]), "-E",
                           tgt, _ok_code=[0, 1])
     except Exception as ex:
         msg = (_('exception is : %s'), six.text_type(ex))
@@ -169,26 +170,21 @@ def check_if_mounted(src, tgt):
     # If there is no line matching the criteria from above then the
     # mount is not present, return False.
     if not mountpoint:
-        # there could be cases where the src, tgt mount directories
-        # will not be present in mount -l output , but the
-        # symbolic links pointing to either src/tgt folder will be
-        # present. Eg. /dev/dm-3 will not be there in mount -l
-        # but there will be symlink from
-        # /dev/mapper/360002ac00000000001008506000187b7
-        # or /dev/disk/by-id/dm-uuid-mpath-360002ac00000000001008506000187b7
-        # So, we need to check for the file existence of both src/tgt folders
-        if check_if_file_exists(src) and \
-                check_if_file_exists(tgt):
-            LOG.info('SRC and TGT is present')
-            return True
-        else:
-            LOG.info('SRC %s or TGT %s does not exist' % (src, tgt))
-            return False
-    # If there is a mountpoint meeting the criteria then
-    # everything is ok, return True
+        return False
     else:
         return True
 
+
+def find_mapper_entry(src):
+    path = '/dev/mapper/'
+    for file in os.listdir(path):
+       print('real: %s , src %s' % (os.path.realpath(path+file), src))
+       if os.path.realpath(path+file) == src:
+            return path+file
+
+    # In worst case return src
+    return src
+    
 
 def check_if_file_exists(path):
     return os.path.exists(path)
