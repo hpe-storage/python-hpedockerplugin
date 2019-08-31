@@ -18,6 +18,8 @@ from twisted.python.filepath import FilePath
 
 import hpedockerplugin.exception as exception
 import hpedockerplugin.fileutil as fileutil
+from hpedockerplugin import scsi_utils
+
 import math
 import re
 import hpedockerplugin.hpe.array_connection_params as acp
@@ -1484,6 +1486,15 @@ class VolumeManager(object):
             LOG.error(msg)
             self._rollback(undo_steps)
             raise exception.HPEPluginMountException(reason=msg)
+
+        if path.exists and not ('dm-' in path.path):
+            scsiutils = scsi_utils.ScsiUtils()
+            LOG.info(' Starting rescan of hosts ...')
+            scsiutils.rescan_scsi_host()
+            LOG.info('Rescanned hosts ...')
+            msg = (_('path: %s,  is not multipath device'), path)
+            raise exception.HPEPluginMountException(reason=msg)
+
 
         LOG.debug('path for volume: %(name)s, was successfully created: '
                   '%(device)s realpath is: %(realpath)s',
