@@ -5,7 +5,7 @@ LOG = logging.getLogger(__name__)
 
 class ScsiUtils():
 
-    def rescan_scsi_host(self):
+    def rescan_scsi_host(self, device_name):
         path = '/sys/class/scsi_host/'
         for file in os.listdir(path):
             print('File %s' % file)
@@ -14,5 +14,8 @@ class ScsiUtils():
                 print('Scanning %s' % path_to_scan)
                 LOG.info('Scanning %s' % path_to_scan)
                 os.system('echo "- - -" > '+path_to_scan)
+        # delete the faulty disk
+        LOG.info(' Device to delete .. %s ' % device_name)
+        os.system("echo 1 > /sys/block/"+device_name+"/device/delete")
 
 

@@ -1490,7 +1490,7 @@ class VolumeManager(object):
         if path.exists and not ('dm-' in path.path):
             scsiutils = scsi_utils.ScsiUtils()
             LOG.info(' Starting rescan of hosts ...')
-            scsiutils.rescan_scsi_host()
+            scsiutils.rescan_scsi_host(path.path)
             LOG.info('Rescanned hosts ...')
             msg = (_('path: %s,  is not multipath device'), path)
             raise exception.HPEPluginMountException(reason=msg)

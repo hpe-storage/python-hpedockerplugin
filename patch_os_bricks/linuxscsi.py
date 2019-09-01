@@ -256,13 +256,13 @@ class LinuxSCSI(executor.Executor):
         except exception.VolumeDeviceNotFound:
             pass
 
-        LOG.info('checking for by-id/scsi-wwn entry for multipath')
-        path = "/dev/disk/by-id/scsi-%(wwn)s" % wwn_dict
-        try:
-            self.wait_for_path(path)
-            return path
-        except exception.VolumeDeviceNotFound:
-            pass
+        LOG.info('Not checking for by-id/scsi-wwn entry for multipath')
+        #path = "/dev/disk/by-id/scsi-%(wwn)s" % wwn_dict
+        #try:
+        #    self.wait_for_path(path)
+        #    return path
+        #except exception.VolumeDeviceNotFound:
+        #    pass
 
 
         # couldn't find a path
