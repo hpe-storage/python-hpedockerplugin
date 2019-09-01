@@ -16,6 +16,6 @@ class ScsiUtils():
                 os.system('echo "- - -" > '+path_to_scan)
         # delete the faulty disk
         LOG.info(' Device to delete .. %s ' % device_name)
-        os.system("echo 1 > /sys/block/"+device_name+"/device/delete")
+        os.system("echo 1 > /sys/block/"+device_name.split('/')[2]+"/device/delete")
 
 
