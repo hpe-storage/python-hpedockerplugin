@@ -357,24 +357,35 @@ class VolumePlugin(object):
             if ('size' in contents['Opts'] and
                     contents['Opts']['size'] != ""):
                 vol_size = int(contents['Opts']['size'])
+            if vol_size == 0:
+                msg = ("Please enter the valid integer value for size \
+                       parameter")
+                LOG.error(msg)
+                return json.dumps({u'Err': six.text_type(msg)})
 
             if ('provisioning' in contents['Opts'] and
                     contents['Opts']['provisioning'] != ""):
                 vol_prov = str(contents['Opts']['provisioning'])
 
-            if ('compression' in contents['Opts'] and
-                    contents['Opts']['compression'] != ""):
-                compression_val = str(contents['Opts']['compression'])
+            if 'compression' in contents['Opts']:
+                compression_val = str(contents['Opts'].get('compression'))
                 if compression_val is not None:
                     if compression_val.lower() not in valid_bool_opts:
                         msg = \
-                            _('create volume failed, error is:'
+                            _('create volume failed, error is: '
                               'passed compression parameter'
-                              ' do not have a valid value. '
+                              ' does not have a valid value. '
                               'Valid values are: %(valid)s') % {
                                 'valid': valid_bool_opts}
                         LOG.error(msg)
                         return json.dumps({u'Err': six.text_type(msg)})
+                else:
+                    msg = \
+                        _('parameter compression passed without a value. '
+                          'Valid values are: %(valid)s') % {
+                            'valid': valid_bool_opts}
+                    LOG.error(msg)
+                    return json.dumps({u'Err': six.text_type(msg)})
 
             if ('flash-cache' in contents['Opts'] and
                     contents['Opts']['flash-cache'] != ""):
@@ -709,7 +720,7 @@ class VolumePlugin(object):
                     if exphrs is not None:
                         if rethrs > exphrs:
                             msg = ('create schedule failed, error is: '
-                                   'expiration hours cannot be greater than '
+                                   'expiration hours must be greater than '
                                    'retention hours')
                             LOG.error(msg)
                             response = json.dumps({'Err': msg})
@@ -746,7 +757,7 @@ class VolumePlugin(object):
                 schedNameLength = len(schedName)
                 snapPrefixLength = len(snapPrefix)
                 if schedNameLength > 31 or snapPrefixLength > 15:
-                    msg = ('Please provide a schedlueName with max 31 '
+                    msg = ('Please provide a scheduleName with max 31 '
                            'characters and snapshotPrefix with max '
                            'length of 15 characters')
                     LOG.error(msg)

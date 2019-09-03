@@ -427,8 +427,8 @@ class TestCreateCompressedVolumeNegativeSize(CreateVolumeUnitTest):
     def check_response(self, resp):
         expected_msg = 'Invalid input received: To create compression '\
                        'enabled volume, size of the volume should be '\
-                       'atleast 16GB. Fully provisioned volume can not be '\
-                       'compressed. Please re enter requested volume size '\
+                       'at least 16GB. Fully provisioned volume cannot be '\
+                       'compressed. Please re-enter requested volume size '\
                        'or provisioning type. '
         self._test_case.assertEqual(resp, {u"Err": expected_msg})
 

@@ -53,7 +53,7 @@ replication_device = backend_id:<Target-Array-Name>,
 
 1. *replication_mode* MUST be set to *synchronous* as a pre-requisite for Peer 
 Persistence based replication.
-2. Both *cpg_map* and *snap_cpg_map* in *replication_device* section are mandatory
+2. *cpg_map* and *snap_cpg_map* in *replication_device* section are mandatory. If *snap_cpg_map* is not mentioned then it will be same as *cpg_map*
 3. If password is encrypted for primary array, it must be encrypted for secondary array
 as well using the same *pass-phrase*
 
@@ -87,7 +87,7 @@ replication_device = backend_id:<Target-Array-Name>,
 ```
 *Note*:
 
-1. Both *cpg_map* and *snap_cpg_map* in *replication_device* section are mandatory.
+1. *cpg_map* and *snap_cpg_map* in *replication_device* section are mandatory. If *snap_cpg_map* is not mentioned then it will be same as *cpg_map*
 2. *hpe3par_iscsi_ips* MUST be defined upfront for both source and target arrays.
 3. *hpe3par_iscsi_ips* can be a single ISCSI IP or a list of ISCSI IPs delimited by
 semi-colon. Delimiter for this field is applicable for *replication_device* section ONLY.
