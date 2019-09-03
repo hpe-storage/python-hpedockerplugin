@@ -40,7 +40,7 @@ replication_device = backend_id:<Target-Array-Hostname>,
 1. In case of asynchronous replication mode, *sync_period* field can optionally be 
 defined as part of *replication_device* entry and it should be between range 300 
 and 31622400 seconds. If not defined, it defaults to 900 seconds.
-2. *cpg_map* and *snap_cpg_map* in *replication_device* section are mandatory. If *snap_cpg_map* is not mentioned then it will be same as *cpg_map*  
+2. *cpg_map* and *snap_cpg_map* in *replication_device* section are mandatory. If *snap_cpg_map* is not mentioned then it will be same as *cpg_map*
 3. If password is encrypted for primary array, it must be encrypted for secondary array
 as well using the same *pass-phrase*
 
