@@ -1,9 +1,9 @@
 
 
 ===============================================
-HPE 3PAR Volume Plug-in For Docker: Create Help
+HPE 3PAR/PRIMERA Volume Plug-in For Docker: Create Help
 ===============================================
-Create a volume in HPE 3PAR or create a clone of a Docker volume or create a snapshot of a Docker volume using HPE 3PAR volume plug-in for Docker.
+Create a volume in HPE 3PAR/PRIMERA or create a clone of a Docker volume or create a snapshot of a Docker volume using HPE 3PAR/PRIMERA volume plug-in for Docker.
 
 ---------------------------------
 Create Volume Options:
@@ -12,19 +12,21 @@ Create Volume Options:
  -o snapcpg=x                   x is the Snap CPG used for provisioning the snapshots of the volume
  -o size=x 			x is the size of a Docker volume to be created. Default value is 100 (in GiB)
  -o provisioning=x 		x is the provision type of a volume to be created. Valid values are thin, dedup, full with thin as default.
+				PRIMERA array does not support full provisioning.
  -o compression=x 		x is a boolean with true and false as valid values. To create a compressed volume, minimum size of a
-				volume should be 16 GiB. It also requires 3PAR OS version 3.3.1 or more and underlying disks should be SSD. Default value is false.
+				volume should be 16 GiB. It also requires OS version 3.3.1 or greater for 3PAR and OS version 4.0.0 or greater for PRIMERA.
+				Also, underlying disks should be SSD. Default value is false.
  -o flash-cache=x 		x is a boolean with true and false as valid values. x specifies whether flash cache should be used or not.
 				Default value is false.
- -o qos-name=x 			x is name of an existing 3PAR vv-set on which QoS rules are set.
+ -o qos-name=x 			x is name of an existing 3PAR/PRIMERA vv-set on which QoS rules are set.
  -o fsOwner=x                   x is the user id and group id that should own the root directory of the filesystem in the form of
                                 [userId:groupId]
  -o fsMode=x                    x is 1 to 4 octal digits that represent the file mode to be applied to the root directory of the
                                 filesystem
  -o backend=x                   x is the name of the backend identified by square brackets in hpe.conf, and the volume creation happens on this identified
                                 backend. Default value of this option is DEFAULT when not specified. This can be used in combination with other volume
-                                create options along with -o importVol
-                                Backend represents a group of configuration parameters for a particular 3PAR Array
+                                create options along with -o importVol.
+                                Backend represents a group of configuration parameters for a particular array
                                 Documentation: https://github.com/hpe-storage/python-hpedockerplugin/blob/plugin_v2/docs/multi-array-feature.md
 -o mountConflictDelay=x 	x is the number of seconds to delay a mount request when there is a conflict. Default value is 30 seconds.
 
@@ -34,20 +36,22 @@ Create Replicated Volume Options:
 ---------------------------------
  -o size=x 			x is the size of a Docker volume to be created. Default value is 100 (in GiB)
  -o provisioning=x 		x is the provision type of a volume to be created. Valid values are thin, dedup, full with thin as default.
+ 				PRIMERA array does not support full provisioning.
  -o compression=x 		x is a boolean with true and false as valid values. To create a compressed volume, minimum size of a
-				volume should be 16 GiB. It also requires 3PAR OS version 3.3.1 or more and underlying disks should be SSD. Default value is false.
+				volume should be 16 GiB. It also requires OS version 3.3.1 or greater for 3PAR and OS version 4.0.0 or greater for PRIMERA.
+				Also, underlying disks should be SSD. Default value is false.
  -o backend=x                   x is the name of the backend identified by square brackets in hpe.conf, and the volume creation happens on this identified
                                 backend. Default value of this option is DEFAULT when not specified. This can be used in combination with other volume
                                 create options along with -o importVol
                                 Backend represents a group of configuration parameters for a particular 3PAR Array
                                 Documentation: https://github.com/hpe-storage/python-hpedockerplugin/blob/plugin_v2/docs/multi-array-feature.md
  -o mountConflictDelay=x 	x is the number of seconds to delay a mount request when there is a conflict. Default value is 30 seconds.
- -o replicationGroup=x 	        x is name of the 3PAR replication group to which the newly created volume is added. If the replication
-                                group doesn't exist on 3PAR array then it is created. Configuration parameter, 'replication_device',
+ -o replicationGroup=x 	        x is name of the 3PAR/PRIMERA replication group to which the newly created volume is added. If the replication
+                                group doesn't exist on 3PAR/PRIMERA array then it is created. Configuration parameter, 'replication_device',
                                 must be defined in the hpe.conf file in conjunction with this option. Not doing so results in rejection
                                 of the volume creation request. Another configuration parameter, 'quorum_witness_ip', if defined, results
                                 into Peer Persistence based replication configuration. Absence of 'quorum_witness_ip' results into
-                                Active/Passive based replication configuration.
+                                Active/Passive based replication configuration. PRIMERA does not support Async mode of replication
 
 
 ---------------------------------
@@ -66,7 +70,7 @@ Create Snapshot Options:
  -o virtualCopyOf=x		x is the name of the source Docker volume whose snapshot/virtual copy is to be created.
  -o retentionHours=x 		x is the number of hours the snapshot will be retained. Retention time begins from the time of snapshot creation.
                                 During this time the snapshot cannot be removed.
- -o expirationHours=x		x is the number of hours after which snapshot is removed from 3PAR. If both retentionHours and expirationHours
+ -o expirationHours=x		x is the number of hours after which snapshot is removed from 3PAR/PRIMERA. If both retentionHours and expirationHours
 				are specified then expirationHours must be greater than or equal to retentionHours.
  -o mountConflictDelay=x 	This option is ignored for this operation. It is present so that it can work with orchestrators like K8S and Openshift.
  -o size=x                      This option is ignored for this operation. It is present so that it can work with orchestrators like K8S and Openshift.
@@ -75,12 +79,12 @@ Create Snapshot Options:
 ---------------------------------
 Import Volume Options:
 ---------------------------------
- -o importVol=x                 x is the name of 3PAR volume or snapshot that needs to be imported. As a prerequisite, the volume or snapshot being imported
+ -o importVol=x                 x is the name of 3PAR/PRIMERA volume or snapshot that needs to be imported. As a prerequisite, the volume or snapshot being imported
                                 must not be in attached/mounted state.
  -o backend=x                   x is the name of the backend identified by square brackets in hpe.conf, and the volume creation happens on this identified
                                 backend. Default value of this option is DEFAULT when not specified. This can be used in combination with other volume
                                 create options along with -o importVol
-                                Backend represents a group of configuration parameters for a particular 3PAR Array
+                                Backend represents a group of configuration parameters for a particular Array
                                 Documentation: https://github.com/hpe-storage/python-hpedockerplugin/blob/plugin_v2/docs/multi-array-feature.md
  -o mountConflictDelay=x 	This option is ignored for this operation. It is present so that it can work with orchestrators like K8S and Openshift.
 
@@ -118,15 +122,15 @@ Create Snapshot Schedule:
                                 2. To create snapshot on 5th, 15th and 25th of month, specify x as "0 * 5,15,25 * *"
                                 3. To create snapshot every quarter, specify x as "0 * * 3,6,9,12 *"
                                 4. To create snapshot on Monday, Wednesday and Friday, specify x as "0 * * * 1,3,5"
--o scheduleName=x               This option is mandatory. x is a string which indicates name for the schedule on 3PAR.
-                                Note: When this parameter is passed with string 'auto' , then the scheduleName is
-                                auto generated with a timestamp. This is to support kubernetes environment where 
+-o scheduleName=x               This option is mandatory. x is a string which indicates name for the schedule on 3PAR/PRIMERA.
+                                Note: When this parameter is passed with string 'auto', then the scheduleName is
+                                auto generated with a timestamp. This is to support Kubernetes environment where 
                                 this parameter can be used as a storage class option.
--o snapshotPrefix=x             This option is mandatory. x is prefix string for the scheduled snapshots which will get created on 3PAR.
-                                It is recommended to use 3 letter string. If prefix is abc then name of the snapshot which gets created on the 3PAR
+-o snapshotPrefix=x             This option is mandatory. x is prefix string for the scheduled snapshots which will get created on 3PAR/PRIMERA.
+                                It is recommended to use 3 letter string. If prefix is abc then name of the snapshot which gets created on the 3PAR/PRIMERA
                                 will be in the format abc.@y@@m@@d@@H@@M@@S@
 -o expHrs=x                     This option is not mandatory. x is an integer which indicates number of hours after which snapshot created via
-                                snapshot schedule will be deleted from 3PAR.
+                                snapshot schedule will be deleted from 3PAR/PRIMERA.
 -o retHrs=x                     This option is not mandatory. x is an integer which indicates number of hours for which snapshot created via
                                 snapshot schedule will be retained.
 -o mountConflictDelay=x 	This option is ignored for this operation. It is present so that it can work with orchestrators like K8S and Openshift.
