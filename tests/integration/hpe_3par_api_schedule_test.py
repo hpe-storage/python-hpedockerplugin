@@ -342,7 +342,7 @@ class ScheduleTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
                                      expHrs="5", retHrs="3")
         except Exception as ex:
             resp = str(ex)
-            self.assertIn("Please provide a schedlueName with max 31 characters", resp)
+            self.assertIn("Please provide a scheduleName with max 31 characters and snapshotPrefix with max length of 15 characters", resp)
         self.hpe_volume_not_created(snapshot_name)
         self.hpe_delete_volume(volume)
         self.hpe_verify_volume_deleted(volume_name)
@@ -372,7 +372,7 @@ class ScheduleTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
                                      expHrs="2", retHrs="3")
         except Exception as ex:
             resp = str(ex)
-            self.assertIn("expiration hours cannot be greater than retention hours", resp)
+            self.assertIn("expiration hours must be greater than retention hours", resp)
         self.hpe_volume_not_created(snapshot_name)
         self.hpe_delete_volume(volume)
         self.hpe_verify_volume_deleted(volume_name)
