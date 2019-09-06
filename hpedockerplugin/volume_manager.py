@@ -1425,19 +1425,24 @@ class VolumeManager(object):
                          "in mounted state" % (volname, self._node_id))
                 # We need to simply mount the volume using the information
                 # in ETCD
-                if 'path_info' in vol:
-                    path_info = vol['path_info']
+                path_info = self._etcd.get_path_info_from_vol(vol)
+                if path_info:
                     path = path_info['path']
                     mount_dir = path_info['mount_dir']
                     if 'dm-' in path.path and \
                             fileutil.check_if_file_exists(mount_dir) and \
-                            fileutil.check_if_file_exists(path.path):
+                            fileutil.check_if_file_exists(path):
                         LOG.info("Case of reboot confirmed! Mounting device "
-                                 "%s on path %s" % (path.path, mount_dir))
-                        fileutil.mount_dir(path.path, mount_dir)
+                                 "%s on path %s" % (path, mount_dir))
+                        fileutil.mount_dir(path, mount_dir)
                         mount_ids = node_mount_info[self._node_id]
                         if mount_id not in mount_ids:
-                            mount_ids.append(mount_id)
+                            # In case of reboot, mount-id list will have
+                            # a previous stale mount-id which if not cleaned
+                            # will disallow actual unmount of the volume
+                            # forever. Hence creating new mount-id list with
+                            # just the new mount_id received
+                            node_mount_info[self._node_id] = [mount_id]
                             self._etcd.update_vol(vol['id'],
                                                   'node_mount_info',
                                                   node_mount_info)
