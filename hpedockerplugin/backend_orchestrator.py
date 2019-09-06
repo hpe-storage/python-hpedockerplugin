@@ -159,6 +159,14 @@ class Orchestrator(object):
         LOG.error(msg)
         return json.dumps({u'Err': msg})
 
+    def __undeferred_execute_request__(self, request, volname, *args, **kwargs):
+        backend = self.get_volume_backend_details(volname)
+        return self.__execute_request(backend,
+                                      request,
+                                      volname,
+                                      *args,
+                                      **kwargs)
+
     def _execute_request(self, request, volname, *args, **kwargs):
         backend = self.get_volume_backend_details(volname)
         d = threads.deferToThread(self.__execute_request,

@@ -96,6 +96,8 @@ class HpeDockerUnitTestExecutor(object):
         req_body = self._get_request_body(self.get_request_params())
 
         _api = api.VolumePlugin(reactor, self._host_config, self._all_configs)
+        _api.orchestrator._execute_request = \
+            _api.orchestrator.__undeferred_execute_request__
         req_params = self.get_request_params()
         backend = req_params.get('backend', 'DEFAULT')
 
