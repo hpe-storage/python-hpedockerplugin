@@ -1429,7 +1429,7 @@ class VolumeManager(object):
                 if path_info:
                     path = path_info['path']
                     mount_dir = path_info['mount_dir']
-                    if 'dm-' in path.path and \
+                    if 'dm-' in path and \
                             fileutil.check_if_file_exists(mount_dir) and \
                             fileutil.check_if_file_exists(path):
                         LOG.info("Case of reboot confirmed! Mounting device "
