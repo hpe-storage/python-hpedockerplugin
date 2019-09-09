@@ -161,8 +161,10 @@ def check_if_mounted(src, tgt):
         # _ok_code=[0,1] is used because grep returns an ErrorCode_1
         # if it cannot find any matches on the pattern.
         mapper_entry = find_mapper_entry(src)
-        mountpoint = grep(grep(mount("-l"), "-E", mapper_entry, _ok_code=[0, 1]), "-E",
-                          tgt, _ok_code=[0, 1])
+        mountpoint = grep(
+            grep(mount("-l"), "-E", mapper_entry, _ok_code=[0, 1]),
+            "-E", tgt, _ok_code=[0, 1]
+        )
     except Exception as ex:
         msg = (_('exception is : %s'), six.text_type(ex))
         LOG.error(msg)
@@ -178,13 +180,12 @@ def check_if_mounted(src, tgt):
 def find_mapper_entry(src):
     path = '/dev/mapper/'
     for file in os.listdir(path):
-       print('real: %s , src %s' % (os.path.realpath(path+file), src))
-       if os.path.realpath(path+file) == src:
-            return path+file
-
+        print('real: %s , src %s' % (os.path.realpath(path + file), src))
+        if os.path.realpath(path + file) == src:
+            return path + file
     # In worst case return src
     return src
-    
+
 
 def check_if_file_exists(path):
     return os.path.exists(path)

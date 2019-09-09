@@ -4,7 +4,6 @@ import json
 from oslo_log import log as logging
 
 import hpedockerplugin.exception as exception
-import time
 
 LOG = logging.getLogger(__name__)
 

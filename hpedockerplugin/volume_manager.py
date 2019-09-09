@@ -1323,7 +1323,9 @@ class VolumeManager(object):
 
         node_mount_info = vol.get('node_mount_info')
         if node_mount_info:
-            is_vol_owned = self._is_vol_mounted_on_this_node(node_mount_info, vol)
+            is_vol_owned = self._is_vol_mounted_on_this_node(
+                node_mount_info, vol
+            )
             if is_vol_owned == VolumeNotOwned:
                 # Volume mounted on different node
                 LOG.info("Volume mounted on a different node. Waiting for "
