@@ -101,7 +101,7 @@ class HpeDockerUnitTestExecutor(object):
         req_params = self.get_request_params()
         backend = req_params.get('backend', 'DEFAULT')
 
-        while(True):
+        while True:
             backend_state = _api.is_backend_initialized(backend)
             print(" ||| Backend %s, backend_state %s " % (backend,
                                                           backend_state))
