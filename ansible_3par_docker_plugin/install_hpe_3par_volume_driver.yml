@@ -104,7 +104,7 @@
       include: tasks/deploy_FlexVolume_driver.yml
 
 - name: Install HPE 3PAR Volume Driver for Kubernetes/OpenShift
-  hosts: masters
+  hosts: "{{groups['masters'][0]}}"
   become: root
 
   tasks:

@@ -15,7 +15,7 @@
       include: remove_multipath.yml
 
 - name: Remove HPE 3PAR Volume Driver for Kubernetes/OpenShift
-  hosts: masters
+  hosts: "{{groups['masters'][0]}}"
   become: root
 
   tasks:
