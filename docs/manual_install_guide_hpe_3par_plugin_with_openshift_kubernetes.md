@@ -265,7 +265,7 @@ $ cp /root/.kube/config /etc/kubernetes/admin.conf
 
 >**NOTE:** For multi-master cluster follow the below steps:
 
->Run the below command to start HPE 3PAR FlexVolume dynamic provisioner on OpenShift 3.11 multi-master cluster:
+>HPE 3PAR FlexVolume dynamic provisioner on OpenShift 3.11 multi-master cluster:
 ```
 Run the below command to grant service account access to the hostPath plugin and the ability to run the container as root
 $ oc adm policy add-scc-to-user privileged system:serviceaccount:kube-system:doryd
@@ -282,7 +282,7 @@ $ oc delete -f dep-kube-storage-controller-ocp311.yaml
 $ oc adm policy remove-scc-from-user privileged system:serviceaccount:kube-system:doryd
 ```
 
->Run the below command to start HPE 3PAR FlexVolume dynamic provisioner on Kubernetes 1.13 multi-master cluster:
+>HPE 3PAR FlexVolume dynamic provisioner on Kubernetes 1.13 multi-master cluster:
 ```
 Run the below command to deploy doryd
 $ wget https://raw.githubusercontent.com/hpe-storage/python-hpedockerplugin/master/provisioner/k8s/dep-kube-storage-controller-k8s113.yaml
@@ -296,7 +296,7 @@ $ kubectl delete -f dep-kube-storage-controller-k8s113.yaml
 ```
 
 >**NOTE:** doryd running as a deployment on multi-master cluster is currently only supported on Kubernetes 1.13 and OpenShift 3.11.
-One can try and use the same deployment file for OpenShift/Kubernetes(other versions than supported) and follow the same steps. It might run successfully or give issues with respect to RBAC.
+One can try and use the same deployment file for OpenShift https://github.com/hpe-storage/python-hpedockerplugin/blob/master/provisioner/OpenShift/dep-kube-storage-controller-ocp311.yaml / Kubernetes https://github.com/hpe-storage/python-hpedockerplugin/blob/master/provisioner/k8s/dep-kube-storage-controller-k8s113.yaml (other versions than supported) and follow the same steps. It might run successfully or give issues with respect to RBAC.
 
 >For more information on the HPE FlexVolume driver, please visit this link:
 >
