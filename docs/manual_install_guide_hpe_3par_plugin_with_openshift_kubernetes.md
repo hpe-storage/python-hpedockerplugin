@@ -9,7 +9,7 @@
 * [Usage](#usage)
 ---
 
-### Introduction <a name="introduction"></a>
+## Introduction <a name="introduction"></a>
 This document details the installation steps in order to get up and running quickly with the HPE 3PAR Volume Plug-in for Docker within a Kubernetes /Openshift environment.
 
 **We highly recommend to use the Ansible playbooks that simplify and automate the install process before using the manual install process.**
@@ -24,7 +24,7 @@ This document details the installation steps in order to get up and running quic
 
   * OpenShift https://docs.openshift.org/3.7/install_config/install/planning.html
 
-## SPOCK for HPE 3PAR Volume Plugin for Docker
+## SPOCK for HPE 3PAR Volume Plugin for Docker <a name="support"></a>
 
 * [Support Matrix for Kubernetes and Openshift](https://spock.corp.int.hpe.com/spock/utility/document.aspx?docurl=Shared%20Documents/hw/3par/3par_volume_plugin_for_docker.pdf)
 
