@@ -295,11 +295,15 @@ Run the below command to delete the doryd deployment
 $ kubectl delete -f dep-kube-storage-controller-k8s113.yaml
 ```
 
+>**NOTE:** doryd running as a deployment on multi-master cluster is currently only supported on Kubernetes 1.13 and OpenShift 3.11.
+One can try and use the same deployment file for OpenShift/Kubernetes(other versions than supported) and follow the same steps. It might run successfully or give issues with respect to RBAC.
+
 >For more information on the HPE FlexVolume driver, please visit this link:
 >
 >https://github.com/hpe-storage/dory/
 
 13. Repeat steps 1-9 on all worker nodes. **Steps 10-12 only needs to be ran on the Master node.**
+>**NOTE:** Ignore this step for multi-master cluster.
 
 >**Upon successful completion of the above steps, you should have a working installation of Openshift 3.7 integrated with HPE 3PAR Volume Plug-in for Docker**
 
