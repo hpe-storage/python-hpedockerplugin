@@ -94,6 +94,30 @@ def setup_logging(name, level):
         LOG.logger.setLevel(logging.ERROR)
 
 
+def setup_logging_for_ut(name, level):
+
+    logging.setup(CONF, name)
+    LOG = logging.getLogger(None)
+
+    # Add option to do Log Rotation
+    handler = log.FileHandler('./3pardcv.log')
+    formatter = log.Formatter('%(asctime)-12s [%(levelname)s] '
+                              '%(name)s [%(thread)d] '
+                              '%(threadName)s %(message)s')
+
+    handler.setFormatter(formatter)
+    LOG.logger.addHandler(handler)
+
+    if level == 'INFO':
+        LOG.logger.setLevel(logging.INFO)
+    if level == 'DEBUG':
+        LOG.logger.setLevel(logging.DEBUG)
+    if level == 'WARNING':
+        LOG.logger.setLevel(logging.WARNING)
+    if level == 'ERROR':
+        LOG.logger.setLevel(logging.ERROR)
+
+
 def getdefaultconfig(configfile):
     CONF(configfile, project='hpedockerplugin', version='1.0.0')
     configuration = conf.Configuration(host_opts, config_group='DEFAULT')

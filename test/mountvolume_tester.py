@@ -868,6 +868,7 @@ class TestVolFencingGracefulUnmount(MountVolumeUnitTest):
             self._unmounted_vol['is_snap'] = True
             self._unmounted_vol['display_name'] = data.SNAPSHOT_NAME1
             self._unmounted_vol['id'] = data.SNAPSHOT_ID1
+            self._unmounted_vol['snap_metadata'] = data.snap1_metadata
 
     def setup_mock_etcd(self):
         mock_etcd = self.mock_objects['mock_etcd']

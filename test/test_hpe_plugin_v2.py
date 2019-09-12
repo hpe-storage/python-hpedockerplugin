@@ -26,8 +26,11 @@ logger = logging.getLogger('hpedockerplugin')
 logger.level = logging.DEBUG
 fh = logging.FileHandler('./unit_tests_run.log')
 fh.setLevel(logging.DEBUG)
-fmt = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
-fh.setFormatter(fmt)
+# fmt = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter('%(asctime)-12s [%(levelname)s] '
+                              '%(name)s [%(thread)d] '
+                              '%(threadName)s %(message)s')
+fh.setFormatter(formatter)
 logger.addHandler(fh)
 
 BKEND_3PAR_PP_REP = '3par_pp_rep'
