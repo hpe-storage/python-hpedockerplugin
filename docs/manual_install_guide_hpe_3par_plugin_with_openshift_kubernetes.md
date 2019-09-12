@@ -303,7 +303,6 @@ One can try and use the same deployment file for OpenShift [OpenShift3.11-doryd]
 >https://github.com/hpe-storage/dory/
 
 13. Repeat steps 1-9 on all worker nodes. **Steps 10-12 only needs to be ran on the Master node.**
->**NOTE:** Ignore this step for multi-master cluster.
 
 >**Upon successful completion of the above steps, you should have a working installation of Openshift 3.7 integrated with HPE 3PAR Volume Plug-in for Docker**
 
