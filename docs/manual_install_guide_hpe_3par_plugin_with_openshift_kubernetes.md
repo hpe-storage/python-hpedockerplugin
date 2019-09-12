@@ -296,7 +296,7 @@ $ kubectl delete -f dep-kube-storage-controller-k8s113.yaml
 ```
 
 >**NOTE:** doryd running as a deployment on multi-master cluster is currently only supported on Kubernetes 1.13 and OpenShift 3.11.
-One can try and use the same deployment file for OpenShift https://github.com/hpe-storage/python-hpedockerplugin/blob/master/provisioner/OpenShift/dep-kube-storage-controller-ocp311.yaml / Kubernetes https://github.com/hpe-storage/python-hpedockerplugin/blob/master/provisioner/k8s/dep-kube-storage-controller-k8s113.yaml (other versions than supported) and follow the same steps. It might run successfully or give issues with respect to RBAC.
+One can try and use the same deployment file for OpenShift [OpenShift3.11-doryd](/provisioner/OpenShift/dep-kube-storage-controller-ocp311.yaml) / Kubernetes [k8s1.13-doryd](/provisioner/k8s/dep-kube-storage-controller-k8s113.yaml) (other versions than supported) and follow the same steps. It might run successfully or give issues with respect to RBAC.
 
 >For more information on the HPE FlexVolume driver, please visit this link:
 >
