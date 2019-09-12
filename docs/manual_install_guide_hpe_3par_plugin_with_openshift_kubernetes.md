@@ -263,6 +263,38 @@ $ cp /root/.kube/config /etc/kubernetes/admin.conf
 
 >Re-run the command to start the HPE 3PAR FlexVolume dynamic provisioner
 
+>**NOTE:** For multi-master cluster follow the below steps:
+
+>Run the below command to start HPE 3PAR FlexVolume dynamic provisioner on OpenShift 3.11 multi-master cluster:
+```
+Run the below command to grant service account access to the hostPath plugin and the ability to run the container as root
+$ oc adm policy add-scc-to-user privileged system:serviceaccount:kube-system:doryd
+
+Run the below command to deploy doryd
+$ wget https://raw.githubusercontent.com/hpe-storage/python-hpedockerplugin/master/provisioner/OpenShift/dep-kube-storage-controller-ocp311.yaml
+$ oc create -f dep-kube-storage-controller-ocp311.yaml
+
+Run the below command to verify whether doryd is deployed successfully
+$ oc get deploy --namespace kube-system –o wide
+
+Run the below command to delete doryd deployment
+$ oc delete -f dep-kube-storage-controller-ocp311.yaml
+$ oc adm policy remove-scc-from-user privileged system:serviceaccount:kube-system:doryd
+```
+
+>Run the below command to start HPE 3PAR FlexVolume dynamic provisioner on Kubernetes 1.13 multi-master cluster:
+```
+Run the below command to deploy doryd
+$ wget https://raw.githubusercontent.com/hpe-storage/python-hpedockerplugin/master/provisioner/k8s/dep-kube-storage-controller-k8s113.yaml
+$ kubectl create -f dep-kube-storage-controller-k8s113.yaml
+
+Run the below command to verify whether doryd is deployed successfully
+$ kubectl get deploy --namespace kube-system –o wide
+
+Run the below command to delete the doryd deployment
+$ kubectl delete -f dep-kube-storage-controller-k8s113.yaml
+```
+
 >For more information on the HPE FlexVolume driver, please visit this link:
 >
 >https://github.com/hpe-storage/dory/
