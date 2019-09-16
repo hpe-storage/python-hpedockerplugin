@@ -412,17 +412,6 @@ class VolumeManager(object):
                   'cannot be imported'
             raise exception.InvalidInput(reason=msg)
 
-        vvset_detail = self._hpeplugin_driver.get_vvset_from_volume(
-            existing_ref_details['name'])
-        if vvset_detail is not None:
-            vvset_name = vvset_detail.get('name')
-            LOG.info('vvset_name: %(vvset)s' % {'vvset': vvset_name})
-
-            # check and set the flash-cache if exists
-            if(vvset_detail.get('flashCachePolicy') is not None and
-               vvset_detail.get('flashCachePolicy') == 1):
-                vol['flash_cache'] = True
-
         self._set_qos_and_flash_cache_info(existing_ref_details['name'], vol)
 
         # since we have only 'importVol' option for importing,
