@@ -94,13 +94,11 @@ class HpeDockerUnitTestExecutor(object):
         # Get API parameters from child class
         req_body = self._get_request_body(self.get_request_params())
 
-        _api = api.VolumePlugin(reactor, self._host_config, self._all_configs)
+        _api = api.VolumePlugin(reactor, self._all_configs)
+
         _api.orchestrator._execute_request = \
             _api.orchestrator.__undeferred_execute_request__
         req_params = self.get_request_params()
-
-        _api = api.VolumePlugin(reactor, self._all_configs)
-        time.sleep(3)
 
         # There are few TCs like enable/disable plugin for which
         # there isn't going to be any request parameters

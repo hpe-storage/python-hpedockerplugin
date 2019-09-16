@@ -176,11 +176,13 @@ class Orchestrator(object):
     def __undeferred_execute_request__(self, request, volname,
                                        *args, **kwargs):
         backend = self.get_volume_backend_details(volname)
-        return self.__execute_request(backend,
-                                      request,
-                                      volname,
-                                      *args,
-                                      **kwargs)
+        return self._execute_request_for_backend(
+            backend,
+            request,
+            volname,
+            *args,
+            **kwargs
+        )
 
     def _execute_request(self, request, volname, *args, **kwargs):
         backend = self.get_volume_backend_details(volname)
