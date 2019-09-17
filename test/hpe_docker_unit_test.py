@@ -96,8 +96,14 @@ class HpeDockerUnitTestExecutor(object):
 
         _api = api.VolumePlugin(reactor, self._all_configs)
 
-        _api.orchestrator._execute_request = \
-            _api.orchestrator.__undeferred_execute_request__
+        if _api.orchestrator:
+            _api.orchestrator._execute_request = \
+                _api.orchestrator.__undeferred_execute_request__
+
+        if _api._file_orchestrator:
+            _api._file_orchestrator._execute_request = \
+                _api._file_orchestrator.__undeferred_execute_request__
+
         req_params = self.get_request_params()
 
         # There are few TCs like enable/disable plugin for which
