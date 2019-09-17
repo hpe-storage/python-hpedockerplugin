@@ -276,6 +276,15 @@ $ oc create -f dep-kube-storage-controller-ocp311.yaml
 
 Run the below command to verify whether doryd is deployed successfully
 $ oc get deploy --namespace kube-system –o wide
+NAME                            DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE       CONTAINERS                IMAGES                                   SELECTOR
+kube-storage-controller-doryd   1         1         1            1           4d        kube-storage-controller   hpestorage/hpe3par_doryd_openshift:1.0   daemon=kube-storage-controller-daemon
+
+$ oc get pod --namespace kube-system -o wide
+NAME                                                                   READY     STATUS    RESTARTS   AGE       IP            NODE                                                NOMINATED NODE
+kube-storage-controller-doryd-66d8bb9c69-d7bcf                         1/1       Running   0          4d        10.131.1.1    cld6b14-openshift-worker02.set.rdlabs.hpecorp.net   <none>
+
+Run the below command to view logs of doryd
+$ oc logs -f kube-storage-controller-doryd-66d8bb9c69-d7bcf --namespace kube-system
 
 Run the below command to delete doryd deployment
 $ oc delete -f dep-kube-storage-controller-ocp311.yaml
@@ -290,6 +299,15 @@ $ kubectl create -f dep-kube-storage-controller-k8s113.yaml
 
 Run the below command to verify whether doryd is deployed successfully
 $ kubectl get deploy --namespace kube-system –o wide
+NAME                            READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS                IMAGES                                                        SELECTOR
+kube-storage-controller-doryd   1/1     1            1           50s   kube-storage-controller   hpestorage/hpe3par_doryd_openshift:1.0                        daemon=kube-storage-controller-daemon
+
+$ kubectl get pods --namespace kube-system -o wide
+NAME                                             READY   STATUS    RESTARTS   AGE    IP               NODE          NOMINATED NODE   READINESS GATES
+kube-storage-controller-doryd-568dc88764-7bs54   1/1     Running   0          95s    10.233.69.111    cssos196136   <none>           <none>
+
+Run the below command to view logs of doryd
+$ kubectl logs -f kube-storage-controller-doryd-568dc88764-7bs54 --namespace kube-system
 
 Run the below command to delete the doryd deployment
 $ kubectl delete -f dep-kube-storage-controller-k8s113.yaml
