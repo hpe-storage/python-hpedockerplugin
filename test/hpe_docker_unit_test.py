@@ -111,7 +111,7 @@ class HpeDockerUnitTestExecutor(object):
         # in the plugin code as that would defeat the purpose of async
         # initialization by making the main thread wait for all the
         # child threads to complete initialization
-        sleep(3)
+        time.sleep(3)
 
         # There are few TCs like enable/disable plugin for which
         # there isn't going to be any request parameters
