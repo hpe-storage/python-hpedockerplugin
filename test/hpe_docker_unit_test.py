@@ -106,6 +106,13 @@ class HpeDockerUnitTestExecutor(object):
 
         req_params = self.get_request_params()
 
+        # Workaround to allow all the async-initializing threads to
+        # complete the initialization. We cannot use thread.join()
+        # in the plugin code as that would defeat the purpose of async
+        # initialization by making the main thread wait for all the
+        # child threads to complete initialization
+        sleep(3)
+
         # There are few TCs like enable/disable plugin for which
         # there isn't going to be any request parameters
         # Such TCs need to skip the below block and continue
