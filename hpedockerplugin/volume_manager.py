@@ -1454,19 +1454,28 @@ class VolumeManager(object):
                             fileutil.check_if_file_exists(path):
                         LOG.info("Case of reboot confirmed! Mounting device "
                                  "%s on path %s" % (path, mount_dir))
-                        fileutil.mount_dir(path, mount_dir)
-                        mount_ids = node_mount_info[self._node_id]
-                        if mount_id not in mount_ids:
-                            # In case of reboot, mount-id list will have
-                            # a previous stale mount-id which if not cleaned
-                            # will disallow actual unmount of the volume
-                            # forever. Hence creating new mount-id list with
-                            # just the new mount_id received
-                            node_mount_info[self._node_id] = [mount_id]
-                            self._etcd.update_vol(vol['id'],
-                                                  'node_mount_info',
-                                                  node_mount_info)
-                        return self._get_success_response(vol)
+                        try:
+                            fileutil.mount_dir(path, mount_dir)
+                        except Exception as ex:
+                            msg = "Mount volume failed: %s" % \
+                                  six.text_type(ex)
+                            LOG.error(msg)
+                            self._rollback()
+                            response = json.dumps({"Err": '%s' % msg})
+                            return response
+                        else:
+                            mount_ids = node_mount_info[self._node_id]
+                            if mount_id not in mount_ids:
+                                # In case of reboot, mount-id list will have
+                                # a previous stale mount-id which if not cleaned
+                                # will disallow actual unmount of the volume
+                                # forever. Hence creating new mount-id list with
+                                # just the new mount_id received
+                                node_mount_info[self._node_id] = [mount_id]
+                                self._etcd.update_vol(vol['id'],
+                                                      'node_mount_info',
+                                                      node_mount_info)
+                            return self._get_success_response(vol)
 
         root_helper = 'sudo'
         connector_info = connector.get_connector_properties(
@@ -1595,14 +1604,21 @@ class VolumeManager(object):
                  'msg': 'Removing mount directory: %s...' % mount_dir})
 
             # mount the directory
-            fileutil.mount_dir(path.path, mount_dir)
-            LOG.debug('Device: %(path)s successfully mounted on %(mount)s',
-                      {'path': path.path, 'mount': mount_dir})
+            try:
+                fileutil.mount_dir(path.path, mount_dir)
+                LOG.debug('Device: %(path)s successfully mounted on %(mount)s',
+                          {'path': path.path, 'mount': mount_dir})
 
-            undo_steps.append(
-                {'undo_func': fileutil.umount_dir,
-                 'params': mount_dir,
-                 'msg': 'Unmounting directory: %s...' % mount_dir})
+                undo_steps.append(
+                    {'undo_func': fileutil.umount_dir,
+                     'params': mount_dir,
+                     'msg': 'Unmounting directory: %s...' % mount_dir})
+            except Exception as ex:
+                msg = "Mount volume failed: %s" % six.text_type(ex)
+                LOG.error(msg)
+                self._rollback()
+                response = json.dumps({"Err": '%s' % msg})
+                return response
 
             # TODO: find out how to invoke mkfs so that it creates the
             # filesystem without the lost+found directory
@@ -1975,6 +1991,7 @@ class VolumeManager(object):
 
     @staticmethod
     def _rollback(rollback_list):
+        LOG.info("Rolling back...")
         for undo_action in reversed(rollback_list):
             LOG.info(undo_action['msg'])
             try:
@@ -1987,8 +2004,9 @@ class VolumeManager(object):
                     undo_action['undo_func'](undo_action['params'])
             except Exception as ex:
                 # TODO: Implement retry logic
-                LOG.exception('Ignoring exception: %s' % ex)
+                LOG.warning('Ignoring exception: %s' % six.text_type(ex))
                 pass
+        LOG.info("Roll back complete!")
 
     @staticmethod
     def _get_snapshot_by_name(snapshots, snapname):
