@@ -80,37 +80,8 @@ class VolumeBindTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
                                  labels={'type': 'plugin'})
                 HPE3ParBackendVerification.hpe_wait_for_all_backends_to_initialize(cls, driver=HPE3PAR, help='backends')
             except docker.errors.APIError:
-                pass
-
-
-    @classmethod
-    def tearDownClass(cls):
-        if PLUGIN_TYPE == 'managed':
-            c = docker.APIClient(
-                version=TEST_API_VERSION, timeout=600,
-                **docker.utils.kwargs_from_env()
-            )
-            try:
-                c.disable_plugin(HPE3PAR)
-            except docker.errors.APIError:
-                pass
-
-            try:
-                c.remove_plugin(HPE3PAR, force=True)
-            except docker.errors.APIError:
-                pass
-        else:
-            c = docker.from_env(version=TEST_API_VERSION, timeout=600)
-            try:
-                container_list = c.containers.list(all=True, filters={'label': 'type=plugin'})
-                container_list[0].stop()
-                container_list[0].remove()
-                os.remove("/run/docker/plugins/hpe.sock")
-                os.remove("/run/docker/plugins/hpe.sock.lock")
-            except docker.errors.APIError:
-                pass
-
-
+                 pass    
+    
     def test_volume_mount(self):
         '''
            This is a volume mount test.

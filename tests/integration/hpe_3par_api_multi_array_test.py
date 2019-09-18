@@ -58,54 +58,11 @@ class MultiArrayTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
 
     @classmethod
     def setUpClass(cls):
-
+        urllib3.disable_warnings()
         hpe_3par_cli.login('3paradm', '3pardata')
         hpe_3par_cli2.login('3paradm', '3pardata')
 
-        if PLUGIN_TYPE == 'managed':
-            c = docker.APIClient(
-                version=TEST_API_VERSION, timeout=600,
-                **docker.utils.kwargs_from_env()
-                )
-            try:
-                prv = c.plugin_privileges(HPE3PAR)
-                logs = [d for d in c.pull_plugin(HPE3PAR, prv)]
-                assert filter(lambda x: x['status'] == 'Download complete', logs)
-                if HOST_OS == 'ubuntu':
-                    c.configure_plugin(HPE3PAR, {
-                        'certs.source': CERTS_SOURCE
-                    })
-                else:
-                    c.configure_plugin(HPE3PAR, {
-                        'certs.source': CERTS_SOURCE,
-                        'glibc_libs.source': '/lib64'
-                    })
-                pl_data = c.inspect_plugin(HPE3PAR)
-                assert pl_data['Enabled'] is False
-                while pl_data['Enabled'] is False:
-                    c.enable_plugin(HPE3PAR)
-                    HPE3ParBackendVerification.hpe_wait_for_all_backends_to_initialize(cls, driver=HPE3PAR, help='backends')
-                pl_data = c.inspect_plugin(HPE3PAR)
-                assert pl_data['Enabled'] is True
-            except docker.errors.APIError:
-                pass
-        else:
-            c = docker.from_env(version=TEST_API_VERSION, timeout=600)
-            try:
-                mount = docker.types.Mount(type='bind', source='/opt/hpe/data',
-                                           target='/opt/hpe/data', propagation='rshared'
-                )
-                c.containers.run(PLUGIN_IMAGE, detach=True,
-                                 name='hpe_legacy_plugin', privileged=True, network_mode='host',
-                                 restart_policy={'Name': 'on-failure', 'MaximumRetryCount': 5},
-                                 volumes=PLUGIN_VOLUMES, mounts=[mount],
-                                 labels={'type': 'plugin'}
-                )
-                HPE3ParBackendVerification.hpe_wait_for_all_backends_to_initialize(cls, driver=HPE3PAR, help='backends')
-            except docker.errors.APIError:
-                pass
-
-
+ 
     @classmethod
     def tearDownClass(cls):
 
@@ -139,31 +96,6 @@ class MultiArrayTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
 
         hpe_3par_cli.logout()
         hpe_3par_cli2.logout()
-
-        if PLUGIN_TYPE == 'managed':
-            c = docker.APIClient(
-                version=TEST_API_VERSION, timeout=600,
-                **docker.utils.kwargs_from_env()
-            )
-            try:
-                c.disable_plugin(HPE3PAR)
-            except docker.errors.APIError:
-                pass
-
-            try:
-                c.remove_plugin(HPE3PAR, force=True)
-            except docker.errors.APIError:
-                pass
-        else:
-            c = docker.from_env(version=TEST_API_VERSION, timeout=600)
-            try:
-                container_list = c.containers.list(all=True, filters={'label': 'type=plugin'})
-                container_list[0].stop()
-                container_list[0].remove()
-                os.remove("/run/docker/plugins/hpe.sock")
-                os.remove("/run/docker/plugins/hpe.sock.lock")
-            except docker.errors.APIError:
-                pass
 
 
     def test_default_array_in_presence_of_multiarray(self):
@@ -550,7 +482,7 @@ class MultiArrayTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
                                        cloneOf=volume_name)
 
         self.hpe_inspect_volume(clone, size=1, provisioning='full',
-                                flash_cache=True)
+                                flash_cache='true')
         self.hpe_verify_volume_created(clone_name,size='1',provisioning='full',
                                        clone=True,backend='backend2')
         self.hpe_delete_volume(clone)
@@ -610,7 +542,7 @@ class MultiArrayTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
         self.hpe_inspect_volume(volume,provisioning='full',size=1,enabled=True,
                                 importVol=vol_name, backend='backend2',
                                 maxIOPS='1000 IOs/sec', minIOPS='300 IOs/sec',
-                                priority='Normal',vvset_name=vvset_name)
+                                priority='Normal',vvset_name=vvset_name,flash_cache='false')
 
         snapshot = self.hpe_create_snapshot(snapshot_name, driver=HPE3PAR,
                                             virtualCopyOf=volume_name)
@@ -622,7 +554,7 @@ class MultiArrayTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
 
         clone = self.hpe_create_volume(clone_name, driver=HPE3PAR,
                                       cloneOf=volume_name)
-        self.hpe_inspect_volume(clone, provisioning='full', size=1)
+        self.hpe_inspect_volume(clone, provisioning='full', size=1, flash_cache='false')
         self.hpe_verify_volume_created(clone_name, clone=True, size=1,
                                        provisioning='full', backend="backend2")
 
@@ -671,15 +603,33 @@ class MultiArrayTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
 
         volume_name = helpers.random_name()
         self.tmp_volumes.append(volume_name)
-        try:
-            volume = self.hpe_create_volume(volume_name, driver=HPE3PAR,
+        container_name = helpers.random_name()
+        self.tmp_volumes.append(container_name)
+        volume = self.hpe_create_volume(volume_name, driver=HPE3PAR,
                                         importVol=vol_name, backend='backend2')
-        except Exception as ex:
-            resp = ex.status_code
-            self.assertEqual(resp, 404)
+        self.hpe_verify_volume_created(volume_name,provisioning='full',importVol=volume_name,
+                                       size=1, backend='backend2' )
+        self.hpe_inspect_volume(volume, size=1, provisioning='full', importVol=vol_name,
+                                flash_cache='false')
+        host_conf = self.hpe_create_host_config(volume_driver=HPE3PAR,
+                                                binds= volume_name + ':/data1')
+        container_info = self.hpe_mount_volume(BUSYBOX, command='sh', detach=True,
+                              tty=True, stdin_open=True,
+                              name=container_name, host_config=host_conf
+                              )
+        container_id = container_info['Id']
+        self.hpe_inspect_container_volume_mount(volume_name, container_name)
+        # Verifying in 3par
+        self.hpe_verify_volume_mount(volume_name, backend='backend2')
 
-        self.hpe_volume_not_created(volume_name)
-        self.hpe_verify_volume_deleted(volume_name)
+        self.hpe_unmount_volume(container_id)
+        # Verifying in 3par
+        self.hpe_verify_volume_unmount(volume_name, backend='backend2')
+        self.hpe_inspect_container_volume_unmount(volume_name, container_name)
+        self.client.remove_container(container_id)
+        hpe_3par_cli2.deleteVolumeSet(vvset_name)
+        self.hpe_delete_volume(volume)
+        self.hpe_verify_volume_deleted(volume_name, backend='backend2')
 
 
     def test_multi_array_for_both_ISCSI_and_FC(self):

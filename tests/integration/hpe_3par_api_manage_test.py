@@ -52,90 +52,30 @@ class ManageVolumeTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
 
     @classmethod
     def setUpClass(cls):
+        urllib3.disable_warnings()
         hpe_3par_cli.login('3paradm', '3pardata')
         pass
-        if PLUGIN_TYPE == 'managed':
-            c = docker.APIClient(
-                version=TEST_API_VERSION, timeout=600,
-                **docker.utils.kwargs_from_env()
-                )
-            try:
-                prv = c.plugin_privileges(HPE3PAR)
-                logs = [d for d in c.pull_plugin(HPE3PAR, prv)]
-                assert filter(lambda x: x['status'] == 'Download complete', logs)
-                if HOST_OS == 'ubuntu':
-                    c.configure_plugin(HPE3PAR, {
-                        'certs.source': CERTS_SOURCE
-                    })
-                else:
-                    c.configure_plugin(HPE3PAR, {
-                        'certs.source': CERTS_SOURCE,
-                        'glibc_libs.source': '/lib64'
-                    })
-                pl_data = c.inspect_plugin(HPE3PAR)
-                assert pl_data['Enabled'] is False
-                while pl_data['Enabled'] is False:
-                    c.enable_plugin(HPE3PAR)
-                    HPE3ParBackendVerification.hpe_wait_for_all_backends_to_initialize(cls, driver=HPE3PAR, help='backends')
-                pl_data = c.inspect_plugin(HPE3PAR)
-                assert pl_data['Enabled'] is True
-            except docker.errors.APIError:
-                pass
-        else:
-            c = docker.from_env(version=TEST_API_VERSION, timeout=600)
-            try:
-                mount = docker.types.Mount(type='bind', source='/opt/hpe/data',
-                                           target='/opt/hpe/data', propagation='rshared'
-                )
-                c.containers.run(PLUGIN_IMAGE, detach=True,
-                                 name='hpe_legacy_plugin', privileged=True, network_mode='host',
-                                 restart_policy={'Name': 'on-failure', 'MaximumRetryCount': 5},
-                                 volumes=PLUGIN_VOLUMES, mounts=[mount],
-                                 labels={'type': 'plugin'}
-                )
-                HPE3ParBackendVerification.hpe_wait_for_all_backends_to_initialize(cls, driver=HPE3PAR, help='backends')
-            except docker.errors.APIError:
-                pass
-
 
     @classmethod
     def tearDownClass(cls):
 
         delete_vol = ["python_snap_5", "python_vol_1","python_vol_2","python_vol_3", "python_vol_4","python_vol_5","python_vol_6","python_vol_7","python_vol_8","python_vol_9"]
+        delete_vvset = ["python_vvset_3", "python_vvset_4", "python_vvset_8", "python_vvset_9"]
 
+        for vvset_name in delete_vvset:
+            try:
+                hpe_3par_cli.deleteVolumeSet(vvset_name)
+            except:
+                pass
+            
         for vol_name in delete_vol:
             try:
                 hpe_3par_cli.deleteVolume(vol_name)
             except:
                 pass
-
+        
         hpe_3par_cli.logout()
 #        pass
-        if PLUGIN_TYPE == 'managed':
-            c = docker.APIClient(
-                version=TEST_API_VERSION, timeout=600,
-                **docker.utils.kwargs_from_env()
-            )
-            try:
-                c.disable_plugin(HPE3PAR)
-            except docker.errors.APIError:
-                pass
-
-            try:
-                c.remove_plugin(HPE3PAR, force=True)
-            except docker.errors.APIError:
-                pass
-        else:
-            c = docker.from_env(version=TEST_API_VERSION, timeout=600)
-            try:
-                container_list = c.containers.list(all=True, filters={'label': 'type=plugin'})
-                container_list[0].stop()
-                container_list[0].remove()
-                os.remove("/run/docker/plugins/hpe.sock")
-                os.remove("/run/docker/plugins/hpe.sock.lock")
-            except docker.errors.APIError:
-                pass
-
 
     def test_manage_volume(self):
         '''
@@ -241,6 +181,7 @@ class ManageVolumeTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
 
     def test_manage_volume_which_is_in_vvset_with_qos(self):
 
+        urllib3.disable_warnings()
         vol_name = "python_vol_3"
         vvset_name = "python_vvset_3"
         sizeMiB = 1024
@@ -259,12 +200,14 @@ class ManageVolumeTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
                                 importVol=vol_name)
         self.hpe_verify_volume_created(volume_name,provisioning='full',importVol=volume_name, size=1)
         self.hpe_inspect_volume(volume, size=1, provisioning='full', importVol=vol_name, enabled=True,
-                                maxIOPS='1000 IOs/sec', minIOPS='300 IOs/sec', priority='Normal',vvset_name=vvset_name)
+                                maxIOPS='1000 IOs/sec', minIOPS='300 IOs/sec', priority='Normal',vvset_name=vvset_name,
+                                flash_cache='false')
 
         hpe_3par_cli.deleteVolumeSet(vvset_name)
 
     def test_manage_volume_which_is_in_vvset_without_qos(self):
 
+        urllib3.disable_warnings()
         vol_name = "python_vol_4"
         vvset_name = "python_vvset_4"
         sizeMiB = 1024
@@ -277,16 +220,32 @@ class ManageVolumeTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
 
         volume_name = helpers.random_name()
         self.tmp_volumes.append(volume_name)
-        try:
-            volume = self.hpe_create_volume(volume_name, driver=HPE3PAR,
+        container_name= helpers.random_name()
+        self.tmp_volumes.append(container_name)
+        volume = self.hpe_create_volume(volume_name, driver=HPE3PAR,
                                             importVol=vol_name)
-        except Exception as ex:
-            resp = ex.status_code
-            self.assertEqual(resp, 404)
-        self.hpe_volume_not_created(volume_name)
+        self.hpe_verify_volume_created(volume_name,provisioning='full',importVol=volume_name, size=1)
+        self.hpe_inspect_volume(volume, size=1, provisioning='full', importVol=vol_name,
+                                flash_cache='false')
+        host_conf = self.hpe_create_host_config(volume_driver=HPE3PAR,
+                                                binds= volume_name + ':/data1')
+        container_info = self.hpe_mount_volume(BUSYBOX, command='sh', detach=True,
+                              tty=True, stdin_open=True,
+                              name=container_name, host_config=host_conf
+                              )
+        container_id = container_info['Id']
+        self.hpe_inspect_container_volume_mount(volume_name, container_name)
+        # Verifying in 3par
+        self.hpe_verify_volume_mount(volume_name)
 
+        self.hpe_unmount_volume(container_id)
+        # Verifying in 3par
+        self.hpe_verify_volume_unmount(volume_name)
+        self.hpe_inspect_container_volume_unmount(volume_name, container_name)
+        self.client.remove_container(container_id)
         hpe_3par_cli.deleteVolumeSet(vvset_name)
-        hpe_3par_cli.deleteVolume(vol_name)
+        self.hpe_delete_volume(volume)
+        self.hpe_verify_volume_deleted(volume_name)
 
     def test_manage_snap_without_managing_volume(self):
         '''
@@ -412,7 +371,7 @@ class ManageVolumeTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
                                        cloneOf=volume_name)
 
         self.hpe_inspect_volume(clone, size=1,
-                                provisioning='full', flash_cache=True)
+                                provisioning='full', flash_cache='true')
         self.hpe_verify_volume_created(clone_name, size='1',
                                        provisioning='full', clone=True)
         self.hpe_delete_volume(clone)
@@ -457,7 +416,7 @@ class ManageVolumeTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
         volume = self.hpe_create_volume(volume_name, driver=HPE3PAR,
                                 importVol=vol_name)
         self.hpe_verify_volume_created(volume_name,provisioning='full',importVol=volume_name, flash_cache='true', vvs_name=vvset_name, qos='true', size=1)
-        self.hpe_inspect_volume(volume, size=1, provisioning='full', importVol=vol_name, flash_cache=True,
+        self.hpe_inspect_volume(volume, size=1, provisioning='full', importVol=vol_name, flash_cache='true',
                                 maxIOPS='1000 IOs/sec', minIOPS='300 IOs/sec', priority='Normal',vvset_name=vvset_name)
 
         hpe_3par_cli.deleteVolumeSet(vvset_name)

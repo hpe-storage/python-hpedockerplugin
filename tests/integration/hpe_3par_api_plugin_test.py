@@ -59,6 +59,7 @@ class PluginTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
         except docker.errors.APIError:
             pass
 
+
     def ensure_plugin_installed(self, plugin_name):
         # This test will ensure if the plugin is installed
         try:
@@ -112,7 +113,7 @@ class PluginTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
         with pytest.raises(docker.errors.APIError):
             client.disable_plugin(HPE3PAR)
 
-    def test_inspect_plugin(self):
+    def test_a_inspect_plugin(self):
         # This test will inspect the plugin
         self.ensure_plugin_installed(HPE3PAR)
         self.tmp_plugins.append(HPE3PAR)

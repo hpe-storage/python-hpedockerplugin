@@ -83,34 +83,6 @@ class RemoteCopyTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
                 pass
 
 
-    @classmethod
-    def tearDownClass(cls):
-        if PLUGIN_TYPE == 'managed':
-            c = docker.APIClient(
-                version=TEST_API_VERSION, timeout=600,
-                **docker.utils.kwargs_from_env()
-            )
-            try:
-                c.disable_plugin(HPE3PAR)
-            except docker.errors.APIError:
-                pass
-
-            try:
-                c.remove_plugin(HPE3PAR, force=True)
-            except docker.errors.APIError:
-                pass
-        else:
-            c = docker.from_env(version=TEST_API_VERSION, timeout=600)
-            try:
-                container_list = c.containers.list(all=True, filters={'label': 'type=plugin'})
-                container_list[0].stop()
-                container_list[0].remove()
-                os.remove("/run/docker/plugins/hpe.sock")
-                os.remove("/run/docker/plugins/hpe.sock.lock")
-            except docker.errors.APIError:
-                pass
-
-
     def test_active_passive_replication(self):
         '''
            This test creates an active-passive replication group and tests the failover, recover and restore functionality.
@@ -132,8 +104,9 @@ class RemoteCopyTest(HPE3ParBackendVerification,HPE3ParVolumePluginTest):
         # Create volume with -o replicationGroup option.
         volume = self.hpe_create_volume(volume_name, driver=HPE3PAR, replicationGroup='testRCG1', backend='ActivePassiveRepBackend')
         
-        #Inspect replication group and volume details
-        self.hpe_inspect_volume(volume, replicationGroup='testRCG1')
+        #Inspect replication group and volume details.
+        #Passing flash-cache because RCG create and use vvset internally and set default value of flash-cache as false.
+        self.hpe_inspect_volume(volume, replicationGroup='testRCG1', flash_cache='false')
 
 
         #Create contianer, mount volume and write data to file 
