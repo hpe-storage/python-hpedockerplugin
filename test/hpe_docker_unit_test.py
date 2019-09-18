@@ -169,9 +169,6 @@ class HpeDockerUnitTestExecutor(object):
         try:
             host_config = setupcfg.get_host_config(cfg_param)
             backend_configs = setupcfg.get_all_backend_configs(cfg_param)
-            # Set Logging level
-            logging_level = backend_configs['DEFAULT'].logging
-            setupcfg.setup_logging_for_ut('hpe_storage_api', logging_level)
         except Exception as ex:
             msg = 'Setting up of hpe3pardocker unit test failed, error is: ' \
                   '%s' % six.text_type(ex)
