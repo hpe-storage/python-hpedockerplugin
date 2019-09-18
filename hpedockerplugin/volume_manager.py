@@ -1466,11 +1466,11 @@ class VolumeManager(object):
                         else:
                             mount_ids = node_mount_info[self._node_id]
                             if mount_id not in mount_ids:
-                                # In case of reboot, mount-id list will have
-                                # a previous stale mount-id which if not cleaned
+                                # In case of reboot, mount-id list will have a
+                                # previous stale mount-id which if not cleaned
                                 # will disallow actual unmount of the volume
-                                # forever. Hence creating new mount-id list with
-                                # just the new mount_id received
+                                # forever. Hence creating new mount-id list
+                                # with just the new mount_id received
                                 node_mount_info[self._node_id] = [mount_id]
                                 self._etcd.update_vol(vol['id'],
                                                       'node_mount_info',
