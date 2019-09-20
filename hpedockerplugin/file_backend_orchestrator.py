@@ -114,13 +114,24 @@ class FileBackendOrchestrator(Orchestrator):
         return self._execute_request('get_share_details', share_name, obj)
 
     def list_objects(self):
+        file_mgr = None
+        file_mgr_info = self._manager.get('DEFAULT')
+        if file_mgr_info:
+            file_mgr = file_mgr_info['mgr']
+        else:
+            file_mgr_info = self._manager.get('DEFAULT_FILE')
+            if file_mgr_info:
+                file_mgr = file_mgr_info['mgr']
+
         share_list = []
         db_shares = self._etcd_client.get_all_shares()
-        for db_share in db_shares:
-            share_info = self._execute_request('get_share_info_for_listing',
-                                               db_share['name'],
-                                               db_share)
-            share_list.append(share_info)
+        if file_mgr:
+            for db_share in db_shares:
+                share_info = file_mgr.get_share_info_for_listing(
+                    db_share['name'],
+                    db_share
+                )
+                share_list.append(share_info)
         return share_list
 
     def get_path(self, obj):
