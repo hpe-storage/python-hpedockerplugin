@@ -1464,7 +1464,7 @@ class VolumeManager(object):
                             msg = "Mount volume failed: %s" % \
                                   six.text_type(ex)
                             LOG.error(msg)
-                            self._rollback()
+                            self._rollback(undo_steps)
                             response = json.dumps({"Err": '%s' % msg})
                             return response
                         else:
@@ -1620,7 +1620,7 @@ class VolumeManager(object):
             except Exception as ex:
                 msg = "Mount volume failed: %s" % six.text_type(ex)
                 LOG.error(msg)
-                self._rollback()
+                self._rollback(undo_steps)
                 response = json.dumps({"Err": '%s' % msg})
                 return response
 
