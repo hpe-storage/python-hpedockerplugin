@@ -1425,13 +1425,17 @@ class VolumeManager(object):
                         # This is required to remove multiple duplicate tuples
                         # (node_id, path_info) i.e. entries with same node_id
                         # Later on
+                        updated_list = []
                         for opi in old_path_info:
                             node_id = opi[0]
                             if old_node_id == node_id:
-                                LOG.info("Removing old-path-info tuple "
-                                         "having node-id %s for volume %s..."
+                                LOG.info("Found old-path-info tuple "
+                                         "having node-id %s for volume %s. "
+                                         "Skipping it..."
                                          % (node_id, volname))
-                                old_path_info.remove(opi)
+                                continue
+                            updated_list.append(opi)
+                        old_path_info = updated_list
 
                     old_path_info.append((old_node_id, path_info))
                     self._etcd.update_vol(volid, 'old_path_info',
