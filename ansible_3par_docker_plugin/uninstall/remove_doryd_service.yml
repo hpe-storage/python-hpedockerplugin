@@ -1,15 +1,65 @@
----
+  - name: Initialize multimaster, k8s_1_13, os_3_11 flags as false by default
+    set_fact:
+      multimaster: false
+      k8s_1_13: false
+      os_3_11: false
+      ks8_result: {}
+
+  - name: Set multimaster flag as true when we have more than one master in hosts file 
+    set_fact:
+      multimaster: true
+    when: groups['masters'] | count | int  > 1
+
+  - name: Execute oc version and check for openshift save output
+    shell: oc version |grep openshift
+    register: oc_result
+    ignore_errors: yes
+    no_log: True
+
+  - name: Set flag os_3_11 to true if openshift version is 3.11
+    set_fact:
+      os_3_11: true
+    when: oc_result.stdout is search("3.11")
+
+  - name: Execute kubernetes version when oc version command was not found
+    shell: kubectl version |grep "Client Version" |grep GitVersion | cut -d":" -f5 | awk '{print $1}'
+    register: ks8_result
+    when: (oc_result.stderr is search("command not found"))
+
+  - name: Set flag k8s_1_13 to true if Kubernetes 1.13 version is found
+    set_fact:
+      k8s_1_13: true
+    when: oc_result.stderr !="" and ks8_result is defined and ks8_result.stdout is search("1.13") and ks8_result.stderr == ""
+
+  - name: Remove Deployment on Openshift cluster when version is 3.11
+    shell: |
+      oc adm policy remove-scc-from-user privileged system:serviceaccount:kube-system:doryd
+      cd {{playbook_dir}}
+      cd ../..
+      oc delete -f provisioner/OpenShift/dep-kube-storage-controller-ocp311.yaml
+    become: yes
+    when: multimaster == true and os_3_11 == true 
+
+  - name: Remove Deployment on Kubernetes cluster when version is 1.13
+    shell: |
+      cd {{playbook_dir}}
+      cd ../..
+      kubectl delete -f provisioner/k8s/dep-kube-storage-controller-k8s113.yaml
+    become: yes
+    when: multimaster == true and k8s_1_13 == true 
+
   - name: Check that the doryd.service file exists
     stat:
       path: /etc/systemd/system/doryd.service
     register: stat_result
+    when: (multimaster == false) or (multimaster == true and k8s_1_13 == false and os_3_11 == false)
 
   - name: stop doryd service, also issue daemon-reload to pick up config changes
     service:
       state: stopped
       enabled: no
       name: doryd.service
-    when: stat_result.stat.exists
+    when: (multimaster == false) or (multimaster == true and k8s_1_13 == false and os_3_11 == false) and (stat_result.stat.exists)
 
   - pause:
       seconds: 5
@@ -18,3 +68,4 @@
     file:
       path: /etc/systemd/system/doryd.service
       state: absent
+    when: (multimaster == false) or (multimaster == true and k8s_1_13 == false and os_3_11 == false)

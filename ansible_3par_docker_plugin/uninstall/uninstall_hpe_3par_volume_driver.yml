@@ -15,12 +15,14 @@
       include: remove_multipath.yml
 
 - name: Remove HPE 3PAR Volume Driver for Kubernetes/OpenShift
-  hosts: masters
+  hosts: "{{groups['masters'][0]}}"
   become: root
 
+
   tasks:
-    - name: Start Dynamic Provisioner (doryd) on Master node
+    - name: Stop Dynamic Provisioner (doryd) on Master node
       include: remove_doryd_service.yml
+      ignore_errors: yes
 
 - name: Uninstall HPE 3PAR Volume Driver for Kubernetes/OpenShift
   hosts: masters,workers,etcd
