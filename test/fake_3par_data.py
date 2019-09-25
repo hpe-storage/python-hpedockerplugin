@@ -1,3 +1,4 @@
+import copy
 import json
 import mock
 from oslo_utils import netutils
@@ -198,17 +199,17 @@ vols_list = [
     {
         'display_name': 'test-vol-001',
         'size': 310,
-        'path_info': json_path_info
+        'path_info': copy.deepcopy(json_path_info)
     },
     {
         'display_name': 'test-vol-002',
         'size': 555,
-        'path_info': json_path_info
+        'path_info': copy.deepcopy(json_path_info)
     }
 ]
 
 
-path_info = json.loads(json_path_info)
+path_info = json.loads(copy.deepcopy(json_path_info))
 
 vol_mounted_on_this_node = {
     'name': VOLUME_NAME,
@@ -224,7 +225,7 @@ vol_mounted_on_this_node = {
     'fsMode': None,
     'snapshots': [],
     'node_mount_info': {THIS_NODE_ID: ['Fake-Mount-ID']},
-    'path_info': json_path_info,
+    'path_info': copy.deepcopy(json_path_info),
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
     'is_snap': False,
     'backend': 'DEFAULT'
@@ -245,7 +246,7 @@ vol_mounted_on_other_node = {
     'snapshots': [],
     'node_mount_info': {OTHER_NODE_ID: ['Fake-Mount-ID']},
     'path_info': path_info,
-    'old_path_info': [(THIS_NODE_ID, json_path_info)],
+    'old_path_info': [(THIS_NODE_ID, copy.deepcopy(json_path_info))],
     'mount_conflict_delay': MOUNT_CONFLICT_DELAY,
     'is_snap': False,
     'backend': 'DEFAULT'

@@ -14,9 +14,9 @@ def __synchronized(lock_type, lock_name, f, *a, **k):
     lck_name = lock_name.format(**call_args)
     lock_acquired = False
     self = call_args['self']
-    lock = self._etcd.get_lock(lock_type)
+    lock = self._etcd.get_lock(lock_type, lock_name)
     try:
-        lock.try_lock_name(lck_name)
+        lock.try_lock_name()
         lock_acquired = True
         LOG.info('Lock acquired: [caller=%s, lock-name=%s]'
                  % (f.__name__, lck_name))
@@ -31,7 +31,7 @@ def __synchronized(lock_type, lock_name, f, *a, **k):
     finally:
         if lock_acquired:
             try:
-                lock.try_unlock_name(lck_name)
+                lock.try_unlock_name()
                 LOG.info('Lock released: [caller=%s, lock-name=%s]' %
                          (f.__name__, lck_name))
             except exception.HPEPluginUnlockFailed:

@@ -92,10 +92,25 @@ class HpeDockerUnitTestExecutor(object):
         self.setup_mock_objects()
 
         # Get API parameters from child class
-        req_params = self.get_request_params()
-        req_body = self._get_request_body(req_params)
+        req_body = self._get_request_body(self.get_request_params())
 
         _api = api.VolumePlugin(reactor, self._all_configs)
+
+        if _api.orchestrator:
+            _api.orchestrator._execute_request = \
+                _api.orchestrator.__undeferred_execute_request__
+
+        if _api._file_orchestrator:
+            _api._file_orchestrator._execute_request = \
+                _api._file_orchestrator.__undeferred_execute_request__
+
+        req_params = self.get_request_params()
+
+        # Workaround to allow all the async-initializing threads to
+        # complete the initialization. We cannot use thread.join()
+        # in the plugin code as that would defeat the purpose of async
+        # initialization by making the main thread wait for all the
+        # child threads to complete initialization
         time.sleep(3)
 
         # There are few TCs like enable/disable plugin for which
