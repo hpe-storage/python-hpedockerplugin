@@ -97,3 +97,5 @@ fi
 rm -rf ./v2plugin/rootfs/python-hpedockerplugin/.git
 rm -rf ./v2plugin/rootfs/python-hpedockerplugin/.tox
 docker plugin create ${pluginName} v2plugin
+rm -rf v2plugin
+rm -f unit_tests_run.log
