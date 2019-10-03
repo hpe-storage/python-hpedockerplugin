@@ -34,7 +34,7 @@
       k8s_1_13 : true
     when: oc_result.stderr !="" and ks8_result is defined and ks8_result.stdout is search("1.13") and ks8_result.stderr == ""
 
-    - name: Check whether doryd as a container exists for multimaster Kubernetis/OS setup
+  - name: Check whether doryd as a container exists for multimaster Kubernetes/Openshift setup
     shell:
       kubectl get pods --namespace kube-system -o wide | grep doryd
     register: result
