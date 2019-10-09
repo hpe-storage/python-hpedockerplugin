@@ -7,7 +7,6 @@
       result: {}
       doryd_exists: false
 
-
   - name: Set multimaster flag as true when we have more than one master in hosts file 
     set_fact:
       multimaster: true
@@ -34,14 +33,15 @@
       k8s_1_13 : true
     when: oc_result.stderr !="" and ks8_result is defined and ks8_result.stdout is search("1.13") and ks8_result.stderr == ""
 
-    - name: Check whether doryd as a container exists for multimaster Kubernetis/OS setup
+  - name: Check whether doryd as a container exists for multimaster Kubernetes/Openshift setup
     shell:
       kubectl get pods --namespace kube-system -o wide | grep doryd
     register: result
-    ignore_errors: yes
+    failed_when: false
+    changed_when: false
     when: multimaster == true and (os_3_11 == true or k8s_1_13 == true)
 
-  - name: Set flag doryd_exists as true if alreay running
+  - name: Set flag doryd_exists as true if already running
     set_fact:
       doryd_exists: true
     when: multimaster == true and result is defined and result.rc == 0 
@@ -61,7 +61,7 @@
       cd .. 
       kubectl create -f provisioner/k8s/dep-kube-storage-controller-k8s113.yaml
     become: yes
-    when: multimaster == true and k8s_1_13 == true and and doryd_exists == false 
+    when: multimaster == true and k8s_1_13 == true and doryd_exists == false 
 
   - name: create doryd service
     copy:
