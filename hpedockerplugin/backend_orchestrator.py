@@ -35,6 +35,7 @@ import hpedockerplugin.volume_manager as mgr
 import hpedockerplugin.etcdutil as util
 import threading
 import hpedockerplugin.backend_async_initializer as async_initializer
+from twisted.internet import threads
 
 LOG = logging.getLogger(__name__)
 
@@ -49,7 +50,6 @@ class Orchestrator(object):
         self._initialize_orchestrator(host_config)
         self._manager = self.initialize_manager_objects(host_config,
                                                         backend_configs)
-
         # This is the dictionary which have the volume -> backend map entries
         # cache after doing an etcd volume read operation.
         self.volume_backends_map = {}
@@ -162,17 +162,36 @@ class Orchestrator(object):
             if volume_mgr is not None:
                 # populate the volume backend map for caching
                 return getattr(volume_mgr, request)(volname, *args, **kwargs)
-
         msg = "ERROR: Backend '%s' was NOT initialized successfully." \
               " Please check hpe.conf for incorrect entries and rectify " \
               "it." % backend_name
         LOG.error(msg)
         return json.dumps({u'Err': msg})
 
-    def _execute_request(self, request, volname, *args, **kwargs):
+    def __undeferred_execute_request__(self, request, volname,
+                                       *args, **kwargs):
         backend = self.get_volume_backend_details(volname)
         return self._execute_request_for_backend(
-            backend, request, volname, *args, **kwargs)
+            backend,
+            request,
+            volname,
+            *args,
+            **kwargs
+        )
+
+    def _execute_request(self, request, volname, *args, **kwargs):
+        backend = self.get_volume_backend_details(volname)
+        d = threads.deferToThread(self._execute_request_for_backend,
+                                  backend,
+                                  request,
+                                  volname,
+                                  *args,
+                                  **kwargs)
+        d.addCallback(self.callback_func)
+        return d
+
+    def callback_func(self, response):
+        return response
 
     @abc.abstractmethod
     def get_manager(self, host_config, config, etcd_util,
