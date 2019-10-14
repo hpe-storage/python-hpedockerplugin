@@ -14,7 +14,7 @@ def __synchronized(lock_type, lock_name, f, *a, **k):
     lck_name = lock_name.format(**call_args)
     lock_acquired = False
     self = call_args['self']
-    lock = self._etcd.get_lock(lock_type, lock_name)
+    lock = self._etcd.get_lock(lock_type, lck_name)
     try:
         lock.try_lock_name()
         lock_acquired = True

@@ -1337,6 +1337,55 @@ class VolumeManager(object):
 
     @synchronization.synchronized_volume('{volname}')
     def _synchronized_mount_volume(self, volname, vol_mount, mount_id):
+        root_helper = 'sudo'
+        connector_info = connector.get_connector_properties(
+            root_helper, self._my_ip, multipath=self._use_multipath,
+            enforce_multipath=self._enforce_multipath)
+
+        def _mount_volume(driver):
+            LOG.info("Entered _mount_volume")
+            try:
+                # Call driver to initialize the connection
+                driver.create_export(vol, connector_info, is_snap)
+                connection_info = \
+                    driver.initialize_connection(
+                        vol, connector_info, is_snap)
+                LOG.debug("Initialized Connection Successful!")
+                LOG.debug('connection_info: %(connection_info)s, '
+                          'was successfully retrieved',
+                          {'connection_info': json.dumps(connection_info)})
+
+                undo_steps.append(
+                    {'undo_func': driver.terminate_connection,
+                     'params': (vol, connector_info, is_snap),
+                     'msg': 'Terminating connection to volume: %s...'
+                            % volname})
+            except Exception as ex:
+                msg = (_('Initialize Connection Failed: '
+                         'connection info retrieval failed, error is: '),
+                       six.text_type(ex))
+                LOG.error(msg)
+                self._rollback(undo_steps)
+                raise exception.HPEPluginMountException(reason=msg)
+
+            # Call OS Brick to connect volume
+            try:
+                LOG.debug("OS Brick Connector Connecting Volume...")
+                device_info = self._connector.connect_volume(
+                    connection_info['data'])
+
+                undo_steps.append(
+                    {'undo_func': self._connector.disconnect_volume,
+                     'params': (connection_info['data'], None),
+                     'msg': 'Undoing connection to volume: %s...' % volname})
+            except Exception as ex:
+                msg = (_('OS Brick connect volume failed, error is: '),
+                       six.text_type(ex))
+                LOG.error(msg)
+                self._rollback(undo_steps)
+                raise exception.HPEPluginMountException(reason=msg)
+            return device_info, connection_info
+
         # Check for volume's existence once again after lock has been
         # acquired. This is just to ensure another thread didn't delete
         # the volume before reaching this point in mount-volume flow
@@ -1407,13 +1456,17 @@ class VolumeManager(object):
                         # This is required to remove multiple duplicate tuples
                         # (node_id, path_info) i.e. entries with same node_id
                         # Later on
+                        updated_list = []
                         for opi in old_path_info:
                             node_id = opi[0]
                             if old_node_id == node_id:
-                                LOG.info("Removing old-path-info tuple "
-                                         "having node-id %s for volume %s..."
+                                LOG.info("Found old-path-info tuple "
+                                         "having node-id %s for volume %s. "
+                                         "Skipping it..."
                                          % (node_id, volname))
-                                old_path_info.remove(opi)
+                                continue
+                            updated_list.append(opi)
+                        old_path_info = updated_list
 
                     old_path_info.append((old_node_id, path_info))
                     self._etcd.update_vol(volid, 'old_path_info',
@@ -1429,75 +1482,55 @@ class VolumeManager(object):
                 # in ETCD
                 path_info = self._etcd.get_path_info_from_vol(vol)
                 if path_info:
-                    path = path_info['path']
+                    dev_sym_link = path_info['device_info']['path']
+                    etcd_dev_path = path_info['path']
+                    real_dev_path = os.path.realpath(dev_sym_link)
+                    if etcd_dev_path != real_dev_path:
+                        LOG.info("Multipath device remapped for %s. "
+                                 "[Old-dev: %s, New-dev: %s]. "
+                                 "Using new device for mounting!" %
+                                 (dev_sym_link, etcd_dev_path, real_dev_path))
+                    # Assigning blindly real_dev_path
+                    path_info['path'] = real_dev_path
                     mount_dir = path_info['mount_dir']
-                    if 'dm-' in path and \
-                            fileutil.check_if_file_exists(mount_dir) and \
-                            fileutil.check_if_file_exists(path):
-                        LOG.info("Case of reboot confirmed! Mounting device "
-                                 "%s on path %s" % (path, mount_dir))
-                        fileutil.mount_dir(path, mount_dir)
-                        mount_ids = node_mount_info[self._node_id]
-                        if mount_id not in mount_ids:
-                            # In case of reboot, mount-id list will have
-                            # a previous stale mount-id which if not cleaned
-                            # will disallow actual unmount of the volume
-                            # forever. Hence creating new mount-id list with
-                            # just the new mount_id received
-                            node_mount_info[self._node_id] = [mount_id]
-                            self._etcd.update_vol(vol['id'],
-                                                  'node_mount_info',
-                                                  node_mount_info)
-                        return self._get_success_response(vol)
-
-        root_helper = 'sudo'
-        connector_info = connector.get_connector_properties(
-            root_helper, self._my_ip, multipath=self._use_multipath,
-            enforce_multipath=self._enforce_multipath)
-
-        def _mount_volume(driver):
-            LOG.info("Entered _mount_volume")
-            try:
-                # Call driver to initialize the connection
-                driver.create_export(vol, connector_info, is_snap)
-                connection_info = \
-                    driver.initialize_connection(
-                        vol, connector_info, is_snap)
-                LOG.debug("Initialized Connection Successful!")
-                LOG.debug('connection_info: %(connection_info)s, '
-                          'was successfully retrieved',
-                          {'connection_info': json.dumps(connection_info)})
-
-                undo_steps.append(
-                    {'undo_func': driver.terminate_connection,
-                     'params': (vol, connector_info, is_snap),
-                     'msg': 'Terminating connection to volume: %s...'
-                            % volname})
-            except Exception as ex:
-                msg = (_('Initialize Connection Failed: '
-                         'connection info retrieval failed, error is: '),
-                       six.text_type(ex))
-                LOG.error(msg)
-                self._rollback(undo_steps)
-                raise exception.HPEPluginMountException(reason=msg)
-
-            # Call OS Brick to connect volume
-            try:
-                LOG.debug("OS Brick Connector Connecting Volume...")
-                device_info = self._connector.connect_volume(
-                    connection_info['data'])
-
-                undo_steps.append(
-                    {'undo_func': self._connector.disconnect_volume,
-                     'params': (connection_info['data'], None),
-                     'msg': 'Undoing connection to volume: %s...' % volname})
-            except Exception as ex:
-                msg = (_('OS Brick connect volume failed, error is: '),
-                       six.text_type(ex))
-                LOG.error(msg)
-                self._rollback(undo_steps)
-                raise exception.HPEPluginMountException(reason=msg)
-            return device_info, connection_info
+                    # Ensure:
+                    # 1. we have a multi-path device
+                    # 2. mount dir is present
+                    # 3. device symlink is not broken
+                    if 'dm-' in real_dev_path and \
+                            fileutil.check_if_file_exists(mount_dir):
+                        if fileutil.check_if_file_exists(real_dev_path):
+                            LOG.info("Case of reboot confirmed! Mounting device "
+                                     "%s on path %s" % (dev_sym_link, mount_dir))
+                            try:
+                                fileutil.mount_dir(dev_sym_link, mount_dir)
+                                self._etcd.update_vol(vol['id'],
+                                                      'path_info',
+                                                      json.dumps(path_info))
+                            except Exception as ex:
+                                msg = "Mount volume failed: %s" % \
+                                      six.text_type(ex)
+                                LOG.error(msg)
+                                self._rollback(undo_steps)
+                                response = json.dumps({"Err": '%s' % msg})
+                                return response
+                            else:
+                                mount_ids = node_mount_info[self._node_id]
+                                if mount_id not in mount_ids:
+                                    # In case of reboot, mount-id list will have a
+                                    # previous stale mount-id which if not cleaned
+                                    # will disallow actual unmount of the volume
+                                    # forever. Hence creating new mount-id list
+                                    # with just the new mount_id received
+                                    node_mount_info[self._node_id] = [mount_id]
+                                    self._etcd.update_vol(vol['id'],
+                                                          'node_mount_info',
+                                                          node_mount_info)
+                            return self._get_success_response(vol)
+                        else:
+                            LOG.info("Symlink %s exists but corresponding "
+                                     "device %s does not" %
+                                     (dev_sym_link, real_dev_path))
 
         pri_connection_info = None
         sec_connection_info = None
@@ -1577,14 +1610,21 @@ class VolumeManager(object):
                  'msg': 'Removing mount directory: %s...' % mount_dir})
 
             # mount the directory
-            fileutil.mount_dir(path.path, mount_dir)
-            LOG.debug('Device: %(path)s successfully mounted on %(mount)s',
-                      {'path': path.path, 'mount': mount_dir})
+            try:
+                fileutil.mount_dir(path.path, mount_dir)
+                LOG.debug('Device: %(path)s successfully mounted on %(mount)s',
+                          {'path': path.path, 'mount': mount_dir})
 
-            undo_steps.append(
-                {'undo_func': fileutil.umount_dir,
-                 'params': mount_dir,
-                 'msg': 'Unmounting directory: %s...' % mount_dir})
+                undo_steps.append(
+                    {'undo_func': fileutil.umount_dir,
+                     'params': mount_dir,
+                     'msg': 'Unmounting directory: %s...' % mount_dir})
+            except Exception as ex:
+                msg = "Mount volume failed: %s" % six.text_type(ex)
+                LOG.error(msg)
+                self._rollback(undo_steps)
+                response = json.dumps({"Err": '%s' % msg})
+                return response
 
             # TODO: find out how to invoke mkfs so that it creates the
             # filesystem without the lost+found directory

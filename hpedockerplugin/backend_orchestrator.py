@@ -181,10 +181,15 @@ class Orchestrator(object):
                                   *args,
                                   **kwargs)
         d.addCallback(self.callback_func)
+        d.addErrback(self.error_callback_func)
         return d
 
     def callback_func(self, response):
         return response
+
+    def error_callback_func(self, response):
+        LOG.info('In error_callback_func: error is %s'
+                 % json.dumps(response))
 
     def volumedriver_remove(self, volname):
         ret_val = self._execute_request('remove_volume', volname)
