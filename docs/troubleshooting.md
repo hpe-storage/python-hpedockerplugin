@@ -127,3 +127,7 @@ If you observe the `kubectl get pods -o wide` for the statefulset pod replicas s
 - Get the node where the statefulset pod was scheduled using `kubectl get pods -o wide` and then, 
  - Login to the worker node where the stateful set pod is trying to start
  - Issue `systemctl restart multipathd`
+
+#### Other workarounds 
+ - `kubectl cordon <node>` before the node is shutdown (which has statefulset pods mounted) and `kubectl uncordon <node>` after the node reboots and the kubelet (or) atomic-openshift-node.service starts properly
+ - Some case, `docker stop plugin_container` before node shutdown, and starting the volume plugin container after node reboots once the node reaches 'Ready' state in `kubectl get nodes` also recovers the pod in stuck state.
