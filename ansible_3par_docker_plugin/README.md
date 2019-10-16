@@ -11,13 +11,14 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
 * Deploys the config files (iSCSI or FC) to support your environment
 * Installs the HPE 3PAR Docker Volume Plug-in (Containerized version)
 * For standalone docker environment,
-  * Deploys an etcd cluster
+  * Deploys an HPE customized etcd cluster
 * For Kubernetes/OpenShift, 
-  * Deploys a Highly Available etcd cluster used by the HPE 3PAR Docker Volume plugin 
+  * Deploys a Highly Available HPE etcd cluster used by the HPE 3PAR Docker Volume plugin 
     * Supports single node (Use only for testing purposes) or multi-node deployment (HA) as defined in the Ansible hosts file
   * Deploys the HPE FlexVolume Driver
 
 ### Prerequisites:
+  - Basic knowledge of Ansible and ssh keys
   - Install Ansible 2.5 or above as per [Installation Guide](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
 
   - Login to 3PAR via SSH to create entry in /\<user>\/.ssh/known_hosts file
@@ -25,11 +26,17 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
   
   - Clone the python-hpedockerplugin repository
     ```
-    git clone https://github.com/hpe-storage/python-hpedockerplugin
-    cd python-hpedockerplugin/ansible_3par_docker_plugin
+    $ cd ~
+    $ git clone https://github.com/hpe-storage/python-hpedockerplugin
+    $ cd python-hpedockerplugin/ansible_3par_docker_plugin
     ```
   
-  - Add [plugin configuration properties - sample](/ansible_3par_docker_plugin/properties/plugin_configuration_properties_sample.yml) at `properties/plugin_configuration_properties.yml` based on your HPE 3PAR Storage array configuration. Some of the properties are mandatory and must be specified in the properties file while others are optional. 
+  - Copy [plugin configuration properties - sample](/ansible_3par_docker_plugin/properties/plugin_configuration_properties_sample.yml) at `properties/plugin_configuration_properties.yml` based on your HPE 3PAR Storage array configuration. Some of the properties are mandatory and must be specified in the properties file while others are optional. 
+    ```
+    $ cd ~
+    $ cd python-hpedockerplugin/ansible_3par_docker_plugin/properties
+    $ cp plugin_configuration_properties_sample.yml plugin_configuration_properties.yml
+    ```
   
       | Property  | Mandatory | Default Value | Description |
       | ------------- | ------------- | ------------- | ------------- |
@@ -60,7 +67,7 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
       | ```hpe3par_default_fpg_size```  | No  | No default value | This parameter is specific to fileshare. Default fpg size, It must be in the range 1TiB to 64TiB. If not specified here, it defaults to 16TiB |
 
   - Adding multiple backends in [plugin configuration properties - sample](/ansible_3par_docker_plugin/properties/plugin_configuration_properties_sample.yml)
-    Below is the table of all possible default configurations along with the installer plugin behavior column for each combination:
+    Below is the table of available configurations along with the installer plugin behavior column for each combination:
     BLOCK points to the hpedockerplugin_driver, hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver OR hpedockerplugin.hpe.hpe_3par_fc.HPE3PARFCDriver
     FILE points to the hpedockerplugin_driver, hpedockerplugin.hpe.hpe_3par_file.HPE3PARFileDriver
 
@@ -106,18 +113,20 @@ Set `http_proxy` and `https_proxy` in the [inventory hosts file](/ansible_3par_d
 
 Once the prerequisites are complete, run the following command:
 
-- Fresh installation on standalone docker environment:
+- Fresh installation on standalone docker environment(Non Openshift/Kubernetes):
 ```
+$ cd ~
 $ cd python-hpedockerplugin/ansible_3par_docker_plugin
-$ ansible-playbook -i hosts_standalone_nodes install_standalone_hpe_3par_volume_driver.yml --ask-vault-pass
+$ ansible-playbook -i hosts_standalone_nodes install_standalone_hpe_3par_volume_driver.yml
 ```
 
 - Fresh installation on Openshift/Kubernetes environment:
 ```
+$ cd ~
 $ cd python-hpedockerplugin/ansible_3par_docker_plugin
-$ ansible-playbook -i hosts install_hpe_3par_volume_driver.yml --ask-vault-pass
+$ ansible-playbook -i hosts install_hpe_3par_volume_driver.yml
 ```
-> **Note:** ```--ask-vault-pass``` is required only when the properties file is encrypted
+> **Note:** Add ```--ask-vault-pass``` to the end of the ansible-playbook command only when the properties file is encrypted
 
 
 Once complete you will be ready to start using the HPE 3PAR Docker Volume Plug-in.
@@ -127,28 +136,32 @@ Once complete you will be ready to start using the HPE 3PAR Docker Volume Plug-i
 
     * Update array backend on standalone docker environment:
     ```
+    $ cd ~
     $ cd python-hpedockerplugin/ansible_3par_docker_plugin
-    $ ansible-playbook -i hosts_standalone_nodes install_standalone_hpe_3par_volume_driver.yml --ask-vault-pass
+    $ ansible-playbook -i hosts_standalone_nodes install_standalone_hpe_3par_volume_driver.yml
     ```
 
     * Update array backend on Openshift/Kubernetes environment:
     ```
+    $ cd ~
     $ cd python-hpedockerplugin/ansible_3par_docker_plugin
-    $ ansible-playbook -i hosts install_hpe_3par_volume_driver.yml --ask-vault-pass
+    $ ansible-playbook -i hosts install_hpe_3par_volume_driver.yml
     ```
-  > **Note:** It is not recommended to change the Etcd information and array encryption password during the backend update process
+  > **Note:** It is not recommended to change the HPE Etcd information and array encryption password during the backend update process
  
 - Upgrade the docker volume plugin
   * Modify the `volume_plugin` in [plugin configuration properties - sample](/ansible_3par_docker_plugin/properties/plugin_configuration_properties_sample.yml) and point it to the latest image from docker hub
       * Update plugin on standalone docker environment:
       ```
+      $ cd ~
       $ cd python-hpedockerplugin/ansible_3par_docker_plugin
-      $ ansible-playbook -i hosts_standalone_nodes install_standalone_hpe_3par_volume_driver.yml --ask-vault-pass
+      $ ansible-playbook -i hosts_standalone_nodes install_standalone_hpe_3par_volume_driver.yml
       ```
      * Update plugin on Openshift/Kubernetes environment:
      ```
+     $ cd ~
      $ cd python-hpedockerplugin/ansible_3par_docker_plugin
-     $ ansible-playbook -i hosts install_hpe_3par_volume_driver.yml --ask-vault-pass
+     $ ansible-playbook -i hosts install_hpe_3par_volume_driver.yml
      ```
    > **Note:** 
      - Ensure that all the nodes in the cluster are present in the inventory [hosts](/ansible_3par_docker_plugin/hosts) file
@@ -163,20 +176,23 @@ Once complete you will be ready to start using the HPE 3PAR Docker Volume Plug-i
      
      * Install plugin on new nodes on Openshift/Kubernetes environment:
      ```
+     $ cd ~
      $ cd python-hpedockerplugin/ansible_3par_docker_plugin
-     $ ansible-playbook -i hosts install_hpe_3par_volume_driver.yml --ask-vault-pass
+     $ ansible-playbook -i hosts install_hpe_3par_volume_driver.yml
      ```
      
      * Uninstall plugin on nodes on Openshift/Kubernetes environment:
      ```
+     $ cd ~
      $ cd python-hpedockerplugin/ansible_3par_docker_plugin
-     $ ansible-playbook -i hosts uninstall/uninstall_hpe_3par_volume_driver.yml --ask-vault-pass
+     $ ansible-playbook -i hosts uninstall/uninstall_hpe_3par_volume_driver.yml
      ```
      
      * Uninstall plugin along with etcd on nodes on Openshift/Kubernetes environment:
      ```
+     $ cd ~
      $ cd python-hpedockerplugin/ansible_3par_docker_plugin
-     $ ansible-playbook -i hosts uninstall/uninstall_hpe_3par_volume_driver_etcd.yml --ask-vault-pass
+     $ ansible-playbook -i hosts uninstall/uninstall_hpe_3par_volume_driver_etcd.yml
      ```
 
      > **Note:** This process only adds or removes docker volume plugin and/or etcd in nodes in an existing cluster. It does not add or remove nodes in Kubernetes/Openshift cluster
