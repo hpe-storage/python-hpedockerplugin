@@ -109,3 +109,33 @@ $ showsched
 - For volume upper size limitation, please do refer 3PAR's documentation.
 
 - The configuration parameter **mount_prefix**, is applicable for containerized plugin only. If used with the managed plugin, mount operation fails.
+
+- For statefulset pod stuck in "ContainerCreating" state after a worker node reboot, the following manual procedure has to be done -- [Details ](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/troubleshooting.md#debugging-issue-with-statefulset-pod-stuck-in-containercreating-state-after-a-node-reboot)
+
+- For Pod mount using File Persona, this flag `allowPrivilegeEscalation: true` under `securityContext`is mandantory for volume plugin to mount a file persona NFS share.
+eg.
+```yaml
+kind: Pod
+apiVersion: v1
+metadata:
+  name: podfiletestw4-uid-gid-nosecurity
+spec:
+  containers:
+  - name: nginx
+    securityContext:
+#       runAsUser: 10500
+#       runAsGroup: 10800
+      privileged: true
+      capabilities:
+        add: ["SYS_ADMIN"]
+      allowPrivilegeEscalation: true
+    image: nginx
+    volumeMounts:
+    - name: export
+      mountPath: /export
+  restartPolicy: Always
+  volumes:
+  - name: export
+    persistentVolumeClaim:
+      claimName: sc-file-pvc-uid-gid
+  ```
