@@ -56,6 +56,11 @@ for i in `lsscsi | grep 3PARdata | awk '{print $6}'| grep -v "-"| cut -d"/" -f3
 rescan-scsi-bus.sh -r -f -m
 ```
 
+If all the scsi devices for 3PAR volumes need to be removed, follow
+- Unexport the volumes in 3PAR (using `removevlun -f` CLI)
+- On the host , look for `mount| grep hpe` and do umount for each mounted folder
+- rescan-scsi-bus.sh -r -f -m
+
 ### Collecting necessary Logs
 
 if any issue found please do collect following logs from your Docker host
