@@ -1518,8 +1518,9 @@ class VolumeManager(object):
                     if 'dm-' in real_dev_path and \
                             fileutil.check_if_file_exists(mount_dir):
                         if fileutil.check_if_file_exists(real_dev_path):
-                            LOG.info("Case of reboot confirmed! Mounting device "
-                                     "%s on path %s" % (dev_sym_link, mount_dir))
+                            LOG.info("Case of reboot confirmed! Mounting "
+                                     "device %s on path %s"
+                                     % (dev_sym_link, mount_dir))
                             try:
                                 fileutil.mount_dir(dev_sym_link, mount_dir)
                                 self._etcd.update_vol(vol['id'],
@@ -1535,11 +1536,12 @@ class VolumeManager(object):
                             else:
                                 mount_ids = node_mount_info[self._node_id]
                                 if mount_id not in mount_ids:
-                                    # In case of reboot, mount-id list will have a
-                                    # previous stale mount-id which if not cleaned
-                                    # will disallow actual unmount of the volume
-                                    # forever. Hence creating new mount-id list
-                                    # with just the new mount_id received
+                                    # In case of reboot, mount-id list will
+                                    # have a previous stale mount-id which
+                                    # if not cleaned will disallow actual
+                                    # unmount of the volume forever. Hence
+                                    # creating new mount-id list with just
+                                    # the new mount_id received
                                     node_mount_info[self._node_id] = [mount_id]
                                     self._etcd.update_vol(vol['id'],
                                                           'node_mount_info',
