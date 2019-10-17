@@ -196,7 +196,7 @@ class Orchestrator(object):
 
     def error_callback_func(self, response):
         LOG.info('In error_callback_func: error is %s'
-                 % json.dumps(response))
+                 % six.text_type(response))
 
     @abc.abstractmethod
     def get_manager(self, host_config, config, etcd_util,
