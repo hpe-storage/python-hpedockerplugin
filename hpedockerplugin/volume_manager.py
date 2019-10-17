@@ -1542,7 +1542,8 @@ class VolumeManager(object):
                                     # unmount of the volume forever. Hence
                                     # creating new mount-id list with just
                                     # the new mount_id received
-                                    node_mount_info[self._node_id] = [mount_id]
+                                    node_mount_info[self._node_id] = \
+                                        [mount_id]
                                     self._etcd.update_vol(vol['id'],
                                                           'node_mount_info',
                                                           node_mount_info)
