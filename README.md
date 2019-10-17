@@ -139,3 +139,18 @@ spec:
     persistentVolumeClaim:
       claimName: sc-file-pvc-uid-gid
   ```
+- if the doryd systemctl daemon does'nt start, then you have edit 
+vi /etc/systemd/system/doryd.service
+```
+[Unit]
+Description=manage doryd service for HPE 3PAR Volume plugin for Docker
+
+[Service]
+Type=simple
+ExecStart=/usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/doryd /etc/kubernetes/admin.conf hpe.com
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target
+```
+Updated `/etc/kubernetes/admin.conf` by `/etc/origin/master/admin.kubeconfig` and then do `systemctl daemon-reload` and `systemctl restart doryd`
