@@ -1500,8 +1500,9 @@ class VolumeManager(object):
                     if 'dm-' in real_dev_path and \
                             fileutil.check_if_file_exists(mount_dir):
                         if fileutil.check_if_file_exists(real_dev_path):
-                            LOG.info("Case of reboot confirmed! Mounting device "
-                                     "%s on path %s" % (dev_sym_link, mount_dir))
+                            LOG.info("Case of reboot confirmed! Mounting"
+                                     " device %s on path %s"
+                                     % (dev_sym_link, mount_dir))
                             try:
                                 fileutil.mount_dir(dev_sym_link, mount_dir)
                                 self._etcd.update_vol(vol['id'],
