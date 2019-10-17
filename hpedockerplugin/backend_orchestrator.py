@@ -28,6 +28,7 @@ Eg.
 import json
 from oslo_log import log as logging
 import os
+import six
 import uuid
 import hpedockerplugin.etcdutil as util
 import threading
@@ -189,7 +190,7 @@ class Orchestrator(object):
 
     def error_callback_func(self, response):
         LOG.info('In error_callback_func: error is %s'
-                 % json.dumps(response))
+                 % six.text_type(response))
 
     def volumedriver_remove(self, volname):
         ret_val = self._execute_request('remove_volume', volname)
