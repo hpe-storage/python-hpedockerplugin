@@ -17,7 +17,9 @@ from sh import mkfs
 from sh import mkdir
 from sh import mount
 from sh import umount
+from sh import grep
 import subprocess
+import os
 from sh import rm
 from oslo_log import log as logging
 from hpedockerplugin.i18n import _, _LI
@@ -99,9 +101,13 @@ def mount_dir(src, tgt):
     try:
         mount("-t", "ext4", src, tgt)
     except Exception as ex:
-        msg = (_('exception is : %s'), six.text_type(ex))
-        LOG.error(msg)
-        raise exception.HPEPluginMountException(reason=msg)
+        msg = _('exception is : %s' % six.text_type(ex))
+        if 'already mounted' in msg:
+            LOG.info('%s is already in mounted on %s' % (src, tgt))
+            pass
+        else:
+            LOG.error(msg)
+            raise exception.HPEPluginMountException(reason=msg)
     return True
 
 
@@ -145,3 +151,41 @@ def remove_file(tgt):
             LOG.error(msg)
             raise exception.HPEPluginRemoveDirException(reason=msg)
     return True
+
+
+def check_if_mounted(src, tgt):
+    try:
+        # List all mounts with "mount -l".
+        # Then grep the list for the source and the target of the mount
+        # using regular expression with the paths.
+        # _ok_code=[0,1] is used because grep returns an ErrorCode_1
+        # if it cannot find any matches on the pattern.
+        mapper_entry = find_mapper_entry(src)
+        mountpoint = grep(
+            grep(mount("-l"), "-E", mapper_entry, _ok_code=[0, 1]),
+            "-E", tgt, _ok_code=[0, 1]
+        )
+    except Exception as ex:
+        msg = (_('exception is : %s'), six.text_type(ex))
+        LOG.error(msg)
+        raise exception.HPEPluginCheckMountException(reason=msg)
+    # If there is no line matching the criteria from above then the
+    # mount is not present, return False.
+    if not mountpoint:
+        return False
+    else:
+        return True
+
+
+def find_mapper_entry(src):
+    path = '/dev/mapper/'
+    for file in os.listdir(path):
+        print('real: %s , src %s' % (os.path.realpath(path + file), src))
+        if os.path.realpath(path + file) == src:
+            return path + file
+    # In worst case return src
+    return src
+
+
+def check_if_file_exists(path):
+    return os.path.exists(path)

@@ -28,10 +28,12 @@ Eg.
 import json
 from oslo_log import log as logging
 import os
+import six
 import uuid
 import hpedockerplugin.etcdutil as util
 import threading
 import hpedockerplugin.backend_async_initializer as async_initializer
+from twisted.internet import threads
 
 LOG = logging.getLogger(__name__)
 
@@ -42,13 +44,17 @@ class Orchestrator(object):
     def __init__(self, host_config, backend_configs):
         LOG.info('calling initialize manager objs')
         self.etcd_util = self._get_etcd_util(host_config)
+        self._manager_initialized = False
         self._manager = self.initialize_manager_objects(host_config,
                                                         backend_configs)
-
+        self._manager_initialized = True
         # This is the dictionary which have the volume -> backend map entries
         # cache after doing an etcd volume read operation.
         self.volume_backends_map = {}
         self.volume_backend_lock = threading.Lock()
+
+    def is_manager_initialized(self):
+        return self._manager_initialized
 
     @staticmethod
     def _get_etcd_util(host_config):
@@ -158,10 +164,33 @@ class Orchestrator(object):
         LOG.error(msg)
         return json.dumps({u'Err': msg})
 
+    def __undeferred_execute_request__(self, request, volname,
+                                       *args, **kwargs):
+        backend = self.get_volume_backend_details(volname)
+        return self.__execute_request(backend,
+                                      request,
+                                      volname,
+                                      *args,
+                                      **kwargs)
+
     def _execute_request(self, request, volname, *args, **kwargs):
         backend = self.get_volume_backend_details(volname)
-        return self.__execute_request(
-            backend, request, volname, *args, **kwargs)
+        d = threads.deferToThread(self.__execute_request,
+                                  backend,
+                                  request,
+                                  volname,
+                                  *args,
+                                  **kwargs)
+        d.addCallback(self.callback_func)
+        d.addErrback(self.error_callback_func)
+        return d
+
+    def callback_func(self, response):
+        return response
+
+    def error_callback_func(self, response):
+        LOG.info('In error_callback_func: error is %s'
+                 % six.text_type(response))
 
     def volumedriver_remove(self, volname):
         ret_val = self._execute_request('remove_volume', volname)

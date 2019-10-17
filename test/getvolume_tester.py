@@ -52,6 +52,7 @@ class TestGetVolumeWithQos(GetVolumeUnitTest):
                         u'vvset_name': u'vvk_vvset'
                     },
                     u'volume_detail': {
+                        u'id': 'd03338a9-9115-48a3-8dfc-35cdfcdc15a7',
                         u'3par_vol_name': data.VOLUME_3PAR_NAME,
                         u'backend': 'DEFAULT',
                         u'compression': None,
@@ -107,6 +108,7 @@ class TestGetVolumeWithGetQoSFails(GetVolumeUnitTest):
                     u'qos_detail': "ERROR: Failed to retrieve QoS "
                                    "'vvk_vvset' from 3PAR",
                     u'volume_detail': {
+                        u'id': 'd03338a9-9115-48a3-8dfc-35cdfcdc15a7',
                         u'3par_vol_name': data.VOLUME_3PAR_NAME,
                         u'backend': 'DEFAULT',
                         u'compression': None,
@@ -164,6 +166,7 @@ class TestGetRcgVolume(GetVolumeUnitTest):
                                     'policies': data.pp_rcg_policies,
                                     'role': 'Primary'},
                     u'volume_detail': {
+                        u'id': 'd03338a9-9115-48a3-8dfc-35cdfcdc15a7',
                         u'3par_vol_name': data.VOLUME_3PAR_NAME,
                         u'backend': '3par_pp_rep',
                         u'compression': None,
@@ -223,6 +226,7 @@ class TestGetRcgVolumeFails(GetVolumeUnitTest):
                     u'rcg_detail': "ERROR: Failed to retrieve RCG '%s' "
                                    "from 3PAR" % data.RCG_NAME,
                     u'volume_detail': {
+                        u'id': 'd03338a9-9115-48a3-8dfc-35cdfcdc15a7',
                         u'3par_vol_name': data.VOLUME_3PAR_NAME,
                         u'backend': '3par_pp_rep',
                         u'compression': None,
@@ -272,6 +276,7 @@ class TestCloneVolume(GetVolumeUnitTest):
                 u'Devicename': u'',
                 u'Status': {
                     u'volume_detail': {
+                        u'id': 'd03338a9-9115-48a3-8dfc-35cdfcdc15a7',
                         u'3par_vol_name': data.VOLUME_3PAR_NAME,
                         u'backend': 'DEFAULT',
                         u'compression': None,
@@ -332,6 +337,7 @@ class TestSyncSnapshots(GetSnapshotUnitTest):
 
     def check_response(self, resp):
         snap_detail = {
+            u'id': '2f823bdc-e36e-4dc8-bd15-de1c7a28ff31',
             u'3par_vol_name': data.SNAPSHOT_3PAR_NAME,
             u'backend': 'DEFAULT',
             u'compression': None,

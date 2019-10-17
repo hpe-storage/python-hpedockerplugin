@@ -35,6 +35,10 @@ SECONDARY = 2
 
 CONF = cfg.CONF
 
+VolumeOwnedAndMounted = 0
+VolumeOwnedAndNotMounted = 1
+VolumeNotOwned = 2
+
 
 class VolumeManager(object):
     def __init__(self, host_config, hpepluginconfig, etcd_util,
@@ -939,6 +943,7 @@ class VolumeManager(object):
         retention_hours = metadata['retention_hours']
 
         snap_detail = {}
+        snap_detail['id'] = snapinfo.get('id')
         snap_detail['size'] = snapinfo.get('size')
         snap_detail['compression'] = snapinfo.get('compression')
         snap_detail['provisioning'] = snapinfo.get('provisioning')
@@ -1092,6 +1097,7 @@ class VolumeManager(object):
                     LOG.error(msg)
 
             vol_detail = {}
+            vol_detail['id'] = volinfo.get('id')
             vol_detail['size'] = volinfo.get('size')
             vol_detail['flash_cache'] = volinfo.get('flash_cache')
             vol_detail['compression'] = volinfo.get('compression')
@@ -1194,8 +1200,25 @@ class VolumeManager(object):
     def _is_first_mount(node_mount_info):
         return (len(node_mount_info) == 0)
 
-    def _is_vol_mounted_on_this_node(self, node_mount_info):
-        return self._node_id in node_mount_info
+    def _is_vol_mounted_on_this_node(self, node_mount_info, vol):
+        if self._node_id in node_mount_info:
+            # get the information from etcd where the volume should be mounted
+            path_info = self._etcd.get_path_info_from_vol(vol)
+            # important is here the device which should be mounted...
+            path_name = path_info['path']
+            # ... and the target it should be mounted to!
+            mount_dir = path_info['mount_dir']
+
+            # now check if this mount is really present on the node
+            if fileutil.check_if_mounted(path_name, mount_dir):
+                # Multiple containers mounting the same volume on same node
+                return VolumeOwnedAndMounted
+            else:
+                # This is a case of node reboot or deleted Stateful-set POD
+                return VolumeOwnedAndNotMounted
+        else:
+            # Failover case where volume is evicted from other node to this one
+            return VolumeNotOwned
 
     def _update_mount_id_list(self, vol, mount_id):
         node_mount_info = vol['node_mount_info']
@@ -1291,7 +1314,6 @@ class VolumeManager(object):
             self._primary_driver.force_remove_volume_vlun(bkend_vol_name)
             LOG.info("VLUNs forcefully removed from remote backend!")
 
-    @synchronization.synchronized_volume('{volname}')
     def mount_volume(self, volname, vol_mount, mount_id):
         vol = self._etcd.get_vol_byname(volname)
         if vol is None:
@@ -1299,64 +1321,22 @@ class VolumeManager(object):
             LOG.error(msg)
             raise exception.HPEPluginMountException(reason=msg)
 
-        undo_steps = []
-        volid = vol['id']
-        is_snap = False
-        if 'is_snap' not in vol:
-            vol['is_snap'] = volume.DEFAULT_TO_SNAP_TYPE
-            self._etcd.update_vol(volid, 'is_snap', is_snap)
-        elif vol['is_snap']:
-            is_snap = vol['is_snap']
-            vol['fsOwner'] = vol['snap_metadata'].get('fsOwner')
-            vol['fsMode'] = vol['snap_metadata'].get('fsMode')
-
-        if 'mount_conflict_delay' not in vol:
-            m_conf_delay = volume.DEFAULT_MOUNT_CONFLICT_DELAY
-            vol['mount_conflict_delay'] = m_conf_delay
-            self._etcd.update_vol(volid, 'mount_conflict_delay',
-                                  m_conf_delay)
-        # Initialize node-mount-info if volume is being mounted
-        # for the first time
-        if self._is_vol_not_mounted(vol):
-            LOG.info("Initializing node_mount_info... adding first "
-                     "mount ID %s" % mount_id)
-            node_mount_info = {self._node_id: [mount_id]}
-            vol['node_mount_info'] = node_mount_info
-        else:
-            # Volume is in mounted state - Volume fencing logic begins here
-            node_mount_info = vol['node_mount_info']
-
-            # If mounted on this node itself then just append mount-id
-            if self._is_vol_mounted_on_this_node(node_mount_info):
-                self._update_mount_id_list(vol, mount_id)
-                return self._get_success_response(vol)
-            else:
+        node_mount_info = vol.get('node_mount_info')
+        if node_mount_info:
+            is_vol_owned = self._is_vol_mounted_on_this_node(
+                node_mount_info, vol
+            )
+            if is_vol_owned == VolumeNotOwned:
                 # Volume mounted on different node
                 LOG.info("Volume mounted on a different node. Waiting for "
                          "other node to gracefully unmount the volume...")
+                self._wait_for_graceful_vol_unmount(vol)
 
-                unmounted = self._wait_for_graceful_vol_unmount(vol)
+        # Grab lock on volume name and continue with mount
+        return self._synchronized_mount_volume(volname, vol_mount, mount_id)
 
-                if not unmounted:
-                    LOG.info("Volume not gracefully unmounted by other node")
-                    LOG.info("%s" % vol)
-                    self._force_remove_vlun(vol, is_snap)
-
-                    # Since VLUNs exported to previous node were forcefully
-                    # removed, cache the connection information so that it
-                    # can be used later when user tries to un-mount volume
-                    # from the previous node
-                    if 'path_info' in vol:
-                        path_info = vol['path_info']
-                        old_node_id = list(node_mount_info.keys())[0]
-                        old_path_info = vol.get('old_path_info', [])
-                        old_path_info.append((old_node_id, path_info))
-                        self._etcd.update_vol(volid, 'old_path_info',
-                                              old_path_info)
-
-                node_mount_info = {self._node_id: [mount_id]}
-                LOG.info("New node_mount_info set: %s" % node_mount_info)
-
+    @synchronization.synchronized_volume('{volname}')
+    def _synchronized_mount_volume(self, volname, vol_mount, mount_id):
         root_helper = 'sudo'
         connector_info = connector.get_connector_properties(
             root_helper, self._my_ip, multipath=self._use_multipath,
@@ -1405,6 +1385,155 @@ class VolumeManager(object):
                 self._rollback(undo_steps)
                 raise exception.HPEPluginMountException(reason=msg)
             return device_info, connection_info
+
+        # Check for volume's existence once again after lock has been
+        # acquired. This is just to ensure another thread didn't delete
+        # the volume before reaching this point in mount-volume flow
+        vol = self._etcd.get_vol_byname(volname)
+        if vol is None:
+            msg = (_LE('Volume mount name not found %s'), volname)
+            LOG.error(msg)
+            raise exception.HPEPluginMountException(reason=msg)
+
+        undo_steps = []
+        volid = vol['id']
+
+        # Update volume metadata with the fields that may not be
+        # there due to the fact that this volume might have been
+        # created using an older version of plugin
+        is_snap = False
+        if 'is_snap' not in vol:
+            vol['is_snap'] = volume.DEFAULT_TO_SNAP_TYPE
+            self._etcd.update_vol(volid, 'is_snap', is_snap)
+        elif vol['is_snap']:
+            is_snap = vol['is_snap']
+            vol['fsOwner'] = vol['snap_metadata'].get('fsOwner')
+            vol['fsMode'] = vol['snap_metadata'].get('fsMode')
+
+        if 'mount_conflict_delay' not in vol:
+            m_conf_delay = volume.DEFAULT_MOUNT_CONFLICT_DELAY
+            vol['mount_conflict_delay'] = m_conf_delay
+            self._etcd.update_vol(volid, 'mount_conflict_delay',
+                                  m_conf_delay)
+        # Initialize node-mount-info if volume is being mounted
+        # for the first time
+        if self._is_vol_not_mounted(vol):
+            LOG.info("Initializing node_mount_info... adding first "
+                     "mount ID %s" % mount_id)
+            node_mount_info = {self._node_id: [mount_id]}
+            vol['node_mount_info'] = node_mount_info
+        else:
+            # Volume is in mounted state - Volume fencing logic begins here
+            node_mount_info = vol['node_mount_info']
+
+            flag = self._is_vol_mounted_on_this_node(node_mount_info, vol)
+            # If mounted on this node itself then just append mount-id
+            if flag == VolumeOwnedAndMounted:
+                self._update_mount_id_list(vol, mount_id)
+                return self._get_success_response(vol)
+            elif flag == VolumeNotOwned:
+                # Volume mounted on different node
+                LOG.info("Volume not gracefully unmounted by other node")
+                LOG.info("%s" % vol)
+                self._force_remove_vlun(vol, is_snap)
+
+                # Since VLUNs exported to previous node were forcefully
+                # removed, cache the connection information so that it
+                # can be used later when user tries to un-mount volume
+                # from the previous node
+                if 'path_info' in vol:
+                    path_info = vol['path_info']
+                    old_node_id = list(node_mount_info.keys())[0]
+                    old_path_info = vol.get('old_path_info', [])
+
+                    # Check if old_node_id is already present in old_path_info
+                    # If found, replace it by removing the existing ones and
+                    # appending the new one
+                    if old_path_info:
+                        LOG.info("Old path info found! Removing any "
+                                 "duplicate entries...")
+                        # This is a temporary logic without a break statement
+                        # This is required to remove multiple duplicate tuples
+                        # (node_id, path_info) i.e. entries with same node_id
+                        # Later on
+                        updated_list = []
+                        for opi in old_path_info:
+                            node_id = opi[0]
+                            if old_node_id == node_id:
+                                LOG.info("Found old-path-info tuple "
+                                         "having node-id %s for volume %s. "
+                                         "Skipping it..."
+                                         % (node_id, volname))
+                                continue
+                            updated_list.append(opi)
+                        old_path_info = updated_list
+
+                    old_path_info.append((old_node_id, path_info))
+                    self._etcd.update_vol(volid, 'old_path_info',
+                                          old_path_info)
+
+                node_mount_info = {self._node_id: [mount_id]}
+                LOG.info("New node_mount_info set: %s" % node_mount_info)
+            elif flag == VolumeOwnedAndNotMounted:
+                LOG.info("This might be the case of reboot...")
+                LOG.info("Volume %s is owned by this node %s but it is not "
+                         "in mounted state" % (volname, self._node_id))
+                # We need to simply mount the volume using the information
+                # in ETCD
+                path_info = self._etcd.get_path_info_from_vol(vol)
+                if path_info:
+                    dev_sym_link = path_info['device_info']['path']
+                    etcd_dev_path = path_info['path']
+                    real_dev_path = os.path.realpath(dev_sym_link)
+                    if etcd_dev_path != real_dev_path:
+                        LOG.info("Multipath device remapped for %s. "
+                                 "[Old-dev: %s, New-dev: %s]. "
+                                 "Using new device for mounting!" %
+                                 (dev_sym_link, etcd_dev_path, real_dev_path))
+                    # Assigning blindly real_dev_path
+                    path_info['path'] = real_dev_path
+                    mount_dir = path_info['mount_dir']
+                    # Ensure:
+                    # 1. we have a multi-path device
+                    # 2. mount dir is present
+                    # 3. device symlink is not broken
+                    if 'dm-' in real_dev_path and \
+                            fileutil.check_if_file_exists(mount_dir):
+                        if fileutil.check_if_file_exists(real_dev_path):
+                            LOG.info("Case of reboot confirmed! Mounting"
+                                     " device %s on path %s"
+                                     % (dev_sym_link, mount_dir))
+                            try:
+                                fileutil.mount_dir(dev_sym_link, mount_dir)
+                                self._etcd.update_vol(vol['id'],
+                                                      'path_info',
+                                                      json.dumps(path_info))
+                            except Exception as ex:
+                                msg = "Mount volume failed: %s" % \
+                                      six.text_type(ex)
+                                LOG.error(msg)
+                                self._rollback(undo_steps)
+                                response = json.dumps({"Err": '%s' % msg})
+                                return response
+                            else:
+                                mount_ids = node_mount_info[self._node_id]
+                                if mount_id not in mount_ids:
+                                    # In case of reboot, mount-id list will
+                                    # have a previous stale mount-id which if
+                                    # not cleaned will disallow actual unmount
+                                    # of the volume forever. Hence creating
+                                    # new mount-id list with just the new
+                                    # mount_id received
+                                    node_mount_info[self._node_id] = \
+                                        [mount_id]
+                                    self._etcd.update_vol(vol['id'],
+                                                          'node_mount_info',
+                                                          node_mount_info)
+                            return self._get_success_response(vol)
+                        else:
+                            LOG.info("Symlink %s exists but corresponding "
+                                     "device %s does not" %
+                                     (dev_sym_link, real_dev_path))
 
         pri_connection_info = None
         sec_connection_info = None
@@ -1484,14 +1613,21 @@ class VolumeManager(object):
                  'msg': 'Removing mount directory: %s...' % mount_dir})
 
             # mount the directory
-            fileutil.mount_dir(path.path, mount_dir)
-            LOG.debug('Device: %(path)s successfully mounted on %(mount)s',
-                      {'path': path.path, 'mount': mount_dir})
+            try:
+                fileutil.mount_dir(path.path, mount_dir)
+                LOG.debug('Device: %(path)s successfully mounted on %(mount)s',
+                          {'path': path.path, 'mount': mount_dir})
 
-            undo_steps.append(
-                {'undo_func': fileutil.umount_dir,
-                 'params': mount_dir,
-                 'msg': 'Unmounting directory: %s...' % mount_dir})
+                undo_steps.append(
+                    {'undo_func': fileutil.umount_dir,
+                     'params': mount_dir,
+                     'msg': 'Unmounting directory: %s...' % mount_dir})
+            except Exception as ex:
+                msg = "Mount volume failed: %s" % six.text_type(ex)
+                LOG.error(msg)
+                self._rollback(undo_steps)
+                response = json.dumps({"Err": '%s' % msg})
+                return response
 
             # TODO: find out how to invoke mkfs so that it creates the
             # filesystem without the lost+found directory

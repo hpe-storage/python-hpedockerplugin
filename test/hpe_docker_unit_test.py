@@ -96,10 +96,12 @@ class HpeDockerUnitTestExecutor(object):
         req_body = self._get_request_body(self.get_request_params())
 
         _api = api.VolumePlugin(reactor, self._host_config, self._all_configs)
+        _api.orchestrator._execute_request = \
+            _api.orchestrator.__undeferred_execute_request__
         req_params = self.get_request_params()
         backend = req_params.get('backend', 'DEFAULT')
 
-        while(True):
+        while True:
             backend_state = _api.is_backend_initialized(backend)
             print(" ||| Backend %s, backend_state %s " % (backend,
                                                           backend_state))
@@ -147,6 +149,9 @@ class HpeDockerUnitTestExecutor(object):
         try:
             host_config = setupcfg.get_host_config(cfg_param)
             all_configs = setupcfg.get_all_backend_configs(cfg_param)
+            # Set Logging level
+            logging_level = all_configs['DEFAULT'].logging
+            setupcfg.setup_logging_for_ut('hpe_storage_api', logging_level)
         except Exception as ex:
             msg = 'Setting up of hpe3pardocker unit test failed, error is: ' \
                   '%s' % six.text_type(ex)
