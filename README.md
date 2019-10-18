@@ -1,9 +1,9 @@
-## HPE 3PAR Volume Plugin for Docker
+## HPE 3PAR and HPE Primera Volume Plugin for Docker
 
 HPE Docker Volume Plugin is an open source project that provides persistent storage and features for your containerized applications using HPE 3PAR StoreServ Storage arrays.
 It supports both block and file (NFS shares) based features.
 
-The HPE Docker Volume Plugin supports popular container platforms like Docker, Kubernetes, OpenShift 
+This Volume Plugin for Docker supports popular container platforms like Docker, Kubernetes, OpenShift 
 
 ## HPE Docker Volume Plugin Overview
 
@@ -28,7 +28,7 @@ Here is an example of the HPE Docker Volume plugin being used in an OpenShift en
 
 ## Supported Features
 
-* Fibre Channel & iSCSI support for 3PAR
+* Fibre Channel & iSCSI support for 3PAR and Primera
 * Secure/Unsecure etcd cluster for fault tolerance
 * Advanced volume features
   * thin
@@ -45,7 +45,7 @@ Here is an example of the HPE Docker Volume plugin being used in an OpenShift en
   * snapshot schedule
   * file system permissions and ownership
   * multiple backends
-  * file share [CRD operations]
+  * file share [CRD operations] only for 3PAR
 
 ## Block operations usage
 
@@ -60,7 +60,7 @@ See the [file share operations usage guide](/docs/share_usage.md) for details on
 Troubleshooting issues with the plugin can be performed using these [tips](/docs/troubleshooting.md)
 
 
-## SPOCK Link for HPE 3PAR Volume Plugin for Docker
+## SPOCK Link for HPE 3PAR and HPE Primera Volume Plugin for Docker
 
 * [SPOCK Link](https://spock.corp.int.hpe.com/spock/utility/document.aspx?docurl=Shared%20Documents/hw/3par/3par_volume_plugin_for_docker.pdf)
 
