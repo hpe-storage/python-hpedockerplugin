@@ -1,6 +1,6 @@
 ## HPE 3PAR and HPE Primera Volume Plugin for Docker
 
-HPE Docker Volume Plugin is an open source project that provides persistent storage and features for your containerized applications using HPE 3PAR StoreServ Storage arrays.
+HPE Docker Volume Plugin is an open source project that provides persistent storage and features for your containerized applications using HPE 3PAR and HPE Primera Storage arrays.
 It supports both block and file (NFS shares) based features.
 
 This Volume Plugin for Docker supports popular container platforms like Docker, Kubernetes, OpenShift 
