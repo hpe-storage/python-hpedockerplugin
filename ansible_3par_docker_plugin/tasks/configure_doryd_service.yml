@@ -1,81 +1,52 @@
-  - name: Initialize multimaster, k8s_1_13, os_3_11 flags as false by default
-    set_fact:
-      multimaster: false
-      k8s_1_13: false
-      os_3_11: false
-      ks8_result: {}
-      result: {}
-      doryd_exists: false
+- name: Initialize default parameters
+  set_fact:
+    result: {}
+    doryd_exists: false
+   
+- name: Check whether doryd as a container exists for multimaster Kubernetes/Openshift setup
+  shell: kubectl get pods --namespace kube-system -o wide | grep doryd
+  register: result
+  failed_when: false
+  changed_when: false
+  when: hostvars.localhost.doryd_as_container == true
+ 
+- name: Set flag doryd_exists as true if already running
+  set_fact:
+    doryd_exists: true
+  when: result is defined and result.rc == 0 
+ 
+- name: Deployment on Openshift cluster when version is 3.11
+  shell: |
+    oc adm policy add-scc-to-user privileged system:serviceaccount:kube-system:doryd
+    cd {{playbook_dir}}
+    cd ..
+    oc create -f provisioner/OpenShift/dep-kube-storage-controller-ocp311.yaml
+  become: yes
+  when: hostvars.localhost.openshift_setup == true and hostvars.localhost.doryd_as_container == true and doryd_exists == false
 
-  - name: Set multimaster flag as true when we have more than one master in hosts file 
-    set_fact:
-      multimaster: true
-    when: groups['masters'] | count | int  > 1
+- name: Deployment on Kubernetes cluster when version is 1.13 and beyond
+  shell: |
+    cd {{playbook_dir}}
+    cd .. 
+    kubectl create -f provisioner/k8s/dep-kube-storage-controller-k8s113.yaml
+  become: yes
+  when: hostvars.localhost.k8s_setup == true and hostvars.localhost.doryd_as_container == true and doryd_exists == false 
+  
+- name: create doryd service
+  copy:
+    src: ../files/doryd.service
+    dest: /etc/systemd/system/
+    owner: root
+    group: root
+    mode: 0755
+  when: hostvars.localhost.doryd_as_service == true
 
-  - name: Execute oc version and check for openshift save output
-    shell: oc version |grep openshift
-    register: oc_result
-    ignore_errors: yes
-    no_log: True
+- name: restart doryd service, also issue daemon-reload to pick up config changes
+  systemd:
+    state: started
+    daemon_reload: yes
+    enabled: yes
+    name: doryd.service
+  when: hostvars.localhost.doryd_as_service == true 
 
-  - name: Set flag os_3_11 to true if openshift version is 3.11
-    set_fact:
-      os_3_11: true
-    when: oc_result.stdout is search("3.11")
 
-  - name: Execute kubernetes version when oc version command was not found
-    shell: kubectl version |grep "Client Version" |grep GitVersion | cut -d":" -f5 | awk '{print $1}'
-    register: ks8_result
-    when: (oc_result.stderr is search("command not found"))
-
-  - name: Set flag k8s_1_13 to true if Kubernetes 1.13 version is found
-    set_fact:
-      k8s_1_13 : true
-    when: oc_result.stderr !="" and ks8_result is defined and ks8_result.stdout is search("1.13") and ks8_result.stderr == ""
-
-  - name: Check whether doryd as a container exists for multimaster Kubernetes/Openshift setup
-    shell:
-      kubectl get pods --namespace kube-system -o wide | grep doryd
-    register: result
-    failed_when: false
-    changed_when: false
-    when: multimaster == true and (os_3_11 == true or k8s_1_13 == true)
-
-  - name: Set flag doryd_exists as true if already running
-    set_fact:
-      doryd_exists: true
-    when: multimaster == true and result is defined and result.rc == 0 
-
-  - name: Deployment on Openshift cluster when version is 3.11
-    shell: |
-      oc adm policy add-scc-to-user privileged system:serviceaccount:kube-system:doryd
-      cd {{playbook_dir}}
-      cd ..
-      oc create -f provisioner/OpenShift/dep-kube-storage-controller-ocp311.yaml
-    become: yes
-    when: multimaster == true and os_3_11 == true and doryd_exists == false
-
-  - name: Deployment on Kubernetes cluster when version is 1.13
-    shell: |
-      cd {{playbook_dir}}
-      cd .. 
-      kubectl create -f provisioner/k8s/dep-kube-storage-controller-k8s113.yaml
-    become: yes
-    when: multimaster == true and k8s_1_13 == true and doryd_exists == false 
-
-  - name: create doryd service
-    copy:
-      src: ../files/doryd.service
-      dest: /etc/systemd/system/
-      owner: root
-      group: root
-      mode: 0755
-    when: (multimaster == false) or (multimaster == true and k8s_1_13 == false and os_3_11 == false)
-
-  - name: restart doryd service, also issue daemon-reload to pick up config changes
-    systemd:
-      state: started
-      daemon_reload: yes
-      enabled: yes
-      name: doryd.service
-    when: (multimaster == false) or (multimaster == true and k8s_1_13 == false and os_3_11 == false)

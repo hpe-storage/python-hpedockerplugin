@@ -1,0 +1,29 @@
+- name: Initialize default parameters
+  set_fact: 
+    k8s_setup: true
+    openshift_setup: false
+    doryd_as_service: false
+    doryd_as_container: false
+
+- name: Find Kubernetes major version
+  shell: kubectl version --short |grep "Client Version"| cut -d'v' -f2| cut -d"." -f1
+  register: ks8_result_major
+
+- name: Find Kubernetes minor version
+  shell: kubectl version --short |grep "Client Version"| cut -d'v' -f2| cut -d"." -f2
+  register: ks8_result_minor
+
+- name: Fail when Kubernetes multimaster version is less than 1.13
+  fail:
+    msg: "Failing the installation, Kubernetes version {{ks8_result_major.stdout + '.' + ks8_result_minor.stdout }} is not supported in multimaster setup"
+  when: multimaster == true and (ks8_result_minor.stdout | int) < 13  and (ks8_result_major.stdout | int)  == 1
+
+- name: Set flag to run doryd as a system process for dynamic provisioning
+  set_fact: 
+    doryd_as_service: true
+  when: multimaster == false and (ks8_result_minor.stdout | int) < 13 and (ks8_result_major.stdout | int) == 1
+ 
+- name: Set flag to run doryd as a deployment for dynamic provisioning
+  set_fact: 
+    doryd_as_container: true
+  when: (ks8_result_minor.stdout | int ) >= 13 and ( ks8_result_major.stdout | int) == 1 

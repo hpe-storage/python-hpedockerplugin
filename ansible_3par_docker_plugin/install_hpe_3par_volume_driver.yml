@@ -1,4 +1,30 @@
 ---
+- name: Verify Openshift and Kubernetes supported versions
+  hosts: localhost
+  become: root
+  vars:
+    multimaster: false
+    oc_result: {}
+
+  tasks:
+    - name: Set multimaster flag as true when we have more than one master in hosts file
+      set_fact:
+        multimaster: true
+      when: groups['masters'] | count | int  > 1
+
+    - name: Check OpenShift version
+      shell: oc version |grep oc | cut -d" " -f2
+      register: oc_result
+      ignore_errors: yes
+
+    - name: Check Kubernetes prerequisite
+      include: tasks/check_kubernetes_prerequisite.yml
+      when: ("command not found" in oc_result.stderr) 
+
+    - name: Check OpenShift prerequisite
+      include: tasks/check_openshift_prerequisite.yml
+      when: ("command not found" not in oc_result.stderr) 
+
 - name: Install sshpass locally
   hosts: localhost
   become: root
