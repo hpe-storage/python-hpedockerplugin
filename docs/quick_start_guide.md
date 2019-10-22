@@ -118,7 +118,7 @@ export HostIP="<Master node IP>"
 ```
 
 2. Run the following Docker command to create the HPE etcd container
->**NOTE:** etcd stores the HPE 3PAR volume metadata and is required for the plugin to function properly. If you have multiple instances of etcd running on the same Docker node, you will need to modify the default etcd ports (2379, 2380, 4001) and make the adjustment in the **hpe.conf** as well.
+>**NOTE:** etcd stores the HPE 3PAR volume metadata and is required for the plugin to function properly. If you have multiple instances of etcd running on the same Docker node, you will need to modify the default etcd ports (2379, 2380, 4001) and make the adjustment in the **hpe.conf** as well. See example [/docs/example-hpe-etcd.md](/docs/example-hpe-etcd.md).
 
 ```
 sudo docker run -d -v /usr/share/ca-certificates/:/etc/ssl/certs -p 4001:4001 \
