@@ -3,7 +3,8 @@ After generating the file, place it in the /etc/kubernetes/manifests directory t
 example only covers a single instance; however, for HA you will want to replicate it to two additional nodes (3 nodes in total).
 
 ## HPE Etcd Setup
-1. export HostIP="<Master node IP>"
+1. Set the node IP address for step 2 
+```export HostIP="<Master node IP>"```
 2. Create the hpe-etcd.yaml file below; note that this file shares the TLS settings of your Kubernetes etcd cluster. In production
    you should create your own TLS keys and certificates for this separate etcd key value database.
 ```
@@ -30,8 +31,8 @@ spec:
     - --initial-cluster-token=etcd-cluster-1
     - --initial-cluster-state=new
     - --initial-cluster=m2-dl360g9-75=https://${HostIP}:23800
-    - --listen-client-urls=https://127.0.0.1:23790,https://127.0.0.1:4001
-    - --listen-peer-urls=https://${HostIP}:23800
+    - --listen-client-urls=https://0.0.0.0:23790,https://0.0.0.0:4001
+    - --listen-peer-urls=https://0.0.0.0:23800
     - --peer-cert-file=/etc/kubernetes/pki/etcd/peer.crt
     - --peer-client-cert-auth=true
     - --peer-key-file=/etc/kubernetes/pki/etcd/peer.key
