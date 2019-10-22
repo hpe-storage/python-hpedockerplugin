@@ -8,7 +8,7 @@ example only covers a single instance; however, for HA you will want to replicat
 2. Create the hpe-etcd.yaml file below; note that this file shares the TLS settings of your Kubernetes etcd cluster. In production
    you should create your own TLS keys and certificates for this separate etcd key value database.
 ```
-cat <<EOF > hpe-etcd.yaml
+cat <<EOF > /etc/kubernetes/manifests/hpe-etcd.yaml
 apiVersion: v1
 kind: Pod
 metadata:
