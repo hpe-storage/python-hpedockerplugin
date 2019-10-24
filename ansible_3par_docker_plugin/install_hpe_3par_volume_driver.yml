@@ -1,5 +1,5 @@
 ---
-- name: Verify Openshift and Kubernetes supported versions
+- name: Verify OpenShift and Kubernetes supported versions
   hosts: localhost
   become: root
   vars:
@@ -10,7 +10,7 @@
     - name: Set multimaster flag as true when we have more than one master in hosts file
       set_fact:
         multimaster: true
-      when: groups['masters'] | count | int  > 1
+      when: groups['masters'] | count | int > 1
 
     - name: Check OpenShift version
       shell: oc version |grep oc | cut -d" " -f2

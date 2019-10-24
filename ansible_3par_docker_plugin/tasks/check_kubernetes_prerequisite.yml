@@ -1,4 +1,4 @@
-- name: Initialize default parameters
+- name: Initialize Kubernetes default parameters
   set_fact: 
     k8s_setup: true
     openshift_setup: false

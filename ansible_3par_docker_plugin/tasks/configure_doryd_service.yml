@@ -1,4 +1,4 @@
-- name: Initialize default parameters
+- name: Initialize doryd default parameters
   set_fact:
     result: {}
     doryd_exists: false

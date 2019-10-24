@@ -1,22 +1,22 @@
-- name: Initialize Openshift default parameters
+- name: Initialize OpenShift default parameters
   set_fact: 
     openshift_setup: true
     k8s_setup: false
     doryd_as_service: false
     doryd_as_container: false
 
-- name: Find Openshift major version
+- name: Find OpenShift major version
   shell: oc version |grep oc | cut -d"v" -f2 |cut -d"." -f1
   register: oc_result_major
 
-- name: Find Openshift minor version
+- name: Find OpenShift minor version
   shell: oc version |grep oc | cut -d"v" -f2 |cut -d"." -f2
   register: oc_result_minor
 
-- name: Fail when Openshift multimaster version is less than 3.11
+- name: Fail when OpenShift multimaster version is less than 3.11
   fail:
-    msg: "Failing the installation, Openshift version {{oc_result.stdout}} is not supported in multimaster setup"
-  when: multimaster == true and (oc_result_minor.stdout | int) < 11  and oc_result_major.stdout | int == 3 
+    msg: "Failing the installation, OpenShift version {{oc_result.stdout}} is not supported in multimaster setup"
+  when: multimaster == true and (oc_result_minor.stdout | int) < 11 and oc_result_major.stdout | int == 3 
 
 - name: Set flag to run doryd as a system process for dynamic provisioning
   set_fact: 
