@@ -10,72 +10,61 @@ https://github.com/coreos/docs/blob/master/os/generate-self-signed-certificates.
 ## Steps to setup a 3 node secure etcd cluster
 
 Following three shell scripts (etcd1,2,3.sh will be invoked on 3 different machines, whose IP’s are given in etcd1,2,3 shell variables), and the certs folder will contain the server’s key/certificate, client’s key/certificate files in /home/docker/cfssl
-
-etcd1.sh
-
- ```
-etcd1=10.50.180.1
-etcd2=10.50.164.1
-etcd3=10.50.198.1
-etcd=$etcd1
-/usr/bin/etcd  --name infra0 --data-dir ./infra0 \
-  --advertise-client-urls https://${etcd}:3379 \
-  --listen-client-urls https://${etcd}:3379 \
-  --initial-advertise-peer-urls http://${etcd}:23380 \
-  --listen-peer-urls http://${etcd}:23380 \
-  --initial-cluster-token etcd-cluster-1 \
-  --initial-cluster infra0=http://${etcd1}:23380,infra1=http://${etcd2}:23380,infra2=http://${etcd3}:23380 \
-  --cert-file=/home/docker/cfssl/server.pem \
-  --key-file=/home/docker/cfssl/server-key.pem \
-  --trusted-ca-file=/home/docker/cfssl/ca.pem \
-  --client-cert-auth \
-  --initial-cluster-state new
 ```
+[root@cssos196133 ~]# cat etcd1.sh
+etcd1=15.212.196.133
+etcd2=15.212.196.134
+etcd3=15.212.196.135
+etcd=$etcd1
 
+/usr/bin/etcd  --name infra0 --data-dir ./infra0 \
+--advertise-client-urls http://${etcd}:23790 \
+--listen-client-urls http://${etcd}:23790 \
+--initial-advertise-peer-urls http://${etcd}:23800 \
+--listen-peer-urls http://${etcd}:23800 \
+--initial-cluster-token etcd-cluster-1 \
+--initial-cluster infra0=http://${etcd1}:23800,infra1=http://${etcd2}:23800,infra2=http://${etcd3}:23800 \
+--initial-cluster-state new
 
 
 etcd2.sh
-```
-etcd1=10.50.180.1
-etcd2=10.50.164.1
-etcd3=10.50.198.1
+[root@cssos196134 ~]# cat etcd2.sh
+etcd1=15.212.196.133
+etcd2=15.212.196.134
+etcd3=15.212.196.135
 etcd=$etcd2
+
 /usr/bin/etcd  --name infra1 --data-dir ./infra1 \
-  --advertise-client-urls https://${etcd}:3379,https://${etcd}:4001 \
-  --listen-client-urls https://${etcd}:3379,https://${etcd}:4001 \
-  --initial-advertise-peer-urls http://${etcd}:23380 \
-  --listen-peer-urls http://${etcd}:23380 \
+  --advertise-client-urls http://${etcd}:23790,http://${etcd}:40010 \
+  --listen-client-urls http://${etcd}:23790,http://${etcd}:40010 \
+  --initial-advertise-peer-urls http://${etcd}:23800 \
+  --listen-peer-urls http://${etcd}:23800 \
   --initial-cluster-token etcd-cluster-1 \
-  --initial-cluster infra0=http://${etcd1}:23380,infra1=http://${etcd2}:23380,infra2=http://${etcd3}:23380 \
-  --cert-file=/home/docker/cfssl/server.pem \
-  --key-file=/home/docker/cfssl/server-key.pem \
-  --trusted-ca-file=/home/docker/cfssl/ca.pem \
-  --client-cert-auth \
+  --initial-cluster infra0=http://${etcd1}:23800,infra1=http://${etcd2}:23800,infra2=http://${etcd3}:23800 \
   --initial-cluster-state new
-```  
-
-
 
 etcd3.sh
-```
-etcd1=10.50.180.1
-etcd2=10.50.164.1
-etcd3=10.50.198.1
+
+etcd1=15.212.196.133
+etcd2=15.212.196.134
+etcd3=15.212.196.135
 etcd=$etcd3
 /usr/bin/etcd  --name infra2 --data-dir ./infra2 \
-  --advertise-client-urls https://${etcd}:3379,https://${etcd}:4001 \
-  --listen-client-urls https://${etcd}:3379,https://${etcd}:4001 \
-  --initial-advertise-peer-urls http://${etcd}:23380 \
-  --listen-peer-urls http://${etcd}:23380 \
+  --advertise-client-urls http://${etcd}:23790,http://${etcd}:40010 \
+  --listen-client-urls http://${etcd}:23790,http://${etcd}:40010 \
+  --initial-advertise-peer-urls http://${etcd}:23800 \
+  --listen-peer-urls http://${etcd}:23800 \
   --initial-cluster-token etcd-cluster-1 \
-  --initial-cluster infra0=http://${etcd1}:23380,infra1=http://${etcd2}:23380,infra2=http://${etcd3}:23380 \
-  --cert-file=/home/docker/cfssl/server.pem \
-  --key-file=/home/docker/cfssl/server-key.pem \
-  --trusted-ca-file=/home/docker/cfssl/ca.pem \
-  --client-cert-auth \
+  --initial-cluster infra0=http://${etcd1}:23800,infra1=http://${etcd2}:23800,infra2=http://${etcd3}:23800 \
   --initial-cluster-state new
-```
 
+
+[root@cssos196133 ~]# curl http://15.212.196.133:23790/v2/members
+{"members":[{"id":"9b0bff3d96b77fc3","name":"infra2","peerURLs":["http://15.212.196.135:23800"],"clientURLs":["http://15.212.196.135:23790","http://15.212.196.135:40010"]},{"id":"a3f74f32f40cc714","name":"infra0","peerURLs":["http://15.212.196.133:23800"],"clientURLs":["http://15.212.196.133:23790"]},{"id":"c5c61529df279a51","name":"infra1","peerURLs":["http://15.212.196.134:23800"],"clientURLs":["http://15.212.196.134:23790","http://15.212.196.134:40010"]}]}
+
+[root@cssos196133 ~]# curl http://15.212.196.133:23790/version
+{"etcdserver":"3.3.11","etcdcluster":"3.3.0"}[root@cssos196133 ~]#
+```
 ## Sample python program using etcd client.  
 ```
 import etcd
