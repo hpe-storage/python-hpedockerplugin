@@ -112,26 +112,15 @@
   - name: load etcd settings
     include_vars: 'properties/etcd_cluster_properties.yml'
 
-  - name: run etcd container
-    docker_container:
-      name: etcd
-      image: "{{ etcd_image }}"
-      state: started
-      detach: true
-      ports:
-        - "{{ etcd_peer_port }}:{{ etcd_peer_port }}"
-        - "{{ etcd_client_port_1 }}:{{ etcd_client_port_1 }}"
-        - "{{ etcd_client_port_2 }}:{{ etcd_client_port_2 }}"
-      env:
-        ETCD_NAME: etcd0
-        ETCD_ADVERTISE_CLIENT_URLS: "{{ etcd_advertise_client_url_1 }},{{ etcd_advertise_client_url_2 }}"
-        ETCD_LISTEN_CLIENT_URLS: "{{ etcd_listen_client_url_1 }},{{ etcd_listen_client_url_2 }}"
-        ETCD_INITIAL_ADVERTISE_PEER_URLS: "{{ etcd_initial_advertise_peer_urls }}"
-        ETCD_LISTEN_PEER_URLS: "{{ etcd_listen_peer_urls }}"
-        ETCD_INITIAL_CLUSTER: "etcd0=http://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:{{ etcd_peer_port }}"
-        ETCD_INITIAL_CLUSTER_TOKEN: "{{ etcd_initial_cluster_token }}"
-        ETCD_INITIAL_CLUSTER_STATE: "{{ etcd_initial_cluster_state }}"
-      restart_policy: always
+  - name: run etcd binary for standalone 
+    shell: >
+      nohup /usr/bin/etcd --name etcd0 --initial-advertise-peer-urls http://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:23800
+      --listen-peer-urls http://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:23800
+      --listen-client-urls http://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:23790,http://127.0.0.1:23790
+      --advertise-client-urls http://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:23790
+      --initial-cluster-token {{ etcd_initial_cluster_token }}
+      --initial-cluster "etcd0=http://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:{{ etcd_peer_port }}"
+      --initial-cluster-state {{ etcd_initial_cluster_state }} &  
     become: yes
     
   - name: Create conf file

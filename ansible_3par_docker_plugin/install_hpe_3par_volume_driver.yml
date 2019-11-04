@@ -79,7 +79,7 @@
 
   tasks:
     - name: Create etcd cluster for 3PAR Docker Volume plugin
-      include: tasks/create_etcd_container.yml
+      include: tasks/create_etcd_binary.yml
 
 - name: Install HPE 3PAR Volume Driver for Kubernetes/OpenShift
   hosts: masters,workers,etcd 

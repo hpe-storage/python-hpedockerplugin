@@ -161,3 +161,9 @@
     become: yes
     when: ansible_version.major == 2 and ansible_version.minor < 6
 
+  - name: Install etcd-3.3.11 rpm from remote repo 
+    yum:
+      name: http://mirror.centos.org/centos/7/extras/x86_64/Packages/etcd-3.3.11-2.el7.centos.x86_64.rpm
+      state: present
+    become: yes
+
