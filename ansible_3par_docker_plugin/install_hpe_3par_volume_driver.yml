@@ -23,7 +23,18 @@
 
     - name: Check OpenShift prerequisite
       include: tasks/check_openshift_prerequisite.yml
-      when: ("command not found" not in oc_result.stderr) 
+      when: ("command not found" not in oc_result.stderr)
+
+- name: Verify and Install etcd binary version 2.3.7 into /usr/bin for hpe3parvolumeplugin
+  hosts: etcd
+  become: root
+  environment:
+    http_proxy: "{{ http_proxy  | default('')}}"
+    https_proxy: "{{ https_proxy  | default('') }}"
+
+  tasks:
+    - name: Check and install etcd binary 2.3.7
+      include: tasks/check_etcd_hpe_prerequisite.yml
 
 - name: Install sshpass locally
   hosts: localhost
@@ -79,7 +90,7 @@
 
   tasks:
     - name: Create etcd cluster for 3PAR Docker Volume plugin
-      include: tasks/create_etcd_container.yml
+      include: tasks/create_etcd_service.yml
 
 - name: Install HPE 3PAR Volume Driver for Kubernetes/OpenShift
   hosts: masters,workers,etcd 

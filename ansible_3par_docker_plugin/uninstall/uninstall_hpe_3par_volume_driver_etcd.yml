@@ -1,15 +1,19 @@
 ---
+- name: Remove etcd binary from Kubernetes/OpenShift
+  hosts: etcd
+  become: root
+  tasks:
+    - name: Remove etcd binary from Kubernetes/OpenShift 
+      include: remove_etcd_service.yml
+      ignore_errors: yes
+
 - name: Uninstall HPE 3PAR Volume Driver for Kubernetes/OpenShift
-  hosts: masters,workers,etcd
+  hosts: masters,workers
   become: root
 
   tasks:
     - name: load plugin settings
       include_vars: '../properties/plugin_configuration_properties.yml'
-
-    - name: Remove etcd container from Docker
-      include: remove_etcd_container.yml
-      ignore_errors: yes
 
     - name: Remove 3PAR Volume Plugin container from Docker
       include: remove_3par_docker_container.yml

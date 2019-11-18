@@ -1,0 +1,42 @@
+- name: Initialize the etcd cluster var
+  set_fact:
+    etcd_initial_cluster: ''
+    etcd_hpe_service_exists: false
+
+- name: Create the etcd cluster var
+  set_fact:
+    etcd_initial_cluster: "{{ etcd_initial_cluster }},{{ hostvars[groups['etcd'][item | int]]['ansible_default_ipv4']['address'] }}=http://{{ hostvars[groups['etcd'][item | int]]['ansible_default_ipv4']['address'] }}:{{ 23800 }}"
+  with_items: "{{ lookup('sequence','start=0 end='+((groups['etcd'] | count) -1) |string,wantlist=True) }}"
+
+- name: Check that the etcd_hpe.service file exists
+  stat:
+    path: /etc/systemd/system/etcd_hpe.service
+  register: stat_result
+
+- name: Check that the etcd_hpe.service file exists
+  set_fact: 
+    etcd_hpe_service_exists: true
+  when: stat_result.stat.exists == true
+
+- name: Create data directory
+  shell: |
+    mkdir -p /root/etcd_hpe_data
+    chown -R root:$(whoami) /root/etcd_hpe_data
+    chmod -R a+rw /root/etcd_hpe_data
+  when: stat_result.stat.exists == false
+
+- name: Create service file
+  template:
+    src: ../files/etcd.service
+    dest: /etc/systemd/system/etcd_hpe.service
+    owner: root
+    group: root
+    mode: 0755
+  when: stat_result.stat.exists == false
+
+- name: Reload and start the services
+  shell: |
+    systemctl daemon-reload
+    systemctl enable etcd_hpe.service
+    systemctl start etcd_hpe.service
+  when: stat_result.stat.exists == false
