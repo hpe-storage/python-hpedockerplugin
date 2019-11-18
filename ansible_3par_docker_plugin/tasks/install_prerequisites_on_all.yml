@@ -160,4 +160,3 @@
       state: present
     become: yes
     when: ansible_version.major == 2 and ansible_version.minor < 6
-

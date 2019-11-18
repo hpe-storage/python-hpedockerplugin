@@ -115,7 +115,6 @@
 
   - name: load etcd settings
     include_vars: 'properties/etcd_cluster_properties.yml'
-
   - name: Initialize the etcd cluster var
     set_fact:
       etcd_initial_cluster: ''
@@ -139,7 +138,7 @@
       chmod -R a+rw /root/etcd_hpe_data
     become: yes
     when: etcd_hpe_service_exists == false
-    
+
   - name: Set Variables for creating etcd service
     set_fact:
       etcd_name: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
