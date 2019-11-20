@@ -37,7 +37,7 @@
       cd {{playbook_dir}}
       cd ../..
       oc delete -f provisioner/OpenShift/dep-kube-storage-controller-ocp311.yaml
-    become: yes
+    #become: yes
     when: multimaster == true and os_3_11 == true 
 
   - name: Remove Deployment on Kubernetes cluster when version is 1.13
@@ -45,13 +45,14 @@
       cd {{playbook_dir}}
       cd ../..
       kubectl delete -f provisioner/k8s/dep-kube-storage-controller-k8s113.yaml
-    become: yes
+    #become: yes
     when: multimaster == true and k8s_1_13 == true 
 
   - name: Check that the doryd.service file exists
     stat:
       path: /etc/systemd/system/doryd.service
     register: stat_result
+    become: yes
     when: (multimaster == false) or (multimaster == true and k8s_1_13 == false and os_3_11 == false)
 
   - name: stop doryd service, also issue daemon-reload to pick up config changes
@@ -59,6 +60,7 @@
       state: stopped
       enabled: no
       name: doryd.service
+    become: yes
     when: (multimaster == false) or (multimaster == true and k8s_1_13 == false and os_3_11 == false) and (stat_result.stat.exists)
 
   - pause:
@@ -68,4 +70,5 @@
     file:
       path: /etc/systemd/system/doryd.service
       state: absent
+    become: yes
     when: (multimaster == false) or (multimaster == true and k8s_1_13 == false and os_3_11 == false)
