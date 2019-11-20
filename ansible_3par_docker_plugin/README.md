@@ -24,6 +24,7 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
   - Login to 3PAR via SSH to create entry in /\<user>\/.ssh/known_hosts file
   > **Note:** Entries for the Master and Worker nodes should already exist within the /\<user>\/.ssh/known_hosts file from the OpenShift installation. If not, you will need to log into each of the Master and Worker nodes as well to prevent connection errors from Ansible.
   
+  - Make sure the path of kubectl or oc binary is available in $PATH env variable
   - Clone the python-hpedockerplugin repository
     ```
     $ cd ~
