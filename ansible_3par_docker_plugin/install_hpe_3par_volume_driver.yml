@@ -105,7 +105,7 @@
 
 - name: Install HPE 3PAR Volume Driver for Kubernetes/OpenShift
   hosts: "{{groups['masters'][0]}}"
-  become: root
+  #become: root
 
   tasks:
     - name: Start Dynamic Provisioner (doryd) on Master node

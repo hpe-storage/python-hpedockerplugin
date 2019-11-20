@@ -20,7 +20,7 @@
 
 - name: Remove HPE 3PAR Volume Driver for Kubernetes/OpenShift
   hosts: "{{groups['masters'][0]}}"
-  become: root
+  #become: root
 
   tasks:
     - name: Stop Dynamic Provisioner (doryd) on Master node
