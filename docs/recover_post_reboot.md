@@ -107,6 +107,7 @@ In case your version of Kubernetes doesn't show POD name then you would need
 to describe the PODs one by one and find the one with matching PVC name.
 
 6. Cordon the rebooted node
+
 On the master node execute the following command:
 ```sh
 $ kubectl cordon <node_name>
