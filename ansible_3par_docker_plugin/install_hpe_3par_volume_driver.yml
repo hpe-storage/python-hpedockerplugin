@@ -38,7 +38,7 @@
 
 - name: Install sshpass locally
   hosts: localhost
-  become: root
+  become: yes
   environment:
     http_proxy: "{{ http_proxy  | default('')}}"
     https_proxy: "{{ https_proxy  | default('') }}"
@@ -50,7 +50,7 @@
 
 - name: Install prerequisites
   hosts: masters,workers,etcd
-  become: root
+  become: yes
   environment:
     http_proxy: "{{ http_proxy | default('') }}"
     https_proxy: "{{ https_proxy | default('') }}"
@@ -66,7 +66,7 @@
 
 - name: Install prerequisites
   hosts: etcd
-  become: root
+  become: yes
   environment:
     http_proxy: "{{ http_proxy | default('') }}"
     https_proxy: "{{ https_proxy | default('') }}"
@@ -79,14 +79,14 @@
 
 - name: Set MountFlags in docker service
   hosts: masters,workers,etcd 
-  become: root
+  become: yes
   tasks:
     - name: Configure docker service
       include: tasks/configure_docker_service.yml
 
 - name: Create etcd cluster
   hosts: etcd
-  become: root
+  become: yes
 
   tasks:
     - name: Create etcd cluster for 3PAR Docker Volume plugin
@@ -94,7 +94,7 @@
 
 - name: Install HPE 3PAR Volume Driver for Kubernetes/OpenShift
   hosts: masters,workers,etcd 
-  become: root
+  become: yes
 
   vars:
     driver_path: "/usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/"
@@ -120,7 +120,7 @@
 
 - name: Copy config file into admin.conf 
   hosts: masters
-  become: root
+  become: yes
 
   vars:
     driver_path: "/usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/"
@@ -131,7 +131,7 @@
 
 - name: Deploy FlexVolume drivers
   hosts: masters,workers,etcd 
-  become: root
+  become: yes
   environment:
     http_proxy: "{{ http_proxy | default('') }}"
     https_proxy: "{{ https_proxy | default('') }}"
@@ -142,7 +142,7 @@
 
 - name: Install HPE 3PAR Volume Driver for Kubernetes/OpenShift
   hosts: "{{groups['masters'][0]}}"
-  become: root
+  #become: yes
 
   tasks:
     - name: Start Dynamic Provisioner (doryd) on Master node
