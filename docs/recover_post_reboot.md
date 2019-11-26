@@ -117,5 +117,5 @@ $ kubectl cordon <node_name>
 
 On the master node execute the following command:
 ```sh
-$ kubectl delete pod <pod_name>
+$ kubectl delete pods <pod_name> --grace-period=0 --force
 ```
