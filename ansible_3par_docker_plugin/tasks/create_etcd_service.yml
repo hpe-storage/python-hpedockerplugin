@@ -21,16 +21,13 @@
   when: firewall_status.rc == 0
   ignore_errors: yes
 
-- name: Apply the firewall rules to open the ports 23790-23800 to create etcd_hpe service if firewall is running
+- name: Apply the firewall rules to open the ports 23790-23800 to create etcd_hpe service
   shell: firewall-cmd --zone=public --permanent --add-port=23790-23800/tcp
   when: firewall_status.rc == 0 and port_exists.rc != 0
 
 - name: Restart firewalld after setting rules
   shell: firewall-cmd --reload
   when: firewall_status.rc == 0 and port_exists.rc != 0
-
-- pause:
-    seconds: 5
 
 - name: Check that the etcd_hpe.service file exists
   stat:
@@ -58,22 +55,19 @@
     mode: 0755
   when: stat_result.stat.exists == false
 
-- name: Reload and start the services
-  shell: |
-    systemctl daemon-reload
-    systemctl enable etcd_hpe.service
-    systemctl start etcd_hpe.service
-  when: stat_result.stat.exists == false
-
-- pause:
-    seconds: 5
+- name: Reload and start the etcd_hpe services
+  systemd:
+    state: started
+    daemon_reload: yes
+    enabled: yes
+    name: etcd_hpe.service
+  when: stat_result.stat.exists == false  
 
 - name: Check cluster is healthy after creating etcd cluster
   shell: /usr/bin/etcdctl --endpoints http://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:23790 cluster-health | grep "cluster is healthy"
   register: cluster_status
-  when: stat_result.stat.exists == false
 
 - name: Fail the installer if cluster is not healthy
   fail:
     msg: "Cluster is unhealthy"
-  when: stat_result.stat.exists == false and cluster_status.rc != 0
+  when: cluster_status.rc is defined and cluster_status.rc != 0

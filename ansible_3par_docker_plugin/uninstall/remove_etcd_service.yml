@@ -14,9 +14,6 @@
     name: etcd_hpe.service
   when: stat_result.stat.exists
 
-- pause:
-    seconds: 5
-
 - name: Remove etcd_hpe service files
   file:
     path: /etc/systemd/system/etcd_hpe.service
@@ -47,5 +44,3 @@
   shell: firewall-cmd --reload
   when: firewall_status.rc == 0 and port_exists.rc != 0
 
-- pause:
-    seconds: 5

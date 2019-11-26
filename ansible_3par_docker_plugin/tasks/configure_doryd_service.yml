@@ -7,12 +7,14 @@
   stat:
     path: /etc/systemd/system/doryd.service
   register: stat_result
+  become: yes
 
 - name: stop doryd service
   service:
     state: stopped
     enabled: no
     name: doryd.service
+  become: yes
   when: stat_result.stat.exists
 
 - pause:
@@ -22,6 +24,7 @@
   file:
     path: /etc/systemd/system/doryd.service
     state: absent
+  become: yes
   when: stat_result.stat.exists    
 
 - name: Check whether doryd as a container exists for multimaster Kubernetes/Openshift setup
@@ -42,7 +45,7 @@
     cd {{playbook_dir}}
     cd ..
     oc create -f provisioner/OpenShift/dep-kube-storage-controller-ocp311.yaml
-  become: yes
+  #become: yes
   when: hostvars.localhost.openshift_setup == true and hostvars.localhost.doryd_as_container == true and doryd_exists == false
 
 - name: Deployment on Kubernetes cluster when version is 1.13 and beyond
@@ -50,7 +53,7 @@
     cd {{playbook_dir}}
     cd .. 
     kubectl create -f provisioner/k8s/dep-kube-storage-controller-k8s113.yaml
-  become: yes
+  #become: yes
   when: hostvars.localhost.k8s_setup == true and hostvars.localhost.doryd_as_container == true and doryd_exists == false 
   
 - name: create doryd service
@@ -60,6 +63,7 @@
     owner: root
     group: root
     mode: 0755
+  become: yes
   when: hostvars.localhost.doryd_as_service == true
 
 - name: restart doryd service, also issue daemon-reload to pick up config changes
@@ -68,6 +72,5 @@
     daemon_reload: yes
     enabled: yes
     name: doryd.service
+  become: yes
   when: hostvars.localhost.doryd_as_service == true 
-
-
