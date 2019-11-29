@@ -1,13 +1,19 @@
-  - name : Download the etcdtool binary
+  - name: Check if package is already installed
     yum:
-      name: https://github.com/mickep76/etcdtool/releases/download/3.3.1/etcdtool-3.3-201605021949.x86_64.rpm  
+      list: etcdtool
+    register: is_installed
 
-  - name: set peer url
-    set_fact:
-      peer_url: http://{{hostvars[inventory_hostname]['ansible_default_ipv4']['address']}}:23790
+  - name : Install the etcdtool binary
+    yum: 
+      name: https://github.com/mickep76/etcdtool/releases/download/3.3.1/etcdtool-3.3-201605021949.x86_64.rpm 
+    when: >-
+      ( is_installed.results | length == 0 )  or
+      ( is_installed.results | length == 1 and is_installed.results[0].version == "3.3" and is_installed.results[0].yumstate != "installed")       
 
   - name: Perform backup using export command
-    shell: etcdtool -p "{{peer_url}}" -d export / -o test1.json
+    shell: etcdtool -p "http://{{hostvars[inventory_hostname]['ansible_default_ipv4']['address']}}:23790" -d export / -o /tmp/hpe_etcd_data.json
     register: backup
     become: yes
+    
+  
 

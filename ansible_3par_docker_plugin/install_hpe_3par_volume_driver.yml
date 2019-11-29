@@ -28,43 +28,13 @@
 - name: Verify and Install etcd binary version 2.3.7 into /usr/bin for hpe3parvolumeplugin
   hosts: etcd
   become: yes
+  environment:
+    http_proxy: "{{ http_proxy  | default('')}}"
+    https_proxy: "{{ https_proxy  | default('') }}"
+    no_proxy: "{{ no_proxy  | default('') }}"
   tasks:
-    - name: Initialize flag for backup done
-      set_fact: 
-        backup_done: false
-
-    - name: Check whether containerized etcd_hpe is exists
-      shell: docker ps |grep etcd_hpe
-      register: etcd_as_container
-      ignore_errors: true
-  
-    - name: Perform backup of etcd_hpe data before creating etcd as a service
-      include: tasks/perform_backup.yml
-      when: >-
-        etcd_as_container.rc is defined and etcd_as_container.rc == 0 and
-        ('{{hostvars[inventory_hostname]['ansible_default_ipv4']['address']}}' == '{{groups['masters'][0]}}')
-
-    - name: Set flag once backup done
-      set_fact: 
-        backup_done: true
-      when: etcd_as_container.rc == 0 and backup.rc is defined and backup.rc == 0  
-
-    - name: load plugin settings
-      include_vars: 'properties/plugin_configuration_properties.yml'
-
-    - name: Stop hpedockerplugin container
-      docker_container:
-        name: plugin_container
-        image: "{{ INVENTORY['DEFAULT']['volume_plugin'] }}"
-        state: stopped
-      when: etcd_as_container.rc is defined and etcd_as_container.rc == 0  
-
-    - name: Remove etcd_hpe container
-      include: uninstall/remove_etcd_container.yml
-      when: etcd_as_container.rc is defined and etcd_as_container.rc == 0
-
-    - name: Check and install etcd binary 2.3.7
-      include: tasks/check_etcd_hpe_prerequisite.yml
+    - name: Verify and Install etcd binary version 2.3.7 into /usr/bin for hpe3parvolumeplugin
+      include: tasks/perform_etcd_checks_and_installation.yml
 
 - name: Install sshpass locally
   hosts: localhost
@@ -123,12 +93,17 @@
       include: tasks/create_etcd_service.yml
 
 - name: Import data if backup done
-  hosts: "{{groups['masters'][0]}}"
+  hosts: "{{groups['etcd'][0]}}"
   tasks:
     - name: Import data once the etcd is up
-      shell: etcdtool -p "http://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:23790" import / test1.json -y
+      shell: etcdtool -p "http://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:23790" import / /tmp/hpe_etcd_data.json -y
       when: backup_done == true
-
+      
+    - name: Remove hpe_etcd_data file after backup done
+      file:
+        path: /tmp/hpe_etcd_data.json
+        state: absent
+      when: backup_done == true  
 
 - name: Install HPE 3PAR Volume Driver for Kubernetes/OpenShift
   hosts: masters,workers,etcd 
