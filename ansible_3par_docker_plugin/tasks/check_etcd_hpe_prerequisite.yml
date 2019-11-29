@@ -38,7 +38,7 @@
 
 - name: Install binary
   shell: |
-    cd /tmp/etcd
+    cd /tmp/hpe_etcd
     tar xzvf etcd-v{{ etcd_version }}-linux-amd64.tar.gz
     cd etcd-v{{ etcd_version }}-linux-amd64
     mv etcd etcdctl /usr/bin
