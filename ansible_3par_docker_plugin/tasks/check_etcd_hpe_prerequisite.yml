@@ -24,16 +24,16 @@
     msg: "Already installed etcd version is not 2.3.7, terminating the etcd installation.\n Please manually uninstall the existing etcd in /usr/bin/etcd folder and perform the installation."
   when: install_etcd_hpe == false and '2.3.7' not in etcd_version_result.stdout
 
-- name : Create tmp/etcd directory
+- name : Create tmp/hpe_etcd directory
   file:
-     path: /tmp/etcd
+     path: /tmp/hpe_etcd
      state: directory
   when: install_etcd_hpe == true
 
 - name : Download the etcdv2.3.7 binary
   get_url:
     url:  https://github.com/coreos/etcd/releases/download/v{{ etcd_version }}/etcd-v{{ etcd_version }}-linux-amd64.tar.gz
-    dest: /tmp/etcd
+    dest: /tmp/hpe_etcd
   when: install_etcd_hpe == true
 
 - name: Install binary
@@ -44,3 +44,9 @@
     mv etcd etcdctl /usr/bin
     chmod 755 /usr/bin/etcd /usr/bin/etcdctl
   when: install_etcd_hpe == true
+
+- name : delete tmp/hpe_etcd directory
+  file:
+    path: /tmp/hpe_etcd
+    state: absent
+  when: install_etcd_hpe == true  

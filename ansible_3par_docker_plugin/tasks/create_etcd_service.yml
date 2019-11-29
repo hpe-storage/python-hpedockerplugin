@@ -21,20 +21,22 @@
   when: firewall_status.rc == 0
   ignore_errors: yes
 
-- name: Apply the firewall rules to open the ports 23790-23800 to create etcd_hpe service
-  shell: firewall-cmd --zone=public --permanent --add-port=23790-23800/tcp
+- name: Apply the firewall rules to open the ports 23790-23800 to create etcd_hpe service and reload
+  shell: |
+    firewall-cmd --zone=public --permanent --add-port=23790-23800/tcp
+    firewall-cmd --reload
   when: firewall_status.rc == 0 and port_exists.rc != 0
 
-- name: Restart firewalld after setting rules
-  shell: firewall-cmd --reload
-  when: firewall_status.rc == 0 and port_exists.rc != 0
+# - name: Restart firewalld after setting rules
+  # shell: firewall-cmd --reload
+  # when: firewall_status.rc == 0 and port_exists.rc != 0
 
 - name: Check that the etcd_hpe.service file exists
   stat:
     path: /etc/systemd/system/etcd_hpe.service
   register: stat_result
 
-- name: Check that the etcd_hpe.service file exists
+- name: Set flag for the etcd_hpe.service file exists
   set_fact: 
     etcd_hpe_service_exists: true
   when: stat_result.stat.exists == true
@@ -61,13 +63,16 @@
     daemon_reload: yes
     enabled: yes
     name: etcd_hpe.service
-  when: stat_result.stat.exists == false  
+  when: stat_result.stat.exists == false 
+
+- pause:
+    seconds: 5   
 
 - name: Check cluster is healthy after creating etcd cluster
-  shell: /usr/bin/etcdctl --endpoints http://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:23790 cluster-health | grep "cluster is healthy"
+  shell: /usr/bin/etcdctl --endpoints http://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:23790 cluster-health
   register: cluster_status
 
 - name: Fail the installer if cluster is not healthy
   fail:
-    msg: "Cluster is unhealthy"
-  when: cluster_status.rc is defined and cluster_status.rc != 0
+    msg: "Cluster is unhealthy, staus of cluster is {{ cluster_status.stdout }}"
+  when: cluster_status.rc is defined and cluster_status.rc != 0 and ("unreachable" in cluster_status.stdout or "unconfigured" in cluster_status.stdout)
