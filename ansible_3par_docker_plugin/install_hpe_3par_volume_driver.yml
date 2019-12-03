@@ -87,6 +87,10 @@
 - name: Create etcd cluster
   hosts: etcd
   become: yes
+  environment:
+    http_proxy: "{{ http_proxy  | default('')}}"
+    https_proxy: "{{ https_proxy  | default('') }}"
+    no_proxy: "{{ no_proxy  | default('') }}"
 
   tasks:
     - name: Create etcd cluster for 3PAR Docker Volume plugin
