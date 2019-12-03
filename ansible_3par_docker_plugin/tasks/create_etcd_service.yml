@@ -27,10 +27,6 @@
     firewall-cmd --reload
   when: firewall_status.rc == 0 and port_exists.rc != 0
 
-# - name: Restart firewalld after setting rules
-  # shell: firewall-cmd --reload
-  # when: firewall_status.rc == 0 and port_exists.rc != 0
-
 - name: Check that the etcd_hpe.service file exists
   stat:
     path: /etc/systemd/system/etcd_hpe.service
@@ -41,12 +37,17 @@
     etcd_hpe_service_exists: true
   when: stat_result.stat.exists == true
 
+- name: Check that the /root/etcd_hpe_data directory exists
+  stat:
+    path: /root/etcd_hpe_data
+  register: dir_stat_result
+  
 - name: Create data directory
   shell: |
     mkdir -p /root/etcd_hpe_data
     chown -R root:$(whoami) /root/etcd_hpe_data
     chmod -R a+rw /root/etcd_hpe_data
-  when: stat_result.stat.exists == false
+  when: dir_stat_result.stat.exists == false
 
 - name: Create service file
   template:
@@ -57,20 +58,26 @@
     mode: 0755
   when: stat_result.stat.exists == false
 
+- name: Check etcd_hpe service is running
+  shell: systemctl status etcd_hpe.service
+  register: etcd_hpe_service_status
+  ignore_errors: yes
+
 - name: Reload and start the etcd_hpe services
   systemd:
     state: started
     daemon_reload: yes
     enabled: yes
     name: etcd_hpe.service
-  when: stat_result.stat.exists == false 
+  when: etcd_hpe_service_status.stdout is defined and "'running' not in etcd_hpe_service_status.stdout"
 
 - pause:
-    seconds: 5   
+    seconds: 5
 
 - name: Check cluster is healthy after creating etcd cluster
   shell: /usr/bin/etcdctl --endpoints http://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:23790 cluster-health
   register: cluster_status
+  when: ('{{hostvars[inventory_hostname]['ansible_default_ipv4']['address']}}' == '{{groups['etcd'][0]}}')
 
 - name: Fail the installer if cluster is not healthy
   fail:
