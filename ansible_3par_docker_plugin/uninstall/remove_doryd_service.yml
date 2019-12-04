@@ -75,4 +75,3 @@
       state: absent
       become: yes
     when: doryd_as_service == true
-

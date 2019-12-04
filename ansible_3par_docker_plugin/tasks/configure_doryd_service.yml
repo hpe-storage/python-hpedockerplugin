@@ -72,4 +72,4 @@
     enabled: yes
     name: doryd.service
   become: yes
-  when: hostvars.localhost.doryd_as_service == true 
+  when: hostvars.localhost.doryd_as_service == true

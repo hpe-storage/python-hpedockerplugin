@@ -1,7 +1,7 @@
 ---
 - name: Remove etcd binary from Kubernetes/OpenShift
   hosts: etcd
-  become: root
+  become: yes
   tasks:
     - name: Remove etcd binary from Kubernetes/OpenShift 
       include: remove_etcd_service.yml
