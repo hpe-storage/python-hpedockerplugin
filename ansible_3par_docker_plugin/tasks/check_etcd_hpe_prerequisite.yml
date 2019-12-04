@@ -4,24 +4,24 @@
     etcd_version_result : {}
     etcd_version: "2.3.7"
 
-- name: Check whether etcd for hpe3parvolumeplugin is installed in /usr/bin/etcd
+- name: Check whether etcd for hpe3parvolumeplugin is installed in /usr/bin/etcd_hpe
   stat:
-    path: /usr/bin/etcd
+    path: /usr/bin/etcd_hpe
   register: etcd_location_match
 
-- name: Set flag for etcd_hpe installation if there is no etcd installed at /usr/bin/etcd
+- name: Set flag for etcd_hpe installation if there is no etcd installed at /usr/bin/etcd_hpe
   set_fact: 
     install_etcd_hpe: true
   when: etcd_location_match.stat.exists == false
 
 - name: Check already installed etcd version
-  shell: /usr/bin/etcd --version |grep etcd
+  shell: /usr/bin/etcd_hpe --version |grep etcd
   register: etcd_version_result
   when: etcd_location_match.stat.exists  == true
 
-- name: Fail when etcd version other than 2.3.7 is present in /usr/bin/etcd
+- name: Fail when etcd version other than 2.3.7 is present in /usr/bin/etcd_hpe
   fail:
-    msg: "Already installed etcd version is not 2.3.7, terminating the etcd installation.\n Please manually uninstall the existing etcd in /usr/bin/etcd folder and perform the installation."
+    msg: "Already installed etcd version is not 2.3.7, terminating the etcd installation.\n Please manually uninstall the existing etcd in /usr/bin/etcd_hpe folder and perform the installation."
   when: install_etcd_hpe == false and '2.3.7' not in etcd_version_result.stdout
 
 - name : Create tmp/hpe_etcd directory
@@ -41,8 +41,9 @@
     cd /tmp/hpe_etcd
     tar xzvf etcd-v{{ etcd_version }}-linux-amd64.tar.gz
     cd etcd-v{{ etcd_version }}-linux-amd64
-    mv etcd etcdctl /usr/bin
-    chmod 755 /usr/bin/etcd /usr/bin/etcdctl
+    mv etcd etcd_hpe
+    mv etcd_hpe etcdctl /usr/bin
+    chmod 755 /usr/bin/etcd_hpe /usr/bin/etcdctl
   when: install_etcd_hpe == true
 
 - name : delete tmp/hpe_etcd directory

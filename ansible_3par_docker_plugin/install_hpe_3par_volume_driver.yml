@@ -78,7 +78,7 @@
       include: tasks/install_prerequisites_on_all.yml
 
 - name: Set MountFlags in docker service
-  hosts: masters,workers,etcd 
+  hosts: workers
   become: yes
   tasks:
     - name: Configure docker service

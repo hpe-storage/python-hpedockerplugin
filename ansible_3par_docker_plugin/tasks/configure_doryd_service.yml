@@ -1,6 +1,5 @@
 - name: Initialize doryd default parameters
   set_fact:
-    result: {}
     doryd_exists: false
    
 - name: Check that the doryd.service file exists
