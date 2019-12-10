@@ -23,7 +23,7 @@ from Crypto.Cipher import AES
 from Crypto.Random import random
 
 from oslo_log import log as logging
-from oslo_serialization import base64
+import base64
 
 LOG = logging.getLogger(__name__)
 
@@ -204,6 +204,8 @@ class PasswordDecryptor(object):
 
         elif KEY_LEN > 32:
             KEY = key[:32]
+        else:
+            KEY = key
 
         return KEY
 
