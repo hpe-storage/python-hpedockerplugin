@@ -83,7 +83,7 @@ def _decode_name(name):
     name = name.replace('-', '/')
     name = name + "=="
 
-    vol_decoded = uuid.UUID(bytes=base64.decode_as_bytes(name))
+    vol_decoded = uuid.UUID(bytes=oslo_base64.decode_as_bytes(name))
     return str(vol_decoded)
 
 
