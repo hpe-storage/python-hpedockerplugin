@@ -110,7 +110,7 @@ $ showsched
 
 - The configuration parameter **mount_prefix**, is applicable for containerized plugin only. If used with the managed plugin, mount operation fails.
 
-- For statefulset pod stuck in "ContainerCreating" state after a worker node reboot, the following manual procedure has to be done -- [Details ](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/troubleshooting.md#debugging-issue-with-statefulset-pod-stuck-in-containercreating-state-after-a-node-reboot)
+- For statefulset pod stuck in "ContainerCreating" state after a worker node reboot, the following manual procedure has to be done -- [Details ](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/recover_post_reboot.md)
 
 - For Pod mount using File Persona, this flag `allowPrivilegeEscalation: true` under `securityContext`is mandantory for volume plugin to mount a file persona NFS share.
 eg.
