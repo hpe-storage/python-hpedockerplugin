@@ -1,5 +1,15 @@
 ---
-  - name: Change MountFlags
+  - name: Check Docker Server Version
+    command: docker version --format '{{params}}'
+    register: docker_server_version
+    vars:
+      params: !unsafe '{{.Server.Version}}'
+
+  - name: Set Docker version
+    set_fact:
+      docker_version: "{{ docker_server_version.stdout | replace('.', '') }}"
+
+  - name: Change MountFlags when docker version is below 18.09
     ini_file:
       dest: /usr/lib/systemd/system/docker.service
       section: Service
@@ -9,8 +19,9 @@
       backup: yes
     tags: configuration
     register: mount_flag_result
+    when: docker_version|int < 18090
 
-  - name: restart docker service, also issue daemon-reload to pick up config changes
+  - name: Restart docker service, also issue daemon-reload to pick up config changes when docker version is below 18.09
     systemd:
       state: restarted
       daemon_reload: yes

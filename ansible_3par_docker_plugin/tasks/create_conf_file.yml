@@ -1,5 +1,5 @@
 ---
-  - name: Stop docker container
+  - name: Stop docker container of plugin_container
     docker_container:
       name: plugin_container
       image: "{{ INVENTORY['DEFAULT']['volume_plugin'] }}"
