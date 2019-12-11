@@ -23,7 +23,8 @@ from Crypto.Cipher import AES
 from Crypto.Random import random
 
 from oslo_log import log as logging
-from oslo_serialization import base64
+import base64
+from oslo_serialization import base64 as oslo_base64
 
 LOG = logging.getLogger(__name__)
 
@@ -65,7 +66,7 @@ def generate_password(length=16, symbolgroups=DEFAULT_PASSWORD_SYMBOLS):
 def _encode_name(name):
     uuid_str = name.replace("-", "")
     vol_uuid = uuid.UUID('urn:uuid:%s' % uuid_str)
-    vol_encoded = base64.encode_as_text(vol_uuid.bytes)
+    vol_encoded = oslo_base64.encode_as_text(vol_uuid.bytes)
 
     # 3par doesn't allow +, nor /
     vol_encoded = vol_encoded.replace('+', '.')
@@ -204,6 +205,8 @@ class PasswordDecryptor(object):
 
         elif KEY_LEN > 32:
             KEY = key[:32]
+        else:
+            KEY = key
 
         return KEY
 
