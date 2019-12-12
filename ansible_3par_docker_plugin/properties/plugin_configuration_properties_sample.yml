@@ -20,7 +20,7 @@ INVENTORY:
 
 #Optional Parameters------------------------------------------------------------------------------------
 
-    # Uncomment to encrypt passwords in hpe.conf using defined passphrase
+    # Uncomment to encrypt passwords in hpe.conf using defined passphrase. Don't set it to empty string
     #encryptor_key: < encrypt_key1 >
     
     #ssh_hosts_key_file: '/root/.ssh/known_hosts'
@@ -77,7 +77,7 @@ INVENTORY:
 
 #Optional Parameters------------------------------------------------------------------------------------
 
-    # Uncomment to encrypt passwords in hpe.conf using defined passphrase
+    # Uncomment to encrypt passwords in hpe.conf using defined passphrase. Don't set it to empty string
     #encryptor_key: < encrypt_key2 >
     
     #ssh_hosts_key_file: '/root/.ssh/known_hosts'
