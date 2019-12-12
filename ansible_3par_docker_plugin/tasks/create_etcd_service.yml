@@ -77,7 +77,7 @@
 - name: Check cluster is healthy after creating etcd cluster
   shell: /usr/bin/etcdctl --endpoints http://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:23790 cluster-health
   register: cluster_status
-  when: ('{{hostvars[inventory_hostname]['ansible_default_ipv4']['address']}}' == '{{groups['etcd'][0]}}')
+  when: hostvars[inventory_hostname]['ansible_default_ipv4']['address'] == groups['etcd'][0]
 
 - name: Fail the installer if cluster is not healthy
   fail:

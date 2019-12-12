@@ -11,7 +11,7 @@
   include: perform_backup.yml
   when: >-
     etcd_as_container.rc is defined and etcd_as_container.rc == 0 and
-    ('{{hostvars[inventory_hostname]['ansible_default_ipv4']['address']}}' == '{{groups['etcd'][0]}}')
+    (hostvars[inventory_hostname]['ansible_default_ipv4']['address'] == groups['etcd'][0])
 
 - name: Set flag once backup done
   set_fact: 
