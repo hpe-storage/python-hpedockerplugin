@@ -27,6 +27,10 @@
   #become: root
 
   tasks:
+    - name: Set flag to remove doryd deployment during uninstalltion
+      set_fact:
+        remove_dep_path: "uninstaller"
+
     - name: Stop Dynamic Provisioner (doryd) on Master node
       include: remove_doryd_service.yml
       ignore_errors: yes

@@ -36,7 +36,7 @@
 - name: Set flag doryd_exists as true if already running
   set_fact:
     doryd_exists: true
-  when: result is defined and result.rc == 0 
+  when: result.rc is defined and result.rc == 0 
  
 - name: Deployment on Openshift cluster when version is 3.11
   shell: |

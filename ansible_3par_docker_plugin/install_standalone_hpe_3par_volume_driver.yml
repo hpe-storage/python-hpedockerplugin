@@ -1,5 +1,5 @@
 - hosts: localhost
-  become: root
+  become: yes
   environment:
     http_proxy: "{{ http_proxy  | default('')}}"
     https_proxy: "{{ https_proxy  | default('')}}"
@@ -27,7 +27,7 @@
     include: tasks/install_prerequisites.yml
 
   - name: Verify and Install etcd binary version 2.3.7 into /usr/bin for hpe3parvolumeplugin
-    become: root
+    become: yes
     include: tasks/check_etcd_hpe_prerequisite.yml
 
   - name: Install packages on Ubuntu
@@ -115,6 +115,7 @@
 
   - name: load etcd settings
     include_vars: 'properties/etcd_cluster_properties.yml'
+
   - name: Initialize the etcd cluster var
     set_fact:
       etcd_initial_cluster: ''
@@ -125,27 +126,36 @@
     stat:
       path: /etc/systemd/system/etcd_hpe.service
     register: stat_result
- 
-  - name: Se flag etcd_hpe.service file to true if exists
+
+  - name: Set flag etcd_hpe.service file to true if exists
     set_fact: 
       etcd_hpe_service_exists: true
     when: stat_result.stat.exists == true
-  
+
+  - name: Check that the /root/etcd_hpe_data directory exists
+    stat:
+      path: /root/etcd_hpe_data
+    register: dir_stat_result
+
   - name: Create data directory
     shell: |
       mkdir -p /root/etcd_hpe_data
       chown -R root:$(whoami) /root/etcd_hpe_data
       chmod -R a+rw /root/etcd_hpe_data
     become: yes
-    when: etcd_hpe_service_exists == false
+    when: dir_stat_result.stat.exists == false
 
-  - name: Set Variables for creating etcd service
+  - name: Set Variable for creating etcd_hpe service
     set_fact:
       etcd_name: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
-      etcd_initial_cluster: "{{ etcd_name }}=http://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:23800"
     when: etcd_hpe_service_exists == false  
 
-  - name: Create etcd service file
+  - name: Set cluster variable
+    set_fact:
+      etcd_initial_cluster: " {{ etcd_name }}=http://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:23800"
+    when: etcd_hpe_service_exists == false
+
+  - name: Create etcd_hpe service file
     template:
       src: ./files/etcd.service
       dest: /etc/systemd/system/etcd_hpe.service
@@ -155,12 +165,17 @@
     become: yes
     when: etcd_hpe_service_exists == false 
 
+  - name: Check etcd_hpe service is running
+    shell: systemctl status etcd_hpe.service
+    register: etcd_hpe_service_status
+    ignore_errors: yes
+
   - name: Reload and start the services
     shell: |
       systemctl daemon-reload
       systemctl enable etcd_hpe.service
       systemctl start  etcd_hpe.service
-    when: etcd_hpe_service_exists == false
+    when: etcd_hpe_service_status.stdout is defined and "'running' not in etcd_hpe_service_status.stdout"
 
   - name: Create conf file
     include: tasks/create_conf_file.yml
