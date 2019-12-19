@@ -18,7 +18,7 @@ Versions starting at v1.0 have been tested and are supported on the following Li
 
 **Supported software versions:**
 
-* Docker EE 17.03 or later is supported
+* Docker EE 18.09 or later is supported
 * Python 2.7
 * etcd 2.x
 
