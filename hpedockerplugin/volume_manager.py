@@ -1104,10 +1104,18 @@ class VolumeManager(object):
             qos_name = volinfo.get('qos_name')
             if qos_name is not None:
                 try:
-                    qos_detail = self._hpeplugin_driver.get_qos_detail(
-                        qos_name)
-                    qos_filter = self._get_required_qos_field(qos_detail)
-                    volume['Status'].update({'qos_detail': qos_filter})
+                    vvset_detail = self._get_vvset_by_volume_name(
+                        backend_vol_name)
+                    if vvset_detail:
+                        vvset_name = vvset_detail.get('name')
+                        if vvset_name == qos_name:
+                            qos_detail = self._hpeplugin_driver.get_qos_detail(
+                                qos_name)
+                            qos_filter = self._get_required_qos_field(
+                                qos_detail)
+                            volume['Status'].update({'qos_detail': qos_filter})
+                        else:
+                            volume['Status'].update({'qos_detail': qos_name})
                 except Exception as ex:
                     msg = "ERROR: Failed to retrieve QoS '%s' from 3PAR" \
                           % qos_name
