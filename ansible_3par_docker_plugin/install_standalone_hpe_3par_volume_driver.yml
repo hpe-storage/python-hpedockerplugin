@@ -122,6 +122,8 @@
         - "{{ etcd_peer_port }}:{{ etcd_peer_port }}"
         - "{{ etcd_client_port_1 }}:{{ etcd_client_port_1 }}"
         - "{{ etcd_client_port_2 }}:{{ etcd_client_port_2 }}"
+      volumes:
+        - "{{etcd_data_dir}}:/etcd-data"
       env:
         ETCD_NAME: etcd0
         ETCD_ADVERTISE_CLIENT_URLS: "{{ etcd_advertise_client_url_1 }},{{ etcd_advertise_client_url_2 }}"
@@ -130,6 +132,7 @@
         ETCD_LISTEN_PEER_URLS: "{{ etcd_listen_peer_urls }}"
         ETCD_INITIAL_CLUSTER: "etcd0=http://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:{{ etcd_peer_port }}"
         ETCD_INITIAL_CLUSTER_TOKEN: "{{ etcd_initial_cluster_token }}"
+        ETCD_DATA_DIR: /etcd-data
         ETCD_INITIAL_CLUSTER_STATE: "{{ etcd_initial_cluster_state }}"
       restart_policy: always
     become: yes
