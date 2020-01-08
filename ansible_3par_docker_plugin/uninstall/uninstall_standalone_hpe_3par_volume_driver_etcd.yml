@@ -7,7 +7,7 @@
       include: remove_etcd_service.yml
       ignore_errors: yes
 
-- name: Uninstall HPE 3PAR Volume Driver for Kubernetes/OpenShift
+- name: Uninstall HPE 3PAR Volume Driver
   hosts: all
   become: yes
 

@@ -6,24 +6,12 @@
   shell: docker ps |grep etcd_hpe
   register: etcd_as_container
   ignore_errors: true
-  when: groups['etcd'] is defined
-
-- name: Check whether containerized etcd_hpe is exists for standalone environment
-  shell: docker ps |grep etcd
-  register: etcd_as_container
-  ignore_errors: true
-  when: groups['etcd'] is not defined
   
 - name: Perform backup of etcd_hpe data before creating etcd as a service
   include: perform_backup.yml
   when: >-
-    etcd_as_container.rc is defined and etcd_as_container.rc == 0 and groups['etcd'] is defined and
+    etcd_as_container.rc is defined and etcd_as_container.rc == 0 and
     (hostvars[inventory_hostname]['ansible_default_ipv4']['address'] == groups['etcd'][0])
-
-- name: Perform backup of etcd_hpe data before creating etcd as a service for standalone environment
-  include: perform_backup.yml
-  when: >-
-    etcd_as_container.rc is defined and etcd_as_container.rc == 0 and groups['etcd'] is not defined
 
 - name: Set flag once backup done
   set_fact: 
@@ -43,10 +31,6 @@
 - name: Remove etcd_hpe container
   include: uninstall/remove_etcd_container.yml
   when: etcd_as_container.rc is defined and etcd_as_container.rc == 0
-
-- name: Remove etcd_hpe container for standalone environment
-  include: uninstall/remove_standalone_etcd_container.yml
-  when: groups['etcd'] is not defined and etcd_as_container.rc is defined and etcd_as_container.rc == 0
 
 - name: Check and install etcd binary 2.3.7
   include: check_etcd_hpe_prerequisite.yml
