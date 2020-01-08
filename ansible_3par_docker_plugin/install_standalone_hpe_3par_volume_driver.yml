@@ -28,7 +28,7 @@
 
   - name: Verify and Install etcd binary version 2.3.7 into /usr/bin for hpe3parvolumeplugin
     become: yes
-    include: tasks/check_etcd_hpe_prerequisite.yml
+    include: tasks/perform_etcd_checks_and_installation.yml
 
   - name: Install packages on Ubuntu
     package:
@@ -122,7 +122,7 @@
       etcd_name: ''
       etcd_hpe_service_exists: false
 
-  - name: Check that the etcd_hpe.service file exists
+  - name: Check that the etcd_hpe service file exists
     stat:
       path: /etc/systemd/system/etcd_hpe.service
     register: stat_result
@@ -176,6 +176,16 @@
       systemctl enable etcd_hpe.service
       systemctl start  etcd_hpe.service
     when: etcd_hpe_service_status.stdout is defined and "'running' not in etcd_hpe_service_status.stdout"
+
+  - name: Import data once the etcd is up and backup done
+    shell: etcdtool -p "http://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:23790" import / /tmp/hpe_etcd_data.json -y
+    when: backup_done == true
+      
+  - name: Remove hpe_etcd_data file after backup done
+    file:
+      path: /tmp/hpe_etcd_data.json
+      state: absent
+    when: backup_done == true  
 
   - name: Create conf file
     include: tasks/create_conf_file.yml
