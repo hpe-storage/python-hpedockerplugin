@@ -28,7 +28,8 @@ Here is an example of the HPE Docker Volume plugin being used in an OpenShift en
 
 ## Supported Features
 
-* Fibre Channel & iSCSI support for 3PAR and Primera
+* Fibre Channel & iSCSI support for 3PAR
+* Fibre Channel support for Primera
 * Secure/Unsecure etcd cluster for fault tolerance
 * Advanced volume features
   * thin
