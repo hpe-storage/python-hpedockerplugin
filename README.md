@@ -75,6 +75,8 @@ Troubleshooting issues with the plugin can be performed using these [tips](/docs
 - For upgrading the plugin from older version to the current released version, user needs to unmount all the volumes and follow the standard
  upgrade procedure described in docker guide. 
  
+- Encryption of the 3PAR and Primera user password is supported on Volume Plug-in versions 3.1.1 & 3.3.1 and not supported on Volume Plug-in versions 3.2 & 3.3.
+ 
 - Volumes created using older plugins (2.0.2 or below) do not have snap_cpg associated with them, hence when the plugin is upgraded to      2.1 and user wants to perform clone/snapshot operations on these old volumes, he/she must set the snap_cpg for the
    corresponding volumes using 3par cli or any tool before performing clone/snapshot operations.
 

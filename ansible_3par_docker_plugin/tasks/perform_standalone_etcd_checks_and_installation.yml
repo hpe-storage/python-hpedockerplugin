@@ -1,0 +1,37 @@
+- name: Initialize flag for backup done
+  set_fact: 
+    backup_done: false
+
+- name: Check whether containerized etcd_hpe is exists for standalone environment
+  shell: docker ps |grep etcd
+  register: etcd_as_container
+  ignore_errors: true
+  
+
+- name: Perform backup of etcd_hpe data before creating etcd as a service for standalone environment
+  include: perform_backup.yml
+  when: >-
+    etcd_as_container.rc is defined and etcd_as_container.rc == 0
+
+- name: Set flag once backup done
+  set_fact: 
+    backup_done: true
+  when: etcd_as_container.rc == 0 and backup.rc is defined and backup.rc == 0
+
+- name: load plugin settings
+  include_vars: 'properties/plugin_configuration_properties.yml'
+
+- name: Stop hpedockerplugin container
+  docker_container:
+    name: plugin_container
+    image: "{{ INVENTORY['DEFAULT']['volume_plugin'] }}"
+    state: stopped
+  when: etcd_as_container.rc is defined and etcd_as_container.rc == 0  
+
+- name: Remove etcd_hpe container for standalone environment
+  include: uninstall/remove_standalone_etcd_container.yml
+  when: groups['etcd'] is not defined and etcd_as_container.rc is defined and etcd_as_container.rc == 0
+
+- name: Check and install etcd binary 2.3.7
+  include: check_etcd_hpe_prerequisite.yml
+

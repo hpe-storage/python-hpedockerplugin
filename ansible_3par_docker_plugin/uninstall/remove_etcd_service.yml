@@ -1,0 +1,46 @@
+- name: Initialize the default variables
+  set_fact:
+    port_exists: {}
+
+- name: Check that the etcd_hpe.service file exists
+  stat:
+    path: /etc/systemd/system/etcd_hpe.service
+  register: stat_result
+
+- name: Stop etcd_hpe service
+  service:
+    state: stopped
+    enabled: no
+    name: etcd_hpe.service
+  when: stat_result.stat.exists
+
+- name: Remove etcd_hpe service files
+  file:
+    path: /etc/systemd/system/etcd_hpe.service
+    state: absent
+  when: stat_result.stat.exists
+
+- name: Remove etcd_hpe data directory
+  file: 
+    path: /root/etcd_hpe_data
+    state: absent
+
+- name: Check firewalld service is running
+  shell: systemctl status firewalld | grep running
+  register: firewall_status
+  ignore_errors: yes
+
+- name: Check firewalld ports 23790-23800 are open
+  shell: firewall-cmd --list-ports | grep 23790-23800
+  register: port_exists
+  when: firewall_status.rc == 0
+  ignore_errors: yes
+
+- name: Apply the firewall rules to remove the ports 23790-23800 to create etcd_hpe service if firewall is running
+  shell: firewall-cmd --zone=public --permanent --remove-port=23790-23800/tcp
+  when: firewall_status.rc == 0 and port_exists.rc != 0
+
+- name: Restart firewalld after setting rules
+  shell: firewall-cmd --reload
+  when: firewall_status.rc == 0 and port_exists.rc != 0
+

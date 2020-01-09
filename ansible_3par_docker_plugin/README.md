@@ -16,14 +16,23 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
   * Deploys a Highly Available HPE etcd cluster used by the HPE 3PAR Docker Volume plugin 
     * Supports single node (Use only for testing purposes) or multi-node deployment (HA) as defined in the Ansible hosts file
   * Deploys the HPE FlexVolume Driver
+  
+     FlexVolume driver deployment for single master and multimaster will be as per the below table
+	 
+	 | Cluster | OS 3.9 | OS 3.10 | OS 3.11 | K8S 1.11 | K8S 1.12 | K8S 1.13 | K8S 1.14 | K8S 1.15 |
+	 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+	 | Single Master | System Process | System Process | Deployment | System Process | System Process | Deployment | Deployment | Deployment |
+	 | Multimaster | NA | NA | Deployment | NA | NA | Deployment | Deployment | Deployment | Deployment |
+
+>**NOTE:** System Process can be verified using systemctl commands whereas Deployment can be verified using **kubectl get pods** command. Please refer to [PostInstallation_checks](/docs/PostInstallation_checks.md) for more details. 	 
 
 ### Prerequisites:
   - Basic knowledge of Ansible and ssh keys
-  - Install Ansible v.2.5 to v.2.8 only. Follow the [Installation Guide](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
-  
+
+  - Install Ansible v.2.5 to v.2.8 only. Follow the Installation Guide [Installation Guide](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
+
   - Login to 3PAR via SSH to create entry in /\<user>\/.ssh/known_hosts file
   > **Note:** Entries for the Master and Worker nodes should already exist within the /\<user>\/.ssh/known_hosts file from the OpenShift installation. If not, you will need to log into each of the Master and Worker nodes as well to prevent connection errors from Ansible.
-  
   - Make sure the path of kubectl or oc binary is available in $PATH env variable
   - Clone the python-hpedockerplugin repository
     ```
@@ -87,13 +96,8 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
       |BLOCK   |BLOCK |-- |When we have DEFAULT backend with Block driver, then there should not be any DEFAULT_BLOCK backend in single backend configuration.Plugin installation fails in this case.|
       |FILE    |-- |FILE |When we have DEFAULT backend with File driver, then there should not be any DEFAULT_FILE backend in single backend configuration.Plugin installation fails in this case.|
 
-  - The Etcd ports can be modified in [etcd cluster properties](/ansible_3par_docker_plugin/properties/etcd_cluster_properties.yml) as follows:
-  
-      | Property  | Mandatory | Default Value |
-      | ------------- | ------------- | ------------- |
-      | ```etcd_peer_port```  | Yes  | 23800  |
-      | ```etcd_client_port_1```  | Yes  | 23790 |
-      | ```etcd_client_port_2```  | Yes  | 40010 |
+  - Installer installs etcd as a service on all the nodes mentioned under [etcd] section of [hosts](/ansible_3par_docker_plugin/hosts)
+    It uses ports 23800 and 23790.
       
     > **Note:** Please ensure that the ports specified above are unoccupied before installation. If the ports are not available on a particular node, etcd installation will fail.
     
@@ -104,7 +108,8 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
   - Set **encryptor_key** in properties/plugin_configuration_properties.yml for the backends to store encrypted passwords in /etc/hpedockerplugin/hpe.conf. This value shouldn't be set to empty string.
 
   - Modify [hosts](/ansible_3par_docker_plugin/hosts) file to define your Master/Worker nodes as well as where you want to deploy your etcd cluster
-   > **Note:** For the multimaster setup define all the master nodes under the [master] section in [hosts](/ansible_3par_docker_plugin/hosts) file and it should be a active master from where the doryd deployment is executed.
+   > **Note:** For the multimaster setup define all the master nodes under the [masters] section in [hosts](/ansible_3par_docker_plugin/hosts) file and it should be a active master from where the doryd deployment is executed.
+    All the sections [masters/workers/etcd] in the hosts file should contain Ready/Active nodes entries only.
     For more information on etcd and how to setup an **etcd** cluster for High Availability, please refer:
     [/docs/advanced/etcd_cluster_setup.md](/docs/advanced/etcd_cluster_setup.md)
   
@@ -116,14 +121,15 @@ Set `http_proxy` and `https_proxy` in the [inventory hosts file](/ansible_3par_d
 
 Once the prerequisites are complete, run the following command:
 
-- Fresh installation on standalone docker environment(Non Openshift/Kubernetes):
+- ##### Fresh installation
+  * Fresh installation on standalone docker environment(Non Openshift/Kubernetes):
 ```
 $ cd ~
 $ cd python-hpedockerplugin/ansible_3par_docker_plugin
 $ ansible-playbook -i hosts_standalone_nodes install_standalone_hpe_3par_volume_driver.yml
 ```
 
-- Fresh installation on Openshift/Kubernetes environment:
+  * Fresh installation on Openshift/Kubernetes environment:
 ```
 $ cd ~
 $ cd python-hpedockerplugin/ansible_3par_docker_plugin
@@ -133,8 +139,9 @@ $ ansible-playbook -i hosts install_hpe_3par_volume_driver.yml
 
 
 Once complete you will be ready to start using the HPE 3PAR Docker Volume Plug-in.
+Please refer to [PostInstallation_checks](/docs/PostInstallation_checks.md) for validation of installation.
 
-- Update the array backends in Standalone/Openshift/Kubernetes environment:
+- ##### Update the array backends in Standalone/Openshift/Kubernetes environment:
   * Modify the [plugin configuration properties - sample](/ansible_3par_docker_plugin/properties/plugin_configuration_properties_sample.yml) at `properties/plugin_configuration_properties.yml` based on the updated HPE 3PAR Storage array configuration. Additional backends may be added or removed from the existing configuration. Individual attributes of the existing array configuration may also be modified.
 
     * Update array backend on standalone docker environment:
@@ -152,7 +159,7 @@ Once complete you will be ready to start using the HPE 3PAR Docker Volume Plug-i
     ```
   > **Note:** It is not recommended to change the HPE Etcd information and array encryption password during the backend update process
  
-- Upgrade the docker volume plugin
+- ##### Upgrade the docker volume plugin
   * Modify the `volume_plugin` in [plugin configuration properties - sample](/ansible_3par_docker_plugin/properties/plugin_configuration_properties_sample.yml) and point it to the latest image from docker hub
       * Update plugin on standalone docker environment:
       ```
@@ -169,10 +176,14 @@ Once complete you will be ready to start using the HPE 3PAR Docker Volume Plug-i
    > **Note:** 
      - Ensure that all the nodes in the cluster are present in the inventory [hosts](/ansible_3par_docker_plugin/hosts) file
      - The docker volume plugin will be restarted and the user will not be able to create the volume during the process
-     
+     - As per new approach, etcd is installed as a service. So, in case etcd is running as a container and plugin upgraded, then etcd will run as a service with appropriate data retention.
+     - With encryption upgrade from version 3.1.1 to version 3.3.1 is supported .
+
+
    * Successful upgrade will remove the old plugin container and replace it with the new plugin container which is specified in the plugin properties file 
+     Please refer to [PostInstallation_checks](/docs/PostInstallation_checks.md) for validation of upgrade.
       
-- Install docker volume plugin to additional nodes in the cluster
+- ##### Install docker volume plugin to additional nodes in the cluster
   * Add the new nodes in the respective sections in the inventory [hosts](/ansible_3par_docker_plugin/hosts) file
   * Only new nodes IP or hostnames must be present in the hosts file
   * Do not change the etcd hosts from the existing setup. Do not add or remove nodes in the etcd section
@@ -183,7 +194,7 @@ Once complete you will be ready to start using the HPE 3PAR Docker Volume Plug-i
      $ cd python-hpedockerplugin/ansible_3par_docker_plugin
      $ ansible-playbook -i hosts install_hpe_3par_volume_driver.yml
      ```
-     
+- ##### Uninstallation docker volume plugin     
      * Uninstall plugin on nodes on Openshift/Kubernetes environment:
      ```
      $ cd ~
@@ -197,11 +208,24 @@ Once complete you will be ready to start using the HPE 3PAR Docker Volume Plug-i
      $ cd python-hpedockerplugin/ansible_3par_docker_plugin
      $ ansible-playbook -i hosts uninstall/uninstall_hpe_3par_volume_driver_etcd.yml
      ```
-
+    * Uninstall plugin on standalone environment:
+     ```
+     $ cd ~
+     $ cd python-hpedockerplugin/ansible_3par_docker_plugin
+     $ ansible-playbook -i hosts_standalone_nodes uninstall/uninstall_standalone_hpe_3par_volume_driver.yml
+     ```
+     
+     * Uninstall plugin along with etcd standalone environment:
+     ```
+     $ cd ~
+     $ cd python-hpedockerplugin/ansible_3par_docker_plugin
+     $ ansible-playbook -i hosts_standalone_nodes uninstall/uninstall_standalone_hpe_3par_volume_driver_etcd.yml
+     ```
      > **Note:** This process only adds or removes docker volume plugin and/or etcd in nodes in an existing cluster. It does not add or remove nodes in Kubernetes/Openshift cluster
    * On success after adding plugin on new nodes, the additional nodes will have a running docker volume plugin container
    * On success after removing plugin from specified nodes, docker volume plugin container will be removed
-     
+   * Uninstallation with etcd removes etcd_hpe service.
+
 Please refer to [Usage Guide](/docs/usage.md) on how to perform volume related actions on the standalone docker environment.
 
 Please refer to the Kubernetes/OpenShift section in the [Usage Guide](/docs/usage.md#k8_usage) on how to create and deploy some sample SCs, PVCs, and Pods with persistent volumes using the HPE 3PAR Docker Volume Plug-in.
