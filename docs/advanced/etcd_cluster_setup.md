@@ -25,7 +25,7 @@ Restart=always
 RestartSec=5s
 LimitNOFILE=40000
 TimeoutStartSec=0
-ExecStart=/usr/bin/etcd --name 10.50.9.10 --data-dir /root/hpe-etcd --listen-client-urls http://10.50.9.10:23790 --advertise-client-urls http://10.50.9.10:23790 --listen-peer-urls http://10.50.9.10:23800 --initial-advertise-peer-urls http://10.50.9.10:23800 --initial-cluster 10.50.9.10=http://10.50.9.10:23800,10.50.9.22=http://10.50.9.22:23800,10.50.9.23=http://10.50.9.23:23800 --initial-cluster-token my-etcd-token --initial-cluster-state new
+ExecStart=/usr/bin/etcd --name ${IP_1} --data-dir /root/hpe-etcd --listen-client-urls http://${IP_1}:23790 --advertise-client-urls http://${IP_1}:23790 --listen-peer-urls http://${IP_1}:23800 --initial-advertise-peer-urls http://${IP_1}:23800 --initial-cluster ${IP_1}=http://${IP_1}:23800,${IP_2}=http://${IP_2}:23800,${IP_3}=http://${IP_3}:23800 --initial-cluster-token my-etcd-token --initial-cluster-state new
 
 [Install]
 WantedBy=multi-user.target
@@ -50,13 +50,13 @@ Restart=always
 RestartSec=5s
 LimitNOFILE=40000
 TimeoutStartSec=0
-ExecStart=/usr/bin/etcd --name 10.50.9.22 \
+ExecStart=/usr/bin/etcd --name ${IP_2} \
     --data-dir /root/hpe-etcd \
-    --listen-client-urls http://10.50.9.22:23790 \
-    --advertise-client-urls http://10.50.9.22:23790 \
-    --listen-peer-urls http://10.50.9.22:23800 \
-    --initial-advertise-peer-urls http://10.50.9.22:23800 \
-    --initial-cluster 10.50.9.10=http://10.50.9.10:23800,10.50.9.22=http://10.50.9.22:23800,10.50.9.23=http://10.50.9.23:23800 \
+    --listen-client-urls http://${IP_2}:23790 \
+    --advertise-client-urls http://${IP_2}:23790 \
+    --listen-peer-urls http://${IP_2}:23800 \
+    --initial-advertise-peer-urls http://${IP_2}:23800 \
+    --initial-cluster ${IP_1}=http://${IP_1}:23800,${IP_2}=http://${IP_2}:23800,${IP_3}=http://${IP_3}:23800 \
     --initial-cluster-token my-etcd-token \
     --initial-cluster-state new
 
@@ -83,13 +83,13 @@ Restart=always
 RestartSec=5s
 LimitNOFILE=40000
 TimeoutStartSec=0
-ExecStart=/usr/bin/etcd --name 10.50.9.23 \
+ExecStart=/usr/bin/etcd --name ${IP_3} \
     --data-dir /root/hpe-etcd \
-    --listen-client-urls http://10.50.9.23:23790 \
-    --advertise-client-urls http://10.50.9.23:23790 \
-    --listen-peer-urls http://10.50.9.23:23800 \
-    --initial-advertise-peer-urls http://10.50.9.23:23800 \
-    --initial-cluster 10.50.9.10=http://10.50.9.10:23800,10.50.9.22=http://10.50.9.22:23800,10.50.9.23=http://10.50.9.23:23800 \
+    --listen-client-urls http://${IP_3}:23790 \
+    --advertise-client-urls http://${IP_3}:23790 \
+    --listen-peer-urls http://${IP_3}:23800 \
+    --initial-advertise-peer-urls http://${IP_3}:23800 \
+    --initial-cluster ${IP_1}=http://${IP_1}:23800,${IP_2}=http://${IP_2}:23800,${IP_3}=http://${IP_3}:23800 \
     --initial-cluster-token my-etcd-token \
     --initial-cluster-state new
 
@@ -107,23 +107,23 @@ WantedBy=multi-user.target
 ## List members of etcd cluster
 
 ```
-etcdctl --endpoint http://10.50.9.23:23790 member list
+etcdctl --endpoint http://${IP_3}:23790 member list
 
-92bf602c3e52c786: name=10.50.9.22 peerURLs=http://10.50.9.22:23800 clientURLs=http://10.50.9.22:23790 isLeader=true
+92bf602c3e52c786: name=${IP_2} peerURLs=http://${IP_2}:23800 clientURLs=http://${IP_2}:23790 isLeader=true
 
-df87d2bb2823677b: name=10.50.9.23 peerURLs=http://10.50.9.23:23800 clientURLs=http://10.50.9.23:23790 isLeader=false
+df87d2bb2823677b: name=${IP_3} peerURLs=http://${IP_3}:23800 clientURLs=http://${IP_3}:23790 isLeader=false
 
-eba454355c8689a7: name=10.50.9.10 peerURLs=http://10.50.9.10:23800 clientURLs=http://10.50.9.10:23790 isLeader=false
+eba454355c8689a7: name=${IP_1} peerURLs=http://${IP_1}:23800 clientURLs=http://${IP_1}:23790 isLeader=false
 ```
 
 
 ## Command to check the health of etcd cluster:
 
 ```
-etcdctl --endpoint http://10.50.9.23:23790 cluster-health
-member 69973f2749d2cb96 is healthy: got healthy result from http://10.50.9.23:23790
-member 92bf602c3e52c786 is healthy: got healthy result from http://10.50.9.22:23790
-member eba454355c8689a7 is healthy: got healthy result from http://10.50.9.10:23790
+etcdctl --endpoint http://${IP_3}:23790 cluster-health
+member 69973f2749d2cb96 is healthy: got healthy result from http://${IP_3}:23790
+member 92bf602c3e52c786 is healthy: got healthy result from http://${IP_2}:23790
+member eba454355c8689a7 is healthy: got healthy result from http://${IP_1}:23790
 cluster is healthy
 ```
 
@@ -132,7 +132,7 @@ cluster is healthy
 
 ```
 import etcd
-client = etcd.Client(host=(('10.50.9.22',23790),('10.50.9.23',23790),('10.50.9.10',23790)),protocol='http',port=23790,allow_reconnect=True)
+client = etcd.Client(host=(('${IP_2}',23790),('${IP_3}',23790),('${IP_1}',23790)),protocol='http',port=23790,allow_reconnect=True)
 client.write('/nodes/n1',1)
 print client.read('/nodes/n1')  
 ```
@@ -140,8 +140,8 @@ print client.read('/nodes/n1')
 
 ## Sample CURL call to one of the cluster member
 ```
-curl http://10.50.9.23:23790/v2/members
-{"members":[{"id":"69973f2749d2cb96","name":"etcd3","peerURLs":["http://10.50.9.23:23800"],"clientURLs":["http://10.50.9.23:23790"]},{"id":"92bf602c3e52c786","name":"10.50.9.22","peerURLs":["http://10.50.9.22:23800"],"clientURLs":["http://10.50.9.22:23790"]},{"id":"eba454355c8689a7","name":"10.50.9.10","peerURLs":["http://10.50.9.10:23800"],"clientURLs":["http://10.50.9.10:23790"]}]}
+curl http://${IP_3}:23790/v2/members
+{"members":[{"id":"69973f2749d2cb96","name":"etcd3","peerURLs":["http://${IP_3}:23800"],"clientURLs":["http://${IP_3}:23790"]},{"id":"92bf602c3e52c786","name":"${IP_2}","peerURLs":["http://${IP_2}:23800"],"clientURLs":["http://${IP_2}:23790"]},{"id":"eba454355c8689a7","name":"${IP_1}","peerURLs":["http://${IP_1}:23800"],"clientURLs":["http://${IP_1}:23790"]}]}
 
 ```
 
