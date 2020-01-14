@@ -14,11 +14,11 @@ localhost              : ok=9    changed=3    unreachable=0    failed=0
 2.	Verify plugin installtion on all nodes.
 
 $ docker ps | grep plugin; ssh <Master2-IP> "docker ps | grep plugin";ssh <Master3-IP> "docker ps | grep plugin";ssh <Worker1-IP> "docker ps | grep plugin";ssh <Worker2-IP> "docker ps | grep plugin"
-51b9d4b1d591        hpestorage/legacyvolumeplugin:3.3          "/bin/sh -c ./plugin…"   12 minutes ago      Up 12 minutes                           plugin_container
-a43f6d8f5080        hpestorage/legacyvolumeplugin:3.3          "/bin/sh -c ./plugin…"   12 minutes ago      Up 12 minutes                           plugin_container
-a88af9f46a0d        hpestorage/legacyvolumeplugin:3.3          "/bin/sh -c ./plugin…"   12 minutes ago      Up 12 minutes                           plugin_container
-5b20f16ab3af        hpestorage/legacyvolumeplugin:3.3          "/bin/sh -c ./plugin…"   12 minutes ago      Up 12 minutes                           plugin_container
-b0813a22cbd8        hpestorage/legacyvolumeplugin:3.3          "/bin/sh -c ./plugin…"   12 minutes ago      Up 12 minutes                           plugin_container
+51b9d4b1d591        hpestorage/legacyvolumeplugin:3.3.1          "/bin/sh -c ./plugin…"   12 minutes ago      Up 12 minutes                           plugin_container
+a43f6d8f5080        hpestorage/legacyvolumeplugin:3.3.1          "/bin/sh -c ./plugin…"   12 minutes ago      Up 12 minutes                           plugin_container
+a88af9f46a0d        hpestorage/legacyvolumeplugin:3.3.1          "/bin/sh -c ./plugin…"   12 minutes ago      Up 12 minutes                           plugin_container
+5b20f16ab3af        hpestorage/legacyvolumeplugin:3.3.1          "/bin/sh -c ./plugin…"   12 minutes ago      Up 12 minutes                           plugin_container
+b0813a22cbd8        hpestorage/legacyvolumeplugin:3.3.1          "/bin/sh -c ./plugin…"   12 minutes ago      Up 12 minutes                           plugin_container
 
 ```
 ```
@@ -69,16 +69,27 @@ DEFAULT                                        OK
 ```
 6.	Verify etcd cluster service on all nodes.
 
-$ systemctl status etcd
-● etcd.service - etcd docker wrapper
-   Loaded: loaded (/etc/systemd/system/etcd.service; enabled; vendor preset: disabled)
-   Active: active (running) since Fri 2019-12-13 14:32:24 IST; 2 weeks 2 days ago
- Main PID: 10615 (etcd)
-    Tasks: 11
-   Memory: 33.3M
-   CGroup: /system.slice/etcd.service
-           ├─10615 /bin/bash /usr/local/bin/etcd
-           └─10617 /usr/bin/docker run --restart=on-failure:5 --env-file=/etc/etcd.env --net=host -v /etc/ssl/certs:/etc/ssl/certs:ro -v /etc/ssl/etcd/ssl:/etc/ssl/etcd/ssl:ro -v /var/lib...
+$ systemctl status etcd_hpe
+● etcd_hpe.service - etcd
+   Loaded: loaded (/etc/systemd/system/etcd_hpe.service; enabled; vendor preset: disabled)
+   Active: active (running) since Fri 2020-01-10 09:43:47 IST; 4 days ago
+     Docs: https://github.com/coreos/etcd
+ Main PID: 6978 (etcd_hpe)
+    Tasks: 9
+   Memory: 105.6M
+   CGroup: /system.slice/etcd_hpe.service
+           └─6978 /usr/bin/etcd_hpe --name <Master1-IP> --data-dir /root/etcd_hpe_data --initial-advertise-peer-urls http://<Master1-IP>:23800 --listen-peer-urls http://<Master1-IP>....
+
+Jan 14 12:22:31 cssosbe01-196119 etcd_hpe[6978]: compacted raft log at 705071
+Jan 14 12:22:51 cssosbe01-196119 etcd_hpe[6978]: purged file /root/etcd_hpe_data/member/snap/0000000000000017-00000000000a1262.snap successfully
+Jan 14 13:45:51 cssosbe01-196119 etcd_hpe[6978]: start to snapshot (applied: 720072, lastsnap: 710071)
+Jan 14 13:45:51 cssosbe01-196119 etcd_hpe[6978]: saved snapshot at index 720072
+Jan 14 13:45:51 cssosbe01-196119 etcd_hpe[6978]: compacted raft log at 715072
+Jan 14 13:46:21 cssosbe01-196119 etcd_hpe[6978]: purged file /root/etcd_hpe_data/member/snap/0000000000000017-00000000000a3973.snap successfully
+Jan 14 15:09:12 cssosbe01-196119 etcd_hpe[6978]: start to snapshot (applied: 730073, lastsnap: 720072)
+Jan 14 15:09:12 cssosbe01-196119 etcd_hpe[6978]: saved snapshot at index 730073
+Jan 14 15:09:12 cssosbe01-196119 etcd_hpe[6978]: compacted raft log at 725073
+Jan 14 15:09:21 cssosbe01-196119 etcd_hpe[6978]: purged file /root/etcd_hpe_data/member/snap/0000000000000017-00000000000a6084.snap successfully
 ```
 ```
 7. Verify etcd members on all nodes.
