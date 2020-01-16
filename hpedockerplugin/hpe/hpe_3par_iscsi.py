@@ -135,7 +135,7 @@ class HPE3PARISCSIDriver(object):
         # when found, add the valid iSCSI ip, ip port, iqn and nsp
         # to the iSCSI IP dictionary
         iscsi_ports = common.get_active_iscsi_target_ports()
-        LOG.info('iscsi_ports received from client is %s ' % iscsi_ports)
+        LOG.info('iscsi_ports received from client are %s ' % iscsi_ports)
 
         for port in iscsi_ports:
             ip = port['IPAddr']
