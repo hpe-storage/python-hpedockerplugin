@@ -36,7 +36,7 @@ metadata:
   name: doryd
   namespace: kube-system
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kube-storage-controller-doryd
@@ -44,6 +44,9 @@ metadata:
   labels:
     app: doryd
 spec:
+  selector:
+    matchLabels:
+      daemon: kube-storage-controller-daemon
   strategy:
      type: RollingUpdate
   template:
