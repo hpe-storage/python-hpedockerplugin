@@ -1,4 +1,4 @@
-# Automated Installer for 3PAR Docker Volume plugin (Ansible)
+# Automated Installer for HPE 3PAR and HPE Primera Volume Plug-in for Docker (Ansible)
 
 These are Ansible playbooks to automate the install of the HPE 3PAR Docker Volume Plug-in for Docker for use within standalone docker environment or Kubernetes/OpenShift environments.
 
