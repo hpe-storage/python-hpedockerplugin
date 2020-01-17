@@ -78,7 +78,9 @@ These playbooks perform the following tasks on the Master/Worker nodes as define
 
   - Adding multiple backends in [plugin configuration properties - sample](/ansible_3par_docker_plugin/properties/plugin_configuration_properties_sample.yml)
     Below is the table of available configurations along with the installer plugin behavior column for each combination:
+    
     BLOCK points to the hpedockerplugin_driver, hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver OR hpedockerplugin.hpe.hpe_3par_fc.HPE3PARFCDriver
+    
     FILE points to the hpedockerplugin_driver, hpedockerplugin.hpe.hpe_3par_file.HPE3PARFileDriver
 
       |DEFAULT | DEFAULT_BLOCK | DEFAULT_FILE | INSTALLER BEHAVIOR        |
