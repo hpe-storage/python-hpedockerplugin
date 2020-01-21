@@ -145,13 +145,13 @@ class HPE3PARISCSIDriver(object):
                 tmpip = []
                 for val in iSCSIVlans:
                     tmpip.append(val['IPAddr'])
-                    LOG.info('single port more ips, ips are : %s '% tmpip)
+                    LOG.info('single port more ips, ips are : %s ' % tmpip)
                 for ipaddr in tmpip:
                     if ipaddr in temp_iscsi_ip:
                         ipPort = temp_iscsi_ip[ipaddr]['ip_port']
                         self.iscsi_ips[ipaddr] = {'ip_port': ipPort,
-                          'nsp': port['nsp'],
-                          'iqn': port['iSCSIName']}
+                                                  'nsp': port['nsp'],
+                                                  'iqn': port['iSCSIName']}
                         del temp_iscsi_ip[ipaddr]
             elif ip in temp_iscsi_ip:
                 ip_port = temp_iscsi_ip[ip]['ip_port']
