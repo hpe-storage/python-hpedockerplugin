@@ -9,7 +9,7 @@
 * [Usage](#usage)
 ---
 
-### Introduction <a name="introduction"></a>
+## Introduction <a name="introduction"></a>
 This document details the installation steps in order to get up and running quickly with the HPE 3PAR Volume Plug-in for Docker within a Kubernetes /Openshift environment.
 
 **We highly recommend to use the Ansible playbooks that simplify and automate the install process before using the manual install process.**
@@ -24,7 +24,7 @@ This document details the installation steps in order to get up and running quic
 
   * OpenShift https://docs.openshift.org/3.7/install_config/install/planning.html
 
-## SPOCK for HPE 3PAR Volume Plugin for Docker
+## SPOCK for HPE 3PAR Volume Plugin for Docker <a name="support"></a>
 
 * [Support Matrix for Kubernetes and Openshift](https://spock.corp.int.hpe.com/spock/utility/document.aspx?docurl=Shared%20Documents/hw/3par/3par_volume_plugin_for_docker.pdf)
 
@@ -262,6 +262,59 @@ $ cp /root/.kube/config /etc/kubernetes/admin.conf
 ```
 
 >Re-run the command to start the HPE 3PAR FlexVolume dynamic provisioner
+
+>**NOTE:** For multi-master cluster follow the below steps:
+
+>HPE 3PAR FlexVolume dynamic provisioner on OpenShift 3.11 multi-master cluster:
+```
+Run the below command to grant service account access to the hostPath plugin and the ability to run the container as root
+$ oc adm policy add-scc-to-user privileged system:serviceaccount:kube-system:doryd
+
+Run the below command to deploy doryd
+$ wget https://raw.githubusercontent.com/hpe-storage/python-hpedockerplugin/master/provisioner/OpenShift/dep-kube-storage-controller-ocp311.yaml
+$ oc create -f dep-kube-storage-controller-ocp311.yaml
+
+Run the below command to verify whether doryd is deployed successfully
+$ oc get deploy --namespace kube-system –o wide
+NAME                            DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE       CONTAINERS                IMAGES                                   SELECTOR
+kube-storage-controller-doryd   1         1         1            1           4d        kube-storage-controller   hpestorage/hpe3par_doryd_openshift:1.0   daemon=kube-storage-controller-daemon
+
+$ oc get pod --namespace kube-system -o wide
+NAME                                                                   READY     STATUS    RESTARTS   AGE       IP            NODE                                                NOMINATED NODE
+kube-storage-controller-doryd-66d8bb9c69-d7bcf                         1/1       Running   0          4d        10.131.1.1    cld6b14-openshift-worker02.set.rdlabs.hpecorp.net   <none>
+
+Run the below command to view doryd logs
+$ oc logs -f kube-storage-controller-doryd-66d8bb9c69-d7bcf --namespace kube-system
+
+Run the below command to delete doryd deployment
+$ oc delete -f dep-kube-storage-controller-ocp311.yaml
+$ oc adm policy remove-scc-from-user privileged system:serviceaccount:kube-system:doryd
+```
+
+>HPE 3PAR FlexVolume dynamic provisioner on Kubernetes 1.13 multi-master cluster:
+```
+Run the below command to deploy doryd
+$ wget https://raw.githubusercontent.com/hpe-storage/python-hpedockerplugin/master/provisioner/k8s/dep-kube-storage-controller-k8s113.yaml
+$ kubectl create -f dep-kube-storage-controller-k8s113.yaml
+
+Run the below command to verify whether doryd is deployed successfully
+$ kubectl get deploy --namespace kube-system –o wide
+NAME                            READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS                IMAGES                                                        SELECTOR
+kube-storage-controller-doryd   1/1     1            1           50s   kube-storage-controller   hpestorage/hpe3par_doryd_openshift:1.0                        daemon=kube-storage-controller-daemon
+
+$ kubectl get pods --namespace kube-system -o wide
+NAME                                             READY   STATUS    RESTARTS   AGE    IP               NODE          NOMINATED NODE   READINESS GATES
+kube-storage-controller-doryd-568dc88764-7bs54   1/1     Running   0          95s    10.233.69.111    cssos196136   <none>           <none>
+
+Run the below command to view doryd logs
+$ kubectl logs -f kube-storage-controller-doryd-568dc88764-7bs54 --namespace kube-system
+
+Run the below command to delete the doryd deployment
+$ kubectl delete -f dep-kube-storage-controller-k8s113.yaml
+```
+
+>**NOTE:** doryd running as a deployment on multi-master cluster is currently only supported on Kubernetes 1.13 and OpenShift 3.11.
+One can try and use the same deployment file for OpenShift [OpenShift3.11-doryd](/provisioner/OpenShift/dep-kube-storage-controller-ocp311.yaml) / Kubernetes [k8s1.13-doryd](/provisioner/k8s/dep-kube-storage-controller-k8s113.yaml) (other versions than supported) and follow the same steps. It might run successfully or give issues with respect to RBAC.
 
 >For more information on the HPE FlexVolume driver, please visit this link:
 >

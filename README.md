@@ -1,9 +1,9 @@
-## HPE 3PAR Volume Plugin for Docker
+## HPE 3PAR and HPE Primera Volume Plugin for Docker
 
-HPE Docker Volume Plugin is an open source project that provides persistent storage and features for your containerized applications using HPE 3PAR StoreServ Storage arrays.
+HPE Docker Volume Plugin is an open source project that provides persistent storage and features for your containerized applications using HPE 3PAR and HPE Primera Storage arrays.
 It supports both block and file (NFS shares) based features.
 
-The HPE Docker Volume Plugin supports popular container platforms like Docker, Kubernetes, OpenShift 
+This Volume Plugin for Docker supports popular container platforms like Docker, Kubernetes, OpenShift 
 
 ## HPE Docker Volume Plugin Overview
 
@@ -29,6 +29,7 @@ Here is an example of the HPE Docker Volume plugin being used in an OpenShift en
 ## Supported Features
 
 * Fibre Channel & iSCSI support for 3PAR
+* Fibre Channel support for Primera
 * Secure/Unsecure etcd cluster for fault tolerance
 * Advanced volume features
   * thin
@@ -45,7 +46,7 @@ Here is an example of the HPE Docker Volume plugin being used in an OpenShift en
   * snapshot schedule
   * file system permissions and ownership
   * multiple backends
-  * file share [CRD operations]
+  * file share [CRD operations] only for 3PAR
 
 ## Block operations usage
 
@@ -60,7 +61,7 @@ See the [file share operations usage guide](/docs/share_usage.md) for details on
 Troubleshooting issues with the plugin can be performed using these [tips](/docs/troubleshooting.md)
 
 
-## SPOCK Link for HPE 3PAR Volume Plugin for Docker
+## SPOCK Link for HPE 3PAR and HPE Primera Volume Plugin for Docker
 
 * [SPOCK Link](https://spock.corp.int.hpe.com/spock/utility/document.aspx?docurl=Shared%20Documents/hw/3par/3par_volume_plugin_for_docker.pdf)
 
@@ -73,6 +74,8 @@ Troubleshooting issues with the plugin can be performed using these [tips](/docs
 
 - For upgrading the plugin from older version to the current released version, user needs to unmount all the volumes and follow the standard
  upgrade procedure described in docker guide. 
+ 
+- Encryption of the 3PAR and Primera user password is supported on Volume Plug-in versions 3.1.1 & 3.3.1 and not supported on Volume Plug-in versions 3.2 & 3.3.
  
 - Volumes created using older plugins (2.0.2 or below) do not have snap_cpg associated with them, hence when the plugin is upgraded to      2.1 and user wants to perform clone/snapshot operations on these old volumes, he/she must set the snap_cpg for the
    corresponding volumes using 3par cli or any tool before performing clone/snapshot operations.
@@ -109,3 +112,48 @@ $ showsched
 - For volume upper size limitation, please do refer 3PAR's documentation.
 
 - The configuration parameter **mount_prefix**, is applicable for containerized plugin only. If used with the managed plugin, mount operation fails.
+
+- For statefulset pod stuck in "ContainerCreating" state after a worker node reboot, the following manual procedure has to be done -- [Details ](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/recover_post_reboot.md)
+
+- For Pod mount using File Persona, this flag `allowPrivilegeEscalation: true` under `securityContext`is mandantory for volume plugin to mount a file persona NFS share.
+eg.
+```yaml
+kind: Pod
+apiVersion: v1
+metadata:
+  name: podfiletestw4-uid-gid-nosecurity
+spec:
+  containers:
+  - name: nginx
+    securityContext:
+#       runAsUser: 10500
+#       runAsGroup: 10800
+      privileged: true
+      capabilities:
+        add: ["SYS_ADMIN"]
+      allowPrivilegeEscalation: true
+    image: nginx
+    volumeMounts:
+    - name: export
+      mountPath: /export
+  restartPolicy: Always
+  volumes:
+  - name: export
+    persistentVolumeClaim:
+      claimName: sc-file-pvc-uid-gid
+  ```
+- if the doryd systemctl daemon does'nt start, then you have edit 
+vi /etc/systemd/system/doryd.service
+```
+[Unit]
+Description=manage doryd service for HPE 3PAR Volume plugin for Docker
+
+[Service]
+Type=simple
+ExecStart=/usr/libexec/kubernetes/kubelet-plugins/volume/exec/hpe.com~hpe/doryd /etc/kubernetes/admin.conf hpe.com
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target
+```
+Updated `/etc/kubernetes/admin.conf` by `/etc/origin/master/admin.kubeconfig` and then do `systemctl daemon-reload` and `systemctl restart doryd`

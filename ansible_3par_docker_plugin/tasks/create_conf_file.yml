@@ -1,5 +1,5 @@
 ---
-  - name: Stop docker container
+  - name: Stop docker container of plugin_container
     docker_container:
       name: plugin_container
       image: "{{ INVENTORY['DEFAULT']['volume_plugin'] }}"
@@ -234,6 +234,18 @@
     with_items:
       - "{{ INVENTORY.keys()}}"
     when: INVENTORY[item]['hpe3par_iscsi_ips'] is defined
+
+  - name: Set flag to remove doryd deployment during installtion
+    set_fact: 
+      remove_dep_path: "installer" 
+
+  - name: Remove doryd deployment when encryptor key is defined 
+    include: "{{playbook_dir}}/uninstall/remove_doryd_service.yml"
+    with_items: "{{ INVENTORY.keys()}}"
+    when: >-
+      INVENTORY[item]['encryptor_key'] is defined and groups['masters'] is defined and 
+      (hostvars[inventory_hostname]['ansible_default_ipv4']['address'] == groups['masters'][0])
+      
 
   - name: Get the encrypted passwords
     shell: >-

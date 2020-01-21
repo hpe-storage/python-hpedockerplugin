@@ -23,5 +23,5 @@ The contents of the properties file including the array credentials are now encr
 How to execute the playbook with the vault-ed properties file
 The playbooks can be run by adding ```--ask-vault-pass``` in the playbook execution command
 ```
-ansible-playbook -i hosts install_script.yml –ask-vault-pass
+ansible-playbook -i hosts install_script.yml --ask-vault-pass
 ```
