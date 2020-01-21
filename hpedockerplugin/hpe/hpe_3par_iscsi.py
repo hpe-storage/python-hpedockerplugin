@@ -135,10 +135,25 @@ class HPE3PARISCSIDriver(object):
         # when found, add the valid iSCSI ip, ip port, iqn and nsp
         # to the iSCSI IP dictionary
         iscsi_ports = common.get_active_iscsi_target_ports()
+        LOG.info('iscsi_ports received from client are %s ' % iscsi_ports)
 
         for port in iscsi_ports:
             ip = port['IPAddr']
-            if ip in temp_iscsi_ip:
+            len_iSCSIVlans = len(port['iSCSIVlans'])
+            if len_iSCSIVlans > 0:
+                iSCSIVlans = port['iSCSIVlans']
+                tmpip = []
+                for val in iSCSIVlans:
+                    tmpip.append(val['IPAddr'])
+                    LOG.info('single port more ips, ips are : %s ' % tmpip)
+                for ipaddr in tmpip:
+                    if ipaddr in temp_iscsi_ip:
+                        ipPort = temp_iscsi_ip[ipaddr]['ip_port']
+                        self.iscsi_ips[ipaddr] = {'ip_port': ipPort,
+                                                  'nsp': port['nsp'],
+                                                  'iqn': port['iSCSIName']}
+                        del temp_iscsi_ip[ipaddr]
+            elif ip in temp_iscsi_ip:
                 ip_port = temp_iscsi_ip[ip]['ip_port']
                 self.iscsi_ips[ip] = {'ip_port': ip_port,
                                       'nsp': port['nsp'],
@@ -246,6 +261,16 @@ class HPE3PARISCSIDriver(object):
                 lun_id = None
                 for port in ready_ports:
                     iscsi_ip = port['IPAddr']
+                    len_iSCSIVlans = len(port['iSCSIVlans'])
+                    tmpip = []
+                    if len_iSCSIVlans > 0:
+                        iSCSIVlans = port['iSCSIVlans']
+                        for val in iSCSIVlans:
+                            tmpip.append(val['IPAddr'])
+                        if len(tmpip) > 0:
+                            for targ_ip in tmpip:
+                                if targ_ip in target_portal_ips:
+                                    iscsi_ip = targ_ip
                     if iscsi_ip in target_portal_ips:
                         vlun = None
                         # check for an already existing VLUN matching the
