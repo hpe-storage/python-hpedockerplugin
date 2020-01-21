@@ -6,6 +6,9 @@
   shell: docker ps |grep etcd_hpe
   register: etcd_as_container
   ignore_errors: true
+
+- name: Check and install etcd binary 2.3.7
+  include: check_etcd_hpe_prerequisite.yml
   
 - name: Perform backup of etcd_hpe data before creating etcd as a service
   include: perform_backup.yml
@@ -31,7 +34,4 @@
 - name: Remove etcd_hpe container
   include: uninstall/remove_etcd_container.yml
   when: etcd_as_container.rc is defined and etcd_as_container.rc == 0
-
-- name: Check and install etcd binary 2.3.7
-  include: check_etcd_hpe_prerequisite.yml
 

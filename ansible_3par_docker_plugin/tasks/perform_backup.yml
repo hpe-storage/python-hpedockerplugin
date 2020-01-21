@@ -1,19 +1,28 @@
-  - name: Check if package is already installed
-    yum:
-      list: etcdtool
-    register: is_installed
+- name: Check cluster is healthy after creating etcd cluster
+  shell: /usr/bin/etcdctl --endpoints http://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:23790 cluster-health
+  register: cluster_status
+  any_errors_fatal: true
 
-  - name : Install the etcdtool binary
-    yum: 
-      name: https://github.com/mickep76/etcdtool/releases/download/3.3.1/etcdtool-3.3-201605021949.x86_64.rpm 
-    when: >-
-      ( is_installed.results | length == 0 )  or
-      ( is_installed.results | length == 1 and is_installed.results[0].version == "3.3" and is_installed.results[0].yumstate != "installed")       
+- name: Fail if etcd cluster member(s) health is not good
+  fail:
+    msg: "HPE ETCD Cluster is healthy with non healthy member(s). Cluster status is {{ cluster_status.stdout_lines }}. Stopping the installer now"
+  when: cluster_status.stdout is defined and ("unreachable" in cluster_status.stdout or "unconfigured" in cluster_status.stdout)
+  any_errors_fatal: true
 
-  - name: Perform backup using export command
-    shell: etcdtool -p "http://{{hostvars[inventory_hostname]['ansible_default_ipv4']['address']}}:23790" -d export / -o /tmp/hpe_etcd_data.json
-    register: backup
-    become: yes
-    
-  
+- name: Check if package is already installed
+  yum:
+    list: etcdtool
+  register: is_installed
 
+- name : Install the etcdtool binary
+  yum: 
+    name: https://github.com/mickep76/etcdtool/releases/download/3.3.1/etcdtool-3.3-201605021949.x86_64.rpm 
+  when: >-
+    ( is_installed.results | length == 0 )  or
+    ( is_installed.results | length == 1 and is_installed.results[0].version == "3.3" and is_installed.results[0].yumstate != "installed")       
+
+- name: Perform backup using export command
+  shell: etcdtool -p "http://{{hostvars[inventory_hostname]['ansible_default_ipv4']['address']}}:23790" -d export / -o /tmp/hpe_etcd_data.json
+  register: backup
+  become: yes
+  any_errors_fatal: true
