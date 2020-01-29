@@ -17,7 +17,9 @@ This [SPOC](https://spock.corp.int.hpe.com/spock/utility/document.aspx?docurl=Sh
 
 * These are Ansible playbooks to automate the install of the HPE 3PAR Docker Volume Plug-in for Docker for use within standalone docker environment or Kubernetes/OpenShift environments.
 ```
-NOTE: The Ansible installer only supports Ubuntu/RHEL/CentOS. If you are using another distribution of Linux, you will need to modify the playbooks to support your application manager (apt, etc.) and the pre-requisite packages.
+NOTE: The Ansible installer only supports Ubuntu/RHEL/CentOS. 
+If you are using another distribution of Linux, you will need to modify the 
+playbooks to support your application manager (apt, etc.) and the pre-requisite packages.
 ```
 These playbooks perform the following tasks on the Master/Worker nodes as defined in the Ansible [hosts](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/hosts) file.
 * Configure the Docker Services for the HPE 3PAR Docker Volume Plug-in
@@ -45,8 +47,7 @@ Note: Upgrade of existing Docker engine to higher version might break compatibil
 2. Make sure the path of kubectl or oc binary is available in $PATH env variable
 3. Kubernetes/Openshift should be up and running. Please check the following steps on the setup.
 4. Kubernetes/Openshift cluster should be up and all the nodes in Ready state
-#### Validate Kubernetes cluster infrastructure
-                
+5. Validate Kubernetes cluster infrastructure
 ```
 [root@cssosbe01-196119 ansible_3par_docker_plugin]# kubectl get nodes -o wide
 NAME              STATUS  ROLES   AGE  VERSION  INTERNAL-IP     EXTERNAL-IP  OS-IMAGE               KERNEL-VERSION              CONTAINER-RUNTIME
@@ -59,7 +60,7 @@ cssosbe01-196151  Ready   <none>  17d  v1.15.3  15.212.196.151  <none>       Cen
 ```
 Note: If any one node is in NotReady state follow the troubleshooting steps for the Creating Kubernetes cluster LINK
 ```
-#### Verify the cluster info
+6. Verify the cluster info
 ```
 [root@cssosbe01-196119 ansible_3par_docker_plugin]# kubectl cluster-info
 Kubernetes master is running at https://cssosbe01-196149.in.rdlabs.hpecorp.net:8443
@@ -67,26 +68,26 @@ coredns is running at https://cssosbe01-196149.in.rdlabs.hpecorp.net:8443/api/v1
 kubernetes-dashboard is running at https://cssosbe01-196149.in.rdlabs.hpecorp.net:8443/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy
 ```
 To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
-       
-#### Set Environment Variables
+
+7. Set Environment Variables
 Make sure the path of kubectl or oc binary is available in $PATH env variable
 firewalld service should be off during Kubernetes setup.
 ```
 systemctl status firewalld
 ```
-#### Proxy Settings
+8. Proxy Settings
 Set the http_proxy, https_proxy and no_proxy environment variables.
 ```
 export http_proxy=http://<proxy server name/IP>:port_number
 export https_proxy=https:// <proxy server name/IP>:port_number
 export no_proxy=localhost,localaddress,.localdomain.com,.hpecorp.net,.hp.com,.hpcloud.net, <3paripaddress>,<all master/worker node ip address>
 ```
-#### Set SSH connection with 3PAR
+9. Set SSH connection with 3PAR
 Login to 3PAR via SSH to create entry in /<user>/.ssh/known_hosts file
 ```
 Note: Entries for the Master and Worker nodes should already exist within the /<user>/.ssh/known_hosts file from the OpenShift installation. If not, you will need to log into each of the Master and Worker nodes as well to prevent connection errors from Ansible.
 ```
-#### ANSIBLE INSTALLATION
+10. Ansible installtion
 ```
 pip install ansible==2.7.12
 OR
@@ -110,46 +111,43 @@ Note: Ansible version should be between 2.5 to 2.8 only
 ```
 For further information on the ansible installation refer the Installation guide at [Installation Guide](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
 
-5.	Install HPE Volume Plugin for Docker on Kubernetes/OpenShift Cluster
-a.	Clone the python-hpedockerplugin repository
-
+11. Install HPE Volume Plugin for Docker on Kubernetes/OpenShift Cluster
+* Clone the python-hpedockerplugin repository
+```
 $ cd ~
 $ git clone https://github.com/hpe-storage/python-hpedockerplugin
 $ cd python-hpedockerplugin/ansible_3par_docker_plugin
-
-b.	Copy plugin configuration properties - sample at properties/plugin_configuration_properties.yml based on your HPE 3PAR Storage array configuration. Some of the properties are mandatory and must be specified in the properties file while others are optional.
+```
+* Copy plugin configuration properties - sample at properties/plugin_configuration_properties.yml based on your HPE 3PAR Storage array configuration. Some of the properties are mandatory and must be specified in the properties file while others are optional.
+```
 $ cd ~
 $ cd python-hpedockerplugin/ansible_3par_docker_plugin/properties
 $ cp plugin_configuration_properties_sample.yml plugin_configuration_properties.yml
-
-Please refer some sample file examples plugin configuration properties - sample
-[](https://github.com/sonawane-shashikant/python-hpedockerplugin/tree/master/docs/img/Example_Plugin_Configuration_yaml.png)
-
-#### Installer installs etcd as a service on the nodes which are mentioned under [etcd] section of hosts file to store the plugin data.
 ```
-Note: 
-Please ensure that the ports 23790 and 23800 are unoccupied before installation on all the nodes under [etcd] section. If the ports are not available on a particular node, etcd installation will fail.
-* If more than one node is mentioned under [etcd] section, then it will create the etcd cluster.
+* Please refer some [sample](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/properties/plugin_configuration_properties_sample.yml) file examples plugin configuration properties 
+[Example](https://github.com/sonawane-shashikant/python-hpedockerplugin/tree/master/docs/img/Example_Plugin_Configuration_yaml.png)
+* Installer installs etcd as a service on the nodes which are mentioned under [etcd] section of hosts file to store the plugin data.
 ```
-#### Modify hosts file to define your Master/Worker nodes as well as where you want to deploy your etcd cluster.
+Note: Please ensure that the ports 23790 and 23800 are unoccupied before installation on all the nodes under [etcd] section. 
+If the ports are not available on a particular node, etcd installation will fail.
+If more than one node is mentioned under [etcd] section, then it will create the etcd cluster.
 ```
-Note: For the multi-master setup, define all the master nodes under the [masters] section in hosts file and it should be active master from where the doryd deployment is executed. For more information on etcd and how-to setup an etcd cluster for High Availability,
+* Modify hosts file to define your Master/Worker nodes as well as where you want to deploy your etcd cluster.
 ```
-please refer: /docs/advanced/etcd_cluster_setup.md
+Note: For the multi-master setup, define all the master nodes under the [masters] section in hosts file and it should be active master from where the doryd deployment is executed. For more information on etcd and how-to setup an etcd cluster for High Availability.
+The installer, in the current state does not have the capability to add or remove nodes in the etcd cluster. In case an etcd node is not responding or goes down, it is beyond the current scope to admit it back into the cluster. Please follow the etcd documentation to do so manually.
 ```
-Limitation: The installer, in the current state does not have the capability to add or remove nodes in the etcd cluster. In case an etcd node is not responding or goes down, it is beyond the current scope to admit it back into the cluster. Please follow the etcd documentation to do so manually.
-```
-#### It is recommended that the properties file is encrypted using Ansible Vault.
-#### Set encryptor_key in properties/plugin_configuration_properties.yml for the backends to store encrypted passwords in /etc/hpedockerplugin/hpe.conf. This value shouldn't be set to empty string.
-
-#### Run Installtion
+Please refer [etcd_cluster](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/advanced/etcd_cluster_setup.md) for more details.
+* It is recommended that the properties file is encrypted using Ansible Vault.
+* Set encryptor_key in properties/plugin_configuration_properties.yml for the backends to store encrypted passwords in /etc/hpedockerplugin/hpe.conf. This value shouldn't be set to empty string.
+* Run Installtion
 ```
 cd /root/python-hpedockerplugin/ansible_3par_docker_plugin
 [root@cssosbe01-196119 ansible_3par_docker_plugin]ansible-playbook -i hosts install_hpe_3par_volume_driver.yml
 ```
-g.	Post installation, validation checks <PostInstalltion.md>
-6.	In order to upgrade HPE Volume Plugin for Docker on Kubernetes/OpenShift Cluster refer to <Upgrade.md>
-a.	Post installation, validation checks <PostInstalltion.md>
+[Post installation, validation checks](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/PostInstallation_checks.md)
+* In order to upgrade HPE Volume Plugin for Docker on Kubernetes/OpenShift Cluster refer to <Upgrade.md>
+[Post upgrade, validation checks](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/PostInstallation_checks.md)
 
 7.	Installation of HPE Volume Plugin for Docker on 3PAR File Persona <FilePersona.md>
 8.	Limitations and Known Issues - 
