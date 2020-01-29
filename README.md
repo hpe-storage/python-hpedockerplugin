@@ -151,5 +151,6 @@ cd /root/python-hpedockerplugin/ansible_3par_docker_plugin
 + In order to upgrade HPE Volume Plugin for Docker on Kubernetes/OpenShift Cluster refer to [Plugin Upgrade]
 [Post upgrade, validation checks](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/PostInstallation_checks.md)
 
-7.	Installation of HPE Volume Plugin for Docker on 3PAR File Persona <FilePersona.md>
-8.	Limitations and Known Issues - 
+7.	For uninstalltion, Update and Upgrade, please refer to [Plugin Upgrade](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/Uninstall_Update_Upgade.md)
+8.	Installation of HPE Volume Plugin for Docker on 3PAR File Persona <FilePersona.md>
+9.	Limitations and Known Issues - 
