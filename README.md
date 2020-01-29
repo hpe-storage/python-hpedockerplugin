@@ -42,12 +42,10 @@ Note: Upgrade of existing Docker engine to higher version might break compatibil
 ### Quick Start - Deploy a Production Ready HPE Volume Plugin for Docker on Kubernetes/OpenShift Cluster
 #### Pre-requisites
                 
-1. Install Ansible v.2.5 to v.2.8 only. Follow the [Installation Guide](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
-
+1. Install Ansible v.2.5 to v.2.8 only. Follow the [Installation Guide](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html) for more details on anisble installtion.
 2. Make sure the path of kubectl or oc binary is available in $PATH env variable
 3. Kubernetes/Openshift should be up and running. Please check the following steps on the setup.
-4. Kubernetes/Openshift cluster should be up and all the nodes in Ready state
-5. Validate Kubernetes cluster infrastructure
+	+ Kubernetes/Openshift cluster should be up and all the nodes in Ready state
 ```
 [root@cssosbe01-196119 ansible_3par_docker_plugin]# kubectl get nodes -o wide
 NAME              STATUS  ROLES   AGE  VERSION  INTERNAL-IP     EXTERNAL-IP  OS-IMAGE               KERNEL-VERSION              CONTAINER-RUNTIME
@@ -60,7 +58,7 @@ cssosbe01-196151  Ready   <none>  17d  v1.15.3  15.212.196.151  <none>       Cen
 ```
 Note: If any one node is in NotReady state follow the troubleshooting steps for the Creating Kubernetes cluster LINK
 ```
-6. Verify the cluster info
+	+ Verify the cluster info
 ```
 [root@cssosbe01-196119 ansible_3par_docker_plugin]# kubectl cluster-info
 Kubernetes master is running at https://cssosbe01-196149.in.rdlabs.hpecorp.net:8443
@@ -69,25 +67,25 @@ kubernetes-dashboard is running at https://cssosbe01-196149.in.rdlabs.hpecorp.ne
 ```
 To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
 
-7. Set Environment Variables
+4. Set Environment Variables
 Make sure the path of kubectl or oc binary is available in $PATH env variable
 firewalld service should be off during Kubernetes setup.
 ```
 systemctl status firewalld
 ```
-8. Proxy Settings
+5. Proxy Settings
 Set the http_proxy, https_proxy and no_proxy environment variables.
 ```
 export http_proxy=http://<proxy server name/IP>:port_number
 export https_proxy=https:// <proxy server name/IP>:port_number
 export no_proxy=localhost,localaddress,.localdomain.com,.hpecorp.net,.hp.com,.hpcloud.net, <3paripaddress>,<all master/worker node ip address>
 ```
-9. Set SSH connection with 3PAR
+6. Set SSH connection with 3PAR
 Login to 3PAR via SSH to create entry in /<user>/.ssh/known_hosts file
 ```
 Note: Entries for the Master and Worker nodes should already exist within the /<user>/.ssh/known_hosts file from the OpenShift installation. If not, you will need to log into each of the Master and Worker nodes as well to prevent connection errors from Ansible.
 ```
-10. Ansible installtion
+7. Ansible installtion
 ```
 pip install ansible==2.7.12
 OR
@@ -111,7 +109,7 @@ Note: Ansible version should be between 2.5 to 2.8 only
 ```
 For further information on the ansible installation refer the Installation guide at [Installation Guide](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
 
-11. Install HPE Volume Plugin for Docker on Kubernetes/OpenShift Cluster
+8. Install HPE Volume Plugin for Docker on Kubernetes/OpenShift Cluster
 * Clone the python-hpedockerplugin repository
 ```
 $ cd ~
@@ -140,7 +138,7 @@ The installer, in the current state does not have the capability to add or remov
 Please refer [etcd_cluster](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/advanced/etcd_cluster_setup.md) for more details.
 * It is recommended that the properties file is encrypted using Ansible Vault.
 * Set encryptor_key in properties/plugin_configuration_properties.yml for the backends to store encrypted passwords in /etc/hpedockerplugin/hpe.conf. This value shouldn't be set to empty string.
-* Run Installtion
+* Run Installation
 ```
 cd /root/python-hpedockerplugin/ansible_3par_docker_plugin
 [root@cssosbe01-196119 ansible_3par_docker_plugin]ansible-playbook -i hosts install_hpe_3par_volume_driver.yml
