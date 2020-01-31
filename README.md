@@ -1,5 +1,5 @@
 ### Introduction to Containers & Orchestration
-Originally developed by Google, Kubernetes is an open-source container orchestration platform designed to automate the deployment, scaling, and management of containerized applications
+Originally developed by Google, Kubernetes is an open-source container orchestration platform designed to automate the deployment, scaling, and management of containerized applications.
 
 OpenShift is a family of containerization software developed by Red Hat. Its flagship product is the OpenShift Container Platform—an on-premises platform as a service built around Docker containers orchestrated and managed by Kubernetes on a foundation of Red Hat Enterprise Linux.
 
@@ -22,14 +22,14 @@ If you are using another distribution of Linux, you will need to modify the
 playbooks to support your application manager (apt, etc.) and the pre-requisite packages.
 ```
 These playbooks perform the following tasks on the Master/Worker nodes as defined in the Ansible [hosts](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/hosts) file.
-* Configure the Docker Services for the HPE 3PAR Docker Volume Plug-in
-* Deploys the config files (iSCSI or FC) to support your environment
-* Installs the HPE 3PAR Docker Volume Plug-in (Containerized version)
-* For standalone docker environment, deploys an HPE customized etcd cluster
-* For Kubernetes/OpenShift, deploys a Highly Available HPE etcd cluster used by the HPE 3PAR Docker Volume plugin
-* Supports single node (Use only for testing purposes) or multi-node deployment (HA) as defined in the Ansible hosts file 
-* Deploys the HPE FlexVolume Driver
-* FlexVolume driver deployment for single master and multimaster will be as per the below table
+* Configure the Docker Services for the HPE 3PAR Docker Volume Plug-in.
+* Deploys the config files (iSCSI or FC) to support your environment.
+* Installs the HPE 3PAR Docker Volume Plug-in (Containerized version).
+* For standalone docker environment, deploys an HPE customized etcd cluster.
+* For Kubernetes/OpenShift, deploys a Highly Available HPE etcd cluster used by the HPE 3PAR Docker Volume plugin.
+* Supports single node (Use only for testing purposes) or multi-node deployment (HA) as defined in the Ansible hosts file.
+* Deploys the HPE FlexVolume Driver.
+* FlexVolume driver deployment for single master and multimaster will be as per the below table.
 
 Cluster       | OS 3.9        | OS 3.10        | OS 3.11    | K8S 1.11      |  K8S 1.12     | K8S 1.13     | K8S 1.14     | K8S 1.15
 ------------- | ------------- | -------------  | -----------|------------   |-------------  |------------- |------------- | -------------
@@ -43,7 +43,32 @@ Note: Upgrade of existing Docker engine to higher version might break compatibil
 #### Pre-requisites
                 
 1. Install Ansible v.2.5 to v.2.8 only. Follow the [Installation Guide](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html) for more details on ansible installation.
-2. Make sure the path of kubectl or oc binary is available in $PATH env variable
+
+```
+pip install ansible==2.7.12
+OR
+yum install ansible==2.7.12
+```
+
+```
+Note: This installation is subject to availability of the mentioned packages in your yum repository.
+```
+Verify ansible version
+```
+[root@worker-node-1 ~]# ansible --version
+ansible 2.7.12
+  config file = None
+  configured module search path = [u'/root/.ansible/plugins/modules', u'/usr/share/ansible/plugins/modules']
+  ansible python module location = /usr/lib/python2.7/site-packages/ansible
+  executable location = /usr/bin/ansible
+  python version = 2.7.5 (default, Aug  7 2019, 00:51:29) [GCC 4.8.5 20150623 (Red Hat 4.8.5-39)]
+```
+```
+Note: Ansible version should be between 2.5 to 2.8 only
+```
+For further information on the ansible installation refer the Installation guide at [Installation Guide](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
+
+2. Make sure the path of kubectl or oc binary is available in $PATH env variable.
 3. Kubernetes/Openshift should be up and running. Please check the following steps on the setup.
 * Kubernetes/Openshift cluster should be up and all the nodes in Ready state
 	                
@@ -57,7 +82,7 @@ cssosbe01-196150  Ready   <none>  17d  v1.15.3  15.212.196.150  <none>       Cen
 cssosbe01-196151  Ready   <none>  17d  v1.15.3  15.212.196.151  <none>       CentOS Linux 7 (Core)  3.10.0-957.el7.x86_64       docker://18.9.7
 ```
 ```
-Note: If any one node is in NotReady state follow the troubleshooting steps for the Creating Kubernetes/OpenShift cluster LINK
+Note: If any one node is in NotReady state follow the troubleshooting steps for the Creating Kubernetes/OpenShift cluster.
 ```
                 
 * Verify the cluster info
@@ -84,36 +109,14 @@ export https_proxy=https:// <proxy server name/IP>:port_number
 export no_proxy=localhost,localaddress,.localdomain.com,.hpecorp.net,.hp.com,.hpcloud.net, <3paripaddress>,<all master/worker node ip address>
 ```
 6. Set SSH connection with 3PAR
-Login to 3PAR via SSH to create entry in /<user>/.ssh/known_hosts file
+Login to 3PAR via SSH to create entry in /<user>/.ssh/known_hosts file.
 ```
 Note: Entries for the Master and Worker nodes should already exist within the /<user>/.ssh/known_hosts file from the OpenShift installation. If not, you will need to log into each of the Master and Worker nodes as well to prevent connection errors from Ansible.
 ```
-7. Ansible Installtion
-```
-pip install ansible==2.7.12
-OR
-yum install ansible==2.7.12
-```
-```
-Note: This installation is subject to availability of the mentioned packages in your yum repository.
-```
-Verify ansible version
-```
-[root@worker-node-1 ~]# ansible --version
-ansible 2.7.12
-  config file = None
-  configured module search path = [u'/root/.ansible/plugins/modules', u'/usr/share/ansible/plugins/modules']
-  ansible python module location = /usr/lib/python2.7/site-packages/ansible
-  executable location = /usr/bin/ansible
-  python version = 2.7.5 (default, Aug  7 2019, 00:51:29) [GCC 4.8.5 20150623 (Red Hat 4.8.5-39)]
-```
-```
-Note: Ansible version should be between 2.5 to 2.8 only
-```
-For further information on the ansible installation refer the Installation guide at [Installation Guide](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
+
 
 #### Install HPE Volume Plugin for Docker on Kubernetes/OpenShift Cluster
-+ Clone the python-hpedockerplugin repository
++ Clone the python-hpedockerplugin repository on any of the masters.
 ```
 $ cd ~
 $ git clone https://github.com/hpe-storage/python-hpedockerplugin
@@ -125,15 +128,15 @@ $ cd ~
 $ cd python-hpedockerplugin/ansible_3par_docker_plugin/properties
 $ cp plugin_configuration_properties_sample.yml plugin_configuration_properties.yml
 ```
-+ Please refer some [sample](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/properties/plugin_configuration_properties_sample.yml) file examples plugin configuration properties 
-[Example](https://github.com/sonawane-shashikant/python-hpedockerplugin/tree/master/docs/img/Example_Plugin_Configuration_yaml.png)
-Installer installs etcd as a service on the nodes which are mentioned under [etcd] section of hosts file to store the plugin data.
++ Please refer to [sample](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/properties/plugin_configuration_properties_sample.yml) file for plugin configuration properties yaml.
+This [Example](https://github.com/sonawane-shashikant/python-hpedockerplugin/tree/master/docs/img/Example_Plugin_Configuration_yaml.png) image shows the example with expected parameters as per requirement.
++ Installer installs etcd as a service on the nodes which are mentioned under [etcd] section of hosts file to store the plugin data.
 ```
 Note: Please ensure that the ports 23790 and 23800 are unoccupied before installation on all the nodes under [etcd] section. 
 If the ports are not available on a particular node, etcd installation will fail.
 If more than one node is mentioned under [etcd] section, then it will create the etcd cluster.
 ```
-+ Modify hosts file to define your Master/Worker nodes as well as where you want to deploy your etcd cluster.
++ Modify [hosts](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/hosts) file to define your Master/Worker nodes as well as where you want to deploy your etcd cluster.
 ```
 Note: For the multi-master setup, define all the master nodes under the [masters] section in hosts file and it should be active master from where the doryd deployment is executed. For more information on etcd and how-to setup an etcd cluster for High Availability.
 The installer, in the current state does not have the capability to add or remove nodes in the etcd cluster. In case an etcd node is not responding or goes down, it is beyond the current scope to admit it back into the cluster. Please follow the etcd documentation to do so manually.
