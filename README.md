@@ -11,7 +11,7 @@ HPE Docker Volume plugin is being used in both Kubernetes and  OpenShift environ
 
 ![](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/img/3PAR_k8_design_diagram_75.png)
 
-This [SPOC](https://spock.corp.int.hpe.com/spock/utility/document.aspx?docurl=Shared%20Documents/hw/3par/3par_volume_plugin_for_docker.pdf) page shows the releasewise support matrix for HPE Docker Volume plugin.
+This [SPOC](https://spock.corp.int.hpe.com/spock/utility/document.aspx?docurl=Shared%20Documents/hw/3par/3par_volume_plugin_for_docker.pdf) page shows the release-wise support matrix for HPE Docker Volume plugin.
 
 ### Automated Ansible Installer for HPE 3PAR and HPE Primera Volume Plug-in for Docker
 
@@ -70,13 +70,12 @@ kubernetes-dashboard is running at https://cssosbe01-196149.in.rdlabs.hpecorp.ne
 ```
 To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
 
-4. Set Environment Variables
+4. Firewalld service should be off during Kubernetes setup.
 
-Make sure the path of kubectl or oc binary is available in $PATH env variable
-firewalld service should be off during Kubernetes setup.
 ```
 systemctl status firewalld
 ```
+
 5. Proxy Settings
 Set the http_proxy, https_proxy and no_proxy environment variables.
 ```
@@ -89,7 +88,7 @@ Login to 3PAR via SSH to create entry in /<user>/.ssh/known_hosts file
 ```
 Note: Entries for the Master and Worker nodes should already exist within the /<user>/.ssh/known_hosts file from the OpenShift installation. If not, you will need to log into each of the Master and Worker nodes as well to prevent connection errors from Ansible.
 ```
-7. Ansible installtion
+7. Ansible Installtion
 ```
 pip install ansible==2.7.12
 OR
@@ -151,5 +150,5 @@ cd /root/python-hpedockerplugin/ansible_3par_docker_plugin
 + In order to upgrade HPE Volume Plugin for Docker on Kubernetes/OpenShift Cluster refer to [Plugin Upgrade]
 [Post upgrade, validation checks](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/PostInstallation_checks.md)
 
-+ For uninstalltion, Update and Upgrade, please refer to [Plugin Upgrade](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/Uninstall_Update_Upgade.md)
++ For Uninstalltion, Update and Upgrade, please refer to [Plugin Upgrade](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/Uninstall_Update_Upgade.md)
 + For Usage, Troubleshoots and Limitations, Please refer to this [link](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/docs/Usage_Troubleshoot_Limitations.md)
