@@ -1,0 +1,17 @@
+#Enable and populate the proxies here
+#[all:vars]
+#http_proxy=http://x.x.x.x:port_number
+#https_proxy=https://x.x.x.x:port_number
+#no_proxy=192.168.1.51,192.168.1.52,192.168.1.53,localhost,<3pararray_ip>
+
+[masters]
+192.168.1.51
+
+[workers]
+192.168.1.52
+192.168.1.53
+
+[etcd]
+192.168.1.51
+192.168.1.52
+192.168.1.53

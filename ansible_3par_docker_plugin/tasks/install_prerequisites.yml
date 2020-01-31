@@ -1,0 +1,49 @@
+---
+  - name: Get all the backend array keys from inventory
+    set_fact:
+      array_keys: "{{ INVENTORY.keys() }}"
+      install_encryptor_packages: false
+      
+  - name: Check if the encryptor specific packages must be installed
+    set_fact:
+      install_encryptor_packages: true
+    with_items: "{{ array_keys }}"
+    when: INVENTORY[item]['encryptor_key'] is defined
+
+  - name: install gcc
+    package:
+      name: gcc
+      state: present
+    become: yes
+    when: install_encryptor_packages
+
+  - name: install python-devel
+    package:
+      name: python-devel
+      state: present
+    become: yes
+    when: install_encryptor_packages and (ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat')
+
+  - name: install python-dev
+    package:
+      name: python-dev
+      state: present
+    become: yes
+    when: install_encryptor_packages and ansible_distribution == 'Ubuntu'
+
+  - name: update setuptools
+    pip:
+      name: setuptools
+      state: latest
+      extra_args: --upgrade
+    become: yes
+    when: install_encryptor_packages
+
+  - name: install py-3parencryptor
+    pip:
+      name: py-3parencryptor
+      state: present
+    become: yes
+    when: install_encryptor_packages
+
+

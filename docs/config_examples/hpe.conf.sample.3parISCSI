@@ -1,0 +1,60 @@
+[DEFAULT]
+# ssh key file required for driver ssh
+# communication with array
+#ssh_hosts_key_file = /root/.ssh/known_hosts
+ssh_hosts_key_file = <path to known_hosts>
+
+# IP Address and port number of the etcd instance 
+# to use for storing volume meta data
+# for setting up etcd client with cluster members give host_etcd_ip_address in this 
+# below format where each member's ip/port is given with comma as delimiter. 
+# For example, host_etcd_ip_address = 10.50.180.1:3379,10.50.164.1:3379,10.50.198.1:3379
+# Please note this is only supported in managed plugin. 
+# Check the plugin version for the support. 
+host_etcd_ip_address = <ip-address>
+host_etcd_port_number = <port-number>
+
+# Client certificate and key details for secured etcd cluster
+# Please note this is only supported in managed plugin. 
+# Check the plugin version for the support.
+host_etcd_client_cert = /root/plugin/certs/<path to client certificate>.pem
+host_etcd_client_key = /root/plugin/certs/<path to client certificate key>.pem
+
+# OSLO based Logging level for the plugin.
+logging = <INFO or DEBUG or ERROR or WARNING>
+
+# Enable 3PAR client debug messages
+hpe3par_debug = <True or False>
+
+# Suppress Requests Library SSL warnings
+suppress_requests_ssl_warnings = <True or False>
+
+# Plugin Driver Details. All drivers must
+# specify an hpedockerplugin_driver location.
+# All other attributes are driver specific,
+# but are based directly on the OpenStack
+# Cinder configuration details.
+# DO NOT change the hpedockerplugin_driver for this sample file. It is already
+# set to the correct value
+hpedockerplugin_driver = hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver
+
+hpe3par_api_url = https://<3PAR IP address>:8080/api/v1
+hpe3par_username = <3par WSAPI username>
+hpe3par_password = <3par WSAPI password>
+san_ip = <SAN IP>
+san_login = <SAN username>
+san_password = <SAN password>
+hpe3par_cpg = <CPG name used for volume creation>
+hpe3par_snapcpg = <CPG name used for snapshot creation>
+# hpe3par_snapcpg is optional. If not provided, it defaults to hpe3par_cpg value
+hpe3par_iscsi_chap_enabled = <True or False>
+hpe3par_iscsi_ips = <iSCSI IP addresses separated by comma>
+use_multipath = <True or False>
+enforce_multipath = <True or False>
+
+# "use_multipath" and "enforce_multipath" flags are mandatory for HPE 3PAR
+# iSCSI volume plugin V2.0, and these flags should be set to True.
+# These flags should be omitted for
+# HPE 3PAR volume plugin v2.0.1 and later versions.
+# Also, multiple IP addresses of iSCSI ports must be assigned to
+# "hpe3par_iscsi_ips" parameter to configure multipath.

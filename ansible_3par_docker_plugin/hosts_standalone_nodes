@@ -1,0 +1,9 @@
+[all]
+10.10.10.1
+10.10.10.2
+10.10.10.3
+
+#[all:vars]
+#http_proxy=http://x.x.x.x:port_number
+#https_proxy=https://x.x.x.x:port_number
+#no_proxy=192.168.1.51,192.168.1.52,192.168.1.53,localhost,<3pararray_ip>

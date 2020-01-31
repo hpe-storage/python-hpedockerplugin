@@ -1,0 +1,217 @@
+- hosts: localhost
+  become: yes
+  environment:
+    http_proxy: "{{ http_proxy  | default('')}}"
+    https_proxy: "{{ https_proxy  | default('')}}"
+  tasks:
+    - name: install sshpass
+      package:
+        name: sshpass
+        state: present
+
+- hosts: all
+
+  environment:
+    http_proxy: "{{ http_proxy  | default('')}}"
+    https_proxy: "{{ https_proxy  | default('')}}"
+
+  tasks:
+  
+  - name: load plugin settings
+    include_vars: 'properties/plugin_configuration_properties.yml'
+
+  - name: Install prerequistes
+    include: tasks/install_prerequisites_on_all.yml
+
+  - name: Install prerequistes
+    include: tasks/install_prerequisites.yml
+
+  - name: Verify and Install etcd binary version 2.3.7 into /usr/bin for hpe3parvolumeplugin
+    become: yes
+    include: tasks/perform_standalone_etcd_checks_and_installation.yml
+
+  - name: Install packages on Ubuntu
+    package:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - open-iscsi
+      - multipath-tools
+    when: ansible_distribution == 'Ubuntu'
+    become: yes
+
+  - name: Install packages on CentOS/RedHat
+    package:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - iscsi-initiator-utils
+      - device-mapper-multipath
+    when: ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+    become: yes
+
+  - name: Copy multipath configuration file
+    copy:
+      src: multipath.conf
+      dest: /etc/multipath.conf
+    when: ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+    become: yes
+
+  - name: Rebuild the initrd, otherwise the system may not boot anymore
+    shell: dracut --force --add multipath
+    become: yes
+    when: ansible_distribution == 'SLES'
+
+  - name: Create multipath file for SLES
+    shell: multipath -t > /etc/multipath.conf
+    become: yes
+    when: ansible_distribution == 'SLES'
+
+  - name: Change MountFlags
+    ini_file:
+      dest: /usr/lib/systemd/system/docker.service
+      section: Service
+      option: MountFlags
+      value: shared
+      no_extra_spaces: true
+      backup: yes
+    when: ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+    become: yes
+
+  - name: Reload sytemd daemon
+    systemd:
+      daemon_reload: yes
+    become: yes
+
+  - name: Restart Services
+    systemd:
+      name: "{{ item }}"
+      state: restarted
+    with_items:
+      - open-iscsi
+      - multipath-tools
+      - docker
+    when: ansible_distribution == 'Ubuntu'
+    become: yes
+
+  - name: Restart Services
+    systemd:
+      name: docker.service
+      state: restarted
+    when: ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+    become: yes
+
+  - name: Enable the services
+    systemd:
+      name: "{{  item  }}"
+      state: started
+      enabled: True
+    with_items:
+      - iscsid
+      - multipathd
+    when: ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat' or ansible_distribution == 'SLES'
+
+    become: yes
+
+  - name: load etcd settings
+    include_vars: 'properties/etcd_cluster_properties.yml'
+
+  - name: Initialize the etcd cluster var
+    set_fact:
+      etcd_initial_cluster: ''
+      etcd_name: ''
+      etcd_hpe_service_exists: false
+
+  - name: Check that the etcd_hpe service file exists
+    stat:
+      path: /etc/systemd/system/etcd_hpe.service
+    register: stat_result
+
+  - name: Set flag etcd_hpe.service file to true if exists
+    set_fact: 
+      etcd_hpe_service_exists: true
+    when: stat_result.stat.exists == true
+
+  - name: Check that the /root/etcd_hpe_data directory exists
+    stat:
+      path: /root/etcd_hpe_data
+    register: dir_stat_result
+
+  - name: Create data directory
+    shell: |
+      mkdir -p /root/etcd_hpe_data
+      chown -R root:$(whoami) /root/etcd_hpe_data
+      chmod -R a+rw /root/etcd_hpe_data
+    become: yes
+    when: dir_stat_result.stat.exists == false
+
+  - name: Set Variable for creating etcd_hpe service
+    set_fact:
+      etcd_name: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+    when: etcd_hpe_service_exists == false  
+
+  - name: Set cluster variable
+    set_fact:
+      etcd_initial_cluster: " {{ etcd_name }}=http://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:23800"
+    when: etcd_hpe_service_exists == false
+
+  - name: Create etcd_hpe service file
+    template:
+      src: ./files/etcd.service
+      dest: /etc/systemd/system/etcd_hpe.service
+      owner: root
+      group: root
+      mode: 0755
+    become: yes
+    when: etcd_hpe_service_exists == false 
+
+  - name: Check etcd_hpe service is running
+    shell: systemctl status etcd_hpe.service
+    register: etcd_hpe_service_status
+    ignore_errors: yes
+
+  - name: Reload and start the services
+    shell: |
+      systemctl daemon-reload
+      systemctl enable etcd_hpe.service
+      systemctl start  etcd_hpe.service
+    when: etcd_hpe_service_status.stdout is defined and "'running' not in etcd_hpe_service_status.stdout"
+
+  - name: Import data once the etcd is up and backup done
+    shell: etcdtool -p "http://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:23790" import / /tmp/hpe_etcd_data.json -y
+    when: backup_done == true
+      
+  - name: Remove hpe_etcd_data file after backup done
+    file:
+      path: /tmp/hpe_etcd_data.json
+      state: absent
+    when: backup_done == true  
+
+  - name: Create conf file
+    include: tasks/create_conf_file.yml
+
+  - name: create hpedockerplugin container
+    docker_container:
+      name: plugin_container
+      image: "{{ INVENTORY['DEFAULT']['volume_plugin'] }}"
+      privileged: true
+      network_mode: host
+      state: started
+      detach: true
+      volumes:
+        - /dev:/dev
+        - /run/lock:/run/lock
+        - /var/lib:/var/lib
+        - /var/run/docker/plugins:/var/run/docker/plugins:rw
+        - /etc:/etc
+        - /root/.ssh:/root/.ssh
+        - /sys:/sys
+        - /root/plugin/certs:/root/plugin/certs
+        - /sbin/iscsiadm:/sbin/ia
+        - /lib/modules:/lib/modules
+        - /lib64:/lib64
+        - /var/run/docker.sock:/var/run/docker.sock
+        - /opt/hpe/data:/opt/hpe/data:rshared
+      restart_policy: on-failure
+    become: yes
+
