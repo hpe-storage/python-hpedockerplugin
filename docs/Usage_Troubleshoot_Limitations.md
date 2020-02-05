@@ -1,3 +1,32 @@
+#### Automated Installer Features 
+* These are Ansible playbooks to automate the install of the HPE 3PAR Docker Volume Plug-in for Docker for use within standalone docker environment or Kubernetes/OpenShift environments.
+```
+NOTE: 
+
+1. The Ansible installer only supports Ubuntu/RHEL/CentOS. 
+2. If you are using another distribution of Linux, you will need to modify the 
+playbooks to support your application manager (apt, etc.) and the pre-requisite packages.
+3. Upgrade of existing Docker engine to higher version might break compatibility of HPE Docker Volume Plugin.
+
+```
+These playbooks perform the following tasks on the Master/Worker nodes as defined in the Ansible [hosts](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/hosts) file.
+* Configure the Docker Services for the HPE 3PAR Docker Volume Plug-in.
+* Deploys the config files (iSCSI or FC) to support your environment.
+* Installs the HPE 3PAR Docker Volume Plug-in (Containerized version).
+* For standalone docker environment, deploys an HPE customized etcd cluster.
+* For Kubernetes/OpenShift, deploys a Highly Available HPE etcd cluster used by the HPE 3PAR Docker Volume plugin.
+* Supports single node (Use only for testing purposes) or multi-node deployment (HA) as defined in the Ansible hosts file.
+* Deploys the HPE FlexVolume Driver.
+* FlexVolume driver deployment for single master and multimaster will be as per the below table.
+
+Cluster       | OS 3.9        | OS 3.10        | OS 3.11    | K8S 1.11      |  K8S 1.12     | K8S 1.13     | K8S 1.14     | K8S 1.15
+------------- | ------------- | -------------  | -----------|------------   |-------------  |------------- |------------- | -------------
+Single Master | System Process| System Process | Deployment | System Process| System Process| Deployment   | Deployment   | Deployment
+Multimaster   | NA            | NA             |  Deployment| NA            | NA            | Deployment   | Deployment  | Deployment 
+
+
+**NOTE:** System Process can be verified using systemctl commands whereas Deployment can be verified using kubectl get pods command. Please refer to [PostInstallation_checks](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/PostInstallation_checks.md) for more details.
+
 #### Supported Features
 + Fibre Channel & iSCSI support for 3PAR
 + Fibre Channel support for Primera
@@ -126,3 +155,5 @@ WantedBy=multi-user.target
 ```
 
 + Updated **/etc/kubernetes/admin.conf** by **/etc/origin/master/admin.kubeconfig** and then do **systemctl daemon-reload** and **systemctl restart doryd**
+
++ Check out the [Quick Start Guide](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/quick_start_guide.md) for deploying the HPE Docker Volume Plugin on Plain Docker environment.
