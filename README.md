@@ -138,7 +138,7 @@ $ cd python-hpedockerplugin/ansible_3par_docker_plugin/properties
 $ cp plugin_configuration_properties_sample.yml plugin_configuration_properties.yml
 ```
 + Please refer to [sample](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/properties/plugin_configuration_properties_sample.yml) file for plugin configuration properties yaml.
-This [Example](https://github.com/sonawane-shashikant/python-hpedockerplugin/edit/master/docs/plugin_configuration_properties_example.yml) yaml shows the example with bare minimum parameters as per requirement.
+This [Example](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/docs/plugin_configuration_properties_example.yml) yaml shows the example with bare minimum parameters as per requirement.
 + Installer installs etcd as a service on the nodes which are mentioned under [etcd] section of hosts file to store the plugin data.
 + Please refer [etcd_cluster](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/advanced/etcd_cluster_setup.md) for more details.
 
@@ -167,7 +167,7 @@ $ ansible-playbook -i hosts install_hpe_3par_volume_driver.yml --ask-vault-pass
 ```
 
 
-Please refer to [PostInstallation_checks](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/PostInstallation_checks.md) to validate successful installtion of the plugin.
+Please refer to [PostInstallation_checks](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/PostInstallation_checks.md) to validate successful installation of the plugin.
 
 + In order to upgrade HPE Volume Plugin for Docker on Kubernetes/OpenShift Cluster refer to [Plugin Upgrade]
 [Post upgrade, validation checks](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/PostInstallation_checks.md)
