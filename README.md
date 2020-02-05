@@ -138,7 +138,7 @@ $ cd python-hpedockerplugin/ansible_3par_docker_plugin/properties
 $ cp plugin_configuration_properties_sample.yml plugin_configuration_properties.yml
 ```
 + Please refer to [sample](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/properties/plugin_configuration_properties_sample.yml) file for plugin configuration properties yaml.
-This [Example](https://github.com/sonawane-shashikant/python-hpedockerplugin/tree/master/docs/img/Example_Plugin_Configuration_yaml.png) image shows the example with expected parameters as per requirement.
+This [Example](https://github.com/sonawane-shashikant/python-hpedockerplugin/edit/master/docs/plugin_configuration_properties_example.yml) yaml shows the example with bare minimum parameters as per requirement.
 + Installer installs etcd as a service on the nodes which are mentioned under [etcd] section of hosts file to store the plugin data.
 + Please refer [etcd_cluster](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/advanced/etcd_cluster_setup.md) for more details.
 
