@@ -34,7 +34,7 @@ Troubleshooting issues with the plugin can be performed using these [tips](https
 #### Limitations
 + List of issues around the containerized version of the plugin/Managed plugin is present in https://github.com/hpe-storage/python-hpedockerplugin/issues
 
-``` $ docker volume prune``` is not supported for volume plugin, instead use $docker volume rm $(docker volume ls -q -f "dangling=true") to clean up orphaned volumes.
+``` $ docker volume prune ``` is not supported for volume plugin, instead use ``` $docker volume rm $(docker volume ls -q -f "dangling=true") ``` to clean up orphaned volumes.
 
 + Shared volume support is present for containers running on the same host.
 
@@ -61,10 +61,11 @@ Troubleshooting issues with the plugin can be performed using these [tips](https
 + "Snapshot schedule creation can take more time resulting into Docker CLI timeout. However, snapshot schedule may still get created in the background. User can follow below two steps in case of time out issue from docker daemon while creating snapshot schedule."
 ```
 docker volume inspect <snapshot_name>. This should display snapshot details with snapshot schedule information.
+
 Verify if schedule got created on the array using 3PAR CLI command:
 $ showsched
 ```
-+ If a mount fails due to dangling LUN use this section of troubleshooting guide Removing Dangling LUN
++ If a mount fails due to dangling LUN use this section of troubleshooting guide [Removing Dangling LUN](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/troubleshooting.md#removing-dangling-lun)
 
 + If two or more backends are defined with the same name then the last backend is picked up and rest ignored.
 
@@ -72,11 +73,11 @@ $ showsched
 
 + For volume upper size limitation, please do refer 3PAR's documentation.
 
-+ The configuration parameter mount_prefix, is applicable for containerized plugin only. If used with the managed plugin, mount operation fails.
++ The configuration parameter **mount_prefix**, is applicable for containerized plugin only. If used with the managed plugin, mount operation fails.
 
-+ For statefulset pod stuck in "ContainerCreating" state after a worker node reboot, the following manual procedure has to be done -- Details
++ For statefulset pod stuck in "ContainerCreating" state after a worker node reboot, the following manual procedure has to be done -- [Details](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/recover_post_reboot.md)
 
-+ For Pod mount using File Persona, this flag allowPrivilegeEscalation: true under securityContextis mandantory for volume plugin to mount a file persona NFS share. eg.
++ For Pod mount using File Persona, this flag **allowPrivilegeEscalation: true** under **securityContextis** mandantory for volume plugin to mount a file persona NFS share. eg.
 
 ```
 
@@ -124,4 +125,4 @@ WantedBy=multi-user.target
 
 ```
 
-+ Updated /etc/kubernetes/admin.conf by /etc/origin/master/admin.kubeconfig and then do systemctl daemon-reload and systemctl restart doryd
++ Updated **/etc/kubernetes/admin.conf** by **/etc/origin/master/admin.kubeconfig** and then do **systemctl daemon-reload** and **systemctl restart doryd**
