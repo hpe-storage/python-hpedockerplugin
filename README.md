@@ -13,7 +13,7 @@ HPE Docker Volume plugin is being used in both Kubernetes and  OpenShift environ
 
 This [SPOC](https://spock.corp.int.hpe.com/spock/utility/document.aspx?docurl=Shared%20Documents/hw/3par/3par_volume_plugin_for_docker.pdf) page shows the release-wise support matrix for HPE Docker Volume plugin.
 
-Use Automated Ansible Installer to install HPE 3PAR and HPE Primera Volume Plug-in for Docker. To know more about this installer, go to  [this](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/docs/Usage_Troubleshoot_Limitations.md#Automated) link
+Use Ansible Installer to install HPE 3PAR and HPE Primera Volume Plug-in for Docker. To know more about this installer, go to  [this](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/docs/Usage_Troubleshoot_Limitations.md#Automated-Installer-Features) link
 
 ### Quick Start - Deploy a Production Ready HPE Volume Plugin for Docker on Kubernetes/OpenShift Cluster
 #### Pre-requisites
