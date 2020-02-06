@@ -69,14 +69,16 @@ kubernetes-dashboard is running at https://cssosbe01-196149.in.rdlabs.hpecorp.ne
 ```
 + To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
 
-5. Proxy Settings
+5. Proxy Settings-
+
 Set the http_proxy, https_proxy and no_proxy environment variables.
 ```
 export http_proxy=http://<proxy server name/IP>:port_number
 export https_proxy=https:// <proxy server name/IP>:port_number
 export no_proxy=localhost,localaddress,.localdomain.com,.hpecorp.net,.hp.com,.hpcloud.net, <3paripaddress>,<all master/worker node ip address>
 ```
-6. Set SSH connection with 3PAR
+6. Set SSH connection with 3PAR - 
+
 Login to 3PAR via SSH to create entry in /<user>/.ssh/known_hosts file.
 ```
 Note: Entries for the Master and Worker nodes should already exist within the /<user>/.ssh/known_hosts 
@@ -104,8 +106,12 @@ $ cp plugin_configuration_properties_sample.yml plugin_configuration_properties.
 + Set encryptor_key in properties/plugin_configuration_properties.yml for the backends to store encrypted passwords in /etc/hpedockerplugin/hpe.conf. This value shouldn't be set to empty string.
 + Modify [hosts](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/hosts) file to define your Master/Worker nodes as well as where you want to deploy your etcd cluster.
 ```
-Note: For the multi-master setup, define all the master nodes under the [masters] section in hosts file and it should be active master from where the doryd deployment is executed. For more information on etcd and how-to setup an etcd cluster for High Availability.
-The installer, in the current state does not have the capability to add or remove nodes in the etcd cluster. In case an etcd node is not responding or goes down, it is beyond the current scope to admit it back into the cluster. Follow the etcd documentation to do so manually.
+Note: For the multi-master setup, define all the master nodes under the [masters] section in hosts file 
+and it should be active master from where the doryd deployment is executed. 
+For more information on etcd and how-to setup an etcd cluster for High Availability.
+The installer, in the current state does not have the capability to add or remove nodes in the etcd cluster. 
+In case an etcd node is not responding or goes down, it is beyond the current scope to admit it back into the cluster. 
+Follow the etcd documentation to do so manually.
 ```
 + Run Installation with vault-pass
 ```
@@ -121,7 +127,14 @@ If more than one node is mentioned under [etcd] section, then it will create the
 ```
 + Refer to [Post Installation Checks](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/PostInstallation_checks.md) to validate successful installation of the plugin.
 
-#### For Uninstallation, Update and Upgrade of the HPE Volume Plugin for Docker, refer to [Plugin Upgrade](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/Uninstall_Update_Upgade.md)
+#### For Uninstallation of the HPE Volume Plugin for Docker, refer to [Plugin Uninstall](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/Uninstall_Update_Upgade.md#Uninstall-HPE-Volume-Plugin-for-docker-on-nodes-of-Openshift/Kubernetes-environment).
 
-#### For Usage, Troubleshoots and Limitations on HPE Volume Plugin for Docker, refer to this [link](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/docs/Usage_Troubleshoot_Limitations.md).
+#### For Update of the HPE Volume Plugin for Docker, refer to [Plugin Update](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/Uninstall_Update_Upgade.md#Update-the-array-backends-in-Openshift/Kubernetes-environment).
 
+#### For Installation of the HPE Volume Plugin for Docker on additional nodes, refer to [Plugin On_Additional_Nodes](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/Uninstall_Update_Upgade.md#Install-HPE-Volume-Plugin-for-Docker-on-additional-nodes-in-the-cluster).
+
+#### For Upgrade of the HPE Volume Plugin for Docker, refer to [Plugin Upgrade](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/Uninstall_Update_Upgade.md#Upgrade-the-docker-volume-plugin).
+
+#### For Usage and Supported features of HPE Volume Plugin for Docker, refer to this [Plugin_usage](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/docs/Usage_Troubleshoot_Limitations.md#Supported-Features).
+
+#### For Troubleshoots and Limitations of HPE Volume Plugin for Docker, refer to this [Troubleshoot_&_Limitations](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/docs/Usage_Troubleshoot_Limitations.md#Limitations).
