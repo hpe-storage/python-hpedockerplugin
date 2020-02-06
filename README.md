@@ -4,7 +4,7 @@ Originally developed by Google, Kubernetes is an open-source container orchestra
 OpenShift is a family of containerization software developed by Red Hat. Its flagship product is the OpenShift Container Platform—an on-premises platform as a service built around Docker containers orchestrated and managed by Kubernetes on a foundation of Red Hat Enterprise Linux.
 
 ### Overview of HPE Volume Plugin for Docker 
-The following diagram illustrates the HPE Docker Volume Plugin configured on multiple hosts in a Docker cluster. The plugin is a part of Docker Engine Managed Plugin System.
+The following diagram illustrates the HPE Volume Plugin for Docker configured on multiple hosts in a Docker cluster. The plugin is a part of Docker Engine Managed Plugin System.
 
 ![](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/docs/img/HPE-DockerVolumePlugin-Overview.png)
 HPE Docker Volume plugin is being used in both Kubernetes and  OpenShift environment.
@@ -43,7 +43,7 @@ ansible 2.7.12
 ```
 
 3. Make sure the path of kubectl or oc binary is available in $PATH env variable.
-4. Kubernetes/Openshift should be up and running. Please check the following steps on the setup.
+4. Kubernetes/Openshift should be up and running. Check the following steps on the setup.
 * Kubernetes/Openshift cluster should be up and all the nodes in Ready state
 	                
 ```
@@ -105,7 +105,7 @@ $ cp plugin_configuration_properties_sample.yml plugin_configuration_properties.
 + Modify [hosts](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/hosts) file to define your Master/Worker nodes as well as where you want to deploy your etcd cluster.
 ```
 Note: For the multi-master setup, define all the master nodes under the [masters] section in hosts file and it should be active master from where the doryd deployment is executed. For more information on etcd and how-to setup an etcd cluster for High Availability.
-The installer, in the current state does not have the capability to add or remove nodes in the etcd cluster. In case an etcd node is not responding or goes down, it is beyond the current scope to admit it back into the cluster. Please follow the etcd documentation to do so manually.
+The installer, in the current state does not have the capability to add or remove nodes in the etcd cluster. In case an etcd node is not responding or goes down, it is beyond the current scope to admit it back into the cluster. Follow the etcd documentation to do so manually.
 ```
 + Run Installation with vault-pass
 ```
@@ -120,6 +120,8 @@ If the ports are not available on a particular node, etcd installation will fail
 If more than one node is mentioned under [etcd] section, then it will create the etcd cluster.
 ```
 + Refer to [Post Installation Checks](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/PostInstallation_checks.md) to validate successful installation of the plugin.
-#### For Uninstallation, Update and Upgrade, please refer to [Plugin Upgrade](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/Uninstall_Update_Upgade.md)
-#### For Usage, Troubleshoots and Limitations, Please refer to this [link](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/docs/Usage_Troubleshoot_Limitations.md).
+
+#### For Uninstallation, Update and Upgrade of the HPE Volume Plugin for Docker, refer to [Plugin Upgrade](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/Uninstall_Update_Upgade.md)
+
+#### For Usage, Troubleshoots and Limitations on HPE Volume Plugin for Docker, refer to this [link](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/docs/Usage_Troubleshoot_Limitations.md).
 
