@@ -1,20 +1,20 @@
 #### Automated Installer Features 
-* These are Ansible playbooks to automate the install of the HPE 3PAR Docker Volume Plug-in for Docker for use within standalone docker environment or Kubernetes/OpenShift environments.
+* These are Ansible playbooks to automate the installation of the HPE Volume Plugin for Docker for use within standalone docker environment or Kubernetes/OpenShift environments.
 ```
 NOTE: 
 
 1. The Ansible installer only supports Ubuntu/RHEL/CentOS. 
 2. If you are using another distribution of Linux, you will need to modify the 
 playbooks to support your application manager (apt, etc.) and the pre-requisite packages.
-3. Upgrade of existing Docker engine to higher version might break compatibility of HPE Docker Volume Plugin.
+3. Upgrade of existing Docker engine to higher version might break compatibility of HPE Volume Plugin for Docker.
 
 ```
 These playbooks perform the following tasks on the Master/Worker nodes as defined in the Ansible [hosts](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/hosts) file.
 * Configure the Docker Services for the HPE 3PAR Docker Volume Plug-in.
 * Deploys the config files (iSCSI or FC) to support your environment.
-* Installs the HPE 3PAR Docker Volume Plug-in (Containerized version).
+* Installs the HPE Volume Plugin for Docker (Containerized version).
 * For standalone docker environment, deploys an HPE customized etcd cluster.
-* For Kubernetes/OpenShift, deploys a Highly Available HPE etcd cluster used by the HPE 3PAR Docker Volume plugin.
+* For Kubernetes/OpenShift, deploys a Highly Available HPE etcd cluster used by the HPE Volume Plugin for Docker.
 * Supports single node (Use only for testing purposes) or multi-node deployment (HA) as defined in the Ansible hosts file.
 * Deploys the HPE FlexVolume Driver.
 * FlexVolume driver deployment for single master and multimaster will be as per the below table.
@@ -142,7 +142,7 @@ spec:
 ```
 
 [Unit]
-Description=manage doryd service for HPE 3PAR Volume plugin for Docker
+Description=manage doryd service for HPE Volume Plugin for Docker
 
 [Service]
 Type=simple
