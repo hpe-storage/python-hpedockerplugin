@@ -59,32 +59,32 @@ Troubleshooting issues with the plugin can be performed using these [tips](https
 
 #### Plugin Properties Yaml Parameters
 | Property  | Mandatory | Default Value | Description |
-      | ------------- | ------------- | ------------- | ------------- |
-      | ```hpedockerplugin_driver```  | Yes  | No default value  | ISCSI/FC driver  (hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver/hpedockerplugin.hpe.hpe_3par_fc.HPE3PARFCDriver) |
-      | ```hpe3par_ip```  | Yes  | No default value | IP address of 3PAR array |
-      | ```hpe3par_username```  | Yes  | No default value | 3PAR username |
-      | ```hpe3par_password```  | Yes  | No default value | 3PAR password |
-      | ```hpe3par_port```  | Yes  | 8080 | 3PAR HTTP_PORT port |
-      | ```hpe3par_cpg```  | Yes  | No default value | Primary user CPG |
-      | ```volume_plugin```  | Yes  | No default value | Name of the docker volume image (only required with DEFAULT backend) |
-      | ```encryptor_key```  | No  | No default value | Encryption key string for 3PAR password |
-      | ```logging```  | No  | ```INFO``` | Log level |
-      | ```hpe3par_debug```  | No  | No default value | 3PAR log level |
-      | ```suppress_requests_ssl_warning```  | No  | ```True``` | Suppress request SSL warnings |
-      | ```hpe3par_snapcpg```  | No  | ```hpe3par_cpg``` | Snapshot CPG |
-      | ```hpe3par_iscsi_chap_enabled```  | No  | ```False``` | ISCSI chap toggle |
-      | ```hpe3par_iscsi_ips```  | No  |No default value | Comma separated iscsi port IPs (only required if driver is ISCSI based) |
-      | ```use_multipath```  | No  | ```False``` | Mutltipath toggle |
-      | ```enforce_multipath```  | No  | ```False``` | Forcefully enforce multipath |
-      | ```ssh_hosts_key_file```  | No  | ```/root/.ssh/known_hosts``` | Path to hosts key file |
-      | ```quorum_witness_ip```  | No  | No default value | Quorum witness IP |
-      | ```mount_prefix```  | No  | No default value | Alternate mount path prefix |
-      | ```hpe3par_iscsi_ips```  | No  | No default value | Comma separated iscsi IPs. If not provided, all iscsi IPs will be read from the array and populated in hpe.conf |
-      | ```vlan_tag```  | No  | False | Populates the iscsi_ips which are vlan tagged, only applicable if ```hpe3par_iscsi_ips``` is not specified |
-      | ```replication_device```  | No  | No default value | Replication backend properties |
-      | ```dory_installer_version```  | No  | dory_installer_v32 | Required for Openshift/Kubernetes setup. Dory installer version, supported versions are dory_installer_v31, dory_installer_v32 |
-      | ```hpe3par_server_ip_pool```  | Yes  | No default value | This parameter is specific to fileshare. It can be specified as a mix of range of IPs and individual IPs delimited by comma. Each range or individual IP must be followed by the corresponding subnet mask delimited by semi-colon E.g.: IP-Range:Subnet-Mask,Individual-IP:SubnetMask|
-      | ```hpe3par_default_fpg_size```  | No  | No default value | This parameter is specific to fileshare. Default fpg size, It must be in the range 1TiB to 64TiB. If not specified here, it defaults to 16TiB |
+| ----------| ----------| ------------- | ------------|
+| ```hpedockerplugin_driver```  | Yes  | No default value  | ISCSI/FC driver  (hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver/hpedockerplugin.hpe.hpe_3par_fc.HPE3PARFCDriver) |
+| ```hpe3par_ip```  | Yes  | No default value | IP address of 3PAR array |
+| ```hpe3par_username```  | Yes  | No default value | 3PAR username |
+| ```hpe3par_password```  | Yes  | No default value | 3PAR password |
+| ```hpe3par_port```  | Yes  | 8080 | 3PAR HTTP_PORT port |
+| ```hpe3par_cpg```  | Yes  | No default value | Primary user CPG |
+| ```volume_plugin```  | Yes  | No default value | Name of the docker volume image (only required with DEFAULT backend) |
+| ```encryptor_key```  | No  | No default value | Encryption key string for 3PAR password |
+| ```logging```  | No  | ```INFO``` | Log level |
+| ```hpe3par_debug```  | No  | No default value | 3PAR log level |
+| ```suppress_requests_ssl_warning```  | No  | ```True``` | Suppress request SSL warnings |
+| ```hpe3par_snapcpg```  | No  | ```hpe3par_cpg``` | Snapshot CPG |
+| ```hpe3par_iscsi_chap_enabled```  | No  | ```False``` | ISCSI chap toggle |
+| ```hpe3par_iscsi_ips```  | No  |No default value | Comma separated iscsi port IPs (only required if driver is ISCSI based) |
+| ```use_multipath```  | No  | ```False``` | Mutltipath toggle |
+| ```enforce_multipath```  | No  | ```False``` | Forcefully enforce multipath |
+| ```ssh_hosts_key_file```  | No  | ```/root/.ssh/known_hosts``` | Path to hosts key file |
+| ```quorum_witness_ip```  | No  | No default value | Quorum witness IP |
+| ```mount_prefix```  | No  | No default value | Alternate mount path prefix |
+| ```hpe3par_iscsi_ips```  | No  | No default value | Comma separated iscsi IPs. If not provided, all iscsi IPs will be read from the array and populated in hpe.conf |
+| ```vlan_tag```  | No  | False | Populates the iscsi_ips which are vlan tagged, only applicable if ```hpe3par_iscsi_ips``` is not specified |
+| ```replication_device```  | No  | No default value | Replication backend properties |
+| ```dory_installer_version```  | No  | dory_installer_v32 | Required for Openshift/Kubernetes setup. Dory installer version, supported versions are dory_installer_v31, dory_installer_v32 |
+| ```hpe3par_server_ip_pool```  | Yes  | No default value | This parameter is specific to fileshare. It can be specified as a mix of range of IPs and individual IPs delimited by comma. Each range or individual IP must be followed by the corresponding subnet mask delimited by semi-colon E.g.: IP-Range:Subnet-Mask,Individual-IP:SubnetMask|
+| ```hpe3par_default_fpg_size```  | No  | No default value | This parameter is specific to fileshare. Default fpg size, It must be in the range 1TiB to 64TiB. If not specified here, it defaults to 16TiB |
 
 #### SPOCK Link for HPE 3PAR and HPE Primera Volume Plugin for Docker
 [SPOCK Link](https://spock.corp.int.hpe.com/spock/utility/document.aspx?docurl=Shared%20Documents/hw/3par/3par_volume_plugin_for_docker.pdf)
