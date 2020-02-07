@@ -103,6 +103,7 @@ $ cp plugin_configuration_properties_sample.yml plugin_configuration_properties.
 **Note:** Encrypt plugin_configuration_properties.yml using [how to encrypt properties file](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/encrypt_properties.md) link.
 + Refer to [sample](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/properties/plugin_configuration_properties_sample.yml) file for details which are to be updated into plugin configuration properties yaml.
 + This [Example](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/docs/plugin_configuration_properties_example.yml) yaml shows the example with bare minimum parameters as per requirement.
++ Details of all parameters that can be used in the plugin_configuration_properties yaml are listed [here](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/docs/Usage_Troubleshoot_Limitations.md#Plugin-Properties-Yaml-Parameters)
 + Set encryptor_key in properties/plugin_configuration_properties.yml for the backends to store encrypted passwords in /etc/hpedockerplugin/hpe.conf. This value shouldn't be set to empty string.
 + Modify [hosts](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/hosts) file to define your Master/Worker nodes as well as where you want to deploy your etcd cluster.
 ```
