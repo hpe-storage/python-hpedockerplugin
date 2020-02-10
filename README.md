@@ -3,10 +3,11 @@ The HPE 3PAR and HPE Primera Volume Plug-in for Docker leverages HPE storage pla
 
 The following diagram illustrates the HPE Volume Plugin for Docker configured on multiple hosts in a Docker cluster. The plugin is a part of Docker Engine Managed Plugin System.
 
-![](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/docs/img/image1.png)
+![](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/docs/img/Image1.png)
+
 HPE Docker Volume plugin is being used in both Kubernetes and  OpenShift environment.
 
-![](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/img/image2.png)
+![](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/docs/img/Image2.png)
 
 Refer to the [SPOCK](https://spock.corp.int.hpe.com/spock/utility/document.aspx?docurl=Shared%20Documents/hw/3par/3par_volume_plugin_for_docker.pdf) page for the latest support matrix for HPE 3PAR and HPE Primera Volume Plug-in for Docker.
 
