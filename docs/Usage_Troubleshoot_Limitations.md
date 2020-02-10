@@ -47,15 +47,11 @@ Multimaster   | NA            | NA             |  Deployment| NA            | NA
 	* file system permissions and ownership
 	* multiple backends
 	* file share [CRD operations] only for 3PAR
-
 #### Block operations usage
 See the [block operations usage guide](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/usage.md) for details on the supported operations and usage of the plugin.
 
 #### File share operations usage
 See the [file share operations usage guide](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/share_usage.md) for details on the supported operations and usage of the plugin.
-
-#### Troubleshooting
-Troubleshooting issues with the plugin can be performed using these [tips](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/troubleshooting.md)
 
 #### Plugin Properties Yaml Parameters
 | Property  | Mandatory | Default Value | Description |
@@ -86,10 +82,15 @@ Troubleshooting issues with the plugin can be performed using these [tips](https
 | ```hpe3par_server_ip_pool```  | Yes  | No default value | This parameter is specific to fileshare. It can be specified as a mix of range of IPs and individual IPs delimited by comma. Each range or individual IP must be followed by the corresponding subnet mask delimited by semi-colon E.g.: IP-Range:Subnet-Mask,Individual-IP:SubnetMask|
 | ```hpe3par_default_fpg_size```  | No  | No default value | This parameter is specific to fileshare. Default fpg size, It must be in the range 1TiB to 64TiB. If not specified here, it defaults to 16TiB |
 
-#### SPOCK Link for HPE 3PAR and HPE Primera Volume Plugin for Docker
-[SPOCK Link](https://spock.corp.int.hpe.com/spock/utility/document.aspx?docurl=Shared%20Documents/hw/3par/3par_volume_plugin_for_docker.pdf)
+Note: Optionally encrypt plugin_configuration_properties.yml using [how to encrypt properties file](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/encrypt_properties.md) link and run Installation with vault-pass
+```
+$ ansible-playbook -i hosts install_hpe_3par_volume_driver.yml --ask-vault-pass
+```
 
-#### Limitations
+#### Troubleshooting
+Troubleshooting issues with the plugin can be performed using these [tips](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/troubleshooting.md)
+
+#### Known Issues
 + List of issues around the containerized version of the plugin/Managed plugin is present in https://github.com/hpe-storage/python-hpedockerplugin/issues
 
 ``` $ docker volume prune ``` is not supported for volume plugin, instead use ``` $docker volume rm $(docker volume ls -q -f "dangling=true") ``` to clean up orphaned volumes.
