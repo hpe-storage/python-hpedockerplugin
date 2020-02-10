@@ -9,7 +9,7 @@ $ ansible-playbook -i hosts install_hpe_3par_volume_driver.yml
 
 Note: It is not recommended to change the HPE Etcd information and array encryption password during the backend update process
 
-#### Upgrade the docker volume plugin:
+#### Upgrade the HPE 3PAR and HPE Primera Volume Plug-in for Docker:
 Modify the [plugin configuration properties - sample](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/properties/plugin_configuration_properties_sample.yml) at properties/plugin_configuration_properties.yml and point it to the latest image from docker hub.
 Run the below command after updating the plugin configuration file.
 ```
@@ -26,7 +26,7 @@ Note:
 
 Refer to [PostInstallation_checks](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/PostInstallation_checks.md) for validation of upgrade.
 
-#### Install HPE Volume Plugin for Docker on additional nodes in the cluster:
+#### Install the HPE 3PAR and HPE Primera Volume Plug-in for Docker on additional nodes in the cluster:
 Add the new nodes in the respective sections in the inventory hosts file.
 Only new nodes IP or hostnames must be present in the hosts file.
 Do not change the etcd hosts from the existing setup. Do not add or remove nodes in the etcd section.
@@ -36,22 +36,20 @@ $ cd ~
 $ cd python-hpedockerplugin/ansible_3par_docker_plugin
 $ ansible-playbook -i hosts install_hpe_3par_volume_driver.yml
 ```
-##### Uninstall HPE Volume Plugin for Docker on nodes of Openshift/Kubernetes environment:
+##### Uninstall the HPE 3PAR and HPE Primera Volume Plug-in for Docker on nodes of Openshift/Kubernetes environment:
 ```
 $ cd ~
 $ cd python-hpedockerplugin/ansible_3par_docker_plugin
 $ ansible-playbook -i hosts uninstall/uninstall_hpe_3par_volume_driver.yml
 ```
-##### Uninstall HPE Volume Plugin for Docker along with etcd on nodes of Openshift/Kubernetes environment:
+##### Uninstall the HPE 3PAR and HPE Primera Volume Plug-in for Docker along with etcd on nodes of Openshift/Kubernetes environment:
 ```
 $ cd ~
 $ cd python-hpedockerplugin/ansible_3par_docker_plugin
 $ ansible-playbook -i hosts uninstall/uninstall_hpe_3par_volume_driver_etcd.yml
 ```
-```
+Note: This process only adds or removes docker volume plugin and/or etcd in nodes in an existing cluster. It does not add or remove nodes in /Openshift cluster
 
-: This process only adds or removes docker volume plugin and/or etcd in nodes in an existing cluster. It does not add or remove nodes in Kubernetes/Openshift cluster
-```
 On success after adding plugin on new nodes, the additional nodes will have a running HPE Volume Plugin for Docker.
 On success after removing plugin from specified nodes, HPE Volume Plugin for Docker will be removed.
 Uninstallation with etcd removes etcd_hpe service.
