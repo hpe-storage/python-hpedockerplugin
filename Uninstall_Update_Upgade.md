@@ -6,9 +6,9 @@ $ cd ~
 $ cd python-hpedockerplugin/ansible_3par_docker_plugin
 $ ansible-playbook -i hosts install_hpe_3par_volume_driver.yml
 ```
-```
+
 Note: It is not recommended to change the HPE Etcd information and array encryption password during the backend update process
-```
+
 #### Upgrade the docker volume plugin:
 Modify the [plugin configuration properties - sample](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/properties/plugin_configuration_properties_sample.yml) at properties/plugin_configuration_properties.yml and point it to the latest image from docker hub.
 Run the below command after updating the plugin configuration file.
@@ -17,15 +17,14 @@ $ cd ~
 $ cd python-hpedockerplugin/ansible_3par_docker_plugin
 $ ansible-playbook -i hosts install_hpe_3par_volume_driver.yml
 ```
-```
 Note:
 1. Ensure that all the nodes in the cluster are present in the inventory hosts file.
-2. The docker volume plugin will be restarted and the user will not be able to create the volume during the process
+2. The HPE 3PAR and HPE Primera Volume Plug-in for Docker will restart and the user will not be able to provision the volume during this process.
 3. As per new approach, etcd is installed as a service. So, in case etcd is running as a container and plugin upgraded, then etcd will run as a service with appropriate data retention.
 4. With encryption upgrade from version 3.1.1 to version 3.3.1 is supported .
 5. Successful upgrade will remove the old plugin container and replace it with the new 	plugin container which is specified in the plugin properties file. 
-```
-Please refer to [PostInstallation_checks](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/PostInstallation_checks.md) for validation of upgrade.
+
+Refer to [PostInstallation_checks](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/PostInstallation_checks.md) for validation of upgrade.
 
 #### Install HPE Volume Plugin for Docker on additional nodes in the cluster:
 Add the new nodes in the respective sections in the inventory hosts file.
@@ -50,7 +49,8 @@ $ cd python-hpedockerplugin/ansible_3par_docker_plugin
 $ ansible-playbook -i hosts uninstall/uninstall_hpe_3par_volume_driver_etcd.yml
 ```
 ```
-Note: This process only adds or removes docker volume plugin and/or etcd in nodes in an existing cluster. It does not add or remove nodes in Kubernetes/Openshift cluster
+
+: This process only adds or removes docker volume plugin and/or etcd in nodes in an existing cluster. It does not add or remove nodes in Kubernetes/Openshift cluster
 ```
 On success after adding plugin on new nodes, the additional nodes will have a running HPE Volume Plugin for Docker.
 On success after removing plugin from specified nodes, HPE Volume Plugin for Docker will be removed.
