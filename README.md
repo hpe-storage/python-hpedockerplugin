@@ -23,7 +23,7 @@ ansible 2.7.12
 $ kubectl get nodes -o wide
 ```
 4. Ensure that you have an established SSH connection with 3PAR or Primera storage systems:
-		Logon to 3PAR or Primera via SSH to create an entry in /<user>/.ssh/known_hosts file.
+		Login to the 3PAR or Primera via SSH to create an entry in ~/.ssh/known_hosts file.
 
 Note: Entries for the Kubernetes/OpenShift Master and Worker nodes must be 
 present in the ~/.ssh/known_hosts file for Ansible to install the plugin correctly. 
