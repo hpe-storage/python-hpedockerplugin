@@ -1,0 +1,19 @@
+INVENTORY:
+  DEFAULT:
+#Mandatory Parameters-----------------------------------------------------------------------------------
+
+      # Specify the port to be used by HPE 3PAR plugin etcd cluster
+      host_etcd_port_number: 23790
+      # Plugin Driver - iSCSI
+      hpedockerplugin_driver: hpedockerplugin.hpe.hpe_3par_iscsi.HPE3PARISCSIDriver
+      hpe3par_ip: <Array IP>
+      hpe3par_username: 3paradm
+      hpe3par_password: ********
+      hpe3par_port: 8080
+      hpe3par_cpg: <CPG Name>
+
+      # Plugin version - Required only in DEFAULT backend
+      volume_plugin: hpestorage/legacyvolumeplugin:3.3.1
+      # Dory installer version - Required for Openshift/Kubernetes setup
+      # Supported versions are dory_installer_v31, dory_installer_v32
+      dory_installer_version: dory_installer_v32

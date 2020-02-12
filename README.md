@@ -36,7 +36,7 @@ $ git clone https://github.com/hpe-storage/python-hpedockerplugin
 $ cd python-hpedockerplugin/ansible_3par_docker_plugin
 ```
 2. Create the **properties/plugin_configuration_properties.yml** based on your HPE 3PAR/Primera Storage array configuration.
-+ The *plugin_configuration_properties_sample.yml* shows a single backend setup example. 
++ The [plugin_configuration_properties_simplified.yml](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/properties/plugin_configuration_properties_simplified.yml) shows a single backend setup example. 
 + Some of the properties are mandatory and must be specified in the properties file while others are optional.
 + Refer to this [sample](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/properties/plugin_configuration_properties_sample.yml) file for additional configuration options.
 ```
@@ -55,9 +55,9 @@ $ ansible-playbook -i hosts install_hpe_3par_volume_driver.yml
 ```
 5. Validate successful installation of the plugin. See [Post Installation Checks](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/PostInstallation_checks.md).
 
-#### For supported features and usage of the HPE 3PAR and HPE Primera Volume Plug-in for Docker, see [Supported Features and Usage](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/docs/Usage_Troubleshoot_Limitations.md#Supported-Features)
-#### For updating the configuration of the HPE 3PAR and HPE Primera Volume Plug-in for Docker, see [updating an existing plugin installation ](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/Uninstall_Update_Upgade.md#update-the-array-backends-in-openshiftkubernetes-environment)
-#### For installation of the HPE 3PAR and HPE Primera Volume Plug-in for Docker on additional nodes, see [installing the HPE 3PAR and HPE Primera Volume Plug-in for Docker on additional nodes](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/Uninstall_Update_Upgade.md#install-the-hpe-3par-and-hpe-primera-volume-plug-in-for-docker-on-additional-nodes-in-the-cluster)
-#### For upgrade of the HPE 3PAR and HPE Primera Volume Plug-in for Docker, see [upgrading the plugin](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/Uninstall_Update_Upgade.md#upgrade-the-hpe-3par-and-hpe-primera-volume-plug-in-for-docker)
-#### For uninstallation of the HPE 3PAR and Primera Volume Plug-in for Docker, see [uninstalling the plugin](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/Uninstall_Update_Upgade.md#uninstall-the-hpe-3par-and-hpe-primera-volume-plug-in-for-docker-on-nodes-of-openshiftkubernetes-environment)
-#### For troubleshooting and known issues of the HPE 3PAR and Primera Volume Plug-in for Docker, see [Troubleshooting and Known Issues](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/docs/Usage_Troubleshoot_Limitations.md#troubleshooting)
+#### For supported features and usage of the HPE 3PAR and HPE Primera Volume Plug-in for Docker, see [Supported Features and Usage](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/Usage_Troubleshoot_Limitations.md#Supported-Features)
+#### For updating the configuration of the HPE 3PAR and HPE Primera Volume Plug-in for Docker, see [updating an existing plugin installation ](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/Uninstall_Update_Upgade.md#update-the-array-backends-in-openshiftkubernetes-environment)
+#### For installation of the HPE 3PAR and HPE Primera Volume Plug-in for Docker on additional nodes, see [installing the HPE 3PAR and HPE Primera Volume Plug-in for Docker on additional nodes](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/Uninstall_Update_Upgade.md#install-the-hpe-3par-and-hpe-primera-volume-plug-in-for-docker-on-additional-nodes-in-the-cluster)
+#### For upgrade of the HPE 3PAR and HPE Primera Volume Plug-in for Docker, see [upgrading the plugin](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/Uninstall_Update_Upgade.md#upgrade-the-hpe-3par-and-hpe-primera-volume-plug-in-for-docker)
+#### For uninstallation of the HPE 3PAR and Primera Volume Plug-in for Docker, see [uninstalling the plugin](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/Uninstall_Update_Upgade.md#uninstall-the-hpe-3par-and-hpe-primera-volume-plug-in-for-docker-on-nodes-of-openshiftkubernetes-environment)
+#### For troubleshooting and known issues of the HPE 3PAR and Primera Volume Plug-in for Docker, see [Troubleshooting and Known Issues](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/Usage_Troubleshoot_Limitations.md#troubleshooting)
