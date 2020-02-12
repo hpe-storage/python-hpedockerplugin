@@ -36,7 +36,7 @@ $ git clone https://github.com/hpe-storage/python-hpedockerplugin
 $ cd python-hpedockerplugin/ansible_3par_docker_plugin
 ```
 2. Create the **properties/plugin_configuration_properties.yml** based on your HPE 3PAR/Primera Storage array configuration.
-+ The *plugin_configuration_properties_sample.yml* shows a single backend setup example. 
++ The [plugin_configuration_properties_simplified.yml](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/properties/plugin_configuration_properties_simplified.yml) shows a single backend setup example. 
 + Some of the properties are mandatory and must be specified in the properties file while others are optional.
 + Refer to this [sample](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/properties/plugin_configuration_properties_sample.yml) file for additional configuration options.
 ```
