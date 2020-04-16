@@ -20,9 +20,3 @@ Logging and other troubleshooting steps can be in [Diagnostics](https://scod.hpe
 The HPE 3PAR and HPE Primera Volume Plug-in for Docker is supported software by Hewlett Packard Enterprise. Reach out to your HPE representation to be connected with the support organization with any general issue you need help resolving.
 
 We also encourage open collaboration, file issues, questions or feature requests [here](https://github.com/hpe-storage/python-hpedockerplugin/issues). You may also join our Slack community to chat with HPE folks close to this project. We hang out in `#Kubernetes` at [slack.hpedev.io](https://slack.hpedev.io/).
-
-## Contributing
-We value all feedback and contributions. If you find any issues or want to contribute, please feel free to open an issue or file a PR. More details in [CONTRIBUTING.md](CONTRIBUTING.md)
-
-## License
-This is open source software licensed using the Apache License 2.0. Please see [LICENSE](LICENSE) for details.
