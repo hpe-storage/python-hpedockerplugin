@@ -1,5 +1,5 @@
 ---
-  - name: Stop docker container
+  - name: Stop docker container of plugin_container
     docker_container:
       name: plugin_container
       image: "{{ INVENTORY['DEFAULT']['volume_plugin'] }}"
@@ -185,11 +185,11 @@
       path: /etc/hpedockerplugin/hpe.conf
       section: "{{ item[0] }}"
       option: "{{ item[1]['option'] }}"
-      value: "{{ 'https://' + INVENTORY[item[0]][item[1].value] + ':8080/api/v1' }}"
+      value: "{{ 'https://' + INVENTORY[item[0]][item[1].value] + ':' + INVENTORY[item[0]][item[1].port_value] | string + '/api/v1' }}"
       no_extra_spaces: true
     with_nested:
       - "{{ INVENTORY.keys()}}"
-      - [{ option: 'hpe3par_api_url', value: 'hpe3par_ip' }]
+      - [{ option: 'hpe3par_api_url', value: 'hpe3par_ip', port_value: 'hpe3par_port' }]
     become: yes
 
   - name: Populate iscsi IPs in hpe.conf
@@ -234,6 +234,18 @@
     with_items:
       - "{{ INVENTORY.keys()}}"
     when: INVENTORY[item]['hpe3par_iscsi_ips'] is defined
+
+  - name: Set flag to remove doryd deployment during installtion
+    set_fact: 
+      remove_dep_path: "installer" 
+
+  - name: Remove doryd deployment when encryptor key is defined 
+    include: "{{playbook_dir}}/uninstall/remove_doryd_service.yml"
+    with_items: "{{ INVENTORY.keys()}}"
+    when: >-
+      INVENTORY[item]['encryptor_key'] is defined and groups['masters'] is defined and 
+      (hostvars[inventory_hostname]['ansible_default_ipv4']['address'] == groups['masters'][0])
+      
 
   - name: Get the encrypted passwords
     shell: >-
@@ -292,7 +304,7 @@
       cpg_map: "cpg_map:{{ INVENTORY[item]['replication_device']['cpg_map'] }}"
       snap_cpg_map: "snap_cpg_map:{{ INVENTORY[item]['replication_device']['snap_cpg_map'] }}"
       hpe3par_username: "hpe3par_username:{{ INVENTORY[item]['replication_device']['hpe3par_username'] }}"
-      hpe3par_api_url: "hpe3par_api_url: https://{{ INVENTORY[item]['replication_device']['hpe3par_ip'] }}:8080/api/v1"
+      hpe3par_api_url: "hpe3par_api_url: https://{{ INVENTORY[item]['replication_device']['hpe3par_ip'] }}:{{ INVENTORY[item]['replication_device']['hpe3par_port'] }}/api/v1"
       san_ip: "san_ip: {{ INVENTORY[item]['replication_device']['hpe3par_ip'] }}"
       san_login: "san_login: {{ INVENTORY[item]['replication_device']['hpe3par_username'] }}"
     with_items: "{{ INVENTORY.keys() }}"

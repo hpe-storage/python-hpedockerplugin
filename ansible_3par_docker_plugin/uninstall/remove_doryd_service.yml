@@ -1,15 +1,87 @@
----
+  - name: Initialize flags as false by default
+    set_fact:
+      multimaster: false
+      oc_result: {}
+      doryd_exists: false
+      result: {}
+
+  - name: Set multimaster flag as true when we have more than one master in hosts file
+    set_fact:
+      multimaster: true
+    when: groups['masters'] | count | int  > 1
+
+  - name: Check Openshift version
+    shell: oc version |grep oc | cut -d" " -f2
+    register: oc_result
+    ignore_errors: yes
+
+  - name: Check Kubernetes prerequisites
+    include: tasks/check_kubernetes_prerequisite.yml
+    when: ("command not found" in oc_result.stderr)
+
+  - name: Check Openshift prerequisites
+    include: tasks/check_openshift_prerequisite.yml
+    when: ("command not found" not in oc_result.stderr) 
+    
+  - name: Check whether doryd as a container exists for multimaster Kubernetes/Openshift setup
+    shell: kubectl get pods --namespace kube-system -o wide | grep doryd
+    register: result
+    failed_when: false
+    changed_when: false
+    when: doryd_as_container == true
+
+  - name: Set flag doryd_exists as true if already running
+    set_fact:
+      doryd_exists: true
+    when: result.rc is defined and result.rc == 0 
+
+  - name: Remove Deployment on Openshift cluster during uninstallation
+    shell: |
+      oc adm policy remove-scc-from-user privileged system:serviceaccount:kube-system:doryd
+      cd {{playbook_dir}}
+      cd ../..
+      oc delete -f provisioner/OpenShift/dep-kube-storage-controller-ocp311.yaml
+    #become: yes
+    when: openshift_setup == true and doryd_as_container == true and doryd_exists == true and remove_dep_path == "uninstaller"
+
+  - name: Remove Deployment on Kubernetes cluster during uninstallation 
+    shell: |
+      cd {{playbook_dir}}
+      cd ../..
+      kubectl delete -f provisioner/k8s/dep-kube-storage-controller-k8s113.yaml
+    #become: yes
+    when: k8s_setup == true and doryd_as_container == true and doryd_exists == true and remove_dep_path == "uninstaller"
+
+  - name: Remove Deployment on Openshift cluster during installation
+    shell: |
+      oc adm policy remove-scc-from-user privileged system:serviceaccount:kube-system:doryd
+      cd {{playbook_dir}}
+      cd ..
+      oc delete -f provisioner/OpenShift/dep-kube-storage-controller-ocp311.yaml
+    #become: yes
+    when: openshift_setup == true and doryd_as_container == true and doryd_exists == true and remove_dep_path == "installer"
+
+  - name: Remove Deployment on Kubernetes cluster during installation
+    shell: |
+      cd {{playbook_dir}}
+      cd ..
+      kubectl delete -f provisioner/k8s/dep-kube-storage-controller-k8s113.yaml
+    #become: yes
+    when: k8s_setup == true and doryd_as_container == true and doryd_exists == true and remove_dep_path == "installer"
+
   - name: Check that the doryd.service file exists
     stat:
       path: /etc/systemd/system/doryd.service
     register: stat_result
+    when: doryd_as_service == true
 
   - name: stop doryd service, also issue daemon-reload to pick up config changes
     service:
       state: stopped
       enabled: no
       name: doryd.service
-    when: stat_result.stat.exists
+      become: yes
+    when: doryd_as_service == true
 
   - pause:
       seconds: 5
@@ -18,3 +90,5 @@
     file:
       path: /etc/systemd/system/doryd.service
       state: absent
+      become: yes
+    when: doryd_as_service == true

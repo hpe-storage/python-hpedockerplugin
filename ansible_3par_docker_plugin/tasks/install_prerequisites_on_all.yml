@@ -130,7 +130,9 @@
     when: pip_result.rc != 0
 
   - name: delete requests library
-    shell: rm -rf /usr/lib/python2.7/site-packages/requests*
+    file:
+      path: /usr/lib/python2.7/site-packages/requests*
+      state: absent
     become: yes
 
   - name: uninstall docker-py if ansible version >= 2.6
@@ -160,4 +162,3 @@
       state: present
     become: yes
     when: ansible_version.major == 2 and ansible_version.minor < 6
-

@@ -1,111 +1,63 @@
-## HPE 3PAR Volume Plugin for Docker
+### HPE 3PAR and HPE Primera Volume Plug-in for Docker
+The HPE 3PAR and HPE Primera Volume Plug-in for Docker leverages HPE storage platforms to provide scalable and persistent storage for stateful applications. This Ansible playbook will deploy HPE 3PAR and HPE Primera Volume Plug-in for Docker and the HPE Dynamic Provisioner for Kubernetes.
 
-HPE Docker Volume Plugin is an open source project that provides persistent storage and features for your containerized applications using HPE 3PAR StoreServ Storage arrays.
-It supports both block and file (NFS shares) based features.
+Refer to the [SPOCK](https://spock.corp.int.hpe.com/spock/utility/document.aspx?docurl=Shared%20Documents/hw/3par/3par_volume_plugin_for_docker.pdf) page for the latest support matrix for HPE 3PAR and HPE Primera Volume Plug-in for Docker.
 
-The HPE Docker Volume Plugin supports popular container platforms like Docker, Kubernetes, OpenShift 
-
-## HPE Docker Volume Plugin Overview
-
-### **Standalone Docker instance**
-
-Here is an example of the HPE Docker Volume plugin being used in a standalone Docker instance:
-
-![HPE Docker Volume Plugin](/docs/img/3PAR_docker_design_diagram_75.png)
-
----
-### **Kubernetes/OpenShift environment**
-
-Here is an example of the HPE Docker Volume plugin being used in an OpenShift environment:
-
-![HPE Docker Volume Plugin with OpenShift](/docs/img/3PAR_k8_design_diagram_75.png)
-
-## Install and Quick Start instructions
-
-* Review the [System Requirements](/docs/system-reqs.md) before installing the plugin
-* Check out the [Quick Start Guide](/docs/quick_start_guide.md) for deploying the **HPE Docker Volume Plugin** in [Docker](/docs/quick_start_guide.md#docker) or in [Kubernetes/OpenShift](/docs/quick_start_guide.md#k8) environments
-
-
-## Supported Features
-
-* Fibre Channel & iSCSI support for 3PAR
-* Secure/Unsecure etcd cluster for fault tolerance
-* Advanced volume features
-  * thin
-  * dedup
-  * full
-  * compression
-  * snapshots
-  * clones
-  * QoS
-  * snapshot mount
-  * mount_conflict_delay
-  * concurrent volume access
-  * replication
-  * snapshot schedule
-  * file system permissions and ownership
-  * multiple backends
-  * file share [CRD operations]
-
-## Block operations usage
-
-See the [block operations usage guide](/docs/usage.md) for details on the supported operations and usage of the plugin.
-
-## File share operations usage
-
-See the [file share operations usage guide](/docs/share_usage.md) for details on the supported operations and usage of the plugin.
-
-## Troubleshooting
-
-Troubleshooting issues with the plugin can be performed using these [tips](/docs/troubleshooting.md)
-
-
-## SPOCK Link for HPE 3PAR Volume Plugin for Docker
-
-* [SPOCK Link](https://spock.corp.int.hpe.com/spock/utility/document.aspx?docurl=Shared%20Documents/hw/3par/3par_volume_plugin_for_docker.pdf)
-
-## Limitations
-- List of issues around the containerized version of the plugin/Managed plugin is present in https://github.com/hpe-storage/python-hpedockerplugin/issues 
-
-- ``$ docker volume prune`` is not supported for volume plugin, instead use ``$docker volume rm $(docker volume ls -q -f "dangling=true") `` to clean up orphaned volumes.
-
-- Shared volume support is present for containers running on the same host.
-
-- For upgrading the plugin from older version to the current released version, user needs to unmount all the volumes and follow the standard
- upgrade procedure described in docker guide. 
- 
-- Volumes created using older plugins (2.0.2 or below) do not have snap_cpg associated with them, hence when the plugin is upgraded to      2.1 and user wants to perform clone/snapshot operations on these old volumes, he/she must set the snap_cpg for the
-   corresponding volumes using 3par cli or any tool before performing clone/snapshot operations.
-
-- While inspecting a snapshot, its provisioning field is set to that of parent volume's provisioning type. In 3PAR however, it is shown as 'snp'.
-
-- Mounting a QoS enabled volume can take longer than a volume without QoS for both FC and iSCSI protocol.
-
-- For a cloned volume with the same size as source volume, comment field won’t be populated on 3PAR.
-
-- User not allowed to import a 3PAR legacy volume when it is under use(Active VLUN).
-
-- User needs to explicitly manage all the child snapshots, until which managed parent volume cannot be deleted
-
-- User cannot manage already managed volume by other docker host(i.e. volume thats start with 'dcv-')
-
-- It is recommended for a user to avoid importing legacy volume which has schedules associated with it. If this volume needs to be imported please remove existing schedule on 3PAR and import the legacy volume.
-
-- "Snapshot schedule creation can take more time resulting into Docker CLI timeout. However, snapshot schedule may still get created in the background. User can follow below two steps in case of time out issue from docker daemon while creating snapshot schedule."
-
-```Inspect the snapshot to verify if the snapshot schedule got created
-docker volume inspect <snapshot_name>. This should display snapshot details with snapshot schedule information.
-
-Verify if schedule got created on the array using 3PAR CLI command:
-$ showsched
+#### Prerequisites
+                
+1. Ensure that you have reviewed the [System Requirements](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/system-reqs.md).
+		Ensure that Ansible (v2.5 to v2.8) is installed. For more information, see [Ansible Installation Guide](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html).
 ```
+pip install ansible==2.7.12
+OR
+yum install ansible==2.7.12
+```
+   Verify Ansible version.
+```
+$ ansible --version
+ansible 2.7.12
+```
+2. Ensure that the path of **kubectl** or **oc** binary is available in *$PATH* env variable.
+3. Ensure that Kubernetes/Openshift cluster is up and running:              
+```
+$ kubectl get nodes -o wide
+```
+4. Ensure that you have an established SSH connection with 3PAR or Primera storage systems:
+		Logon to 3PAR or Primera via SSH to create an entry in /<user>/.ssh/known_hosts file.
 
-- If a mount fails due to dangling LUN use this section of troubleshooting guide [Removing Dangling LUN](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/troubleshooting.md#removing-dangling-lun)
+Note: Entries for the Kubernetes/OpenShift Master and Worker nodes must be 
+present in the ~/.ssh/known_hosts file for Ansible to install the plugin correctly. 
+If not, SSH into each node within the cluster to create entries in ~/.ssh/known_hosts.
+### Installing HPE 3PAR and HPE Primera Volume Plug-in for Docker on Kubernetes/OpenShift Cluster
+1. Clone the **hpe-storage/python-hpedockerplugin** Github repository on any of the masters.
+```
+$ cd ~
+$ git clone https://github.com/hpe-storage/python-hpedockerplugin
+$ cd python-hpedockerplugin/ansible_3par_docker_plugin
+```
+2. Create the **properties/plugin_configuration_properties.yml** based on your HPE 3PAR/Primera Storage array configuration.
++ The *plugin_configuration_properties_sample.yml* shows a single backend setup example. 
++ Some of the properties are mandatory and must be specified in the properties file while others are optional.
++ Refer to this [sample](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/properties/plugin_configuration_properties_sample.yml) file for additional configuration options.
+```
+$ cd ~
+$ cd python-hpedockerplugin/ansible_3par_docker_plugin/properties
+$ cp plugin_configuration_properties_sample.yml plugin_configuration_properties.yml
+```
+3. Modify [hosts](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/ansible_3par_docker_plugin/hosts) file to define the Kubernetes/OpenShift Master and Worker nodes and to define the location to deploy the etcd cluster for storing the 3PAR/Primera Volume metadata..
+```
+$ cd ~/python-hpedockerplugin/
+$ vi hosts
+```
+4. Run the Ansible playbook.
+```
+$ ansible-playbook -i hosts install_hpe_3par_volume_driver.yml
+```
+5. Validate successful installation of the plugin. See [Post Installation Checks](https://github.com/hpe-storage/python-hpedockerplugin/blob/master/docs/PostInstallation_checks.md).
 
-- If two or more backends are defined with the same name then the last backend is picked up and rest ignored.
-
-- after doing scsi rescan if the symlinks for the device are not populated in /dev/disk/by-path, Plugin will not function correctly during mount operation.
-
-- For volume upper size limitation, please do refer 3PAR's documentation.
-
-- The configuration parameter **mount_prefix**, is applicable for containerized plugin only. If used with the managed plugin, mount operation fails.
+#### For supported features and usage of the HPE 3PAR and HPE Primera Volume Plug-in for Docker, see [Supported Features and Usage](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/docs/Usage_Troubleshoot_Limitations.md#Supported-Features)
+#### For updating the configuration of the HPE 3PAR and HPE Primera Volume Plug-in for Docker, see [updating an existing plugin installation ](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/Uninstall_Update_Upgade.md#update-the-array-backends-in-openshiftkubernetes-environment)
+#### For installation of the HPE 3PAR and HPE Primera Volume Plug-in for Docker on additional nodes, see [installing the HPE 3PAR and HPE Primera Volume Plug-in for Docker on additional nodes](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/Uninstall_Update_Upgade.md#install-the-hpe-3par-and-hpe-primera-volume-plug-in-for-docker-on-additional-nodes-in-the-cluster)
+#### For upgrade of the HPE 3PAR and HPE Primera Volume Plug-in for Docker, see [upgrading the plugin](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/Uninstall_Update_Upgade.md#upgrade-the-hpe-3par-and-hpe-primera-volume-plug-in-for-docker)
+#### For uninstallation of the HPE 3PAR and Primera Volume Plug-in for Docker, see [uninstalling the plugin](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/Uninstall_Update_Upgade.md#uninstall-the-hpe-3par-and-hpe-primera-volume-plug-in-for-docker-on-nodes-of-openshiftkubernetes-environment)
+#### For troubleshooting and known issues of the HPE 3PAR and Primera Volume Plug-in for Docker, see [Troubleshooting and Known Issues](https://github.com/sonawane-shashikant/python-hpedockerplugin/blob/master/docs/Usage_Troubleshoot_Limitations.md#troubleshooting)

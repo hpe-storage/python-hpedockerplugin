@@ -190,12 +190,9 @@ $ docker plugin ls
 
 ## Quick Start Guide for Kubernetes/OpenShift environments <a name="k8"></a>
 
-There are two methods for installing the HPE 3PAR Volume Plug-in for Docker for Kubernetes/OpenShift environments:
+Method for installing the HPE 3PAR Docker Volume Plug-in for Kubernetes/OpenShift environments:
 
 1. [Ansible playbook to deploy the HPE 3PAR Volume Plug-in for Docker (**RECOMMENDED**)](/ansible_3par_docker_plugin/README.md)
-
-
-2. [Install Guide for HPE 3PAR Volume Plug-in for Docker](/docs/manual_install_guide_hpe_3par_plugin_with_openshift_kubernetes.md)
 
 
 ## Usage <a name="usage"></a>

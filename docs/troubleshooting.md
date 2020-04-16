@@ -56,6 +56,11 @@ for i in `lsscsi | grep 3PARdata | awk '{print $6}'| grep -v "-"| cut -d"/" -f3
 rescan-scsi-bus.sh -r -f -m
 ```
 
+If all the scsi devices for 3PAR volumes need to be removed, follow
+- Unexport the volumes in 3PAR (using `removevlun -f` CLI)
+- On the host , look for `mount| grep hpe` and do umount for each mounted folder
+- rescan-scsi-bus.sh -r -f -m
+
 ### Collecting necessary Logs
 
 if any issue found please do collect following logs from your Docker host
@@ -95,3 +100,39 @@ Getting container id of plugin: docker ps -a | grep hpe
  systemctl restart doryd.service
  ```
  
+## Debugging issue with StatefulSet pod stuck in "ContainerCreating" state after a node reboot
+
+If you observe the `kubectl get pods -o wide` for the statefulset pod replicas stuck in "ContainerCreating" state forever on a worker node, please do the following steps to recover
+
+`tail -f /etc/hpedockerplugin/3pardcv.log` reveals some stack like
+```
+2019-10-14 20:41:57,783 [DEBUG] paramiko.transport [140488068422376] Thread-12532 EOF in transport thread
+2019-10-14 20:41:57,807 [DEBUG] paramiko.transport [140488064187112] Thread-12534 EOF in transport thread
+2019-10-14 20:41:57,809 [DEBUG] paramiko.transport [140488063126248] Thread-12535 EOF in transport thread
+2019-10-14 20:42:01,128 [DEBUG] os_brick.initiator.linuxscsi [140488076110568] PoolThread-twisted.internet.reactor-5 Checking to see if /dev/disk/by-id/dm-uuid-mpath-360002ac0000000000101af6e00019d52 exists yet.
+2019-10-14 20:42:01,128 [DEBUG] os_brick.initiator.linuxscsi [140488076110568] PoolThread-twisted.internet.reactor-5 /dev/disk/by-id/dm-uuid-mpath-360002ac0000000000101af6e00019d52 doesn't exists yet.
+2019-10-14 20:42:01,129 [DEBUG] os_brick.utils [140488076110568] PoolThread-twisted.internet.reactor-5 Failed attempt 3
+2019-10-14 20:42:01,129 [DEBUG] os_brick.utils [140488076110568] PoolThread-twisted.internet.reactor-5 Have been at this for 6.019 seconds
+2019-10-14 20:42:01,130 [DEBUG] os_brick.initiator.linuxscsi [140488076110568] PoolThread-twisted.internet.reactor-5 Checking to see if /dev/mapper/360002ac0000000000101af6e00019d52 exists yet.
+2019-10-14 20:42:01,130 [DEBUG] os_brick.initiator.linuxscsi [140488076110568] PoolThread-twisted.internet.reactor-5 /dev/mapper/360002ac0000000000101af6e00019d52 doesn't exists yet.
+2019-10-14 20:42:01,130 [DEBUG] os_brick.utils [140488076110568] PoolThread-twisted.internet.reactor-5 Failed attempt 1
+2019-10-14 20:42:01,131 [DEBUG] os_brick.utils [140488076110568] PoolThread-twisted.internet.reactor-5 Have been at this for 0.001 seconds
+2019-10-14 20:42:01,131 [DEBUG] os_brick.utils [140488076110568] PoolThread-twisted.internet.reactor-5 Sleeping for 2 seconds
+2019-10-14 20:42:03,133 [DEBUG] os_brick.initiator.linuxscsi [140488076110568] PoolThread-twisted.internet.reactor-5 Checking to see if /dev/mapper/360002ac0000000000101af6e00019d52 exists yet.
+2019-10-14 20:42:03,134 [DEBUG] os_brick.initiator.linuxscsi [140488076110568] PoolThread-twisted.internet.reactor-5 /dev/mapper/360002ac0000000000101af6e00019d52 doesn't exists yet.
+2019-10-14 20:42:03,134 [DEBUG] os_brick.utils [140488076110568] PoolThread-twisted.internet.reactor-5 Failed attempt 2
+2019-10-14 20:42:03,135 [DEBUG] os_brick.utils [140488076110568] PoolThread-twisted.internet.reactor-5 Have been at this for 2.005 seconds
+2019-10-14 20:42:03,135 [DEBUG] os_brick.utils [140488076110568] PoolThread-twisted.internet.reactor-5 Sleeping for 4 seconds
+2019-10-14 20:42:07,140 [DEBUG] os_brick.initiator.linuxscsi [140488076110568] PoolThread-twisted.internet.reactor-5 Checking to see if /dev/mapper/360002ac0000000000101af6e00019d52 exists yet.
+2019-10-14 20:42:07,140 [DEBUG] os_brick.initiator.linuxscsi [140488076110568] PoolThread-twisted.internet.reactor-5 /dev/mapper/360002ac0000000000101af6e00019d52 doesn't exists yet.
+2019-10-14 20:42:07,141 [DEBUG] os_brick.utils [140488076110568] PoolThread-twisted.internet.reactor-5 Failed attempt 3
+2019-10-14 20:42:07,141 [DEBUG] os_brick.utils [140488076110568] PoolThread-twisted.internet.reactor-5 Have been at this for 6.011 seconds
+2019-10-14 20:42:07,141 [WARNING] os_brick.initiator.linuxscsi [140488076110568] PoolThread-twisted.internet.reactor-5 couldn't find a valid multipath device path for 360002ac0000000000101af6e00019d52
+```
+- Get the node where the statefulset pod was scheduled using `kubectl get pods -o wide` and then, 
+ - Login to the worker node where the stateful set pod is trying to start
+ - Issue `systemctl restart multipathd`
+
+#### Other workarounds 
+ - `kubectl cordon <node>` before the node is shutdown (which has statefulset pods mounted) and `kubectl uncordon <node>` after the node reboots and the kubelet (or) atomic-openshift-node.service starts properly
+ - Some case, `docker stop plugin_container` before node shutdown, and starting the volume plugin container after node reboots once the node reaches 'Ready' state in `kubectl get nodes` also recovers the pod in stuck state.

@@ -1,0 +1,37 @@
+- name: Initialize flag for backup done
+  set_fact: 
+    backup_done: false
+
+- name: Check whether containerized etcd_hpe is exists
+  shell: docker ps |grep etcd_hpe
+  register: etcd_as_container
+  ignore_errors: true
+
+- name: Check and install etcd binary 2.3.7
+  include: check_etcd_hpe_prerequisite.yml
+  
+- name: Perform backup of etcd_hpe data before creating etcd as a service
+  include: perform_backup.yml
+  when: >-
+    etcd_as_container.rc is defined and etcd_as_container.rc == 0 and
+    (hostvars[inventory_hostname]['ansible_default_ipv4']['address'] == groups['etcd'][0])
+
+- name: Set flag once backup done
+  set_fact: 
+    backup_done: true
+  when: etcd_as_container.rc == 0 and backup.rc is defined and backup.rc == 0  
+
+- name: load plugin settings
+  include_vars: 'properties/plugin_configuration_properties.yml'
+
+- name: Stop hpedockerplugin container
+  docker_container:
+    name: plugin_container
+    image: "{{ INVENTORY['DEFAULT']['volume_plugin'] }}"
+    state: stopped
+  when: etcd_as_container.rc is defined and etcd_as_container.rc == 0  
+
+- name: Remove etcd_hpe container
+  include: uninstall/remove_etcd_container.yml
+  when: etcd_as_container.rc is defined and etcd_as_container.rc == 0
+

@@ -1,15 +1,19 @@
 ---
+- name: Remove etcd binary from Kubernetes/OpenShift
+  hosts: etcd
+  become: yes
+  tasks:
+    - name: Remove etcd binary from Kubernetes/OpenShift 
+      include: remove_etcd_service.yml
+      ignore_errors: yes
+
 - name: Uninstall HPE 3PAR Volume Driver for Kubernetes/OpenShift
-  hosts: masters,workers,etcd
-  become: root
+  hosts: masters,workers
+  become: yes
 
   tasks:
     - name: load plugin settings
       include_vars: '../properties/plugin_configuration_properties.yml'
-
-    - name: Remove etcd container from Docker
-      include: remove_etcd_container.yml
-      ignore_errors: yes
 
     - name: Remove 3PAR Volume Plugin container from Docker
       include: remove_3par_docker_container.yml
@@ -19,16 +23,21 @@
       include: remove_multipath.yml
 
 - name: Remove HPE 3PAR Volume Driver for Kubernetes/OpenShift
-  hosts: masters
-  become: root
+  hosts: "{{groups['masters'][0]}}"
+  #become: root
 
   tasks:
-    - name: Start Dynamic Provisioner (doryd) on Master node
+    - name: Set flag to remove doryd deployment during uninstalltion
+      set_fact:
+        remove_dep_path: "uninstaller"
+
+    - name: Stop Dynamic Provisioner (doryd) on Master node
       include: remove_doryd_service.yml
+      ignore_errors: yes
 
 - name: Uninstall HPE 3PAR Volume Driver for Kubernetes/OpenShift
   hosts: masters,workers,etcd
-  become: root
+  become: yes
 
   tasks:
     - name: Remove FlexVolume drivers and config files
