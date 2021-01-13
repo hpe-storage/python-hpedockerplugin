@@ -83,7 +83,7 @@ stevedore==1.28.0
 ratelimit==2.2.1
 tenacity==4.12.0
 Twisted==18.7.0rc1
-urllib3==1.23
+urllib3==1.24.2
 vine==1.1.4
 WebOb==1.8.2
 Werkzeug==0.14.1
