@@ -10,7 +10,7 @@ cffi==1.10.0
 chardet==3.0.4
 constantly==15.1.0
 contextlib2==0.5.5
-cryptography==2.0.3
+cryptography==3.2
 debtcollector==1.17.0
 dnspython==1.15.0
 enum34==1.1.6
