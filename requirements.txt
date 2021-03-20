@@ -25,7 +25,7 @@ idna==2.6
 incremental==17.5.0
 ipaddress==1.0.18
 iso8601==0.1.12
-Jinja2==2.9.6
+Jinja2==2.11.3
 klein==17.2.0
 kombu==4.1.0
 MarkupSafe==1.0
