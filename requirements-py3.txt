@@ -69,7 +69,7 @@ python-dateutil==2.7.3
 python-etcd==0.4.5
 python-lefthandclient==2.1.0
 pytz==2018.5
-PyYAML==4.2b4
+PyYAML==5.4
 repoze.lru==0.7
 requests==2.19.1
 retrying==1.3.3
