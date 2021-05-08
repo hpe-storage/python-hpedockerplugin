@@ -14,7 +14,7 @@ cryptography==2.0.3
 debtcollector==1.17.0
 dnspython==1.15.0
 enum34==1.1.6
-eventlet==0.18.2
+eventlet==0.31.0
 fasteners==0.14.1
 funcsigs==1.0.2
 futures==3.1.1
