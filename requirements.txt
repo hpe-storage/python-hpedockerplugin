@@ -81,7 +81,7 @@ statsd==3.2.1
 stevedore==1.25.0
 tenacity==4.4.0
 Twisted==17.5.0
-urllib3==1.22
+urllib3==1.26.5
 vine==1.1.4
 WebOb==1.7.3
 Werkzeug==0.12.2
