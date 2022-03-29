@@ -49,7 +49,7 @@ oslo.serialization==2.27.0
 oslo.service==1.31.2
 oslo.utils==3.36.3
 oslo.versionedobjects==1.33.3
-paramiko==2.4.1
+paramiko==2.10.1
 Paste==2.0.3
 PasteDeploy==1.5.2
 pbr==4.1.0
