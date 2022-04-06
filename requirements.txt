@@ -80,7 +80,7 @@ six==1.10.0
 statsd==3.2.1
 stevedore==1.25.0
 tenacity==4.4.0
-Twisted==17.5.0
+Twisted==22.2.0
 urllib3==1.22
 vine==1.1.4
 WebOb==1.7.3
