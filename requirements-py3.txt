@@ -82,7 +82,7 @@ statsd==3.2.2
 stevedore==1.28.0
 ratelimit==2.2.1
 tenacity==4.12.0
-Twisted==18.7.0rc1
+Twisted==22.4.0
 urllib3==1.23
 vine==1.1.4
 WebOb==1.8.2
